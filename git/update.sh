@@ -43,21 +43,4 @@ function update {
     success "Done; gitignore globals file '$GITIGNORE_GLOBALS_DOTFILE_PATH' updated."
 }
 
-function enable {
-    debug "Enabling gitignore globals"
-    symlink_install ${GITIGNORE_GLOBALS_FILENAME}
-    git_config_set "core.excludesfile" ${GITIGNORE_GLOBALS_LINK_PATH}
-    debug "Gitignore globals: Enabled"
-}
-
-
-function disable {
-    debug "Disabling gitignore globals"
-    symlink_remove ${GITIGNORE_GLOBALS_FILENAME}
-    git_config_unset "core.excludesfile" ${GITIGNORE_GLOBALS_LINK_PATH}
-    debug "Gitignore globals: Disabled"
-}
-
-$@
-
-
+update $@
