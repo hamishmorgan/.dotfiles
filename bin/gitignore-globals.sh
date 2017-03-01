@@ -100,7 +100,7 @@ function download_gitignore {
     debug "Downloaded '$url' to '$dest'"
 }
 
-function update_gitignore_globals {
+function update {
     GITIGNORE_GLOBALS_PATH=$DOTFILES_BASE_DIR/$GITIGNORE_GLOBALS_FILENAME
 
     debug "Updating gitignore globals file '$GITIGNORE_GLOBALS_PATH'."
@@ -114,6 +114,6 @@ function update_gitignore_globals {
     success "Done; gitignore globals file '$GITIGNORE_GLOBALS_PATH' updated."
 }
 
-update_gitignore_globals
+$@
 
 
