@@ -14,22 +14,27 @@ DOTFILES_BASE_DIR=$(dirname $(realpath -sm $0/..))
 GITIGNORE_GLOBALS_FILENAME=.gitignore-globals
 GITIGNORE_GLOBALS_TYPES='vim,netbeans,jetbrains,eclipse,linux'
 
+### Miscellaneous constants
+
+TRUE=0
+FALSE=1
+
 ### Logging
 
 function error {
-    echo -e "\e[31mERROR: $@\e[0m"
+    echo -e "\e[31m$@\e[0m"
 }
 
 function warn {
-    echo -e "\e[33mWARN: $@\e[0m"
+    echo -e "\e[33m$@\e[0m"
 }
 
 function info {
-    echo -e "\e[32mINFO: $@\e[0m"
+    echo -e "\e[32m$@\e[0m"
 }
 
 function debug {
-    echo -e "\e[2mDEBUG: $@\e[0m"
+    echo -e "\e[2m$@\e[0m"
 }
 
 ## Exit status
@@ -42,12 +47,10 @@ function fail {
 
 function pass {
     warn $@
-    exit 0
 }
 
 function success {
     info $@
-    exit 0
 }
 
 ## Git
@@ -100,18 +103,112 @@ function download_gitignore {
     debug "Downloaded '$url' to '$dest'"
 }
 
+## Operations
+
+GITIGNORE_GLOBALS_LINK_PATH=$HOME/${GITIGNORE_GLOBALS_FILENAME}
+GITIGNORE_GLOBALS_DOTFILE_PATH=${DOTFILES_BASE_DIR}/${GITIGNORE_GLOBALS_FILENAME}
+
 function update {
-    GITIGNORE_GLOBALS_PATH=$DOTFILES_BASE_DIR/$GITIGNORE_GLOBALS_FILENAME
+    debug "Updating gitignore globals file '$GITIGNORE_GLOBALS_DOTFILE_PATH'."
 
-    debug "Updating gitignore globals file '$GITIGNORE_GLOBALS_PATH'."
+    git_ensure_file_unchanged ${GITIGNORE_GLOBALS_DOTFILE_PATH}
 
-    git_ensure_file_unchanged $GITIGNORE_GLOBALS_PATH
+    download_gitignore ${GITIGNORE_GLOBALS_TYPES} ${GITIGNORE_GLOBALS_DOTFILE_PATH}
 
-    download_gitignore $GITIGNORE_GLOBALS_TYPES $GITIGNORE_GLOBALS_PATH
+    git_add_single_file ${GITIGNORE_GLOBALS_DOTFILE_PATH}
 
-    git_add_single_file $GITIGNORE_GLOBALS_PATH 
+    success "Done; gitignore globals file '$GITIGNORE_GLOBALS_DOTFILE_PATH' updated."
+}
 
-    success "Done; gitignore globals file '$GITIGNORE_GLOBALS_PATH' updated."
+function link_installed {
+    if [ $(readlink -f "${GITIGNORE_GLOBALS_LINK_PATH}") == "${GITIGNORE_GLOBALS_DOTFILE_PATH}" ]
+    then
+        return ${TRUE}
+    else
+        return ${FALSE}
+    fi
+}
+
+function symlink_install {
+    debug "Installing symlink: ${GITIGNORE_GLOBALS_LINK_PATH}"
+
+    if link_installed
+    then
+        pass "Symlink already installed: ${GITIGNORE_GLOBALS_LINK_PATH}"
+        return
+    fi
+
+    ln -s ${GITIGNORE_GLOBALS_DOTFILE_PATH} ${GITIGNORE_GLOBALS_LINK_PATH} \
+        || fail "Unable to install symlink"
+
+    success "Link installed: ${GITIGNORE_GLOBALS_LINK_PATH}"
+}
+
+function symlink_remove {
+    debug "Removing symlink: ${GITIGNORE_GLOBALS_LINK_PATH}"
+
+    if ! link_installed
+    then
+        pass "Symlink is not installed: ${GITIGNORE_GLOBALS_LINK_PATH}"
+        return
+    fi
+
+    rm ${GITIGNORE_GLOBALS_LINK_PATH} \
+        || fail "Unable to remove link: ${GITIGNORE_GLOBALS_LINK_PATH}"
+
+    success "Symlink removed: ${GITIGNORE_GLOBALS_LINK_PATH}"
+}
+
+function git_isset_excludesfile {
+    if [ "$(git config --global --get core.excludesfile)" == "${GITIGNORE_GLOBALS_LINK_PATH}" ]
+    then
+        return ${TRUE}
+    else
+        return ${FALSE}
+    fi
+}
+
+function git_set_excludesfile {
+    debug "Setting git core.excludesfile: ${GITIGNORE_GLOBALS_LINK_PATH}"
+
+    if git_isset_excludesfile
+    then
+        pass "Git core.excludesfile file is already set: ${GITIGNORE_GLOBALS_LINK_PATH}"
+        return
+    fi
+
+    git config --global core.excludesfile ${GITIGNORE_GLOBALS_LINK_PATH} \
+        || fail "Unable to configure git"
+    success "Git core.excludesfile set: ${GITIGNORE_GLOBALS_LINK_PATH}"
+}
+
+function git_unset_excludesfile {
+    debug "Unsetting git core.excludesfile"
+
+    if ! git_isset_excludesfile
+    then
+        pass "Git core.excludesfile file is already unset"
+        return
+    fi
+
+    git config --global --unset core.excludesfile \
+        || fail "Unable to configure git"
+    success "Git core.excludesfile unset"
+}
+
+function enable {
+    debug "Enabling gitignore globals"
+    symlink_install
+    git_set_excludesfile
+    debug "Gitignore globals: Enabled"
+}
+
+
+function disable {
+    debug "Disabling gitignore globals"
+    symlink_remove
+    git_unset_excludesfile
+    success "Gitignore globals: Disabled"
 }
 
 $@
