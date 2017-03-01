@@ -85,6 +85,57 @@ function git_add_single_file {
     debug "Committed changes to file '$relpath'"
 }
 
+# Symlinking
+
+function link_installed {
+    local file_path=$1
+    local link_path=$2
+
+    if [ $(readlink -f "${link_path}") == "${file_path}" ]
+    then
+        return ${TRUE}
+    else
+        return ${FALSE}
+    fi
+}
+
+function symlink_install {
+    local file_path=$1
+    local link_path=$2
+
+    debug "Installing symlink: ${link_path}"
+
+    if link_installed $@
+    then
+        pass "Symlink already installed: ${link_path}"
+        return
+    fi
+
+    ln -s ${file_path} ${link_path} \
+        || fail "Unable to install symlink"
+
+    success "Symlink installed: ${link_path}"
+}
+
+function symlink_remove {
+    local file_path=$1
+    local link_path=$2
+
+    debug "Removing symlink: ${link_path}"
+
+    if ! link_installed $@
+    then
+        pass "Symlink is not installed: ${link_path}"
+        return
+    fi
+
+    rm ${link_path} \
+        || fail "Unable to remove link: ${link_path}"
+
+    success "Symlink removed: ${link_path}"
+}
+
+
 # Gitignore IO
 
 GITIGNOREIO_ENDPOINT=https://www.gitignore.io/api
@@ -118,45 +169,6 @@ function update {
     git_add_single_file ${GITIGNORE_GLOBALS_DOTFILE_PATH}
 
     success "Done; gitignore globals file '$GITIGNORE_GLOBALS_DOTFILE_PATH' updated."
-}
-
-function link_installed {
-    if [ $(readlink -f "${GITIGNORE_GLOBALS_LINK_PATH}") == "${GITIGNORE_GLOBALS_DOTFILE_PATH}" ]
-    then
-        return ${TRUE}
-    else
-        return ${FALSE}
-    fi
-}
-
-function symlink_install {
-    debug "Installing symlink: ${GITIGNORE_GLOBALS_LINK_PATH}"
-
-    if link_installed
-    then
-        pass "Symlink already installed: ${GITIGNORE_GLOBALS_LINK_PATH}"
-        return
-    fi
-
-    ln -s ${GITIGNORE_GLOBALS_DOTFILE_PATH} ${GITIGNORE_GLOBALS_LINK_PATH} \
-        || fail "Unable to install symlink"
-
-    success "Link installed: ${GITIGNORE_GLOBALS_LINK_PATH}"
-}
-
-function symlink_remove {
-    debug "Removing symlink: ${GITIGNORE_GLOBALS_LINK_PATH}"
-
-    if ! link_installed
-    then
-        pass "Symlink is not installed: ${GITIGNORE_GLOBALS_LINK_PATH}"
-        return
-    fi
-
-    rm ${GITIGNORE_GLOBALS_LINK_PATH} \
-        || fail "Unable to remove link: ${GITIGNORE_GLOBALS_LINK_PATH}"
-
-    success "Symlink removed: ${GITIGNORE_GLOBALS_LINK_PATH}"
 }
 
 function git_isset_excludesfile {
@@ -198,7 +210,7 @@ function git_unset_excludesfile {
 
 function enable {
     debug "Enabling gitignore globals"
-    symlink_install
+    symlink_install ${GITIGNORE_GLOBALS_DOTFILE_PATH} ${GITIGNORE_GLOBALS_LINK_PATH}
     git_set_excludesfile
     debug "Gitignore globals: Enabled"
 }
@@ -206,9 +218,9 @@ function enable {
 
 function disable {
     debug "Disabling gitignore globals"
-    symlink_remove
+    symlink_remove ${GITIGNORE_GLOBALS_DOTFILE_PATH} ${GITIGNORE_GLOBALS_LINK_PATH}
     git_unset_excludesfile
-    success "Gitignore globals: Disabled"
+    debug "Gitignore globals: Disabled"
 }
 
 $@
