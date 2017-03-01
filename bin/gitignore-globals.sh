@@ -85,6 +85,53 @@ function git_add_single_file {
     debug "Committed changes to file '$relpath'"
 }
 
+
+function git_config_isset {
+    local key=$1
+    local value=$2
+
+    if [ "$(git config --global --get ${key})" == "${value}" ]
+    then
+        return ${TRUE}
+    else
+        return ${FALSE}
+    fi
+}
+
+function git_config_set {
+    local key=$1
+    local value=$2
+
+    debug "Setting git ${key}: ${value}"
+
+    if git_config_isset $@
+    then
+        pass "Git ${key} file is already set: ${value}"
+        return
+    fi
+
+    git config --global ${key} ${value} \
+        || fail "Unable to configure git"
+    success "Git ${key} set: ${value}"
+}
+
+function git_config_unset {
+    local key=$1
+    local value=$2
+
+    debug "Unsetting git ${key}"
+
+    if ! git_config_isset $@
+    then
+        pass "Git ${key}file is already unset"
+        return
+    fi
+
+    git config --global --unset ${key} \
+        || fail "Unable to configure git"
+    success "Git ${key} unset"
+}
+
 # Symlinking
 
 function link_installed {
@@ -171,47 +218,10 @@ function update {
     success "Done; gitignore globals file '$GITIGNORE_GLOBALS_DOTFILE_PATH' updated."
 }
 
-function git_isset_excludesfile {
-    if [ "$(git config --global --get core.excludesfile)" == "${GITIGNORE_GLOBALS_LINK_PATH}" ]
-    then
-        return ${TRUE}
-    else
-        return ${FALSE}
-    fi
-}
-
-function git_set_excludesfile {
-    debug "Setting git core.excludesfile: ${GITIGNORE_GLOBALS_LINK_PATH}"
-
-    if git_isset_excludesfile
-    then
-        pass "Git core.excludesfile file is already set: ${GITIGNORE_GLOBALS_LINK_PATH}"
-        return
-    fi
-
-    git config --global core.excludesfile ${GITIGNORE_GLOBALS_LINK_PATH} \
-        || fail "Unable to configure git"
-    success "Git core.excludesfile set: ${GITIGNORE_GLOBALS_LINK_PATH}"
-}
-
-function git_unset_excludesfile {
-    debug "Unsetting git core.excludesfile"
-
-    if ! git_isset_excludesfile
-    then
-        pass "Git core.excludesfile file is already unset"
-        return
-    fi
-
-    git config --global --unset core.excludesfile \
-        || fail "Unable to configure git"
-    success "Git core.excludesfile unset"
-}
-
 function enable {
     debug "Enabling gitignore globals"
     symlink_install ${GITIGNORE_GLOBALS_DOTFILE_PATH} ${GITIGNORE_GLOBALS_LINK_PATH}
-    git_set_excludesfile
+    git_config_set "core.excludesfile" ${GITIGNORE_GLOBALS_LINK_PATH}
     debug "Gitignore globals: Enabled"
 }
 
@@ -219,7 +229,7 @@ function enable {
 function disable {
     debug "Disabling gitignore globals"
     symlink_remove ${GITIGNORE_GLOBALS_DOTFILE_PATH} ${GITIGNORE_GLOBALS_LINK_PATH}
-    git_unset_excludesfile
+    git_config_unset "core.excludesfile" ${GITIGNORE_GLOBALS_LINK_PATH}
     debug "Gitignore globals: Disabled"
 }
 
