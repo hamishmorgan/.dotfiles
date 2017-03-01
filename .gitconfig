@@ -1,0 +1,23 @@
+[user]
+	email = hamish.morgan@gmail.com
+	name = Hamish Morgan
+[alias]
+	st = status
+	ci = commit
+	co = checkout
+	br = branch
+	
+	# http://blog.kfish.org/2010/04/git-lola.html
+	lol = log --graph --decorate --pretty=oneline --abbrev-commit
+	lola = log --graph --decorate --pretty=oneline --abbrev-commit --all
+[color]
+    branch = auto
+	diff = auto
+	interactive = auto
+	status = auto
+[core]
+	editor = vim
+	excludesfile = /home/hamish/.gitignore-globals
+
+[push]
+	default = simple
