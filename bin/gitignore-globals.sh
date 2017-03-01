@@ -12,7 +12,7 @@ DOTFILES_BASE_DIR=$(dirname $(realpath -sm $0/..))
 ### Global gitignore config
 
 GITIGNORE_GLOBALS_FILENAME=.gitignore-globals
-GITIGNORE_GLOBALS_TYPES='vim,netbeans,jetbrains,eclipse,linux'
+GITIGNORE_GLOBALS_TYPES='vim,jetbrains,linux'
 
 ### Miscellaneous constants
 
