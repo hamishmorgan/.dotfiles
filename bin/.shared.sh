@@ -39,7 +39,6 @@ function fail {
     exit 1
 }
 
-
 function pass {
     warn $@
 }
@@ -129,11 +128,27 @@ function git_config_unset {
 
 # Symlinking
 
-function link_installed {
-    local file_path=$1
-    local link_path=$2
+function _link_infer_target {
+    case $# in
+        1) echo $HOME/$(basename $1);;
+        2) echo $2;;
+        *) fail "Expected either 1 or 2 arguments, but found $#: $@";;
+    esac
+}
 
-    if [ $(readlink -f "${link_path}") == "${file_path}" ]
+function _link_infer_source {
+    case $# in
+        1) echo ${DOTFILES_BASE_DIR}/$(basename $1);;
+        2) echo $1;;
+        *) fail "Expected either 1 or 2 arguments, but found $#: $@";;
+    esac
+}
+
+function link_installed {
+    local source=$(_link_infer_source $@)
+    local target=$(_link_infer_target $@)
+
+    if [ $(readlink -f "${target}") == "${source}" ]
     then
         return ${TRUE}
     else
@@ -142,39 +157,39 @@ function link_installed {
 }
 
 function symlink_install {
-    local file_path=$1
-    local link_path=$2
+    local source=$(_link_infer_source $@)
+    local target=$(_link_infer_target $@)
 
-    debug "Installing symlink: ${link_path}"
+    debug "Installing symlink: $source -> $target"
 
     if link_installed $@
     then
-        pass "Symlink already installed: ${link_path}"
+        pass "Symlink already installed: $source -> $target"
         return
     fi
 
-    ln -s ${file_path} ${link_path} \
+    ln -s ${source} ${target} \
         || fail "Unable to install symlink"
 
-    success "Symlink installed: ${link_path}"
+    success "Symlink installed: $source -> $target"
 }
 
 function symlink_remove {
-    local file_path=$1
-    local link_path=$2
+    local source=$(_link_infer_source $@)
+    local target=$(_link_infer_target $@)
 
-    debug "Removing symlink: ${link_path}"
+    debug "Removing symlink: $source -> $target"
 
     if ! link_installed $@
     then
-        pass "Symlink is not installed: ${link_path}"
+        pass "Symlink is not installed: $source -> $target"
         return
     fi
 
-    rm ${link_path} \
-        || fail "Unable to remove link: ${link_path}"
+    rm ${target} \
+        || fail "Unable to remove link: $source -> $target"
 
-    success "Symlink removed: ${link_path}"
+    success "Symlink removed: $source -> $target"
 }
 
 
