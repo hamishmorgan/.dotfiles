@@ -193,3 +193,23 @@ function symlink_disable {
 }
 
 
+## Hooks
+
+function run_hook_if_exists {
+    local hook=$1
+    if [ -f "${hook}" ]; then
+        debug "Running hook: ${hook}"
+        . "${hook}"
+    fi
+}
+
+##
+
+function list-modules {
+    cat ${DOTFILES_BASE_DIR}/modules
+}
+
+function list-dotfiles {
+    local module=$1
+    cat ${DOTFILES_BASE_DIR}/${module}/dotfiles
+}
