@@ -156,7 +156,7 @@ function link_installed {
     fi
 }
 
-function symlink_install {
+function symlink_enable {
     local source=$(_link_infer_source $@)
     local target=$(_link_infer_target $@)
 
@@ -174,7 +174,7 @@ function symlink_install {
     success "Symlink installed: $source -> $target"
 }
 
-function symlink_remove {
+function symlink_disable {
     local source=$(_link_infer_source $@)
     local target=$(_link_infer_target $@)
 

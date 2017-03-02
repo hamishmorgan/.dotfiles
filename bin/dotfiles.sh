@@ -12,10 +12,6 @@ OHMYZSH_FILENAME=.oh-my-zsh
 
 ## Operations
 
-function update {
-    pass "Nothing to do"
-}
-
 function run_hook_if_exists {
     local hook=$1
     if [ -f "${hook}" ]; then
@@ -24,60 +20,58 @@ function run_hook_if_exists {
     fi
 }
 
-function dotfile_action {
+function perform_action_on_dotfile {
     local action=$1
     local module=$2
     local dotfile=$3
 
-    target_path=$HOME/${dotfile}
-    source_path=${DOTFILES_BASE_DIR}/${module}/${dotfile}
+    local target_path=$HOME/${dotfile}
+    local source_path=${DOTFILES_BASE_DIR}/${module}/${dotfile}
 
     run_hook_if_exists "${source_path}.pre-${action}.sh"
-    case "$action" in
-        "enable")
-            symlink_install ${source_path} ${target_path}
-            ;;
-        "disable")
-            symlink_remove ${source_path} ${target_path}
-            ;;
-        *)
-            fail "Unknown action $action"
-            ;;
-    esac
+
+    symlink_${action} ${source_path} ${target_path}
 
     run_hook_if_exists "${source_path}.post-${action}.sh"
 }
 
-function module_action {
+function perform_action_on_module {
     local action=$1
     local module=$2
-    
+
     local module_path=${DOTFILES_BASE_DIR}/${module}
 
     run_hook_if_exists "${module_path}/pre-${action}.sh"
 
     for dotfile in $(cat ${module_path}/dotfiles); do
-        dotfile_action "$action" "$module" "$dotfile"
+        perform_action_on_dotfile $@ "$dotfile"
     done
 
     run_hook_if_exists "${module_path}/post-${action}.sh"
 }
 
-function enable {
-    debug "Everything: Enabling"
-    for module in $(cat ${DOTFILES_BASE_DIR}/modules); do
-        module_action "enable" "$module"
+function perform_action_on_all_modules {
+    local action=$1
+
+    debug "Modules: $action"
+    for module in $(list-modules); do
+        perform_action_on_module $@ "$module"
     done
-    debug "Everything: Enabled"
+    debug "Modules: $action"
+}
+
+function list-modules {
+    cat ${DOTFILES_BASE_DIR}/modules
+}
+
+function enable {
+    perform_action_on_all_modules "enable" $@
 }
 
 function disable {
-    debug "Everything: Disabling"
-    for module in $(cat ${DOTFILES_BASE_DIR}/modules); do
-        module_action "disable" "$module"
-    done
-    debug "Everything: Disabled"
+    perform_action_on_all_modules "disable" $@
 }
 
 $@
+
 
