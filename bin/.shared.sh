@@ -16,21 +16,46 @@ FALSE=1
 
 ### Logging
 
+OFF=-1
+ERROR=0
+WARN=1
+INFO=2
+DEBUG=3
+TRACE=4
+
+verbosity=${DEBUG}
+
 function error {
-    echo -e "\e[31m$@\e[0m"
+    if [ ${verbosity} -ge ${TRACE} ]; then
+        echo -e "\e[31m$@\e[0m"
+    fi
 }
 
 function warn {
-    echo -e "\e[33m$@\e[0m"
+    if [ ${verbosity} -ge ${WARN} ]; then
+        echo -e "\e[33m$@\e[0m"
+    fi
 }
 
 function info {
-    echo -e "\e[32m$@\e[0m"
+    if [ ${verbosity} -ge ${INFO} ]; then
+        echo -e "\e[32m$@\e[0m"
+    fi
 }
 
 function debug {
-    echo -e "\e[2m$@\e[0m"
+    if [ ${verbosity} -ge ${DEBUG} ]; then
+        echo -e "\e[2m$@\e[0m"
+    fi
 }
+
+function trace {
+    if [ ${verbosity} -ge ${TRACE} ]; then
+        printf '  %.0s' $(seq 1 ${#FUNCNAME[@]})
+        echo -e "\e[35m${FUNCNAME[1]}($@)\e[0m"
+    fi
+}
+
 
 ## Exit status
 
@@ -213,3 +238,92 @@ function list-dotfiles {
     local module=$1
     cat ${DOTFILES_BASE_DIR}/${module}/dotfiles
 }
+
+function foreach_module {
+    trace "$@"
+    local action=$1
+    shift
+    for module in $(list-modules); do
+        ${action} "$module" $@
+    done
+}
+
+function foreach_dotfile {
+    trace "$@"
+    local module=$1
+    local action=$2
+    shift;shift
+
+    for dotfile in $(list-dotfiles ${module}); do
+        ${action} "$module" "$dotfile" $@
+    done
+}
+
+
+function perform_action {
+    trace "$@"
+    local action=$1
+
+    if [ $# -eq 1 ]; then
+        foreach_module with_module_hooks \
+            foreach_dotfile with_dotfile_hooks \
+                ${action}
+        return
+    fi
+
+    local module=$2
+
+    if [ $# -eq 2 ]; then
+        foreach_dotfile "$module" with_dotfile_hooks ${action}
+        return
+    fi
+
+    local dotfile=$3
+
+    with_dotfile_hooks "$module" "$dotfile" ${action}
+}
+
+function perform_module_only_action {
+    trace "$@"
+    local action=$1
+
+    if [ $# -eq 1 ]; then
+        foreach_module with_module_hooks ${action}
+        return
+    fi
+
+    local module=$2
+
+    with_module_hooks "$module" ${action}
+}
+
+function with_module_hooks {
+    trace "$@"
+
+    local module=$1
+    local action=$2
+    shift;shift
+
+    local module_path=${DOTFILES_BASE_DIR}/${module}
+
+    run_hook_if_exists "${module_path}/pre-${action}.sh"
+    ${action} "${module}" $@
+    run_hook_if_exists "${module_path}/post-${action}.sh"
+}
+
+function with_dotfile_hooks {
+    trace "$@"
+
+    local module=$1
+    local dotfile=$2
+    local action=$3
+    shift;shift;shift
+
+    local source_path=${DOTFILES_BASE_DIR}/${module}/${dotfile}
+    local target_path=${HOME}/${dotfile}
+
+    run_hook_if_exists "${source_path}.pre-${action}.sh"
+    ${action} "${module}" "${dotfile}" $@
+    run_hook_if_exists "${source_path}.post-${action}.sh"
+}
+
