@@ -221,3 +221,6 @@
 [submodule "vim/.vim/bundle/tagbar"]
 	path = modules/vim/.vim/bundle/tagbar
 	url = https://github.com/majutsushi/tagbar.git
+[submodule "dotbot"]
+	path = dotbot
+	url = https://github.com/anishathalye/dotbot
