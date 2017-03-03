@@ -173,7 +173,7 @@ function link_installed {
     local source=$(_link_infer_source $@)
     local target=$(_link_infer_target $@)
 
-    if [ $(readlink -f "${target}") == "${source}" ]
+    if [ $(readlink -f "${target}") == $(readlink -f "${source}") ]
     then
         return ${TRUE}
     else
