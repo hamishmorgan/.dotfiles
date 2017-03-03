@@ -1,0 +1,20 @@
+- defaults:
+    link:
+      relink: true
+
+- clean: ['~']
+
+- link:
+    ~/.gitconfig: modules/git/.gitconfig
+    ~/.gitignore-globals: modules/git/.gitignore-globals
+    ~/.zshrc: modules/zsh/.zshrc
+    ~/.oh-my-zsh: modules/zsh/.oh-my-zsh
+    ~/.vimrc: modules/vim/.vimrc
+    ~/.vimrc.before: modules/vim/.vimrc.before
+    ~/.vimrc.bundles: modules/vim/.vimrc.bundles
+    ~/.vim: modules/vim/.vim
+    ~/.spf13-vim-3: modules/vim/.spf13-vim-3
+
+- shell:
+  - [git submodule update --init --recursive, Installing submodules]
+
