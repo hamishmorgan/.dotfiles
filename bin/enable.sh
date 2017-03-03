@@ -9,7 +9,7 @@ function enable {
     local dotfile=$2
 
     local source_path=$HOME/${dotfile}
-    local target_path=${DOTFILES_BASE_DIR}/${module}/${dotfile}
+    local target_path=${DOTFILES_MODULES_DIR}/${module}/${dotfile}
 
     symlink_enable ${source_path} ${target_path}
 }

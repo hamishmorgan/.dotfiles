@@ -15,12 +15,12 @@ function run_hook_if_exists {
 }
 
 function list-modules {
-    cat ${DOTFILES_BASE_DIR}/modules
+    ls ${DOTFILES_MODULES_DIR}
 }
 
 function list-dotfiles {
     local module=$1
-    cat ${DOTFILES_BASE_DIR}/${module}/dotfiles
+    cat ${DOTFILES_MODULES_DIR}/${module}/dotfiles
 }
 
 function foreach_module {
@@ -50,7 +50,7 @@ function with_module_hooks {
     local action=$2
     shift;shift
 
-    local module_path=${DOTFILES_BASE_DIR}/${module}
+    local module_path=${DOTFILES_MODULES_DIR}/${module}
 
     run_hook_if_exists "${module_path}/pre-${action}.sh"
     ${action} "${module}" $@
@@ -65,7 +65,7 @@ function with_dotfile_hooks {
     local action=$3
     shift;shift;shift
 
-    local source_path=${DOTFILES_BASE_DIR}/${module}/${dotfile}
+    local source_path=${DOTFILES_MODULES_DIR}/${module}/${dotfile}
     local target_path=${HOME}/${dotfile}
 
     run_hook_if_exists "${source_path}.pre-${action}.sh"
