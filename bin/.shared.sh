@@ -193,7 +193,7 @@ function symlink_enable {
         return
     fi
 
-    ln -s ${source} ${target} \
+    ln -s ${target} ${source} \
         || fail "Unable to install symlink"
 
     success "Symlink installed: $source -> $target"
@@ -211,7 +211,7 @@ function symlink_disable {
         return
     fi
 
-    rm ${target} \
+    rm ${source} \
         || fail "Unable to remove link: $source -> $target"
 
     success "Symlink removed: $source -> $target"

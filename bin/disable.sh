@@ -7,8 +7,8 @@ function disable {
     local module=$1
     local dotfile=$2
 
-    local source_path=${DOTFILES_BASE_DIR}/${module}/${dotfile}
-    local target_path=$HOME/${dotfile}
+    local source_path=$HOME/${dotfile}
+    local target_path=${DOTFILES_BASE_DIR}/${module}/${dotfile}
 
     symlink_disable ${source_path} ${target_path}
 }
