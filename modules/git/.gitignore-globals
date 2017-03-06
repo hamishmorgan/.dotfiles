@@ -48,6 +48,10 @@ fabric.properties
 ### JetBrains Patch ###
 # Comment Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-215987721
 
+# because Jetbrains is not a build system - or at least it shouldn't be
+.idea/
+*.iml
+
 # *.iml
 # modules.xml
 # .idea/misc.xml
