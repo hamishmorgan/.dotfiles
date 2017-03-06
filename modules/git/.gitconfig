@@ -17,7 +17,7 @@
 	status = auto
 [core]
 	editor = vim
-	excludesfile = /home/hamish/.gitignore-globals
+	excludesfile = ~/.gitignore-globals
 
 [push]
 	default = simple
