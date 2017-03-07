@@ -52,7 +52,11 @@ CASE_SENSITIVE="true"
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git, archlinux, terminator, systemd)
+if [[ "$(uname)" == "Darwin"  ]]; then
+    plugins=(git, python, common-aliases, mvn, sudo, osx)
+else
+    plugins=(git, python, common-aliases, mvn, sudo, archlinux, terminator, systemd)
+fi
 
 source $ZSH/oh-my-zsh.sh
 
