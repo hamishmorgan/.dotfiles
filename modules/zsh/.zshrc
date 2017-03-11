@@ -55,7 +55,7 @@ CASE_SENSITIVE="true"
 #
 plugins=( git python common-aliases mvn sudo )
 if [[ "$(uname)" == "Darwin" ]]; then
-    plugins+=( osx )
+    plugins+=( osx brew )
 fi
 if [[ "$(uname)" == "Linux" ]]; then
     plugins+=( terminator )
