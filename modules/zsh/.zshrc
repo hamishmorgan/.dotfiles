@@ -53,9 +53,9 @@ CASE_SENSITIVE="true"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 #
-plugins=( git python common-aliases mvn sudo )
+plugins=( git python common-aliases mvn sudo catimg )
 if [[ "$(uname)" == "Darwin" ]]; then
-    plugins+=( osx brew )
+    plugins+=( osx brew terminalapp )
 fi
 if [[ "$(uname)" == "Linux" ]]; then
     plugins+=( terminator )
