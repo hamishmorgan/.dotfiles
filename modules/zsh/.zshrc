@@ -101,3 +101,16 @@ export EDITOR='vim'
 
 alias vi=vim
 
+
+export NVM_DIR=~/.nvm
+source ${NVM_DIR}/nvm.sh
+nvm use v0.10.36
+export PATH="/Users/hamish/.nvm/v0.10.36/bin:$PATH"
+
+# added by Anaconda 2.2.0 installer
+export PATH="/Users/hamish/anaconda/bin:$PATH"
+
+
+export HOMEBREW_GITHUB_API_TOKEN=25f716971c4278c244856a261b86efaef5fa6f6e
+
+
