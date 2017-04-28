@@ -114,3 +114,9 @@ export PATH="/Users/hamish/anaconda/bin:$PATH"
 export HOMEBREW_GITHUB_API_TOKEN=25f716971c4278c244856a261b86efaef5fa6f6e
 
 
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/hamish/opt/google-cloud-sdk/path.zsh.inc' ]; then source '/Users/hamish/opt/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/hamish/opt/google-cloud-sdk/completion.zsh.inc' ]; then source '/Users/hamish/opt/google-cloud-sdk/completion.zsh.inc'; fi
