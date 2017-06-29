@@ -102,21 +102,41 @@ export EDITOR='vim'
 alias vi=vim
 
 
-export NVM_DIR=~/.nvm
-source ${NVM_DIR}/nvm.sh
-nvm use v0.10.36
-export PATH="/Users/hamish/.nvm/v0.10.36/bin:$PATH"
+if [[ "$(uname)" == "Darwin" ]]; then
+    export NVM_DIR=~/.nvm
+    source ${NVM_DIR}/nvm.sh
+    nvm use v0.10.36
+    export PATH="/Users/hamish/.nvm/v0.10.36/bin:$PATH"
 
-# added by Anaconda 2.2.0 installer
-export PATH="/Users/hamish/anaconda/bin:$PATH"
+    # added by Anaconda 2.2.0 installer
+    export PATH="/Users/hamish/anaconda/bin:$PATH"
+
+    export HOMEBREW_GITHUB_API_TOKEN=25f716971c4278c244856a261b86efaef5fa6f6e
+fi
 
 
-export HOMEBREW_GITHUB_API_TOKEN=25f716971c4278c244856a261b86efaef5fa6f6e
+if [[ "$(uname)" == "Linux" ]]; then
+    export CUDAPATH=/opt/cuda
+    export PATH=$PATH:$CUDAPATH/bin
+
+    export HADOOP_HOME=/usr/lib/hadoop
+    export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native/
+    export HADOOP_OPTS="$HADOOP_OPTS -Djava.library.path=$HADOOP_HOME/lib"
 
 
+    source /opt/anaconda/bin/activate root
+fi
 
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/hamish/opt/google-cloud-sdk/path.zsh.inc' ]; then source '/Users/hamish/opt/google-cloud-sdk/path.zsh.inc'; fi
+# gloud shell integration for arch linux
+if [[ "$(uname)" == "Linux" ]]; then
+    source /home/hamish/.cache/pacaur/google-cloud-sdk/pkg/google-cloud-sdk/opt/google-cloud-sdk/completion.zsh.inc
+    source /home/hamish/.cache/pacaur/google-cloud-sdk/pkg/google-cloud-sdk/opt/google-cloud-sdk/path.zsh.inc
+fi
+if [[ "$(uname)" == "Darwin" ]]; then
+    # The next line updates PATH for the Google Cloud SDK.
+    if [ -f '/Users/hamish/opt/google-cloud-sdk/path.zsh.inc' ]; then source '/Users/hamish/opt/google-cloud-sdk/path.zsh.inc'; fi
 
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/hamish/opt/google-cloud-sdk/completion.zsh.inc' ]; then source '/Users/hamish/opt/google-cloud-sdk/completion.zsh.inc'; fi
+    # The next line enables shell command completion for gcloud.
+    if [ -f '/Users/hamish/opt/google-cloud-sdk/completion.zsh.inc' ]; then source '/Users/hamish/opt/google-cloud-sdk/completion.zsh.inc'; fi
+fi
+
