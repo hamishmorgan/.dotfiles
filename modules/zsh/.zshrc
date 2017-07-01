@@ -127,16 +127,11 @@ if [[ "$(uname)" == "Linux" ]]; then
     source /opt/anaconda/bin/activate root
 fi
 
-# gloud shell integration for arch linux
-if [[ "$(uname)" == "Linux" ]]; then
-    source /home/hamish/.cache/pacaur/google-cloud-sdk/pkg/google-cloud-sdk/opt/google-cloud-sdk/completion.zsh.inc
-    source /home/hamish/.cache/pacaur/google-cloud-sdk/pkg/google-cloud-sdk/opt/google-cloud-sdk/path.zsh.inc
-fi
-if [[ "$(uname)" == "Darwin" ]]; then
-    # The next line updates PATH for the Google Cloud SDK.
-    if [ -f '/Users/hamish/opt/google-cloud-sdk/path.zsh.inc' ]; then source '/Users/hamish/opt/google-cloud-sdk/path.zsh.inc'; fi
-
-    # The next line enables shell command completion for gcloud.
-    if [ -f '/Users/hamish/opt/google-cloud-sdk/completion.zsh.inc' ]; then source '/Users/hamish/opt/google-cloud-sdk/completion.zsh.inc'; fi
+if [ -d "$HOME/opt/google-cloud-sdk" ]; then
+    source "$HOME/opt/google-cloud-sdk/path.zsh.inc"
+    source "$HOME/opt/google-cloud-sdk/completion.zsh.inc"
+elif [ -d "/opt/google-cloud-sdk/" ]; then
+    source '/opt/google-cloud-sdk/path.zsh.inc'
+    source '/opt/google-cloud-sdk/completion.zsh.inc'
 fi
 
