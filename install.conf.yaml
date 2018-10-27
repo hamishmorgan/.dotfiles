@@ -10,10 +10,10 @@
     ~/.zshrc: modules/zsh/.zshrc
     ~/.oh-my-zsh: modules/zsh/.oh-my-zsh
     ~/.vimrc: modules/vim/.vimrc
-    ~/.vimrc.before: modules/vim/.vimrc.before
-    ~/.vimrc.bundles: modules/vim/.vimrc.bundles
+    ~/.config/nvim/init.vim: modules/vim/.vimrc
     ~/.vim: modules/vim/.vim
-    ~/.spf13-vim-3: modules/vim/.spf13-vim-3
+    ~/.space-vim: modules/vim/.space-vim
+    ~/.spacevim: modules/vim/.spacevim
 
 - shell:
   - [git submodule update --init --recursive, Installing submodules]

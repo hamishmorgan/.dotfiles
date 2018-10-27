@@ -1,1 +1,1 @@
-.spf13-vim-3/.vimrc
+.space-vim/init.vim

@@ -128,3 +128,5 @@ fi
 #fi
 
 eval "$(pipenv --completion)"
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
