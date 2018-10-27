@@ -1,6 +1,6 @@
 export TERM="xterm-256color"
 # If you come from bash you might have to change your $PATH.
-export PATH=$HOME/bin:/usr/local/bin:$PATH
+export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
 # Path to your oh-my-zsh installation.
 export ZSH=$HOME/.oh-my-zsh
@@ -53,7 +53,7 @@ CASE_SENSITIVE="true"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 #
-plugins=( git python common-aliases mvn sudo catimg colored-man-pages )
+plugins=( git python common-aliases mvn sudo catimg colored-man-pages gcloud )
 if [[ "$(uname)" == "Darwin" ]]; then
     plugins+=( osx brew terminalapp )
 fi
@@ -115,23 +115,16 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 
-if [[ "$(uname)" == "Linux" ]]; then
-    export CUDAPATH=/opt/cuda
-    export PATH=$PATH:$CUDAPATH/bin
+#if [[ "$(uname)" == "Linux" ]]; then
+#    export CUDAPATH=/opt/cuda
+#    export PATH=$PATH:$CUDAPATH/bin##
+#
+#    export HADOOP_HOME=/usr/lib/hadoop
+#    export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native/
+#    export HADOOP_OPTS="$HADOOP_OPTS -Djava.library.path=$HADOOP_HOME/lib"
+#
+#
+#    source /opt/anaconda/bin/activate root
+#fi
 
-    export HADOOP_HOME=/usr/lib/hadoop
-    export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native/
-    export HADOOP_OPTS="$HADOOP_OPTS -Djava.library.path=$HADOOP_HOME/lib"
-
-
-    source /opt/anaconda/bin/activate root
-fi
-
-if [ -d "$HOME/opt/google-cloud-sdk" ]; then
-    source "$HOME/opt/google-cloud-sdk/path.zsh.inc"
-    source "$HOME/opt/google-cloud-sdk/completion.zsh.inc"
-elif [ -d "/opt/google-cloud-sdk/" ]; then
-    source '/opt/google-cloud-sdk/path.zsh.inc'
-    source '/opt/google-cloud-sdk/completion.zsh.inc'
-fi
-
+eval "$(pipenv --completion)"
