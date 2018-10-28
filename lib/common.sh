@@ -8,9 +8,8 @@ IFS=$'\n\t'
 
 ### Dotfiles config
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-DOTFILES_BASE_DIR=${DIR}/..
-
+DOTFILES_LIB_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+DOTFILES_BASE_DIR=${DOTFILES_LIB_DIR}/..
 DOTFILES_MODULES_DIR=${DOTFILES_BASE_DIR}/modules
 
 ### Miscellaneous constants

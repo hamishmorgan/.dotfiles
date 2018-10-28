@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -eu
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-DOTFILES_BASE_DIR=${DIR}/../..
+DOTFILES_GIT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+DOTFILES_BASE_DIR=${DOTFILES_GIT_DIR}/../..
 
 source ${DOTFILES_BASE_DIR}/lib/git.sh
 
@@ -32,7 +32,7 @@ function download_gitignore {
 ## Operations
 
 GITIGNORE_GLOBALS_LINK_PATH=$HOME/${GITIGNORE_GLOBALS_FILENAME}
-GITIGNORE_GLOBALS_DOTFILE_PATH=${DOTFILES_BASE_DIR}/${GITIGNORE_GLOBALS_FILENAME}
+GITIGNORE_GLOBALS_DOTFILE_PATH=${DOTFILES_GIT_DIR}/${GITIGNORE_GLOBALS_FILENAME}
 
 function update {
     debug "Updating gitignore globals file '$GITIGNORE_GLOBALS_DOTFILE_PATH'."

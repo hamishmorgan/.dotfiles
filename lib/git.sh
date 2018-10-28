@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -eu
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-DOTFILES_BASE_DIR=${DIR}/..
+DOTFILES_LIB_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+DOTFILES_BASE_DIR=${DOTFILES_LIB_DIR}/..
 
 source ${DOTFILES_BASE_DIR}/lib/common.sh
 source ${DOTFILES_BASE_DIR}/lib/logging.sh
