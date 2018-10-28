@@ -9,7 +9,7 @@ source ${DOTFILES_BASE_DIR}/lib/git.sh
 ### Global gitignore config
 
 GITIGNORE_GLOBALS_FILENAME=.gitignore-globals
-GITIGNORE_GLOBALS_TYPES='vim,jetbrains,linux'
+GITIGNORE_GLOBALS_TYPES='vim,jetbrains,linux,osx'
 
 # Gitignore IO
 
