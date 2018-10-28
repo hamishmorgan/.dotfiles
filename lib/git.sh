@@ -19,14 +19,21 @@ function git_ensure_file_unchanged {
 
 function git_ensure_file_changed {
     debug "Ensuring file '$1' changed"
-    git_file_changed $1 && pass "File '$1' unchanged; aborting."
-    debug "File $1 changed."
+    if git_file_changed $1
+    then
+        pass "File '$1' unchanged; aborting."
+    else
+        debug "File $1 changed."
+    fi
 }
 
 function git_add_single_file {
     local path=$1
 
-    git_ensure_file_changed $path
+    if git_ensure_file_changed $path
+    then
+        return
+    fi
 
     local relpath=$(realpath --relative-to="$DOTFILES_BASE_DIR" "$path")
 

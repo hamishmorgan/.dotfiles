@@ -26,7 +26,7 @@ function warn {
 
 function info {
     if [ ${verbosity} -ge ${INFO} ]; then
-        echo -e "\e[32m$@\e[0m"
+        echo -e "$@"
     fi
 }
 
@@ -56,5 +56,7 @@ function pass {
 }
 
 function success {
-    info $@
+    if [ ${verbosity} -ge ${INFO} ]; then
+        echo -e "\e[32m$@\e[0m"
+    fi
 }

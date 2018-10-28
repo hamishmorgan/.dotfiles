@@ -8,9 +8,9 @@ source ${DOTFILES_BASE_DIR}/lib/git.sh
 
 
 function update {
-    debug "Updating ZSH. "
+    info "Updating ZSH. "
 
-    zsh -f $ZSH/tools/upgrade.sh
+    zsh -f $ZSH/tools/check_for_upgrade.sh
 
     git_add_single_file ${DOTFILE_ZSH_DIR}/.oh-my-zsh
 

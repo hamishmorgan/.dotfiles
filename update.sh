@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-set -u
+set -ue
 
 DOTFILES_BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+source ${DOTFILES_BASE_DIR}/lib/common.sh
 
 
 (git submodule update --remote dotbot)
