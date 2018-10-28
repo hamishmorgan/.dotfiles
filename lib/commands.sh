@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-DOTFILES_BASE_DIR=$(dirname $(realpath -sm $0/..))
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+DOTFILES_BASE_DIR=${DIR}/..
 
 
 source ${DOTFILES_BASE_DIR}/lib/common.sh
