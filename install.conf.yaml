@@ -11,6 +11,7 @@
 - link:
     ~/.gitconfig: modules/git/.gitconfig
     ~/.gitignore-globals: modules/git/.gitignore-globals
+    ~/.gitattributes: modules/git/.gitattributes
     ~/.zshrc: modules/zsh/.zshrc
     ~/.oh-my-zsh: modules/zsh/.oh-my-zsh
     ~/.vimrc: modules/vim/.vimrc
