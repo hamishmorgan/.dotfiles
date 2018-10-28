@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eu
 
 source ${DOTFILES_BASE_DIR}/lib/git.sh
 
