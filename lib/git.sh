@@ -33,7 +33,7 @@ function git_add_single_file {
     debug "Committing changes to file '$relpath"
     git reset --soft HEAD
     git add $path
-    git commit -m "Updated $relpath"
+    git commit --short --message "Updated $relpath"
     debug "Committed changes to file '$relpath'"
 }
 
