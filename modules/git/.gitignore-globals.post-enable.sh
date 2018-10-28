@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-set -eu
-
-source ${DOTFILES_BASE_DIR}/lib/git.sh
-
-git_config_set "core.excludesfile" "$target_path"
-
-
