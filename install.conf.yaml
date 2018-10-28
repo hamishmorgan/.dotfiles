@@ -2,7 +2,10 @@
     link:
       relink: true
 
-- clean: ['~']
+- clean:
+    ~
+    ~/.config
+    ~/.config/nvim
 
 - link:
     ~/.gitconfig: modules/git/.gitconfig
