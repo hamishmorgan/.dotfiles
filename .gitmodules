@@ -55,3 +55,6 @@
 [submodule "modules/vim/.vim/plugged/vim-which-key"]
 	path = modules/vim/.vim/plugged/vim-which-key
 	url = https://github.com/liuchengxu/vim-which-key.git
+[submodule "modules/vim/vim-plug"]
+	path = modules/vim/vim-plug
+	url = git@github.com:junegunn/vim-plug.git
