@@ -16,5 +16,6 @@
     ~/.spacevim: modules/vim/.spacevim
 
 - shell:
+  - [git submodule sync --quiet --recursive, Syncing submodules]
   - [git submodule update --init --recursive, Installing submodules]
 
