@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -eu
 
+DOTFILES_LIB_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+DOTFILES_BASE_DIR=${DOTFILES_LIB_DIR}/..
+
+source ${DOTFILES_BASE_DIR}/lib/colours.sh
+
 ### Logging
 
 OFF=-1
@@ -14,13 +19,13 @@ verbosity=${DEBUG}
 
 function error {
     if [ ${verbosity} -ge ${TRACE} ]; then
-        echo -e "\e[31m$@\e[0m"
+        echo -e "${RED}$@${NORMAL}"
     fi
 }
 
 function warn {
     if [ ${verbosity} -ge ${WARN} ]; then
-        echo -e "\e[33m$@\e[0m"
+        echo -e "${YELLOW}$@${NORMAL}"
     fi
 }
 
@@ -32,14 +37,14 @@ function info {
 
 function debug {
     if [ ${verbosity} -ge ${DEBUG} ]; then
-        echo -e "\e[2m$@\e[0m"
+        echo -e "${GREY}$@${NORMAL}"
     fi
 }
 
 function trace {
     if [ ${verbosity} -ge ${TRACE} ]; then
         printf '  %.0s' $(seq 1 ${#FUNCNAME[@]})
-        echo -e "\e[35m${FUNCNAME[1]}($@)\e[0m"
+        echo -e "${GREY}${FUNCNAME[1]}($@)${NORMAL}"
     fi
 }
 
@@ -57,6 +62,6 @@ function pass {
 
 function success {
     if [ ${verbosity} -ge ${INFO} ]; then
-        echo -e "\e[32m$@\e[0m"
+        echo -e "${GREEN}$@${NORMAL}"
     fi
 }
