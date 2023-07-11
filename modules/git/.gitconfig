@@ -54,3 +54,5 @@
   textconv = pdfinfo
 [diff "bin"]
   textconv = hexdump -v -C
+[init]
+	defaultBranch = main
