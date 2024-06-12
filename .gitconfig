@@ -1,6 +1,7 @@
 [user]
 	email = hamish.morgan@gmail.com
 	name = Hamish Morgan
+
 [alias]
 	st = status
 	ci = commit
@@ -10,18 +11,20 @@
 	# http://blog.kfish.org/2010/04/git-lola.html
 	lol = log --graph --decorate --pretty=oneline --abbrev-commit
 	lola = log --graph --decorate --pretty=oneline --abbrev-commit --all
+
 [color]
-    branch = auto
+  branch = auto
 	diff = auto
 	interactive = auto
 	status = auto
+
 [core]
-	editor = vim
+	editor = code
 	excludesfile = ~/.gitignore-globals
-    attributesFile = ~/.gitattributes
+  attributesFile = ~/.gitattributes
 
 [push]
-    default = simple
+  default = simple
 
 [diff "zip"]
   textconv = unzip -p
