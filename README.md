@@ -24,3 +24,11 @@ stow -v .
 ```
 
 
+
+# Update stuff
+
+### Global gitignores 
+
+```sh
+curl -sLw "\n" https://www.toptal.com/developers/gitignore/api/linux,osx,vscode,vim,jetbrains > ~/.gitignore-globals
+```
