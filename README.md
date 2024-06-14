@@ -12,8 +12,9 @@ Homebrew
 
 Git and Stow
 ```sh
-brew install git
 brew install stow
+brew install git
+brew install tmux
 ```
 
 # Install
