@@ -19,7 +19,7 @@
 	status = auto
 
 [core]
-	editor = code
+	editor = nvim
 	excludesfile = ~/.gitignore-globals
   attributesFile = ~/.gitattributes
 
