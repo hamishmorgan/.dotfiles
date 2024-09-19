@@ -15,6 +15,7 @@ Git and Stow
 brew install stow
 brew install git
 brew install tmux
+brew install coreutils
 ```
 
 # Install
