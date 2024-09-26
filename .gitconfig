@@ -1,6 +1,6 @@
 [user]
-	email = hamish.morgan@gmail.com
-	name = Hamish Morgan
+  email = hamish.morgan@gmail.com
+  name = Hamish Morgan
   username = hamishmorgan
 
 [alias]
@@ -150,6 +150,8 @@
 	enabled = true
 	autoupdate = true
 
-[includeIf "gitdir:~/src/github.com/Shopify"]
+[includeIf "gitdir:~/src/github.com/Shopify/"]
     path = ~/.gitconfig.shopify
 
+[include]
+	path = /Users/hamish/.config/dev/gitconfig
