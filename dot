@@ -524,7 +524,7 @@ cmd_validate() {
 update_gitignore() {
     log_info "Updating .gitignore-globals from toptal.com..."
     
-    local types="vim,jetbrains,linux,osx,visualstudiocode"
+    local types="linux,osx,windows"
     local url="https://www.toptal.com/developers/gitignore/api/$types"
     local gitignore_file="$DOTFILES_DIR/git/.gitignore-globals"
     
