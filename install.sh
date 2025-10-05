@@ -134,7 +134,8 @@ backup_existing() {
         for file in "${files_to_backup[@]}"; do
             if [[ -f "$HOME/$file" && ! -L "$HOME/$file" ]]; then
                 cp "$HOME/$file" "$BACKUP_DIR/"
-                log_info "Backed up $file"
+                rm "$HOME/$file"
+                log_info "Backed up and removed $file"
             fi
         done
         
