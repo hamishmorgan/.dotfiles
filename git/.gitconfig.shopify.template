@@ -1,0 +1,6 @@
+[user]
+	email = YOUR_SHOPIFY_EMAIL_HERE
+	name = YOUR_NAME_HERE
+
+[include]
+	path = ~/.config/dev/gitconfig
