@@ -16,18 +16,11 @@ jobs:
       with:
         submodules: true
     
-    - name: Install linting tools
+    - name: Install linting tools and run linting
       run: |
-        sudo apt-get update
         sudo apt-get install -y shellcheck
         npm install -g markdownlint-cli
-    
-    - name: Lint Markdown files
-      run: |
         markdownlint "**/*.md" --ignore node_modules
-    
-    - name: Lint Bash scripts
-      run: |
         shellcheck dot
 
   validate-ubuntu:
@@ -40,31 +33,17 @@ jobs:
       with:
         submodules: true
     
-    - name: Install dependencies
+    - name: Install dependencies and validate
       run: |
-        sudo apt-get update
         sudo apt-get install -y stow git tmux zsh
-    
-    - name: Validate installation
-      run: |
         cd ${{ github.workspace }}
         chmod +x dot
-        echo "HOME: $HOME"
-        echo "Workspace: ${{ github.workspace }}"
-        ls -la $HOME/.git* $HOME/.zshrc $HOME/.tmux.conf 2>/dev/null || echo "Files not found in HOME"
         ./dot install
-    
-    - name: Run validation
-      run: |
-        cd ${{ github.workspace }}
         ./dot validate
     
-    - name: Test shell configuration
+    - name: Test configurations
       run: |
         zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
-    
-    - name: Test git configuration
-      run: |
         git config --global user.name "Test User"
         git config --global user.email "test@example.com"
         git config --global --list | grep -q "user.name=Test User"
@@ -80,30 +59,17 @@ jobs:
       with:
         submodules: true
     
-    - name: Install dependencies
+    - name: Install dependencies and validate
       run: |
         brew install stow git tmux zsh
-    
-    - name: Validate installation
-      run: |
         cd ${{ github.workspace }}
         chmod +x dot
-        echo "HOME: $HOME"
-        echo "Workspace: ${{ github.workspace }}"
-        ls -la $HOME/.git* $HOME/.zshrc $HOME/.tmux.conf 2>/dev/null || echo "Files not found in HOME"
         ./dot install
-    
-    - name: Run validation
-      run: |
-        cd ${{ github.workspace }}
         ./dot validate
     
-    - name: Test shell configuration
+    - name: Test configurations
       run: |
         zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
-    
-    - name: Test git configuration
-      run: |
         git config --global user.name "Test User"
         git config --global user.email "test@example.com"
         git config --global --list | grep -q "user.name=Test User"
