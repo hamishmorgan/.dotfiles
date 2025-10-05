@@ -36,22 +36,24 @@ show_usage() {
     echo "Usage: $0 COMMAND [OPTIONS]"
     echo ""
     echo "Commands:"
-    echo "  install     Install dotfiles using GNU Stow"
-    echo "  validate    Validate dotfiles installation"
-    echo "  update      Update submodules and reinstall"
-    echo "  uninstall   Remove dotfiles symlinks"
-    echo "  backup      Create backup of existing files"
-    echo "  status      Show installation status"
-    echo "  clean       Clean up backup directories"
+    echo "  install       Install dotfiles using GNU Stow"
+    echo "  validate      Validate dotfiles installation"
+    echo "  update        Update submodules and reinstall"
+    echo "  update-all    Update all packages and configurations"
+    echo "  uninstall     Remove dotfiles symlinks"
+    echo "  backup        Create backup of existing files"
+    echo "  status        Show installation status"
+    echo "  clean         Clean up backup directories"
     echo ""
     echo "Options:"
-    echo "  -h, --help  Show this help message"
-    echo "  -v, --verbose  Enable verbose output"
+    echo "  -h, --help    Show this help message"
+    echo "  -v, --verbose Enable verbose output"
     echo ""
     echo "Examples:"
     echo "  $0 install           # Install dotfiles"
     echo "  $0 validate          # Validate installation"
     echo "  $0 update            # Update and reinstall"
+    echo "  $0 update-all        # Update all packages and configurations"
     echo "  $0 status            # Show status"
 }
 
@@ -518,6 +520,39 @@ cmd_validate() {
     fi
 }
 
+# Update gitignore globals from gitignore.io
+update_gitignore() {
+    log_info "Updating .gitignore-globals from gitignore.io..."
+    
+    local types="vim,jetbrains,linux,osx,vscode"
+    local url="https://www.gitignore.io/api/$types"
+    local gitignore_file="$DOTFILES_DIR/git/.gitignore-globals"
+    
+    if curl -s "$url" > "$gitignore_file.tmp"; then
+        mv "$gitignore_file.tmp" "$gitignore_file"
+        log_success "Updated .gitignore-globals with latest patterns"
+    else
+        rm -f "$gitignore_file.tmp"
+        log_error "Failed to download .gitignore-globals"
+        return 1
+    fi
+}
+
+# Update Oh My Zsh
+update_oh_my_zsh() {
+    log_info "Checking for Oh My Zsh updates..."
+    
+    if command_exists omz; then
+        if omz update; then
+            log_success "Oh My Zsh updated successfully"
+        else
+            log_warning "Oh My Zsh update failed or no updates available"
+        fi
+    else
+        log_warning "Oh My Zsh not available for update"
+    fi
+}
+
 cmd_update() {
     log_info "Updating dotfiles..."
     
@@ -526,6 +561,23 @@ cmd_update() {
     install_dotfiles
     
     log_success "Update completed successfully!"
+}
+
+cmd_update_all() {
+    log_info "Updating all packages and configurations..."
+    
+    # Update gitignore globals
+    update_gitignore
+    
+    # Update Oh My Zsh
+    update_oh_my_zsh
+    
+    # Reinstall to pick up any changes
+    check_dependencies
+    init_submodules
+    install_dotfiles
+    
+    log_success "All packages updated successfully!"
 }
 
 cmd_status() {
@@ -560,7 +612,7 @@ main() {
                 verbose=true
                 shift
                 ;;
-            install|validate|update|status|backup|clean|uninstall)
+            install|validate|update|update-all|status|backup|clean|uninstall)
                 if [[ -n "$command" ]]; then
                     log_error "Multiple commands specified"
                     exit 1
@@ -597,6 +649,9 @@ main() {
             ;;
         update)
             cmd_update
+            ;;
+        update-all)
+            cmd_update_all
             ;;
         status)
             cmd_status

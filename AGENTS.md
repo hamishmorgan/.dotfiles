@@ -72,3 +72,17 @@ When adding new instructions:
 - Package management: Use `stow -v package_name`
 - Backup location: `~/.dotfiles-backup-*`
 - CI validation: `.github/workflows/validate.yml`
+
+## Pull Request Workflow
+
+For all code changes:
+
+1. **Create Pull Request**: Use GitHub MCP to raise PR
+2. **Request Copilot Review**: Use `mcp_github_request_copilot_review`
+3. **Wait for CI**: Monitor CI status until passing
+4. **Wait for Copilot Review**: Review Copilot feedback
+5. **Address Issues**: Fix any problems identified
+6. **Repeat**: Continue until both CI and Copilot approve
+7. **Merge**: Only merge after both CI and Copilot are satisfied
+
+This ensures code quality through automated testing and AI review.
