@@ -176,6 +176,88 @@ init_submodules() {
     fi
 }
 
+# Process configuration templates
+process_templates() {
+    log_info "Processing configuration templates..."
+    
+    local templates=(
+        "git/.gitconfig.template:git/.gitconfig"
+        "git/.gitconfig.shopify.template:git/.gitconfig.shopify"
+        "gh/.config/gh/config.yml.template:gh/.config/gh/config.yml"
+        "gh/.config/gh/hosts.yml.template:gh/.config/gh/hosts.yml"
+    )
+    
+    for template_info in "${templates[@]}"; do
+        IFS=':' read -r template target <<< "$template_info"
+        if [[ -f "$DOTFILES_DIR/$template" ]]; then
+            cp "$DOTFILES_DIR/$template" "$DOTFILES_DIR/$target"
+            log_info "Created $target from template"
+        else
+            log_warning "Template $template not found, skipping"
+        fi
+    done
+}
+
+# Merge personal configurations with templates
+merge_personal_configs() {
+    log_info "Merging personal configurations..."
+    
+    # Merge .gitconfig.personal if it exists
+    if [[ -f "$DOTFILES_DIR/git/.gitconfig.personal" ]]; then
+        log_info "Merging git personal configuration"
+        # Use git config to merge personal settings
+        while read -r line; do
+            # Parse key=value format and set in template
+            local key="${line%%=*}"
+            local value="${line#*=}"
+            git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig" "$key" "$value"
+        done < <(git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig.personal" --list)
+        log_success "Merged git personal configuration"
+    else
+        log_info "No git personal configuration found"
+    fi
+    
+    # Merge .gitconfig.shopify.personal if it exists
+    if [[ -f "$DOTFILES_DIR/git/.gitconfig.shopify.personal" ]]; then
+        log_info "Merging Shopify git personal configuration"
+        # Use git config to merge personal settings
+        while read -r line; do
+            # Parse key=value format and set in template
+            local key="${line%%=*}"
+            local value="${line#*=}"
+            git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig.shopify" "$key" "$value"
+        done < <(git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig.shopify.personal" --list)
+        log_success "Merged Shopify git personal configuration"
+    else
+        log_info "No Shopify git personal configuration found"
+    fi
+    
+    # Merge gh config.personal if it exists
+    if [[ -f "$DOTFILES_DIR/gh/.config/gh/config.yml.personal" ]]; then
+        log_info "Merging GitHub CLI personal configuration"
+        # For YAML files, we'll append the personal config to the template
+        # Add a separator and append personal config
+        {
+            echo ""
+            echo "# Personal configuration"
+            cat "$DOTFILES_DIR/gh/.config/gh/config.yml.personal"
+        } >> "$DOTFILES_DIR/gh/.config/gh/config.yml"
+        log_success "Merged GitHub CLI personal configuration"
+    else
+        log_info "No GitHub CLI personal configuration found"
+    fi
+    
+    # Merge gh hosts.personal if it exists
+    if [[ -f "$DOTFILES_DIR/gh/.config/gh/hosts.yml.personal" ]]; then
+        log_info "Merging GitHub CLI hosts personal configuration"
+        # For YAML files, we'll replace the template with personal config
+        cp "$DOTFILES_DIR/gh/.config/gh/hosts.yml.personal" "$DOTFILES_DIR/gh/.config/gh/hosts.yml"
+        log_success "Merged GitHub CLI hosts personal configuration"
+    else
+        log_info "No GitHub CLI hosts personal configuration found"
+    fi
+}
+
 # Install dotfiles using Stow
 install_dotfiles() {
     log_info "Installing dotfiles using Stow..."
@@ -487,7 +569,11 @@ cmd_install() {
     fi
     log_info "Step 3: Initializing submodules..."
     init_submodules
-    log_info "Step 4: Installing dotfiles..."
+    log_info "Step 4: Processing templates..."
+    process_templates
+    log_info "Step 5: Merging personal configurations..."
+    merge_personal_configs
+    log_info "Step 6: Installing dotfiles..."
     install_dotfiles
     
     log_success "Installation completed successfully!"
@@ -558,6 +644,8 @@ cmd_update() {
     
     check_dependencies
     init_submodules
+    process_templates
+    merge_personal_configs
     install_dotfiles
     
     log_success "Update completed successfully!"
@@ -575,6 +663,8 @@ cmd_update_all() {
     # Reinstall to pick up any changes
     check_dependencies
     init_submodules
+    process_templates
+    merge_personal_configs
     install_dotfiles
     
     log_success "All packages updated successfully!"

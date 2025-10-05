@@ -6,6 +6,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 
 - Installation script with dependency checks
 - Backup of existing files before installation
+- Template-based secrets management
 - macOS and Linux support
 - Validation script for installation verification
 - Packages: git, zsh, tmux, gh, gnuplot, bash
@@ -17,12 +18,19 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 ```text
 .dotfiles/
 ├── git/           # Git configuration and aliases
+│   ├── .gitconfig.template      # Git config template
+│   ├── .gitconfig.personal.example  # Personal config example
+│   └── .gitconfig.personal      # Personal config (git-ignored)
 ├── zsh/           # Zsh configuration with Oh My Zsh
 │   ├── .zshrc
 │   ├── .zshrc.osx
 │   └── .oh-my-zsh/  # Oh My Zsh submodule
 ├── tmux/          # Tmux configuration
 ├── gh/            # GitHub CLI configuration
+│   └── .config/gh/
+│       ├── config.yml.template
+│       ├── config.yml.personal.example
+│       └── config.yml.personal   # Personal config (git-ignored)
 ├── gnuplot/       # GNU Plot configuration
 ├── bash/          # Bash configuration
 ├── dot            # Main dotfiles management script
@@ -143,6 +151,51 @@ Or using the gi alias:
 ```bash
 gi linux,osx,vscode,vim,jetbrains > ~/.gitignore-globals
 ```
+
+## Personal Configuration
+
+This dotfiles setup uses a template-based approach for managing sensitive information.
+Personal configurations are stored in separate files that are git-ignored.
+
+### Setting Up Personal Configuration
+
+1. **Git Configuration**:
+
+   ```bash
+   # Copy the example and customize
+   cp ~/.dotfiles/git/.gitconfig.personal.example ~/.dotfiles/git/.gitconfig.personal
+   
+   # Edit with your personal information
+   nano ~/.dotfiles/git/.gitconfig.personal
+   ```
+
+2. **GitHub CLI Configuration**:
+
+   ```bash
+   # Copy the example and customize
+   cp ~/.dotfiles/gh/.config/gh/config.yml.personal.example ~/.dotfiles/gh/.config/gh/config.yml.personal
+   
+   # Edit with your personal preferences
+   nano ~/.dotfiles/gh/.config/gh/config.yml.personal
+   ```
+
+3. **Reinstall to apply changes**:
+
+   ```bash
+   ./dot install
+   ```
+
+### Template System
+
+- **Templates**: Public configuration files with placeholders (e.g., `YOUR_EMAIL_HERE`)
+- **Personal Configs**: Private files with actual values (git-ignored)
+- **Merged Configs**: Final configuration files created during installation
+
+The installation script automatically:
+
+1. Creates config files from templates
+2. Merges personal configurations
+3. Installs using Stow
 
 ### Update
 
