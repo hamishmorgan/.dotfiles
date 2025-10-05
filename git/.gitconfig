@@ -45,6 +45,35 @@
 
   # Add all, and amend most recent commit to include those changes
 	ac = "!git add . && git commend"
+	
+	# Useful workflow aliases
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	visual = !code
+	lg = log --oneline --decorate --graph --all
+	lgp = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	who = blame
+	when = log --pretty=format:"%h %ad %s" --date=short --author
+	cleanup = "!git branch --merged | grep -v '\\*\\|main\\|master' | xargs -n 1 git branch -d"
+	
+	# Quick fixes
+	fix = commit --fixup
+	squash = rebase -i --autosquash
+	uncommit = reset --soft HEAD~1
+	undo = reset --hard HEAD~1
+	
+	# Branch management
+	new = "!f() { git checkout -b $1; }; f"
+	del = branch -D
+	
+	# Diff improvements
+	diffc = diff --cached
+	diffw = diff --word-diff
+	diffp = diff --patience
+	
+	# Status improvements
+	short = status --short
+	untracked = ls-files --others --exclude-standard
 
 [apply]
 
@@ -82,6 +111,7 @@
 	editor = code -w
 	excludesfile = ~/.gitignore-globals
   attributesFile = ~/.gitattributes
+  commitTemplate = ~/.gitmessage
 
   # Make `git rebase` safer on OS X
 	# More info: <http://www.git-tower.com/blog/make-git-rebase-safe-on-osx/>
@@ -149,6 +179,17 @@
 [rerere]
 	enabled = true
 	autoupdate = true
+
+[branch]
+	autosetuprebase = always
+
+[merge]
+	tool = vimdiff
+	conflictstyle = diff3
+
+[rebase]
+	autosquash = true
+	autostash = true
 
 [includeIf "gitdir:~/src/github.com/Shopify/"]
     path = ~/.gitconfig.shopify
