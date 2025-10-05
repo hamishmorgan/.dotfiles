@@ -130,12 +130,21 @@ backup_existing() {
         if [[ -e "$HOME/$file" ]]; then
             log_info "Backing up $file"
             if [[ -d "$HOME/$file" ]]; then
-                cp -r "$HOME/$file" "$BACKUP_DIR/"
+                cp -r "$HOME/$file" "$BACKUP_DIR/" || {
+                    log_error "Failed to copy directory $file"
+                    return 1
+                }
             else
-                cp "$HOME/$file" "$BACKUP_DIR/"
+                cp "$HOME/$file" "$BACKUP_DIR/" || {
+                    log_error "Failed to copy file $file"
+                    return 1
+                }
             fi
             # Remove existing file after backup to prevent stow conflicts
-            rm -rf "${HOME:?}/$file"
+            rm -rf "${HOME:?}/$file" || {
+                log_error "Failed to remove $file"
+                return 1
+            }
             ((backed_up++))
         else
             log_info "File $file does not exist, skipping"
@@ -383,7 +392,14 @@ cmd_install() {
     log_info "Step 1: Checking dependencies..."
     check_dependencies
     log_info "Step 2: Backing up existing files..."
+    set +e  # Temporarily disable exit on error for backup
     backup_existing
+    local backup_exit_code=$?
+    set -e  # Re-enable exit on error
+    if [[ $backup_exit_code -ne 0 ]]; then
+        log_error "Backup failed with exit code $backup_exit_code"
+        return 1
+    fi
     log_info "Step 3: Initializing submodules..."
     init_submodules
     log_info "Step 4: Installing dotfiles..."
