@@ -2,6 +2,7 @@
 	email = hamish.morgan@gmail.com
 	name = Hamish Morgan
 	username = hamishmorgan
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM4dsPehspiibVsflgc1HKfP04rBzZDcgorBC+AGe6yI
 
 [alias]
 	# Basic shortcuts
@@ -172,3 +173,9 @@
 
 [include]
 	path = ~/.config/dev/gitconfig
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	program = /opt/1Password/op-ssh-sign
+[commit]
+	gpgsign = true
