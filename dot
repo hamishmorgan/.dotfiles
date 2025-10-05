@@ -266,7 +266,7 @@ validate_zsh() {
         log_success "Zsh configuration validated successfully"
         return 0
     else
-        log_error "Zsh validation failed with $git_errors errors"
+        log_error "Zsh validation failed with $zsh_errors errors"
         return 1
     fi
 }
@@ -522,10 +522,10 @@ cmd_validate() {
 
 # Update gitignore globals from gitignore.io
 update_gitignore() {
-    log_info "Updating .gitignore-globals from gitignore.io..."
+    log_info "Updating .gitignore-globals from toptal.com..."
     
     local types="vim,jetbrains,linux,osx,vscode"
-    local url="https://www.gitignore.io/api/$types"
+    local url="https://www.toptal.com/developers/gitignore/api/$types"
     local gitignore_file="$DOTFILES_DIR/git/.gitignore-globals"
     
     if curl -s "$url" > "$gitignore_file.tmp"; then

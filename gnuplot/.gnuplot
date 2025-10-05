@@ -1,6 +1,6 @@
 set macros
 png="set terminal png size 1800,1800 crop enhanced font \"/usr/share/fonts/truetype/times.ttf,30\" dashlength 2; set termoption linewidth 3"
-eps="set terminal postscript fontfile \"/usr/share/fonts/truetype/times.ttf\"; set termoption linewidth 3;
+eps="set terminal postscript fontfile \"/usr/share/fonts/truetype/times.ttf\"; set termoption linewidth 3;"
 
 set style line 1 linecolor rgb '#de181f' linetype 1  # Red
 set style line 2 linecolor rgb '#0060ae' linetype 1  # Blue
