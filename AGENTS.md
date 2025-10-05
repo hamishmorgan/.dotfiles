@@ -68,7 +68,7 @@ When adding new instructions:
 
 - Installation: Use `./dot install`
 - Validation: Use `./dot validate`
-- Linting: `markdownlint "**/*.md"` and `shellcheck "**/*.sh" dot`
+- Linting: `markdownlint "**/*.md"` and `shellcheck dot`
 - Package management: Use `stow -v package_name`
 - Backup location: `~/.dotfiles-backup-*`
 - CI validation: `.github/workflows/validate.yml`

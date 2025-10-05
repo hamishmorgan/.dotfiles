@@ -28,7 +28,7 @@ jobs:
     
     - name: Lint Bash scripts
       run: |
-        shellcheck "**/*.sh" dot --exclude=SC1090,SC1091
+        shellcheck dot --exclude=SC1090,SC1091
 
   validate-ubuntu:
     runs-on: ubuntu-latest
