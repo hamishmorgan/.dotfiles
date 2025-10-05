@@ -1,7 +1,4 @@
 # Shellcheck configuration
 # https://github.com/koalaman/shellcheck/wiki
 
-# SC1090 - Can't follow non-constant source. Use a directive to specify location.
-# SC1091 - Not following sourced file
-# These are disabled for the dot script as it doesn't source external files
-disable=SC1090,SC1091
+# No disabled rules - dot script doesn't source external files
