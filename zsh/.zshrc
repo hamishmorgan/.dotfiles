@@ -79,7 +79,6 @@ plugins=(
   nvm                    # Node Version Manager (detected)
   extract                # Archive extraction shortcuts
   colored-man-pages      # Colored man pages
-  fzf                    # Fuzzy finding (available in OMZ)
   z                      # Smart directory jumping
   sudo                   # Double-tap ESC to add sudo
   fancy-ctrl-z           # Ctrl-Z to toggle fg/bg
