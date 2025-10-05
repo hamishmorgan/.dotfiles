@@ -47,10 +47,17 @@ When adding new instructions:
 - Include only essential information
 - Update the timestamp or version if needed
 
+## CI/CD
+
+- GitHub Actions workflow validates installation on Ubuntu and macOS
+- Uses `apt-get` for stable package management in scripts
+- Tests full installation pipeline including dependency checks
+
 ## Common Tasks
 
 - Installation: Use `./install.sh`
 - Validation: Use `./validate.sh`
 - Package management: Use `stow -v package_name`
 - Backup location: `~/.dotfiles-backup-*`
+- CI validation: `.github/workflows/validate.yml`
 
