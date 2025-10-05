@@ -198,13 +198,13 @@ markdownlint "**/*.md"
 Bash scripts:
 
 ```bash
-shellcheck "**/*.sh"
+shellcheck "**/*.sh" dot
 ```
 
 All files:
 
 ```bash
-markdownlint "**/*.md" && shellcheck "**/*.sh"
+markdownlint "**/*.md" && shellcheck "**/*.sh" dot
 ```
 
 ## Contributing
@@ -212,6 +212,6 @@ markdownlint "**/*.md" && shellcheck "**/*.sh"
 1. Fork repository
 2. Create feature branch
 3. Make changes
-4. Run linters: `markdownlint "**/*.md" && shellcheck "**/*.sh"`
+4. Run linters: `markdownlint "**/*.md" && shellcheck "**/*.sh" dot`
 5. Test with `./dot validate`
 6. Submit pull request
