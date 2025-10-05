@@ -1,0 +1,157 @@
+[user]
+  email = hamish.morgan@gmail.com
+  name = Hamish Morgan
+  username = hamishmorgan
+
+[alias]
+	st = status
+	ci = commit
+	co = checkout
+	br = branch
+  sw = switch
+  rs = restore
+  rb = rebase
+	
+	# http://blog.kfish.org/2010/04/git-lola.html
+	lol = log --graph --decorate --pretty=oneline --abbrev-commit
+	lola = log --graph --decorate --pretty=oneline --abbrev-commit --all
+
+
+  # Amend the currently staged files to the latest commit
+	amend = commit --amend --reuse-message=HEAD
+
+  # Append any staged files onto the most recent commit.
+	commend = commit --amend --no-edit
+
+  # Custom log formats
+	ll = !git --no-pager log --graph --all --decorate --pretty=format:'%C(auto)%h%d  %ad %C(red bold)(%ar%C(red bold))%Creset  %Creset%C(magenta)%an %Creset<%ae>  %C(white bold)%<(80,trunc)%s' --date=iso
+	l = !git --no-pager log -n 40 --graph --pretty=format:'%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%cr) %C(blue bold)<%an>%Creset'
+
+  # View the current working tree status using the short format
+	s = status -s
+
+  # Show verbose output about tags, branches or remotes
+	tags = tag -l
+	branches = branch -av
+	remotes = remote -v
+
+  # Remove branches that have already been merged with master
+	# a.k.a. ‘delete merged’
+	dm = "!git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d"
+
+  # Forcepush, but fail if the remote has been updated since you last pulled.
+  # Prevents clobbering other people's commits on the same branch unless you really, really want to.
+  forcepush = push --force-with-lease
+
+  # Add all, and amend most recent commit to include those changes
+	ac = "!git add . && git commend"
+
+[apply]
+
+	# Detect whitespace errors when applying a patch
+	whitespace = fix
+
+[color]
+  ui = auto
+
+[color "branch"]
+
+	current = yellow reverse
+	local = yellow
+	remote = green
+
+[color "diff"]
+
+	meta = yellow bold
+	frag = magenta bold # line info
+	old = red # deletions
+	new = green # additions
+
+[color "status"]
+
+	added = yellow
+	changed = green
+	untracked = cyan
+
+[core]
+  eol = native
+	autocrlf = input
+	safecrlf = true
+  ignorecase = false
+
+	editor = code -w
+	excludesfile = ~/.gitignore-globals
+  attributesFile = ~/.gitattributes
+
+  # Make `git rebase` safer on OS X
+	# More info: <http://www.git-tower.com/blog/make-git-rebase-safe-on-osx/>
+	trustctime = false
+
+	# Prevent showing files whose names contain non-ASCII symbols as unversioned.
+	# http://michael-kuehnel.de/git/2014/11/21/git-mac-osx-and-german-umlaute.html
+	precomposeunicode = false
+
+
+[diff]
+	# Detect copies as well as renames
+	renames = copies
+	algorithm = patience
+
+[diff "zip"]
+  textconv = unzip -p
+  binary = true
+[diff "gz"]
+  textconv = gzcat
+  binary = true
+[diff "bz2"]
+  textconv = bzcat
+  binary = true
+[diff "xz"]
+  textconv = xzcat
+  binary = true
+[diff "tar"]
+  textconv = tar -O -xf
+  binary = true
+[diff "tar-bz2"]
+  textconv = tar -O -xjf
+  binary = true
+[diff "tar-gz"]
+  textconv = tar -O -xzf
+  binary = true
+[diff "tar-xz"]
+  textconv = tar -O -xJf
+  binary = true
+[diff "odf"]
+  textconv = odt2txt
+[diff "pdf"]
+  textconv = pdfinfo
+[diff "bin"]
+  textconv = hexdump -v -C
+
+
+[push]
+  # automatically use the current branch as the remote branch and set upstream
+	default = current
+	autoSetupRemote = true
+
+[pull]
+	# Prevent automatic creation of merge commits if the pull can't fast forward.
+	# If a pull fails because of this, you can retry it with `git pull --rebase` to rebase onto the new commits.
+	# Shopify prefers to rebase, so this will require you to decide if a rebase is necessary.
+	ff = only
+
+[init]
+	defaultBranch = main
+
+[submodule]
+	recurse = true
+
+[rerere]
+	enabled = true
+	autoupdate = true
+
+[includeIf "gitdir:~/src/github.com/Shopify/"]
+    path = ~/.gitconfig.shopify
+
+[include]
+	path = ~/.config/dev/gitconfig
