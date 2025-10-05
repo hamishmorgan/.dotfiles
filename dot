@@ -122,6 +122,9 @@ backup_existing() {
         ".zshrc.osx"
         ".oh-my-zsh"
         ".tmux.conf"
+        ".bashrc"
+        ".gnuplot"
+        ".config/gh"
     )
     
     local backed_up=0
@@ -176,7 +179,7 @@ install_dotfiles() {
     log_info "Installing dotfiles using Stow..."
     
     # Define packages to install
-    local packages=("git" "zsh" "tmux")
+    local packages=("git" "zsh" "tmux" "gh" "gnuplot" "bash")
     
     for package in "${packages[@]}"; do
         if [[ -d "$package" ]]; then
@@ -291,6 +294,81 @@ validate_tmux() {
     fi
 }
 
+# Validate GitHub CLI configuration
+validate_gh() {
+    log_info "Validating GitHub CLI configuration..."
+    
+    local gh_files=(
+        ".config/gh"
+    )
+    
+    local gh_errors=0
+    
+    for file in "${gh_files[@]}"; do
+        if ! check_symlink "$file" ".dotfiles/gh"; then
+            ((gh_errors++))
+        fi
+    done
+    
+    if [[ $gh_errors -eq 0 ]]; then
+        log_success "GitHub CLI configuration validated successfully"
+        return 0
+    else
+        log_error "GitHub CLI validation failed with $gh_errors errors"
+        return 1
+    fi
+}
+
+# Validate GNU Plot configuration
+validate_gnuplot() {
+    log_info "Validating GNU Plot configuration..."
+    
+    local gnuplot_files=(
+        ".gnuplot"
+    )
+    
+    local gnuplot_errors=0
+    
+    for file in "${gnuplot_files[@]}"; do
+        if ! check_symlink "$file" ".dotfiles/gnuplot"; then
+            ((gnuplot_errors++))
+        fi
+    done
+    
+    if [[ $gnuplot_errors -eq 0 ]]; then
+        log_success "GNU Plot configuration validated successfully"
+        return 0
+    else
+        log_error "GNU Plot validation failed with $gnuplot_errors errors"
+        return 1
+    fi
+}
+
+# Validate Bash configuration
+validate_bash() {
+    log_info "Validating Bash configuration..."
+    
+    local bash_files=(
+        ".bashrc"
+    )
+    
+    local bash_errors=0
+    
+    for file in "${bash_files[@]}"; do
+        if ! check_symlink "$file" ".dotfiles/bash"; then
+            ((bash_errors++))
+        fi
+    done
+    
+    if [[ $bash_errors -eq 0 ]]; then
+        log_success "Bash configuration validated successfully"
+        return 0
+    else
+        log_error "Bash validation failed with $bash_errors errors"
+        return 1
+    fi
+}
+
 # Show installation status
 show_status() {
     log_info "Dotfiles installation status:"
@@ -303,6 +381,9 @@ show_status() {
         ".zshrc:zsh"
         ".oh-my-zsh:zsh"
         ".tmux.conf:tmux"
+        ".bashrc:bash"
+        ".gnuplot:gnuplot"
+        ".config/gh:gh"
     )
     
     for file_info in "${files[@]}"; do
@@ -374,7 +455,7 @@ clean_backups() {
 uninstall_dotfiles() {
     log_info "Uninstalling dotfiles..."
     
-    local packages=("git" "zsh" "tmux")
+    local packages=("git" "zsh" "tmux" "gh" "gnuplot" "bash")
     
     for package in "${packages[@]}"; do
         if [[ -d "$package" ]]; then
@@ -423,6 +504,9 @@ cmd_validate() {
     validate_git || ((errors++))
     validate_zsh || ((errors++))
     validate_tmux || ((errors++))
+    validate_gh || ((errors++))
+    validate_gnuplot || ((errors++))
+    validate_bash || ((errors++))
     
     echo ""
     if [[ $errors -eq 0 ]]; then
