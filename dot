@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKUP_DIR="$HOME/.dotfiles-backup-$(date +%s)"
+BACKUP_DIR="$DOTFILES_DIR/backups/dotfiles-backup-$(date +%s)"
 
 # Logging functions
 log_info() {
@@ -320,7 +320,7 @@ show_status() {
     echo ""
     log_info "Backup directories:"
     local backup_dirs=()
-    for dir in ~/.dotfiles-backup-*; do
+    for dir in "$DOTFILES_DIR"/backups/dotfiles-backup-*; do
         if [[ -d "$dir" ]]; then
             backup_dirs+=("$dir")
         fi
@@ -340,7 +340,7 @@ clean_backups() {
     log_info "Cleaning up backup directories..."
     
     local backup_dirs=()
-    for dir in ~/.dotfiles-backup-*; do
+    for dir in "$DOTFILES_DIR"/backups/dotfiles-backup-*; do
         if [[ -d "$dir" ]]; then
             backup_dirs+=("$dir")
         fi
