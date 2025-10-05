@@ -70,7 +70,22 @@ ZSH_THEME="bira" # set by `omz`
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git)
+plugins=(
+  git                    # Git aliases and functions
+  docker                 # Docker aliases and functions (detected)
+  docker-compose         # Docker Compose support
+  gh                     # GitHub CLI support (detected)
+  node                   # Node.js support (detected)
+  nvm                    # Node Version Manager (detected)
+  extract                # Archive extraction shortcuts
+  colored-man-pages      # Colored man pages
+  fzf                    # Fuzzy finding (available in OMZ)
+  z                      # Smart directory jumping
+  sudo                   # Double-tap ESC to add sudo
+  fancy-ctrl-z           # Ctrl-Z to toggle fg/bg
+  git-auto-fetch         # Auto-fetch git repos
+  git-extras             # Additional git utilities
+)
 
 source $ZSH/oh-my-zsh.sh
 
