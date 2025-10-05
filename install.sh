@@ -204,7 +204,7 @@ validate_installation() {
             log_warning "⚠ $file exists but is not a symlink"
             all_good=false
         else
-            log_error "✗ $file not found"
+            log_error "✗ $file not found at $HOME/$file"
             all_good=false
         fi
     done

@@ -25,6 +25,9 @@ jobs:
       run: |
         cd ${{ github.workspace }}
         chmod +x install.sh validate.sh
+        echo "HOME: $HOME"
+        echo "Workspace: ${{ github.workspace }}"
+        ls -la $HOME/.git* $HOME/.zshrc $HOME/.tmux.conf 2>/dev/null || echo "Files not found in HOME"
         ./install.sh
     
     - name: Run validation
@@ -60,6 +63,9 @@ jobs:
       run: |
         cd ${{ github.workspace }}
         chmod +x install.sh validate.sh
+        echo "HOME: $HOME"
+        echo "Workspace: ${{ github.workspace }}"
+        ls -la $HOME/.git* $HOME/.zshrc $HOME/.tmux.conf 2>/dev/null || echo "Files not found in HOME"
         ./install.sh
     
     - name: Run validation
