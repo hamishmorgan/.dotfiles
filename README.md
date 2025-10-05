@@ -166,7 +166,7 @@ Validation:
 
 ## Linting
 
-Before contributing, ensure code quality by running linters:
+To ensure code quality, run linters:
 
 ### Linting Prerequisites
 
@@ -207,11 +207,10 @@ All files:
 markdownlint "**/*.md" && shellcheck dot
 ```
 
-## Contributing
+## Development
 
-1. Fork repository
-2. Create feature branch
-3. Make changes
-4. Run linters: `markdownlint "**/*.md" && shellcheck dot`
-5. Test with `./dot validate`
-6. Submit pull request
+1. Create feature branch
+2. Make changes
+3. Run linters: `markdownlint "**/*.md" && shellcheck dot`
+4. Test with `./dot validate`
+5. Commit changes
