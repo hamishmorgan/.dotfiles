@@ -169,7 +169,7 @@ install_dotfiles() {
     for package in "${packages[@]}"; do
         if [ -d "$package" ]; then
             log_info "Installing package: $package"
-            stow -v -R "$package"
+            stow -v -R -d "$DOTFILES_DIR" -t "$HOME" "$package"
             log_success "Installed $package"
         else
             log_warning "Package $package not found, skipping"
