@@ -1,0 +1,515 @@
+#!/bin/bash
+# Dotfiles management script
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKUP_DIR="$HOME/.dotfiles-backup-$(date +%s)"
+
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Show usage information
+show_usage() {
+    echo "Usage: $0 COMMAND [OPTIONS]"
+    echo ""
+    echo "Commands:"
+    echo "  install     Install dotfiles using GNU Stow"
+    echo "  validate    Validate dotfiles installation"
+    echo "  update      Update submodules and reinstall"
+    echo "  uninstall   Remove dotfiles symlinks"
+    echo "  backup      Create backup of existing files"
+    echo "  status      Show installation status"
+    echo "  clean       Clean up backup directories"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help  Show this help message"
+    echo "  -v, --verbose  Enable verbose output"
+    echo ""
+    echo "Examples:"
+    echo "  $0 install           # Install dotfiles"
+    echo "  $0 validate          # Validate installation"
+    echo "  $0 update            # Update and reinstall"
+    echo "  $0 status            # Show status"
+}
+
+# Check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Check dependencies
+check_dependencies() {
+    log_info "Checking dependencies..."
+    
+    local missing_deps=()
+    
+    if ! command_exists stow; then
+        missing_deps+=("stow")
+    fi
+    
+    if ! command_exists git; then
+        missing_deps+=("git")
+    fi
+    
+    if ! command_exists tmux; then
+        missing_deps+=("tmux")
+    fi
+    
+    if ! command_exists zsh; then
+        missing_deps+=("zsh")
+    fi
+    
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        log_error "Missing dependencies: ${missing_deps[*]}"
+        echo ""
+        echo "Install missing dependencies:"
+        echo "  Ubuntu/Debian: sudo apt-get install ${missing_deps[*]}"
+        echo "  macOS: brew install ${missing_deps[*]}"
+        echo "  CentOS/RHEL: sudo yum install ${missing_deps[*]}"
+        echo "  Fedora: sudo dnf install ${missing_deps[*]}"
+        exit 1
+    fi
+    
+    log_success "All dependencies satisfied"
+}
+
+# Detect platform
+detect_platform() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "linux"
+    else
+        echo "unknown"
+    fi
+}
+
+# Create backup of existing files
+backup_existing() {
+    log_info "Creating backup of existing files..."
+    
+    # Create backup directory
+    mkdir -p "$BACKUP_DIR"
+    
+    local files_to_backup=(
+        ".gitconfig"
+        ".gitattributes"
+        ".gitignore-globals"
+        ".zshrc"
+        ".zshrc.osx"
+        ".oh-my-zsh"
+        ".tmux.conf"
+    )
+    
+    local backed_up=0
+    
+    for file in "${files_to_backup[@]}"; do
+        if [[ -e "$HOME/$file" ]]; then
+            log_info "Backing up $file"
+            if [[ -d "$HOME/$file" ]]; then
+                cp -r "$HOME/$file" "$BACKUP_DIR/"
+            else
+                cp "$HOME/$file" "$BACKUP_DIR/"
+            fi
+            # Remove existing file after backup to prevent stow conflicts
+            rm -rf "${HOME:?}/$file"
+            ((backed_up++))
+        else
+            log_info "File $file does not exist, skipping"
+        fi
+    done
+    
+    if [[ $backed_up -gt 0 ]]; then
+        log_success "Backed up $backed_up files to $BACKUP_DIR"
+    else
+        log_info "No existing files to backup"
+    fi
+}
+
+# Initialize submodules
+init_submodules() {
+    log_info "Initializing git submodules..."
+    
+    if [[ -f "$DOTFILES_DIR/.gitmodules" ]]; then
+        cd "$DOTFILES_DIR"
+        git submodule update --init --recursive
+        log_success "Submodules initialized"
+    else
+        log_info "No submodules found"
+    fi
+}
+
+# Install dotfiles using Stow
+install_dotfiles() {
+    log_info "Installing dotfiles using Stow..."
+    
+    # Define packages to install
+    local packages=("git" "zsh" "tmux")
+    
+    for package in "${packages[@]}"; do
+        if [[ -d "$package" ]]; then
+            log_info "Installing package: $package"
+            stow -v -R -d "$DOTFILES_DIR" -t "$HOME" "$package"
+            log_success "Installed $package"
+        else
+            log_warning "Package $package not found, skipping"
+        fi
+    done
+}
+
+# Check if file is properly linked
+check_symlink() {
+    local file="$1"
+    local expected_target="$2"
+    
+    if [[ -L "$HOME/$file" ]]; then
+        local target=$(readlink "$HOME/$file")
+        if [[ "$target" == *"$expected_target"* ]]; then
+            log_success "✓ $file is properly linked to $target"
+            return 0
+        else
+            log_warning "⚠ $file is linked to $target (expected $expected_target)"
+            return 1
+        fi
+    elif [[ -f "$HOME/$file" ]]; then
+        log_warning "⚠ $file exists but is not a symlink"
+        return 1
+    else
+        log_error "✗ $file not found"
+        return 1
+    fi
+}
+
+# Validate git configuration
+validate_git() {
+    log_info "Validating git configuration..."
+    
+    local git_files=(
+        ".gitconfig"
+        ".gitattributes"
+        ".gitignore-globals"
+    )
+    
+    local git_errors=0
+    
+    for file in "${git_files[@]}"; do
+        if ! check_symlink "$file" ".dotfiles/git"; then
+            ((git_errors++))
+        fi
+    done
+    
+    if [[ $git_errors -eq 0 ]]; then
+        log_success "Git configuration validated successfully"
+        return 0
+    else
+        log_error "Git validation failed with $git_errors errors"
+        return 1
+    fi
+}
+
+# Validate zsh configuration
+validate_zsh() {
+    log_info "Validating zsh configuration..."
+    
+    local zsh_files=(
+        ".zshrc"
+        ".oh-my-zsh"
+    )
+    
+    local zsh_errors=0
+    
+    for file in "${zsh_files[@]}"; do
+        if ! check_symlink "$file" ".dotfiles/zsh"; then
+            ((zsh_errors++))
+        fi
+    done
+    
+    if [[ $zsh_errors -eq 0 ]]; then
+        log_success "Zsh configuration validated successfully"
+        return 0
+    else
+        log_error "Zsh validation failed with $git_errors errors"
+        return 1
+    fi
+}
+
+# Validate tmux configuration
+validate_tmux() {
+    log_info "Validating tmux configuration..."
+    
+    local tmux_files=(
+        ".tmux.conf"
+    )
+    
+    local tmux_errors=0
+    
+    for file in "${tmux_files[@]}"; do
+        if ! check_symlink "$file" ".dotfiles/tmux"; then
+            ((tmux_errors++))
+        fi
+    done
+    
+    if [[ $tmux_errors -eq 0 ]]; then
+        log_success "Tmux configuration validated successfully"
+        return 0
+    else
+        log_error "Tmux validation failed with $tmux_errors errors"
+        return 1
+    fi
+}
+
+# Show installation status
+show_status() {
+    log_info "Dotfiles installation status:"
+    echo ""
+    
+    local files=(
+        ".gitconfig:git"
+        ".gitattributes:git"
+        ".gitignore-globals:git"
+        ".zshrc:zsh"
+        ".oh-my-zsh:zsh"
+        ".tmux.conf:tmux"
+    )
+    
+    for file_info in "${files[@]}"; do
+        IFS=':' read -r file package <<< "$file_info"
+        
+        if [[ -L "$HOME/$file" ]]; then
+            local target=$(readlink "$HOME/$file")
+            echo -e "  ${GREEN}✓${NC} $file -> $target"
+        elif [[ -e "$HOME/$file" ]]; then
+            echo -e "  ${YELLOW}⚠${NC} $file (exists but not a symlink)"
+        else
+            echo -e "  ${RED}✗${NC} $file (not found)"
+        fi
+    done
+    
+    echo ""
+    log_info "Backup directories:"
+    local backup_dirs=()
+    for dir in ~/.dotfiles-backup-*; do
+        if [[ -d "$dir" ]]; then
+            backup_dirs+=("$dir")
+        fi
+    done
+    
+    if [[ ${#backup_dirs[@]} -gt 0 ]]; then
+        for dir in "${backup_dirs[@]}"; do
+            echo "  $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
+        done
+    else
+        echo "  No backup directories found"
+    fi
+}
+
+# Clean up backup directories
+clean_backups() {
+    log_info "Cleaning up backup directories..."
+    
+    local backup_dirs=()
+    for dir in ~/.dotfiles-backup-*; do
+        if [[ -d "$dir" ]]; then
+            backup_dirs+=("$dir")
+        fi
+    done
+    
+    if [[ ${#backup_dirs[@]} -gt 0 ]]; then
+        echo "Found backup directories:"
+        for dir in "${backup_dirs[@]}"; do
+            echo "  $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
+        done
+        echo ""
+        read -p "Delete all backup directories? (y/N): " -n 1 -r
+        echo ""
+        
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            for dir in "${backup_dirs[@]}"; do
+                rm -rf "$dir"
+            done
+            log_success "Backup directories removed"
+        else
+            log_info "Backup cleanup cancelled"
+        fi
+    else
+        log_info "No backup directories found"
+    fi
+}
+
+# Uninstall dotfiles
+uninstall_dotfiles() {
+    log_info "Uninstalling dotfiles..."
+    
+    local packages=("git" "zsh" "tmux")
+    
+    for package in "${packages[@]}"; do
+        if [[ -d "$package" ]]; then
+            log_info "Uninstalling package: $package"
+            stow -v -D -d "$DOTFILES_DIR" -t "$HOME" "$package"
+            log_success "Uninstalled $package"
+        fi
+    done
+    
+    log_success "Dotfiles uninstalled"
+}
+
+# Main command handlers
+cmd_install() {
+    log_info "Starting dotfiles installation..."
+    
+    log_info "Step 1: Checking dependencies..."
+    check_dependencies
+    log_info "Step 2: Backing up existing files..."
+    backup_existing
+    log_info "Step 3: Initializing submodules..."
+    init_submodules
+    log_info "Step 4: Installing dotfiles..."
+    install_dotfiles
+    
+    log_success "Installation completed successfully!"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Restart your terminal or run: source ~/.zshrc"
+    echo "  2. Set zsh as default shell: chsh -s \$(which zsh)"
+    echo "  3. Validate installation: $0 validate"
+}
+
+cmd_validate() {
+    log_info "Validating dotfiles installation..."
+    
+    local errors=0
+    
+    validate_git || ((errors++))
+    validate_zsh || ((errors++))
+    validate_tmux || ((errors++))
+    
+    echo ""
+    if [[ $errors -eq 0 ]]; then
+        log_success "All validations passed!"
+        return 0
+    else
+        log_error "Validation failed with $errors errors"
+        return 1
+    fi
+}
+
+cmd_update() {
+    log_info "Updating dotfiles..."
+    
+    check_dependencies
+    init_submodules
+    install_dotfiles
+    
+    log_success "Update completed successfully!"
+}
+
+cmd_status() {
+    show_status
+}
+
+cmd_backup() {
+    backup_existing
+}
+
+cmd_clean() {
+    clean_backups
+}
+
+cmd_uninstall() {
+    uninstall_dotfiles
+}
+
+# Main script logic
+main() {
+    # Parse arguments
+    local command=""
+    local verbose=false
+    
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            -v|--verbose)
+                verbose=true
+                shift
+                ;;
+            install|validate|update|status|backup|clean|uninstall)
+                if [[ -n "$command" ]]; then
+                    log_error "Multiple commands specified"
+                    exit 1
+                fi
+                command="$1"
+                shift
+                ;;
+            *)
+                log_error "Unknown option: $1"
+                show_usage
+                exit 1
+                ;;
+        esac
+    done
+    
+    # Default to help if no command specified
+    if [[ -z "$command" ]]; then
+        show_usage
+        exit 0
+    fi
+    
+    # Execute command
+    case $command in
+        install)
+            cmd_install
+            ;;
+        validate)
+            cmd_validate
+            ;;
+        update)
+            cmd_update
+            ;;
+        status)
+            cmd_status
+            ;;
+        backup)
+            cmd_backup
+            ;;
+        clean)
+            cmd_clean
+            ;;
+        uninstall)
+            cmd_uninstall
+            ;;
+        *)
+            log_error "Unknown command: $command"
+            show_usage
+            exit 1
+            ;;
+    esac
+}
+
+# Run main function with all arguments
+main "$@"

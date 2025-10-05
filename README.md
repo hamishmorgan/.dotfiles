@@ -21,8 +21,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 │   ├── .zshrc.osx
 │   └── .oh-my-zsh/  # Oh My Zsh submodule
 ├── tmux/          # Tmux configuration
-├── install.sh     # Automated installation script
-├── validate.sh    # Validation script
+├── dot            # Main dotfiles management script
 └── README.md      # This file
 ```
 
@@ -56,7 +55,7 @@ sudo dnf install stow git tmux zsh
 ```bash
 git clone git@github.com:hamishmorgan/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
-./install.sh
+./dot install
 ```
 
 The installer verifies dependencies, backs up existing files, initializes submodules, and creates symlinks.
@@ -84,7 +83,7 @@ Validate installation:
 
 ```bash
 cd ~/.dotfiles
-./validate.sh
+./dot validate
 ```
 
 Verifies symlink integrity, configuration validity, dependencies, and orphaned symlinks.
@@ -132,7 +131,7 @@ gi linux,osx,vscode,vim,jetbrains > ~/.gitignore-globals
 cd ~/.dotfiles
 git pull origin main
 git submodule update --init --recursive
-./install.sh
+./dot install
 ```
 
 ## Uninstallation
@@ -150,7 +149,7 @@ stow -D git zsh tmux
 Permission errors:
 
 ```bash
-chmod +x install.sh validate.sh
+chmod +x dot
 ```
 
 Stow conflicts:
@@ -162,7 +161,7 @@ stow -v -R git zsh tmux
 Validation:
 
 ```bash
-./validate.sh
+./dot validate
 ```
 
 ## Linting
@@ -214,5 +213,5 @@ markdownlint "**/*.md" && shellcheck "**/*.sh"
 2. Create feature branch
 3. Make changes
 4. Run linters: `markdownlint "**/*.md" && shellcheck "**/*.sh"`
-5. Test with `./validate.sh`
+5. Test with `./dot validate`
 6. Submit pull request

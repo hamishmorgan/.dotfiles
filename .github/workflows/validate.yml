@@ -48,16 +48,16 @@ jobs:
     - name: Validate installation
       run: |
         cd ${{ github.workspace }}
-        chmod +x install.sh validate.sh
+        chmod +x dot
         echo "HOME: $HOME"
         echo "Workspace: ${{ github.workspace }}"
         ls -la $HOME/.git* $HOME/.zshrc $HOME/.tmux.conf 2>/dev/null || echo "Files not found in HOME"
-        ./install.sh
+        ./dot install
     
     - name: Run validation
       run: |
         cd ${{ github.workspace }}
-        ./validate.sh
+        ./dot validate
     
     - name: Test shell configuration
       run: |
@@ -87,16 +87,16 @@ jobs:
     - name: Validate installation
       run: |
         cd ${{ github.workspace }}
-        chmod +x install.sh validate.sh
+        chmod +x dot
         echo "HOME: $HOME"
         echo "Workspace: ${{ github.workspace }}"
         ls -la $HOME/.git* $HOME/.zshrc $HOME/.tmux.conf 2>/dev/null || echo "Files not found in HOME"
-        ./install.sh
+        ./dot install
     
     - name: Run validation
       run: |
         cd ${{ github.workspace }}
-        ./validate.sh
+        ./dot validate
     
     - name: Test shell configuration
       run: |

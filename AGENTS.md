@@ -27,7 +27,7 @@ Oh My Zsh is included as a submodule within the zsh package.
 ## File Organization
 
 - Package-specific files go in their respective directories (git/, zsh/, tmux/)
-- Scripts (install.sh, validate.sh) remain in root
+- Scripts (dot) remain in root
 - Configuration files use dot-prefixed names
 - .gitignore is project-specific, not managed by stow
 
@@ -66,8 +66,8 @@ When adding new instructions:
 
 ## Common Tasks
 
-- Installation: Use `./install.sh`
-- Validation: Use `./validate.sh`
+- Installation: Use `./dot install`
+- Validation: Use `./dot validate`
 - Linting: `markdownlint "**/*.md"` and `shellcheck "**/*.sh"`
 - Package management: Use `stow -v package_name`
 - Backup location: `~/.dotfiles-backup-*`
