@@ -195,7 +195,8 @@ check_symlink() {
     local expected_target="$2"
     
     if [[ -L "$HOME/$file" ]]; then
-        local target=$(readlink "$HOME/$file")
+        local target
+        target=$(readlink "$HOME/$file")
         if [[ "$target" == *"$expected_target"* ]]; then
             log_success "✓ $file is properly linked to $target"
             return 0
@@ -308,7 +309,8 @@ show_status() {
         IFS=':' read -r file package <<< "$file_info"
         
         if [[ -L "$HOME/$file" ]]; then
-            local target=$(readlink "$HOME/$file")
+            local target
+        target=$(readlink "$HOME/$file")
             echo -e "  ${GREEN}✓${NC} $file -> $target"
         elif [[ -e "$HOME/$file" ]]; then
             echo -e "  ${YELLOW}⚠${NC} $file (exists but not a symlink)"
@@ -494,6 +496,11 @@ main() {
     if [[ -z "$command" ]]; then
         show_usage
         exit 0
+    fi
+    
+    # Enable verbose output if requested
+    if $verbose; then
+        set -x
     fi
     
     # Execute command
