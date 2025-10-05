@@ -1,6 +1,0 @@
-[user]
-	email = hamish.morgan@shopify.com
-	name = Hamish Morgan
-
-[include]
-	path = ~/.config/dev/gitconfig
