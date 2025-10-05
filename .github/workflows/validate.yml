@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  validate:
+  validate-ubuntu:
     runs-on: ubuntu-latest
     
     steps:
@@ -20,6 +20,41 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y stow git tmux zsh
+    
+    - name: Validate installation
+      run: |
+        cd ${{ github.workspace }}
+        chmod +x install.sh validate.sh
+        ./install.sh
+    
+    - name: Run validation
+      run: |
+        cd ${{ github.workspace }}
+        ./validate.sh
+    
+    - name: Test shell configuration
+      run: |
+        zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
+    
+    - name: Test git configuration
+      run: |
+        git config --global user.name "Test User"
+        git config --global user.email "test@example.com"
+        git config --global --list | grep -q "user.name=Test User"
+        git config --global --list | grep -q "user.email=test@example.com"
+
+  validate-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    
+    - name: Install dependencies
+      run: |
+        brew install stow git tmux zsh
     
     - name: Validate installation
       run: |
