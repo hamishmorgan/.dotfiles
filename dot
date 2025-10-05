@@ -219,9 +219,11 @@ merge_personal_configs() {
     if [[ -f "$DOTFILES_DIR/gh/.config/gh/config.yml.personal" ]]; then
         log_info "Merging GitHub CLI personal configuration"
         # For YAML files, we'll append the personal config to the template
-        echo "" >> "$DOTFILES_DIR/gh/.config/gh/config.yml"
-        echo "# Personal configuration" >> "$DOTFILES_DIR/gh/.config/gh/config.yml"
-        cat "$DOTFILES_DIR/gh/.config/gh/config.yml.personal" >> "$DOTFILES_DIR/gh/.config/gh/config.yml"
+        {
+            echo ""
+            echo "# Personal configuration"
+            cat "$DOTFILES_DIR/gh/.config/gh/config.yml.personal"
+        } >> "$DOTFILES_DIR/gh/.config/gh/config.yml"
         log_success "Merged GitHub CLI personal configuration"
     else
         log_info "No GitHub CLI personal configuration found"
