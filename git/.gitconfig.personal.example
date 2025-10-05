@@ -1,0 +1,11 @@
+# Personal Git Configuration Example
+# Copy this file to .gitconfig.personal and customize with your information
+
+[user]
+	email = your.email@example.com
+	name = Your Full Name
+	username = yourusername
+	signingkey = ssh-ed25519 YOUR_SIGNING_KEY_HERE
+
+# You can add any personal git configurations here
+# This file will be merged with the template during installation

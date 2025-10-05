@@ -1,2 +1,14 @@
 # Backup directories
 backups/
+
+# Personal configuration files (contain sensitive information)
+*.personal
+*.local
+
+# Specific personal files
+git/.gitconfig.personal
+gh/.config/gh/config.yml.personal
+
+# Generated configuration files (created from templates + personal configs)
+git/.gitconfig
+gh/.config/gh/config.yml

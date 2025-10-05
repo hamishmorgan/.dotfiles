@@ -17,13 +17,3 @@ aliases:
 http_unix_socket:
 # What web browser gh should use when opening URLs. If blank, will refer to environment.
 browser:
-
-# Personal configuration
-# Personal GitHub CLI Configuration
-# This file contains your personal GitHub CLI settings and is git-ignored
-
-# Add any personal GitHub CLI configurations here
-# Example:
-# aliases:
-#     pr: pr view --web
-#     issues: issue list --state open --assignee @me

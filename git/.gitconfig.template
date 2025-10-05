@@ -1,8 +1,8 @@
 [user]
-	email = hamish.morgan@gmail.com
-	name = Hamish Morgan
-	username = hamishmorgan
-	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM4dsPehspiibVsflgc1HKfP04rBzZDcgorBC+AGe6yI
+	email = YOUR_EMAIL_HERE
+	name = YOUR_NAME_HERE
+	username = YOUR_USERNAME_HERE
+	signingkey = YOUR_SIGNING_KEY_HERE
 
 [alias]
 	# Basic shortcuts
