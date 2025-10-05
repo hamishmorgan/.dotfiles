@@ -1,0 +1,15 @@
+# Shellcheck configuration
+# https://github.com/koalaman/shellcheck/wiki
+
+# SC1090 - Can't follow non-constant source. Use a directive to specify location.
+# SC1091 - Not following sourced file
+disable=SC1090,SC1091
+
+# SC2034 - Variable appears unused
+disable=SC2034
+
+# SC2155 - Declare and assign separately
+disable=SC2155
+
+# SC2164 - Use cd ... || exit in case cd fails
+disable=SC2164

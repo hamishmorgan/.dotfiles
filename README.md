@@ -156,10 +156,49 @@ Validation:
 ./validate.sh
 ```
 
+## Linting
+
+Before contributing, ensure code quality by running linters:
+
+### Prerequisites
+
+Install linting tools:
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install shellcheck
+npm install -g markdownlint-cli
+```
+
+**macOS:**
+```bash
+brew install shellcheck
+npm install -g markdownlint-cli
+```
+
+### Linting Commands
+
+Markdown files:
+```bash
+markdownlint "**/*.md"
+```
+
+Bash scripts:
+```bash
+shellcheck "**/*.sh"
+```
+
+All files:
+```bash
+markdownlint "**/*.md" && shellcheck "**/*.sh"
+```
+
 ## Contributing
 
 1. Fork repository
 2. Create feature branch
 3. Make changes
-4. Test with `./validate.sh`
-5. Submit pull request
+4. Run linters: `markdownlint "**/*.md" && shellcheck "**/*.sh"`
+5. Test with `./validate.sh`
+6. Submit pull request
