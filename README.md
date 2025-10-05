@@ -8,8 +8,9 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - Backup of existing files before installation
 - macOS and Linux support
 - Validation script for installation verification
-- Packages: git, zsh, tmux
+- Packages: git, zsh, tmux, gh, gnuplot, bash
 - Oh My Zsh submodule
+- CI/CD validation with GitHub Actions
 
 ## Package Structure
 
@@ -21,6 +22,9 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 │   ├── .zshrc.osx
 │   └── .oh-my-zsh/  # Oh My Zsh submodule
 ├── tmux/          # Tmux configuration
+├── gh/            # GitHub CLI configuration
+├── gnuplot/       # GNU Plot configuration
+├── bash/          # Bash configuration
 ├── dot            # Main dotfiles management script
 └── README.md      # This file
 ```
@@ -74,7 +78,7 @@ Log out and back in for the change to take effect.
 git clone git@github.com:hamishmorgan/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 git submodule update --init --recursive
-stow -v git zsh tmux
+stow -v git zsh tmux gh gnuplot bash
 ```
 
 ## Validation
@@ -111,6 +115,21 @@ Verifies symlink integrity, configuration validity, dependencies, and orphaned s
 - Custom status bar
 - Base index: 1
 
+### GitHub CLI (`gh/`)
+
+- GitHub CLI configuration and aliases
+
+### GNU Plot (`gnuplot/`)
+
+- Plotting configuration and styles
+- Custom color schemes and terminal settings
+
+### Bash (`bash/`)
+
+- Bash configuration and aliases
+- NVM integration
+- Cursor application alias
+
 ## Updating
 
 ### Update Global Gitignore
@@ -140,7 +159,7 @@ git submodule update --init --recursive
 
 ```bash
 cd ~/.dotfiles
-stow -D git zsh tmux
+stow -D git zsh tmux gh gnuplot bash
 # Restore from backup directories in ~/.dotfiles-backup-* if needed
 ```
 
@@ -155,7 +174,7 @@ chmod +x dot
 Stow conflicts:
 
 ```bash
-stow -v -R git zsh tmux
+stow -v -R git zsh tmux gh gnuplot bash
 ```
 
 Validation:
@@ -206,6 +225,17 @@ All files:
 ```bash
 markdownlint "**/*.md" && shellcheck dot
 ```
+
+## CI/CD
+
+This repository includes GitHub Actions workflows for automated validation:
+
+- **Linting**: Validates Markdown and Bash scripts before installation tests
+- **Ubuntu Validation**: Tests full installation on Ubuntu with dependency checks
+- **macOS Validation**: Tests full installation on macOS with dependency checks
+- **Configuration Testing**: Validates git, zsh, and other package configurations
+
+Workflow file: `.github/workflows/validate.yml`
 
 ## Development
 
