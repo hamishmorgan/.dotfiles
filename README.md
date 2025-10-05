@@ -168,7 +168,7 @@ Validation:
 
 Before contributing, ensure code quality by running linters:
 
-### Prerequisites
+### Linting Prerequisites
 
 Install linting tools:
 

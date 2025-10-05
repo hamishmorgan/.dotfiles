@@ -26,17 +26,17 @@ MD013:
 MD022: true
 
 # MD024 - Multiple headers with the same content
-MD024: false
+MD024: true
 
 # MD025 - Multiple top level headers in the same document
-MD025: false
+MD025: true
 
 # MD029 - Ordered list item prefix should be consistent
 MD029:
   style: "ordered"
 
 # MD033 - Inline HTML should be allowed for specific elements
-MD033: false
+MD033: true
 
 # MD041 - First line in file should be a top level heading
-MD041: false
+MD041: true
