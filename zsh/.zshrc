@@ -116,3 +116,16 @@ source $ZSH/oh-my-zsh.sh
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
+
+
+export ZSH_HOST_OS=$(uname | awk '{print tolower($0)}')
+
+# Load configs for MacOS. Does nothing if not on MacOS
+if [ "$ZSH_HOST_OS" = "darwin" ]; then
+  source "$HOME/.zshrc.osx"
+fi
+
+# Load configs for Linux. Does nothing if not on Linux
+if [ "$ZSH_HOST_OS" = "linux" ]; then
+  source "$HOME/.zshrc.linux"
+fi
