@@ -204,12 +204,12 @@ merge_personal_configs() {
     if [[ -f "$DOTFILES_DIR/git/.gitconfig.personal" ]]; then
         log_info "Merging git personal configuration"
         # Use git config to merge personal settings
-        git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig.personal" --list | while read -r line; do
+        while read -r line; do
             # Parse key=value format and set in template
             local key="${line%%=*}"
             local value="${line#*=}"
             git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig" "$key" "$value"
-        done
+        done < <(git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig.personal" --list)
         log_success "Merged git personal configuration"
     else
         log_info "No git personal configuration found"
@@ -219,6 +219,7 @@ merge_personal_configs() {
     if [[ -f "$DOTFILES_DIR/gh/.config/gh/config.yml.personal" ]]; then
         log_info "Merging GitHub CLI personal configuration"
         # For YAML files, we'll append the personal config to the template
+        # Add a separator and append personal config
         {
             echo ""
             echo "# Personal configuration"
