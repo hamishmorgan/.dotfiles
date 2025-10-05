@@ -53,28 +53,6 @@ check_symlink() {
     fi
 }
 
-# Check if directory exists and is properly linked
-check_symlink_dir() {
-    local dir="$1"
-    local expected_target="$2"
-    
-    if [[ -L "$HOME/$dir" ]]; then
-        local target=$(readlink "$HOME/$dir")
-        if [[ "$target" == *"$expected_target"* ]]; then
-            log_success "✓ $dir is properly linked to $target"
-            return 0
-        else
-            log_warning "⚠ $dir is linked to $target (expected $expected_target)"
-            return 1
-        fi
-    elif [[ -d "$HOME/$dir" ]]; then
-        log_warning "⚠ $dir exists but is not a symlink"
-        return 1
-    else
-        log_error "✗ $dir not found"
-        return 1
-    fi
-}
 
 # Validate git configuration
 validate_git() {

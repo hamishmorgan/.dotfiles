@@ -13,7 +13,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 
 ## Package Structure
 
-```
+```text
 .dotfiles/
 ├── git/           # Git configuration and aliases
 ├── zsh/           # Zsh configuration with Oh My Zsh
@@ -29,6 +29,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 ## Prerequisites
 
 ### macOS
+
 ```bash
 # Install Homebrew (if not already installed)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -38,6 +39,7 @@ brew install stow git tmux zsh
 ```
 
 ### Linux
+
 ```bash
 # Ubuntu/Debian
 sudo apt update
@@ -90,18 +92,21 @@ Verifies symlink integrity, configuration validity, dependencies, and orphaned s
 ## What gets installed
 
 ### Git (`git/`)
+
 - Aliases and shortcuts
 - Color configuration
 - Diff tools for various file types
 - Shopify-specific configuration
 
 ### Zsh (`zsh/`)
+
 - Oh My Zsh integration
 - Platform-specific settings
 - Custom aliases and functions
 - History configuration
 
 ### Tmux (`tmux/`)
+
 - Custom key bindings (prefix: backtick)
 - Mouse support
 - Custom status bar
@@ -116,6 +121,7 @@ curl -sLw "\n" https://www.toptal.com/developers/gitignore/api/linux,osx,vscode,
 ```
 
 Or using the gi alias:
+
 ```bash
 gi linux,osx,vscode,vim,jetbrains > ~/.gitignore-globals
 ```
@@ -142,16 +148,19 @@ stow -D git zsh tmux
 ## Troubleshooting
 
 Permission errors:
+
 ```bash
 chmod +x install.sh validate.sh
 ```
 
 Stow conflicts:
+
 ```bash
 stow -v -R git zsh tmux
 ```
 
 Validation:
+
 ```bash
 ./validate.sh
 ```
@@ -165,6 +174,7 @@ Before contributing, ensure code quality by running linters:
 Install linting tools:
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt-get update
 sudo apt-get install shellcheck
@@ -172,6 +182,7 @@ npm install -g markdownlint-cli
 ```
 
 **macOS:**
+
 ```bash
 brew install shellcheck
 npm install -g markdownlint-cli
@@ -180,16 +191,19 @@ npm install -g markdownlint-cli
 ### Linting Commands
 
 Markdown files:
+
 ```bash
 markdownlint "**/*.md"
 ```
 
 Bash scripts:
+
 ```bash
 shellcheck "**/*.sh"
 ```
 
 All files:
+
 ```bash
 markdownlint "**/*.md" && shellcheck "**/*.sh"
 ```

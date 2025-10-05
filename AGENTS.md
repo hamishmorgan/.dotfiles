@@ -4,7 +4,8 @@ Instructions for AI agents working with this dotfiles repository.
 
 ## Project Context
 
-This repository contains dotfiles managed with GNU Stow. Files are organized into packages: git, zsh, tmux. Oh My Zsh is included as a submodule within the zsh package.
+This repository contains dotfiles managed with GNU Stow. Files are organized into packages: git, zsh, tmux.
+Oh My Zsh is included as a submodule within the zsh package.
 
 ## Documentation Standards
 
@@ -42,6 +43,7 @@ This repository contains dotfiles managed with GNU Stow. Files are organized int
 **This file must be updated whenever new guidance is provided during conversations.**
 
 When adding new instructions:
+
 - Maintain the formal, minimal tone
 - Be technically precise
 - Include only essential information
@@ -53,6 +55,7 @@ When adding new instructions:
 - All Bash scripts must pass shellcheck validation
 - Configuration files: `.markdownlint.yml`, `.shellcheckrc`
 - Linting runs as prerequisite in CI before validation tests
+- **Always run linting after making changes to verify code quality**
 
 ## CI/CD
 
@@ -69,4 +72,3 @@ When adding new instructions:
 - Package management: Use `stow -v package_name`
 - Backup location: `~/.dotfiles-backup-*`
 - CI validation: `.github/workflows/validate.yml`
-
