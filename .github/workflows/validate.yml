@@ -35,7 +35,8 @@ jobs:
     
     - name: Install dependencies
       run: |
-        sudo debconf-set-selections <<< 'man-db man-db/auto-update boolean false'
+        sudo mv /usr/bin/mandb /usr/bin/mandb.bak 2>/dev/null || true
+        sudo ln -s /bin/true /usr/bin/mandb
         sudo apt-get install -y stow git tmux zsh
     
     - name: Validate installation
