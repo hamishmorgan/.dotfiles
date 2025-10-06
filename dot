@@ -37,22 +37,9 @@ declare -A PACKAGE_NAMES=(
     ["bash"]="Bash"
 )
 
-# Template mappings (source:destination)
-declare -a TEMPLATES=(
-    "git/.gitconfig.template:git/.gitconfig"
-    "git/.gitconfig.shopify.template:git/.gitconfig.shopify"
-    "gh/.config/gh/config.yml.template:gh/.config/gh/config.yml"
-    "gh/.config/gh/hosts.yml.template:gh/.config/gh/hosts.yml"
-)
-
-# Personal config merge operations (type:source:destination)
-# Types: git-merge, yaml-append, yaml-replace
-declare -a PERSONAL_CONFIGS=(
-    "git-merge:git/.gitconfig.personal:git/.gitconfig"
-    "git-merge:git/.gitconfig.shopify.personal:git/.gitconfig.shopify"
-    "yaml-append:gh/.config/gh/config.yml.personal:gh/.config/gh/config.yml"
-    "yaml-replace:gh/.config/gh/hosts.yml.personal:gh/.config/gh/hosts.yml"
-)
+# Auto-discovery functions for templates and personal configs
+# Convention: *.template files are processed to create target files
+# Convention: *.personal files are merged with targets based on file type
 
 # Required dependencies per platform
 declare -A REQUIRED_DEPS=(
@@ -146,6 +133,27 @@ detect_platform() {
     fi
 }
 
+
+# Determine merge strategy based on file type
+determine_merge_strategy() {
+    local target="$1"
+    
+    case "$target" in
+        */.gitconfig*|*.gitconfig)
+            echo "git-merge"
+            ;;
+        */hosts.yml|*/hosts.yaml)
+            echo "yaml-replace"
+            ;;
+        *.yml|*.yaml)
+            echo "yaml-append"
+            ;;
+        *)
+            echo "replace"
+            ;;
+    esac
+}
+
 # Create backup of existing files
 backup_existing() {
     log_info "Creating backup of existing files..."
@@ -206,63 +214,85 @@ init_submodules() {
     fi
 }
 
-# Process configuration templates
+# Process configuration templates (auto-discovered)
 process_templates() {
     log_info "Processing configuration templates..."
     
-    for template_info in "${TEMPLATES[@]}"; do
-        IFS=':' read -r template target <<< "$template_info"
-        if [[ -f "$DOTFILES_DIR/$template" ]]; then
-            cp "$DOTFILES_DIR/$template" "$DOTFILES_DIR/$target"
-            log_info "Created $target from template"
+    set +e  # Temporarily disable exit on error
+    local template_count=0
+    
+    # Process all .template files found in dotfiles directory  
+    find "$DOTFILES_DIR" -type f -name "*.template" 2>/dev/null | sort | while read -r template; do
+        local target="${template%.template}"
+        
+        if cp "$template" "$target"; then
+            log_info "Created ${target#"$DOTFILES_DIR"/} from template"
+            ((template_count++))
         else
-            log_warning "Template $template not found, skipping"
+            log_error "Failed to copy template: $template"
         fi
     done
+    
+    set -e  # Re-enable exit on error
+    
+    # Check if templates were processed
+    local created_files
+    created_files=$(find "$DOTFILES_DIR" -type f \( -name ".gitconfig" -o -name ".gitconfig.shopify" -o -name "config.yml" -o -name "hosts.yml" \) ! -name "*.template" ! -name "*.personal" 2>/dev/null | wc -l)
+    
+    if [[ $created_files -gt 0 ]]; then
+        log_success "Processed template files"
+    else
+        log_info "No template files found"
+    fi
 }
 
 # Merge git config using git-config command
 merge_git_config() {
     local source="$1"
     local target="$2"
+    local config_lines=()
     
-    while read -r line; do
+    # Read git config into array first
+    mapfile -t config_lines < <(git -c "core.filemode=false" config --file "$source" --list 2>/dev/null)
+    
+    # Apply each line to target
+    for line in "${config_lines[@]}"; do
         local key="${line%%=*}"
         local value="${line#*=}"
         git -c "core.filemode=false" config --file "$target" "$key" "$value"
-    done < <(git -c "core.filemode=false" config --file "$source" --list)
+    done
 }
 
-# Merge personal configurations with templates
+# Merge personal configurations with templates (auto-discovered)
 merge_personal_configs() {
     log_info "Merging personal configurations..."
     
-    for config_info in "${PERSONAL_CONFIGS[@]}"; do
-        IFS=':' read -r merge_type source target <<< "$config_info"
+    set +e  # Temporarily disable exit on error
+    local merge_count=0
+    
+    # Process all .personal files found in dotfiles directory
+    find "$DOTFILES_DIR" -type f -name "*.personal" 2>/dev/null | sort | while read -r personal; do
+        [[ ! -f "$personal" ]] && continue
         
-        local full_source="$DOTFILES_DIR/$source"
-        local full_target="$DOTFILES_DIR/$target"
+        local target="${personal%.personal}"
+        local merge_type
+        merge_type=$(determine_merge_strategy "$target")
         
-        if [[ ! -f "$full_source" ]]; then
-            log_info "No personal config found: $source"
-            continue
-        fi
-        
-        log_info "Merging personal configuration: $source"
+        log_info "Merging ${personal#"$DOTFILES_DIR"/} -> ${target#"$DOTFILES_DIR"/} ($merge_type)"
         
         case "$merge_type" in
             git-merge)
-                merge_git_config "$full_source" "$full_target"
+                merge_git_config "$personal" "$target"
                 ;;
             yaml-append)
                 {
                     echo ""
                     echo "# Personal configuration"
-                    cat "$full_source"
-                } >> "$full_target"
+                    cat "$personal"
+                } >> "$target"
                 ;;
-            yaml-replace)
-                cp "$full_source" "$full_target"
+            yaml-replace|replace)
+                cp "$personal" "$target"
                 ;;
             *)
                 log_warning "Unknown merge type: $merge_type"
@@ -270,8 +300,20 @@ merge_personal_configs() {
                 ;;
         esac
         
-        log_success "Merged: $source"
+        ((merge_count++))
     done
+    
+    set -e  # Re-enable exit on error
+    
+    # Check if personal configs exist
+    local personal_count
+    personal_count=$(find "$DOTFILES_DIR" -type f -name "*.personal" 2>/dev/null | wc -l)
+    
+    if [[ $personal_count -gt 0 ]]; then
+        log_success "Merged personal configuration files"
+    else
+        log_info "No personal configuration files found"
+    fi
 }
 
 # Install dotfiles using Stow
