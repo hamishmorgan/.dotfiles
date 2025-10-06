@@ -285,20 +285,99 @@ portable_timeout() {
 }
 
 # Check dependencies
+# Get minimum version for a tool (bash 3.2 compatible - no associative arrays)
+get_min_version() {
+    local tool="$1"
+    case "$tool" in
+        git)  echo "2.0.0" ;;
+        stow) echo "2.3" ;;
+        zsh)  echo "5.0" ;;
+        bash) echo "3.2" ;;  # Already enforced by our script
+        tmux) echo "2.0" ;;
+        *)    echo "" ;;  # No minimum version requirement
+    esac
+}
+
+# Compare semantic versions (returns 0 if $1 >= $2)
+version_ge() {
+    printf '%s\n%s\n' "$2" "$1" | sort -V -C
+}
+
+# Check specific tool version and return current version on stdout
+# Returns: 0 if version >= minimum, 1 otherwise
+check_tool_version() {
+    local tool="$1"
+    local min_version="$2"
+    local current_version=""
+    
+    case "$tool" in
+        git)
+            current_version=$(git --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+            ;;
+        stow)
+            current_version=$(stow --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+            ;;
+        zsh)
+            current_version=$(zsh --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+            ;;
+        bash)
+            # BASH_VERSION contains extra text - extract just the version
+            current_version=$(echo "$BASH_VERSION" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+            ;;
+        tmux)
+            # Use * instead of ? to handle optional letters properly
+            current_version=$(tmux -V 2>/dev/null | grep -oE '[0-9]+\.[0-9]+[a-z]*' | head -1)
+            ;;
+    esac
+    
+    # Output current version for caller
+    echo "$current_version"
+    
+    if [[ -z "$current_version" ]]; then
+        return 1  # Could not determine version
+    fi
+    
+    if version_ge "$current_version" "$min_version"; then
+        return 0  # Version is sufficient
+    else
+        return 1  # Version is too old
+    fi
+}
+
+# Check dependencies with version requirements
 check_dependencies() {
     log_info "Checking dependencies..."
 
     local missing_deps=()
+    local outdated_deps=()
     local all_deps
     all_deps="$(get_required_deps common) $(get_required_deps optional)"
 
     for dep in $all_deps; do
         if ! command_exists "$dep"; then
             missing_deps+=("$dep")
+        else
+            # Check version if minimum is specified
+            local min_version
+            min_version=$(get_min_version "$dep")
+            
+            if [[ -n "$min_version" ]]; then
+                # Capture version and check status in one call (efficiency fix from Copilot)
+                local actual_version
+                actual_version=$(check_tool_version "$dep" "$min_version" 2>&1)
+                local check_status=$?
+                
+                if [[ $check_status -ne 0 ]] && [[ -n "$actual_version" ]]; then
+                    outdated_deps+=("$dep (${actual_version} < ${min_version})")
+                fi
+            fi
         fi
     done
+    
+    local has_errors=false
 
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        has_errors=true
         log_error "Missing dependencies: ${missing_deps[*]}"
         echo ""
         echo "Install missing dependencies:"
@@ -306,6 +385,25 @@ check_dependencies() {
         echo "  macOS: brew install ${missing_deps[*]}"
         echo "  CentOS/RHEL: sudo yum install ${missing_deps[*]}"
         echo "  Fedora: sudo dnf install ${missing_deps[*]}"
+        echo ""
+    fi
+    
+    if [[ ${#outdated_deps[@]} -gt 0 ]]; then
+        has_errors=true
+        log_error "Outdated dependencies detected:"
+        for outdated in "${outdated_deps[@]}"; do
+            echo "  ${SYMBOL_ERROR} $outdated"
+        done
+        echo ""
+        echo "Update outdated dependencies:"
+        echo "  Ubuntu/Debian: sudo apt-get update && sudo apt-get upgrade"
+        echo "  macOS: brew upgrade"
+        echo "  CentOS/RHEL: sudo yum update"
+        echo "  Fedora: sudo dnf upgrade"
+        echo ""
+    fi
+    
+    if $has_errors; then
         exit 1
     fi
 
