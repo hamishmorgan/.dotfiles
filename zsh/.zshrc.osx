@@ -1,13 +1,6 @@
 case $ZSH_HOST_OS in
 	darwin*)
-
-	#Environment variables
-  	# source ~/.dotfile_brew_setup
-
-	# Assumes that coreutils and other GNU tools have replaced OSX'
-	export PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH"
-	export PATH="$(brew --prefix coreutils)/libexec/gnubin:$PATH"
-	export MANPATH="$(brew --prefix coreutils)/libexec/gnuman:$MANPATH"
+	# macOS-specific aliases
 	alias ls='gls --color=auto'
 
 	# Faster keyboard repeat rate. The defaults available are so slow and it takes ages to delete a lot of text.

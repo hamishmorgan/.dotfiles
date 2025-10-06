@@ -1,6 +1,3 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
-
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
@@ -117,7 +114,7 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-
+# Detect OS for conditional configuration loading
 export ZSH_HOST_OS=$(uname | awk '{print tolower($0)}')
 
 # Load configs for MacOS. Does nothing if not on MacOS
@@ -129,3 +126,6 @@ fi
 if [ "$ZSH_HOST_OS" = "linux" ]; then
   source "$HOME/.zshrc.linux"
 fi
+
+# Custom aliases
+alias cursor='~/Applications/cursor.AppImage --no-sandbox'

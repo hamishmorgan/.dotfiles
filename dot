@@ -333,6 +333,7 @@ validate_zsh() {
     
     local zsh_files=(
         ".zshrc"
+        ".zprofile"
         ".oh-my-zsh"
     )
     
@@ -434,6 +435,7 @@ validate_bash() {
     
     local bash_files=(
         ".bashrc"
+        ".bash_profile"
     )
     
     local bash_errors=0

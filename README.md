@@ -23,7 +23,9 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 │   └── .gitconfig.personal      # Personal config (git-ignored)
 ├── zsh/           # Zsh configuration with Oh My Zsh
 │   ├── .zshrc
+│   ├── .zprofile
 │   ├── .zshrc.osx
+│   ├── .zshrc.linux
 │   └── .oh-my-zsh/  # Oh My Zsh submodule
 ├── tmux/          # Tmux configuration
 ├── gh/            # GitHub CLI configuration
@@ -33,6 +35,8 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 │       └── config.yml.personal   # Personal config (git-ignored)
 ├── gnuplot/       # GNU Plot configuration
 ├── bash/          # Bash configuration
+│   ├── .bashrc
+│   └── .bash_profile
 ├── dot            # Main dotfiles management script
 └── README.md      # This file
 ```
@@ -111,10 +115,11 @@ Verifies symlink integrity, configuration validity, dependencies, and orphaned s
 
 ### Zsh (`zsh/`)
 
-- Oh My Zsh integration
-- Platform-specific settings
+- Login shell environment (`.zprofile`)
+- Interactive shell configuration (`.zshrc`)
+- Oh My Zsh integration with plugins
+- Platform-specific settings (`.zshrc.osx`, `.zshrc.linux`)
 - Custom aliases and functions
-- History configuration
 
 ### Tmux (`tmux/`)
 
@@ -134,9 +139,10 @@ Verifies symlink integrity, configuration validity, dependencies, and orphaned s
 
 ### Bash (`bash/`)
 
-- Bash configuration and aliases
-- NVM integration
-- Cursor application alias
+- Login shell environment (`.bash_profile`)
+- Interactive shell configuration (`.bashrc`)
+- NVM, mise, and cargo integration
+- Custom aliases
 
 ## Updating
 
