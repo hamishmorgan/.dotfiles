@@ -1,4 +1,4 @@
-name: Validate Dotfiles
+name: CI
 
 on:
   push:

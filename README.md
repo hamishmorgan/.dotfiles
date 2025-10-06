@@ -1,6 +1,6 @@
 # .dotfiles
 
-[![Validate Dotfiles](https://github.com/hamishmorgan/.dotfiles/workflows/Validate%20Dotfiles/badge.svg)](https://github.com/hamishmorgan/.dotfiles/actions)
+[![CI](https://github.com/hamishmorgan/.dotfiles/workflows/CI/badge.svg)](https://github.com/hamishmorgan/.dotfiles/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Bash](https://img.shields.io/badge/Bash-4.0%2B-green.svg)](https://www.gnu.org/software/bash/)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-blue.svg)](#prerequisites)
