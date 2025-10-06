@@ -123,26 +123,26 @@ alias cursor='~/Applications/cursor.AppImage --no-sandbox'
 # Dotfiles management function
 d() {
     local cmd="${1:-help}"
-    shift 2>/dev/null
+    if (($#)); then shift; fi
     
     case "$cmd" in
-        h|health)      ~/.dotfiles/dot health "$@" ;;
-        v|validate)    ~/.dotfiles/dot validate "$@" ;;
-        u|update)      ~/.dotfiles/dot update "$@" ;;
-        ua|update-all) ~/.dotfiles/dot update-all "$@" ;;
-        s|status)      ~/.dotfiles/dot status "$@" ;;
-        b|backup)      ~/.dotfiles/dot backup "$@" ;;
-        c|clean)       ~/.dotfiles/dot clean "$@" ;;
-        i|install)     ~/.dotfiles/dot install "$@" ;;
-        cd)            builtin cd ~/.dotfiles || return ;;
-        *)             ~/.dotfiles/dot "$cmd" "$@" ;;
+        h|health)      "$HOME/.dotfiles/dot" health "$@" ;;
+        v|validate)    "$HOME/.dotfiles/dot" validate "$@" ;;
+        u|update)      "$HOME/.dotfiles/dot" update "$@" ;;
+        ua|update-all) "$HOME/.dotfiles/dot" update-all "$@" ;;
+        s|status)      "$HOME/.dotfiles/dot" status "$@" ;;
+        b|backup)      "$HOME/.dotfiles/dot" backup "$@" ;;
+        c|clean)       "$HOME/.dotfiles/dot" clean "$@" ;;
+        i|install)     "$HOME/.dotfiles/dot" install "$@" ;;
+        cd)            builtin cd "$HOME/.dotfiles" || return ;;
+        *)             "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
     esac
 }
 
 # Bash completion for dotfiles function
 _d_completion_bash() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
-    local commands="health validate update update-all status backup clean install uninstall cd"
+    local commands="h health v validate u update ua update-all s status b backup c clean i install uninstall cd"
     mapfile -t COMPREPLY < <(compgen -W "$commands" -- "$cur")
 }
 complete -F _d_completion_bash d
