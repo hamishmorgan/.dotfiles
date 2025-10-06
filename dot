@@ -1,7 +1,8 @@
 #!/bin/bash
 # Dotfiles management script
 
-set -e
+# Note: Not using 'set -e' for better error handling control
+# Errors are explicitly checked and handled with context
 
 # Colors for output
 RED='\033[0;31m'
@@ -13,6 +14,38 @@ NC='\033[0m' # No Color
 # Configuration
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$DOTFILES_DIR/backups/dotfiles-backup-$(date +%s)"
+
+# Track installation state for rollback
+INSTALLED_PACKAGES=()
+INSTALLATION_IN_PROGRESS=false
+
+# Cleanup handler
+cleanup_on_exit() {
+    local exit_code=$?
+    
+    # Only run cleanup if installation was in progress and failed
+    if [[ $INSTALLATION_IN_PROGRESS == true ]] && [[ $exit_code -ne 0 ]]; then
+        echo ""
+        log_error "Installation interrupted or failed (exit code: $exit_code)"
+        
+        if [[ ${#INSTALLED_PACKAGES[@]} -gt 0 ]]; then
+            log_warning "Partial installation detected: ${INSTALLED_PACKAGES[*]}"
+            log_info "Run './dot uninstall' to remove partial installation"
+            log_info "Or run './dot install' again to retry"
+        fi
+    fi
+}
+
+# Interrupt handler
+handle_interrupt() {
+    echo ""
+    log_warning "Installation interrupted by user"
+    exit 130
+}
+
+# Set up traps
+trap cleanup_on_exit EXIT
+trap handle_interrupt INT TERM
 
 # Package definitions
 declare -a PACKAGES=("git" "zsh" "tmux" "gh" "gnuplot" "bash")
@@ -205,76 +238,115 @@ backup_existing() {
 init_submodules() {
     log_info "Initializing git submodules..."
     
-    if [[ -f "$DOTFILES_DIR/.gitmodules" ]]; then
-        cd "$DOTFILES_DIR"
-        git submodule update --init --recursive
-        log_success "Submodules initialized"
-    else
+    if [[ ! -f "$DOTFILES_DIR/.gitmodules" ]]; then
         log_info "No submodules found"
+        return 0
     fi
+    
+    cd "$DOTFILES_DIR" || {
+        log_error "Failed to change to dotfiles directory: $DOTFILES_DIR"
+        return 1
+    }
+    
+    if ! timeout 60 git submodule update --init --recursive 2>&1; then
+        log_error "Failed to initialize git submodules (timeout or git error)"
+        log_info "Try running: cd $DOTFILES_DIR && git submodule update --init --recursive"
+        return 1
+    fi
+    
+    log_success "Submodules initialized"
+    return 0
 }
 
 # Process configuration templates (auto-discovered)
 process_templates() {
     log_info "Processing configuration templates..."
     
-    set +e  # Temporarily disable exit on error
     local template_count=0
+    local failed_count=0
     
     # Process all .template files found in dotfiles directory  
-    find "$DOTFILES_DIR" -type f -name "*.template" 2>/dev/null | sort | while read -r template; do
+    while IFS= read -r template; do
+        [[ -z "$template" ]] && continue
+        
         local target="${template%.template}"
         
-        if cp "$template" "$target"; then
+        if [[ ! -f "$template" ]]; then
+            log_warning "Template not found: ${template#"$DOTFILES_DIR"/}"
+            ((failed_count++))
+            continue
+        fi
+        
+        if cp "$template" "$target" 2>/dev/null; then
             log_info "Created ${target#"$DOTFILES_DIR"/} from template"
             ((template_count++))
         else
-            log_error "Failed to copy template: $template"
+            log_error "Failed to copy template: ${template#"$DOTFILES_DIR"/}"
+            log_error "Check permissions on $(dirname "$target")"
+            ((failed_count++))
         fi
-    done
+    done < <(find "$DOTFILES_DIR" -type f -name "*.template" 2>/dev/null | sort)
     
-    set -e  # Re-enable exit on error
-    
-    # Check if templates were processed
-    local created_files
-    created_files=$(find "$DOTFILES_DIR" -type f \( -name ".gitconfig" -o -name ".gitconfig.shopify" -o -name "config.yml" -o -name "hosts.yml" \) ! -name "*.template" ! -name "*.personal" 2>/dev/null | wc -l)
-    
-    if [[ $created_files -gt 0 ]]; then
-        log_success "Processed template files"
-    else
+    if [[ $template_count -eq 0 ]] && [[ $failed_count -eq 0 ]]; then
         log_info "No template files found"
+    elif [[ $template_count -gt 0 ]]; then
+        log_success "Processed $template_count template(s)"
     fi
+    
+    if [[ $failed_count -gt 0 ]]; then
+        log_error "Failed to process $failed_count template(s)"
+        return 1
+    fi
+    
+    return 0
 }
 
 # Merge git config using git-config command
 merge_git_config() {
     local source="$1"
     local target="$2"
-    local config_lines=()
     
-    # Read git config into array first
-    mapfile -t config_lines < <(git -c "core.filemode=false" config --file "$source" --list 2>/dev/null)
+    # Read git config output (avoid process substitution hang)
+    local config_output
+    config_output=$(git -c "core.filemode=false" config --file "$source" --list 2>&1) || {
+        log_error "Failed to read git config from: ${source#"$DOTFILES_DIR"/}"
+        log_error "Git error: $config_output"
+        return 1
+    }
     
     # Apply each line to target
-    for line in "${config_lines[@]}"; do
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
         local key="${line%%=*}"
         local value="${line#*=}"
-        git -c "core.filemode=false" config --file "$target" "$key" "$value"
-    done
+        
+        if ! git -c "core.filemode=false" config --file "$target" "$key" "$value" 2>/dev/null; then
+            log_warning "Failed to set $key in ${target#"$DOTFILES_DIR"/}"
+        fi
+    done <<< "$config_output"
+    
+    return 0
 }
 
 # Merge personal configurations with templates (auto-discovered)
 merge_personal_configs() {
     log_info "Merging personal configurations..."
     
-    set +e  # Temporarily disable exit on error
     local merge_count=0
+    local failed_count=0
     
     # Process all .personal files found in dotfiles directory
-    find "$DOTFILES_DIR" -type f -name "*.personal" 2>/dev/null | sort | while read -r personal; do
+    while IFS= read -r personal; do
+        [[ -z "$personal" ]] && continue
         [[ ! -f "$personal" ]] && continue
         
         local target="${personal%.personal}"
+        
+        if [[ ! -f "$target" ]]; then
+            log_warning "Target file not found for ${personal#"$DOTFILES_DIR"/}, skipping"
+            continue
+        fi
+        
         local merge_type
         merge_type=$(determine_merge_strategy "$target")
         
@@ -282,38 +354,52 @@ merge_personal_configs() {
         
         case "$merge_type" in
             git-merge)
-                merge_git_config "$personal" "$target"
+                if merge_git_config "$personal" "$target"; then
+                    ((merge_count++))
+                else
+                    log_error "Failed to merge git config from ${personal#"$DOTFILES_DIR"/}"
+                    ((failed_count++))
+                fi
                 ;;
             yaml-append)
-                {
+                if {
                     echo ""
                     echo "# Personal configuration"
                     cat "$personal"
-                } >> "$target"
+                } >> "$target" 2>/dev/null; then
+                    ((merge_count++))
+                else
+                    log_error "Failed to append personal config to ${target#"$DOTFILES_DIR"/}"
+                    ((failed_count++))
+                fi
                 ;;
             yaml-replace|replace)
-                cp "$personal" "$target"
+                if cp "$personal" "$target" 2>/dev/null; then
+                    ((merge_count++))
+                else
+                    log_error "Failed to copy ${personal#"$DOTFILES_DIR"/} to ${target#"$DOTFILES_DIR"/}"
+                    ((failed_count++))
+                fi
                 ;;
             *)
-                log_warning "Unknown merge type: $merge_type"
-                continue
+                log_warning "Unknown merge type: $merge_type for ${personal#"$DOTFILES_DIR"/}"
+                ((failed_count++))
                 ;;
         esac
-        
-        ((merge_count++))
-    done
+    done < <(find "$DOTFILES_DIR" -type f -name "*.personal" 2>/dev/null | sort)
     
-    set -e  # Re-enable exit on error
-    
-    # Check if personal configs exist
-    local personal_count
-    personal_count=$(find "$DOTFILES_DIR" -type f -name "*.personal" 2>/dev/null | wc -l)
-    
-    if [[ $personal_count -gt 0 ]]; then
-        log_success "Merged personal configuration files"
-    else
+    if [[ $merge_count -eq 0 ]] && [[ $failed_count -eq 0 ]]; then
         log_info "No personal configuration files found"
+    elif [[ $merge_count -gt 0 ]]; then
+        log_success "Merged $merge_count personal config(s)"
     fi
+    
+    if [[ $failed_count -gt 0 ]]; then
+        log_error "Failed to merge $failed_count personal config(s)"
+        return 1
+    fi
+    
+    return 0
 }
 
 # Install dotfiles using Stow
@@ -321,14 +407,25 @@ install_dotfiles() {
     log_info "Installing dotfiles using Stow..."
     
     for package in "${PACKAGES[@]}"; do
-        if [[ -d "$package" ]]; then
-            log_info "Installing package: $package"
-            stow -v -R -d "$DOTFILES_DIR" -t "$HOME" "$package"
+        if [[ ! -d "$package" ]]; then
+            log_warning "Package directory not found: $package, skipping"
+            continue
+        fi
+        
+        log_info "Installing package: $package"
+        
+        if stow -v -R -d "$DOTFILES_DIR" -t "$HOME" "$package" 2>&1; then
+            INSTALLED_PACKAGES+=("$package")
             log_success "Installed $package"
         else
-            log_warning "Package $package not found, skipping"
+            log_error "Failed to install package: $package"
+            log_info "This may be due to conflicting files in $HOME"
+            log_info "Check stow output above for details"
+            return 1
         fi
     done
+    
+    return 0
 }
 
 # Check if file is properly linked
@@ -476,26 +573,33 @@ uninstall_dotfiles() {
 # Main command handlers
 cmd_install() {
     log_info "Starting dotfiles installation..."
+    INSTALLATION_IN_PROGRESS=true
     
     log_info "Step 1: Backing up existing files..."
-    set +e  # Temporarily disable exit on error for backup
-    backup_existing
-    local backup_exit_code=$?
-    set -e  # Re-enable exit on error
-    if [[ $backup_exit_code -ne 0 ]]; then
-        log_error "Backup failed with exit code $backup_exit_code"
+    if ! backup_existing; then
+        log_error "Backup failed - aborting installation"
+        log_info "Backup directory: $BACKUP_DIR"
+        INSTALLATION_IN_PROGRESS=false
         return 1
     fi
     
     log_info "Step 2: Running installation pipeline..."
-    run_installation_pipeline
+    if ! run_installation_pipeline; then
+        log_error "Installation pipeline failed"
+        log_info "Run './dot validate' to check installation state"
+        INSTALLATION_IN_PROGRESS=false
+        return 1
+    fi
     
+    INSTALLATION_IN_PROGRESS=false
     log_success "Installation completed successfully!"
     echo ""
     echo "Next steps:"
     echo "  1. Restart your terminal or run: source ~/.zshrc"
     echo "  2. Set zsh as default shell: chsh -s \$(which zsh)"
     echo "  3. Validate installation: $0 validate"
+    
+    return 0
 }
 
 cmd_validate() {
@@ -525,12 +629,21 @@ update_gitignore() {
     local url="https://www.toptal.com/developers/gitignore/api/$types"
     local gitignore_file="$DOTFILES_DIR/git/.gitignore-globals"
     
-    if curl -s "$url" > "$gitignore_file.tmp"; then
-        mv "$gitignore_file.tmp" "$gitignore_file"
-        log_success "Updated .gitignore-globals with latest patterns"
+    # Add timeout to prevent hanging
+    if timeout 30 curl -s "$url" > "$gitignore_file.tmp" 2>&1; then
+        if [[ -s "$gitignore_file.tmp" ]]; then
+            mv "$gitignore_file.tmp" "$gitignore_file"
+            log_success "Updated .gitignore-globals with latest patterns"
+            return 0
+        else
+            rm -f "$gitignore_file.tmp"
+            log_error "Downloaded file is empty"
+            return 1
+        fi
     else
         rm -f "$gitignore_file.tmp"
-        log_error "Failed to download .gitignore-globals"
+        log_error "Failed to download .gitignore-globals (timeout or network error)"
+        log_info "Check your internet connection or try again later"
         return 1
     fi
 }
@@ -552,11 +665,31 @@ update_oh_my_zsh() {
 
 # Common installation pipeline
 run_installation_pipeline() {
-    check_dependencies
-    init_submodules
-    process_templates
-    merge_personal_configs
-    install_dotfiles
+    if ! check_dependencies; then
+        return 1
+    fi
+    
+    if ! init_submodules; then
+        log_error "Submodule initialization failed"
+        return 1
+    fi
+    
+    if ! process_templates; then
+        log_error "Template processing failed"
+        return 1
+    fi
+    
+    if ! merge_personal_configs; then
+        log_error "Personal config merging failed"
+        return 1
+    fi
+    
+    if ! install_dotfiles; then
+        log_error "Stow installation failed"
+        return 1
+    fi
+    
+    return 0
 }
 
 cmd_update() {
