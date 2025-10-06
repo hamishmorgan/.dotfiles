@@ -1,5 +1,12 @@
 # .dotfiles
 
+[![Validate Dotfiles](https://github.com/hamishmorgan/.dotfiles/workflows/Validate%20Dotfiles/badge.svg)](https://github.com/hamishmorgan/.dotfiles/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Bash](https://img.shields.io/badge/Bash-4.0%2B-green.svg)](https://www.gnu.org/software/bash/)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-blue.svg)](#prerequisites)
+[![GNU Stow](https://img.shields.io/badge/GNU-Stow-orange.svg)](https://www.gnu.org/software/stow/)
+[![Shell](https://img.shields.io/github/languages/top/hamishmorgan/.dotfiles)](https://github.com/hamishmorgan/.dotfiles)
+
 Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 
 ## Contents
