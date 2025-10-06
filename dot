@@ -1046,7 +1046,8 @@ check_template_consistency() {
 check_file_permissions() {
     log_info "Checking file permissions..."
     
-    local issues=0
+    local errors=0
+    local warnings=0
     
     # Check personal config files (should not be world-readable)
     while IFS= read -r personal; do
@@ -1060,24 +1061,28 @@ check_file_permissions() {
         if [[ "${perms: -1}" != "0" ]]; then
             log_warning "Personal config is world-readable: ${personal#"$DOTFILES_DIR"/}"
             log_info "  Consider: chmod 600 $personal"
-            ((issues++))
+            ((warnings++))
         else
             log_success "✓ ${personal#"$DOTFILES_DIR"/} has secure permissions"
         fi
     done < <(discover_personal_configs)
     
-    # Check for accidentally committed secrets
+    # Check for accidentally committed secrets (this is an ERROR not a warning)
     if [[ -f "$DOTFILES_DIR/git/.gitconfig.personal" ]]; then
         if git -C "$DOTFILES_DIR" ls-files --error-unmatch "git/.gitconfig.personal" >/dev/null 2>&1; then
             log_error "✗ Personal git config is tracked by git (potential secrets leak)"
             log_info "  Run: git rm --cached git/.gitconfig.personal"
-            ((issues++))
+            ((errors++))
         else
             log_success "✓ Personal configs properly ignored by git"
         fi
     fi
     
-    return $issues
+    if [[ $warnings -gt 0 ]]; then
+        log_info "Found $warnings permission warning(s) - consider fixing for better security"
+    fi
+    
+    return $errors
 }
 
 # Check shell integration
