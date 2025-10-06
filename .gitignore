@@ -16,3 +16,6 @@ git/.gitconfig
 git/.gitconfig.shopify
 gh/.config/gh/config.yml
 gh/.config/gh/hosts.yml
+
+# Active profile tracking
+.active_profile

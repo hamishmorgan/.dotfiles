@@ -25,6 +25,8 @@ NC='\033[0m' # No Color
 # Configuration
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$DOTFILES_DIR/backups/dotfiles-backup-$(date +%s)"
+ACTIVE_PROFILE_FILE="$DOTFILES_DIR/.active_profile"
+PROFILE_DIR="$DOTFILES_DIR/profiles"
 
 # Track installation state for rollback
 INSTALLED_PACKAGES=()
@@ -175,6 +177,12 @@ show_usage() {
     echo "  backup        Create backup of existing files"
     echo "  status        Show installation status"
     echo "  clean         Clean up backup directories"
+    echo "  profile       Manage configuration profiles"
+    echo ""
+    echo "Profile Commands:"
+    echo "  profile list            List available profiles"
+    echo "  profile status          Show active profile"
+    echo "  profile <name>          Switch to profile"
     echo ""
     echo "Options:"
     echo "  -h, --help    Show this help message"
@@ -186,6 +194,8 @@ show_usage() {
     echo "  $0 health            # Run health check"
     echo "  $0 update            # Update and reinstall"
     echo "  $0 update-all        # Update all packages and configurations"
+    echo "  $0 profile list      # List profiles"
+    echo "  $0 profile work      # Switch to work profile"
     echo "  $0 status            # Show status"
 }
 
@@ -519,7 +529,20 @@ merge_personal_configs() {
 install_dotfiles() {
     log_info "Installing dotfiles using Stow..."
     
-    for package in "${PACKAGES[@]}"; do
+    # Load active profile to get package list
+    local active_profile
+    active_profile=$(load_active_profile)
+    local packages_to_install=("${PACKAGES[@]}")
+    
+    # Override with profile packages if defined
+    if load_profile_config "$active_profile"; then
+        if [[ ${#PROFILE_PACKAGES[@]} -gt 0 ]]; then
+            packages_to_install=("${PROFILE_PACKAGES[@]}")
+            log_info "Using profile '$active_profile' packages"
+        fi
+    fi
+    
+    for package in "${packages_to_install[@]}"; do
         if [[ ! -d "$package" ]]; then
             log_warning "Package directory not found: $package, skipping"
             continue
@@ -1483,6 +1506,159 @@ cmd_uninstall() {
     uninstall_dotfiles
 }
 
+# Load active profile
+load_active_profile() {
+    if [[ -f "$ACTIVE_PROFILE_FILE" ]]; then
+        cat "$ACTIVE_PROFILE_FILE"
+    else
+        echo "personal"  # Default profile
+    fi
+}
+
+# Load profile configuration
+load_profile_config() {
+    local profile="$1"
+    local profile_file="$PROFILE_DIR/${profile}.conf"
+    
+    if [[ ! -f "$profile_file" ]]; then
+        log_error "Profile not found: $profile"
+        return 1
+    fi
+    
+    # shellcheck source=/dev/null
+    source "$profile_file"
+    return 0
+}
+
+# List available profiles
+list_profiles() {
+    log_info "Available profiles:"
+    echo ""
+    
+    local active_profile
+    active_profile=$(load_active_profile)
+    
+    for profile_file in "$PROFILE_DIR"/*.conf; do
+        [[ -f "$profile_file" ]] || continue
+        
+        local profile_name
+        profile_name=$(basename "$profile_file" .conf)
+        
+        # Load profile to get description
+        local PROFILE_DESCRIPTION=""
+        # shellcheck source=/dev/null
+        source "$profile_file"
+        
+        local marker=""
+        if [[ "$profile_name" == "$active_profile" ]]; then
+            marker=" ${GREEN}(active)${NC}"
+        fi
+        
+        echo -e "  ${BLUE}$profile_name${NC}$marker"
+        echo "    $PROFILE_DESCRIPTION"
+        echo ""
+    done
+}
+
+# Show current profile status
+show_profile_status() {
+    local active_profile
+    active_profile=$(load_active_profile)
+    
+    log_info "Active profile: $active_profile"
+    echo ""
+    
+    # Load and display profile details
+    if load_profile_config "$active_profile"; then
+        echo "Packages:"
+        for pkg in "${PROFILE_PACKAGES[@]}"; do
+            echo "  - $pkg"
+        done
+        
+        if [[ ${#PROFILE_TEMPLATES[@]} -gt 0 ]]; then
+            echo ""
+            echo "Special templates:"
+            for tmpl in "${PROFILE_TEMPLATES[@]}"; do
+                echo "  - $tmpl"
+            done
+        fi
+    fi
+}
+
+# Switch to a different profile
+switch_profile() {
+    local new_profile="$1"
+    local profile_file="$PROFILE_DIR/${new_profile}.conf"
+    
+    if [[ ! -f "$profile_file" ]]; then
+        log_error "Profile not found: $new_profile"
+        log_info "Available profiles:"
+        for f in "$PROFILE_DIR"/*.conf; do
+            echo "  - $(basename "$f" .conf)"
+        done
+        return 1
+    fi
+    
+    local current_profile
+    current_profile=$(load_active_profile)
+    
+    if [[ "$current_profile" == "$new_profile" ]]; then
+        log_info "Profile '$new_profile' is already active"
+        return 0
+    fi
+    
+    log_info "Switching from '$current_profile' to '$new_profile'..."
+    echo ""
+    
+    # Load new profile to show what will be installed
+    if load_profile_config "$new_profile"; then
+        echo "New profile will install:"
+        for pkg in "${PROFILE_PACKAGES[@]}"; do
+            echo "  - $pkg"
+        done
+        echo ""
+    fi
+    
+    read -p "Continue with profile switch? (y/N): " -n 1 -r
+    echo ""
+    
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Profile switch cancelled"
+        return 0
+    fi
+    
+    # Uninstall current configuration
+    log_info "Uninstalling current configuration..."
+    uninstall_dotfiles
+    
+    # Save new active profile
+    echo "$new_profile" > "$ACTIVE_PROFILE_FILE"
+    
+    # Reinstall with new profile
+    log_info "Installing new profile..."
+    cmd_install
+    
+    log_success "Switched to profile: $new_profile"
+}
+
+# Profile command handler
+cmd_profile() {
+    local action="${1:-status}"
+    
+    case "$action" in
+        list)
+            list_profiles
+            ;;
+        status)
+            show_profile_status
+            ;;
+        *)
+            # Treat as profile name to switch to
+            switch_profile "$action"
+            ;;
+    esac
+}
+
 # Main script logic
 main() {
     # Parse arguments
@@ -1499,7 +1675,7 @@ main() {
                 verbose=true
                 shift
                 ;;
-            install|validate|health|update|update-all|status|backup|clean|uninstall)
+            install|validate|health|update|update-all|status|backup|clean|uninstall|profile)
                 if [[ -n "$command" ]]; then
                     log_error "Multiple commands specified"
                     exit 1
@@ -1554,6 +1730,9 @@ main() {
             ;;
         uninstall)
             cmd_uninstall
+            ;;
+        profile)
+            cmd_profile "$@"
             ;;
         *)
             log_error "Unknown command: $command"
