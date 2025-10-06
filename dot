@@ -673,31 +673,113 @@ show_status() {
 
 # Clean up backup directories
 clean_backups() {
-    log_info "Cleaning up backup directories..."
+    log_info "Cleaning up old backup directories..."
     
     local backup_dirs=()
-    mapfile -t backup_dirs < <(get_backup_dirs)
+    mapfile -t backup_dirs < <(get_backup_dirs | sort -r)
     
-    if [[ ${#backup_dirs[@]} -gt 0 ]]; then
-        echo "Found backup directories:"
-        for dir in "${backup_dirs[@]}"; do
-            echo "  $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
-        done
-        echo ""
-        read -p "Delete all backup directories? (y/N): " -n 1 -r
-        echo ""
-        
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            for dir in "${backup_dirs[@]}"; do
-                rm -rf "$dir"
-            done
-            log_success "Backup directories removed"
-        else
-            log_info "Backup cleanup cancelled"
-        fi
-    else
-        log_info "No backup directories found"
+    local total_backups=${#backup_dirs[@]}
+    
+    if [[ $total_backups -eq 0 ]]; then
+        log_info "No backup directories to clean"
+        return 0
     fi
+    
+    log_info "Found $total_backups backup(s)"
+    
+    # Configuration (can be overridden via environment)
+    local keep_count=${BACKUP_KEEP_COUNT:-5}
+    local keep_days=${BACKUP_KEEP_DAYS:-30}
+    
+    log_info "Retention policy: keep $keep_count most recent OR newer than $keep_days days"
+    echo ""
+    
+    # Categorize backups
+    local -a to_remove=()
+    local -a to_keep=()
+    
+    for i in "${!backup_dirs[@]}"; do
+        local backup="${backup_dirs[$i]}"
+        local backup_name
+        backup_name=$(basename "$backup")
+        
+        # Keep first N backups regardless of age (sorted newest first)
+        if [[ $i -lt $keep_count ]]; then
+            to_keep+=("$backup")
+            continue
+        fi
+        
+        # For older backups, check age
+        local backup_age_days
+        backup_age_days=$(( ($(date +%s) - $(stat -c %Y "$backup" 2>/dev/null || stat -f %m "$backup" 2>/dev/null)) / 86400 ))
+        
+        if [[ $backup_age_days -gt $keep_days ]]; then
+            to_remove+=("$backup")
+        else
+            to_keep+=("$backup")
+        fi
+    done
+    
+    # Show summary
+    if [[ ${#to_remove[@]} -eq 0 ]]; then
+        log_success "All backups within retention policy. Nothing to clean."
+        return 0
+    fi
+    
+    echo "Backups to remove (${#to_remove[@]}):"
+    for backup in "${to_remove[@]}"; do
+        local backup_name
+        backup_name=$(basename "$backup")
+        local size
+        size=$(du -sh "$backup" 2>/dev/null | cut -f1)
+        local age_days
+        age_days=$(( ($(date +%s) - $(stat -c %Y "$backup" 2>/dev/null || stat -f %m "$backup" 2>/dev/null)) / 86400 ))
+        echo "  - $backup_name ($size, ${age_days}d old)"
+    done
+    
+    echo ""
+    echo "Backups to keep (${#to_keep[@]}):"
+    for backup in "${to_keep[@]}"; do
+        local backup_name
+        backup_name=$(basename "$backup")
+        local size
+        size=$(du -sh "$backup" 2>/dev/null | cut -f1)
+        echo "  - $backup_name ($size)"
+    done
+    
+    echo ""
+    read -p "Remove ${#to_remove[@]} old backup(s)? (y/N): " -n 1 -r
+    echo
+    
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Backup cleanup cancelled"
+        return 0
+    fi
+    
+    # Remove old backups
+    local removed_count=0
+    local freed_space=0
+    
+    for backup in "${to_remove[@]}"; do
+        local backup_name
+        backup_name=$(basename "$backup")
+        local size_kb
+        size_kb=$(du -sk "$backup" 2>/dev/null | cut -f1)
+        
+        if rm -rf "$backup" 2>/dev/null; then
+            log_success "Removed $backup_name"
+            ((removed_count++))
+            ((freed_space += size_kb))
+        else
+            log_error "Failed to remove $backup_name"
+        fi
+    done
+    
+    echo ""
+    log_success "Removed $removed_count backup(s)"
+    log_info "Freed $((freed_space / 1024))MB of disk space"
+    
+    return 0
 }
 
 # Uninstall dotfiles
