@@ -46,6 +46,11 @@ jobs:
         ./dot install
         ./dot validate
     
+    - name: Run health check
+      run: |
+        cd ${{ github.workspace }}
+        ./dot health
+    
     - name: Test configurations
       run: |
         zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
@@ -75,6 +80,11 @@ jobs:
         # Use homebrew bash (4.0+) instead of system bash (3.2)
         /opt/homebrew/bin/bash ./dot install
         /opt/homebrew/bin/bash ./dot validate
+    
+    - name: Run health check
+      run: |
+        cd ${{ github.workspace }}
+        /opt/homebrew/bin/bash ./dot health
     
     - name: Test configurations
       run: |
