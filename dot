@@ -211,20 +211,84 @@ portable_timeout() {
     fi
 }
 
-# Check dependencies
+# Version comparison helper
+version_ge() {
+    # Returns 0 if version $1 >= version $2
+    printf '%s\n%s\n' "$2" "$1" | sort -V -C
+}
+
+# Check specific tool version
+check_tool_version() {
+    local tool="$1"
+    local min_version="$2"
+    local current_version=""
+    
+    case "$tool" in
+        git)
+            current_version=$(git --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+            ;;
+        stow)
+            current_version=$(stow --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+            ;;
+        zsh)
+            current_version=$(zsh --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+            ;;
+        bash)
+            current_version="$BASH_VERSION"
+            ;;
+        tmux)
+            current_version=$(tmux -V 2>/dev/null | grep -oE '[0-9]+\.[0-9]+[a-z]?' | head -1)
+            ;;
+    esac
+    
+    if [[ -z "$current_version" ]]; then
+        return 1  # Could not determine version
+    fi
+    
+    if version_ge "$current_version" "$min_version"; then
+        return 0  # Version is sufficient
+    else
+        echo "$current_version"
+        return 1  # Version is too old
+    fi
+}
+
+# Check dependencies with version requirements
 check_dependencies() {
     log_info "Checking dependencies..."
     
+    # Minimum version requirements
+    declare -A MIN_VERSIONS=(
+        ["git"]="2.0.0"
+        ["stow"]="2.3"
+        ["zsh"]="5.0"
+        ["bash"]="4.0"
+        ["tmux"]="2.0"
+    )
+    
     local missing_deps=()
+    local outdated_deps=()
     local all_deps="${REQUIRED_DEPS[common]} ${REQUIRED_DEPS[optional]}"
     
     for dep in $all_deps; do
         if ! command_exists "$dep"; then
             missing_deps+=("$dep")
+        elif [[ -n "${MIN_VERSIONS[$dep]}" ]]; then
+            # Check version if minimum is specified
+            local actual_version
+            if ! check_tool_version "$dep" "${MIN_VERSIONS[$dep]}" 2>/dev/null; then
+                actual_version=$(check_tool_version "$dep" "${MIN_VERSIONS[$dep]}" 2>&1 || echo "unknown")
+                if [[ "$actual_version" != "unknown" ]]; then
+                    outdated_deps+=("$dep (${actual_version} < ${MIN_VERSIONS[$dep]})")
+                fi
+            fi
         fi
     done
     
+    local has_errors=false
+    
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        has_errors=true
         log_error "Missing dependencies: ${missing_deps[*]}"
         echo ""
         echo "Install missing dependencies:"
@@ -232,6 +296,23 @@ check_dependencies() {
         echo "  macOS: brew install ${missing_deps[*]}"
         echo "  CentOS/RHEL: sudo yum install ${missing_deps[*]}"
         echo "  Fedora: sudo dnf install ${missing_deps[*]}"
+        echo ""
+    fi
+    
+    if [[ ${#outdated_deps[@]} -gt 0 ]]; then
+        has_errors=true
+        log_error "Outdated dependencies detected:"
+        for dep_info in "${outdated_deps[@]}"; do
+            echo "  ✗ $dep_info"
+        done
+        echo ""
+        echo "Update outdated dependencies:"
+        echo "  Ubuntu/Debian: sudo apt-get update && sudo apt-get upgrade"
+        echo "  macOS: brew upgrade"
+        echo ""
+    fi
+    
+    if $has_errors; then
         exit 1
     fi
     
