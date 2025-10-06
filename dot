@@ -14,6 +14,52 @@ NC='\033[0m' # No Color
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$DOTFILES_DIR/backups/dotfiles-backup-$(date +%s)"
 
+# Package definitions
+declare -a PACKAGES=("git" "zsh" "tmux" "gh" "gnuplot" "bash")
+
+# Package file mappings (package_name:file1,file2,file3)
+declare -A PACKAGE_FILES=(
+    ["git"]=".gitconfig,.gitattributes,.gitignore-globals"
+    ["zsh"]=".zshrc,.zprofile,.oh-my-zsh"
+    ["tmux"]=".tmux.conf"
+    ["gh"]=".config/gh"
+    ["gnuplot"]=".gnuplot"
+    ["bash"]=".bashrc,.bash_profile"
+)
+
+# Package display names
+declare -A PACKAGE_NAMES=(
+    ["git"]="Git"
+    ["zsh"]="Zsh"
+    ["tmux"]="Tmux"
+    ["gh"]="GitHub CLI"
+    ["gnuplot"]="GNU Plot"
+    ["bash"]="Bash"
+)
+
+# Template mappings (source:destination)
+declare -a TEMPLATES=(
+    "git/.gitconfig.template:git/.gitconfig"
+    "git/.gitconfig.shopify.template:git/.gitconfig.shopify"
+    "gh/.config/gh/config.yml.template:gh/.config/gh/config.yml"
+    "gh/.config/gh/hosts.yml.template:gh/.config/gh/hosts.yml"
+)
+
+# Personal config merge operations (type:source:destination)
+# Types: git-merge, yaml-append, yaml-replace
+declare -a PERSONAL_CONFIGS=(
+    "git-merge:git/.gitconfig.personal:git/.gitconfig"
+    "git-merge:git/.gitconfig.shopify.personal:git/.gitconfig.shopify"
+    "yaml-append:gh/.config/gh/config.yml.personal:gh/.config/gh/config.yml"
+    "yaml-replace:gh/.config/gh/hosts.yml.personal:gh/.config/gh/hosts.yml"
+)
+
+# Required dependencies per platform
+declare -A REQUIRED_DEPS=(
+    ["common"]="stow git"
+    ["optional"]="tmux zsh"
+)
+
 # Logging functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -67,22 +113,13 @@ check_dependencies() {
     log_info "Checking dependencies..."
     
     local missing_deps=()
+    local all_deps="${REQUIRED_DEPS[common]} ${REQUIRED_DEPS[optional]}"
     
-    if ! command_exists stow; then
-        missing_deps+=("stow")
-    fi
-    
-    if ! command_exists git; then
-        missing_deps+=("git")
-    fi
-    
-    if ! command_exists tmux; then
-        missing_deps+=("tmux")
-    fi
-    
-    if ! command_exists zsh; then
-        missing_deps+=("zsh")
-    fi
+    for dep in $all_deps; do
+        if ! command_exists "$dep"; then
+            missing_deps+=("$dep")
+        fi
+    done
     
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
         log_error "Missing dependencies: ${missing_deps[*]}"
@@ -116,22 +153,14 @@ backup_existing() {
     # Create backup directory
     mkdir -p "$BACKUP_DIR"
     
-    local files_to_backup=(
-        ".gitconfig"
-        ".gitattributes"
-        ".gitignore-globals"
-        ".zshrc"
-        ".zshrc.osx"
-        ".oh-my-zsh"
-        ".tmux.conf"
-        ".bashrc"
-        ".gnuplot"
-        ".config/gh"
-    )
-    
     local backed_up=0
     
-    for file in "${files_to_backup[@]}"; do
+    # Generate backup list dynamically from PACKAGE_FILES
+    for package in "${PACKAGES[@]}"; do
+        local files="${PACKAGE_FILES[$package]}"
+        IFS=',' read -ra file_array <<< "$files"
+        
+        for file in "${file_array[@]}"; do
         if [[ -e "$HOME/$file" ]]; then
             log_info "Backing up $file"
             if [[ -d "$HOME/$file" ]]; then
@@ -154,6 +183,7 @@ backup_existing() {
         else
             log_info "File $file does not exist, skipping"
         fi
+        done
     done
     
     if [[ $backed_up -gt 0 ]]; then
@@ -180,14 +210,7 @@ init_submodules() {
 process_templates() {
     log_info "Processing configuration templates..."
     
-    local templates=(
-        "git/.gitconfig.template:git/.gitconfig"
-        "git/.gitconfig.shopify.template:git/.gitconfig.shopify"
-        "gh/.config/gh/config.yml.template:gh/.config/gh/config.yml"
-        "gh/.config/gh/hosts.yml.template:gh/.config/gh/hosts.yml"
-    )
-    
-    for template_info in "${templates[@]}"; do
+    for template_info in "${TEMPLATES[@]}"; do
         IFS=':' read -r template target <<< "$template_info"
         if [[ -f "$DOTFILES_DIR/$template" ]]; then
             cp "$DOTFILES_DIR/$template" "$DOTFILES_DIR/$target"
@@ -198,74 +221,64 @@ process_templates() {
     done
 }
 
+# Merge git config using git-config command
+merge_git_config() {
+    local source="$1"
+    local target="$2"
+    
+    while read -r line; do
+        local key="${line%%=*}"
+        local value="${line#*=}"
+        git -c "core.filemode=false" config --file "$target" "$key" "$value"
+    done < <(git -c "core.filemode=false" config --file "$source" --list)
+}
+
 # Merge personal configurations with templates
 merge_personal_configs() {
     log_info "Merging personal configurations..."
     
-    # Merge .gitconfig.personal if it exists
-    if [[ -f "$DOTFILES_DIR/git/.gitconfig.personal" ]]; then
-        log_info "Merging git personal configuration"
-        # Use git config to merge personal settings
-        while read -r line; do
-            # Parse key=value format and set in template
-            local key="${line%%=*}"
-            local value="${line#*=}"
-            git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig" "$key" "$value"
-        done < <(git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig.personal" --list)
-        log_success "Merged git personal configuration"
-    else
-        log_info "No git personal configuration found"
-    fi
-    
-    # Merge .gitconfig.shopify.personal if it exists
-    if [[ -f "$DOTFILES_DIR/git/.gitconfig.shopify.personal" ]]; then
-        log_info "Merging Shopify git personal configuration"
-        # Use git config to merge personal settings
-        while read -r line; do
-            # Parse key=value format and set in template
-            local key="${line%%=*}"
-            local value="${line#*=}"
-            git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig.shopify" "$key" "$value"
-        done < <(git -c "core.filemode=false" config --file "$DOTFILES_DIR/git/.gitconfig.shopify.personal" --list)
-        log_success "Merged Shopify git personal configuration"
-    else
-        log_info "No Shopify git personal configuration found"
-    fi
-    
-    # Merge gh config.personal if it exists
-    if [[ -f "$DOTFILES_DIR/gh/.config/gh/config.yml.personal" ]]; then
-        log_info "Merging GitHub CLI personal configuration"
-        # For YAML files, we'll append the personal config to the template
-        # Add a separator and append personal config
-        {
-            echo ""
-            echo "# Personal configuration"
-            cat "$DOTFILES_DIR/gh/.config/gh/config.yml.personal"
-        } >> "$DOTFILES_DIR/gh/.config/gh/config.yml"
-        log_success "Merged GitHub CLI personal configuration"
-    else
-        log_info "No GitHub CLI personal configuration found"
-    fi
-    
-    # Merge gh hosts.personal if it exists
-    if [[ -f "$DOTFILES_DIR/gh/.config/gh/hosts.yml.personal" ]]; then
-        log_info "Merging GitHub CLI hosts personal configuration"
-        # For YAML files, we'll replace the template with personal config
-        cp "$DOTFILES_DIR/gh/.config/gh/hosts.yml.personal" "$DOTFILES_DIR/gh/.config/gh/hosts.yml"
-        log_success "Merged GitHub CLI hosts personal configuration"
-    else
-        log_info "No GitHub CLI hosts personal configuration found"
-    fi
+    for config_info in "${PERSONAL_CONFIGS[@]}"; do
+        IFS=':' read -r merge_type source target <<< "$config_info"
+        
+        local full_source="$DOTFILES_DIR/$source"
+        local full_target="$DOTFILES_DIR/$target"
+        
+        if [[ ! -f "$full_source" ]]; then
+            log_info "No personal config found: $source"
+            continue
+        fi
+        
+        log_info "Merging personal configuration: $source"
+        
+        case "$merge_type" in
+            git-merge)
+                merge_git_config "$full_source" "$full_target"
+                ;;
+            yaml-append)
+                {
+                    echo ""
+                    echo "# Personal configuration"
+                    cat "$full_source"
+                } >> "$full_target"
+                ;;
+            yaml-replace)
+                cp "$full_source" "$full_target"
+                ;;
+            *)
+                log_warning "Unknown merge type: $merge_type"
+                continue
+                ;;
+        esac
+        
+        log_success "Merged: $source"
+    done
 }
 
 # Install dotfiles using Stow
 install_dotfiles() {
     log_info "Installing dotfiles using Stow..."
     
-    # Define packages to install
-    local packages=("git" "zsh" "tmux" "gh" "gnuplot" "bash")
-    
-    for package in "${packages[@]}"; do
+    for package in "${PACKAGES[@]}"; do
         if [[ -d "$package" ]]; then
             log_info "Installing package: $package"
             stow -v -R -d "$DOTFILES_DIR" -t "$HOME" "$package"
@@ -300,159 +313,41 @@ check_symlink() {
     fi
 }
 
-# Validate git configuration
-validate_git() {
-    log_info "Validating git configuration..."
+# Generic package validation function
+validate_package() {
+    local package="$1"
+    local display_name="${PACKAGE_NAMES[$package]}"
+    local files="${PACKAGE_FILES[$package]}"
     
-    local git_files=(
-        ".gitconfig"
-        ".gitattributes"
-        ".gitignore-globals"
-    )
+    log_info "Validating $display_name configuration..."
     
-    local git_errors=0
+    local errors=0
+    IFS=',' read -ra file_array <<< "$files"
     
-    for file in "${git_files[@]}"; do
-        if ! check_symlink "$file" ".dotfiles/git"; then
-            ((git_errors++))
+    for file in "${file_array[@]}"; do
+        if ! check_symlink "$file" ".dotfiles/$package"; then
+            ((errors++))
         fi
     done
     
-    if [[ $git_errors -eq 0 ]]; then
-        log_success "Git configuration validated successfully"
+    if [[ $errors -eq 0 ]]; then
+        log_success "$display_name configuration validated successfully"
         return 0
     else
-        log_error "Git validation failed with $git_errors errors"
+        log_error "$display_name validation failed with $errors errors"
         return 1
     fi
 }
 
-# Validate zsh configuration
-validate_zsh() {
-    log_info "Validating zsh configuration..."
-    
-    local zsh_files=(
-        ".zshrc"
-        ".zprofile"
-        ".oh-my-zsh"
-    )
-    
-    local zsh_errors=0
-    
-    for file in "${zsh_files[@]}"; do
-        if ! check_symlink "$file" ".dotfiles/zsh"; then
-            ((zsh_errors++))
+# Get list of backup directories
+get_backup_dirs() {
+    local backup_dirs=()
+    for dir in "$DOTFILES_DIR"/backups/dotfiles-backup-*; do
+        if [[ -d "$dir" ]]; then
+            backup_dirs+=("$dir")
         fi
     done
-    
-    if [[ $zsh_errors -eq 0 ]]; then
-        log_success "Zsh configuration validated successfully"
-        return 0
-    else
-        log_error "Zsh validation failed with $zsh_errors errors"
-        return 1
-    fi
-}
-
-# Validate tmux configuration
-validate_tmux() {
-    log_info "Validating tmux configuration..."
-    
-    local tmux_files=(
-        ".tmux.conf"
-    )
-    
-    local tmux_errors=0
-    
-    for file in "${tmux_files[@]}"; do
-        if ! check_symlink "$file" ".dotfiles/tmux"; then
-            ((tmux_errors++))
-        fi
-    done
-    
-    if [[ $tmux_errors -eq 0 ]]; then
-        log_success "Tmux configuration validated successfully"
-        return 0
-    else
-        log_error "Tmux validation failed with $tmux_errors errors"
-        return 1
-    fi
-}
-
-# Validate GitHub CLI configuration
-validate_gh() {
-    log_info "Validating GitHub CLI configuration..."
-    
-    local gh_files=(
-        ".config/gh"
-    )
-    
-    local gh_errors=0
-    
-    for file in "${gh_files[@]}"; do
-        if ! check_symlink "$file" ".dotfiles/gh"; then
-            ((gh_errors++))
-        fi
-    done
-    
-    if [[ $gh_errors -eq 0 ]]; then
-        log_success "GitHub CLI configuration validated successfully"
-        return 0
-    else
-        log_error "GitHub CLI validation failed with $gh_errors errors"
-        return 1
-    fi
-}
-
-# Validate GNU Plot configuration
-validate_gnuplot() {
-    log_info "Validating GNU Plot configuration..."
-    
-    local gnuplot_files=(
-        ".gnuplot"
-    )
-    
-    local gnuplot_errors=0
-    
-    for file in "${gnuplot_files[@]}"; do
-        if ! check_symlink "$file" ".dotfiles/gnuplot"; then
-            ((gnuplot_errors++))
-        fi
-    done
-    
-    if [[ $gnuplot_errors -eq 0 ]]; then
-        log_success "GNU Plot configuration validated successfully"
-        return 0
-    else
-        log_error "GNU Plot validation failed with $gnuplot_errors errors"
-        return 1
-    fi
-}
-
-# Validate Bash configuration
-validate_bash() {
-    log_info "Validating Bash configuration..."
-    
-    local bash_files=(
-        ".bashrc"
-        ".bash_profile"
-    )
-    
-    local bash_errors=0
-    
-    for file in "${bash_files[@]}"; do
-        if ! check_symlink "$file" ".dotfiles/bash"; then
-            ((bash_errors++))
-        fi
-    done
-    
-    if [[ $bash_errors -eq 0 ]]; then
-        log_success "Bash configuration validated successfully"
-        return 0
-    else
-        log_error "Bash validation failed with $bash_errors errors"
-        return 1
-    fi
+    printf '%s\n' "${backup_dirs[@]}"
 }
 
 # Show installation status
@@ -460,40 +355,28 @@ show_status() {
     log_info "Dotfiles installation status:"
     echo ""
     
-    local files=(
-        ".gitconfig:git"
-        ".gitattributes:git"
-        ".gitignore-globals:git"
-        ".zshrc:zsh"
-        ".oh-my-zsh:zsh"
-        ".tmux.conf:tmux"
-        ".bashrc:bash"
-        ".gnuplot:gnuplot"
-        ".config/gh:gh"
-    )
-    
-    for file_info in "${files[@]}"; do
-        IFS=':' read -r file package <<< "$file_info"
+    # Generate file list dynamically from PACKAGE_FILES
+    for package in "${PACKAGES[@]}"; do
+        local files="${PACKAGE_FILES[$package]}"
+        IFS=',' read -ra file_array <<< "$files"
         
-        if [[ -L "$HOME/$file" ]]; then
-            local target
-        target=$(readlink "$HOME/$file")
-            echo -e "  ${GREEN}✓${NC} $file -> $target"
-        elif [[ -e "$HOME/$file" ]]; then
-            echo -e "  ${YELLOW}⚠${NC} $file (exists but not a symlink)"
-        else
-            echo -e "  ${RED}✗${NC} $file (not found)"
-        fi
+        for file in "${file_array[@]}"; do
+            if [[ -L "$HOME/$file" ]]; then
+                local target
+                target=$(readlink "$HOME/$file")
+                echo -e "  ${GREEN}✓${NC} $file -> $target"
+            elif [[ -e "$HOME/$file" ]]; then
+                echo -e "  ${YELLOW}⚠${NC} $file (exists but not a symlink)"
+            else
+                echo -e "  ${RED}✗${NC} $file (not found)"
+            fi
+        done
     done
     
     echo ""
     log_info "Backup directories:"
     local backup_dirs=()
-    for dir in "$DOTFILES_DIR"/backups/dotfiles-backup-*; do
-        if [[ -d "$dir" ]]; then
-            backup_dirs+=("$dir")
-        fi
-    done
+    mapfile -t backup_dirs < <(get_backup_dirs)
     
     if [[ ${#backup_dirs[@]} -gt 0 ]]; then
         for dir in "${backup_dirs[@]}"; do
@@ -509,11 +392,7 @@ clean_backups() {
     log_info "Cleaning up backup directories..."
     
     local backup_dirs=()
-    for dir in "$DOTFILES_DIR"/backups/dotfiles-backup-*; do
-        if [[ -d "$dir" ]]; then
-            backup_dirs+=("$dir")
-        fi
-    done
+    mapfile -t backup_dirs < <(get_backup_dirs)
     
     if [[ ${#backup_dirs[@]} -gt 0 ]]; then
         echo "Found backup directories:"
@@ -541,9 +420,7 @@ clean_backups() {
 uninstall_dotfiles() {
     log_info "Uninstalling dotfiles..."
     
-    local packages=("git" "zsh" "tmux" "gh" "gnuplot" "bash")
-    
-    for package in "${packages[@]}"; do
+    for package in "${PACKAGES[@]}"; do
         if [[ -d "$package" ]]; then
             log_info "Uninstalling package: $package"
             stow -v -D -d "$DOTFILES_DIR" -t "$HOME" "$package"
@@ -558,9 +435,7 @@ uninstall_dotfiles() {
 cmd_install() {
     log_info "Starting dotfiles installation..."
     
-    log_info "Step 1: Checking dependencies..."
-    check_dependencies
-    log_info "Step 2: Backing up existing files..."
+    log_info "Step 1: Backing up existing files..."
     set +e  # Temporarily disable exit on error for backup
     backup_existing
     local backup_exit_code=$?
@@ -569,14 +444,9 @@ cmd_install() {
         log_error "Backup failed with exit code $backup_exit_code"
         return 1
     fi
-    log_info "Step 3: Initializing submodules..."
-    init_submodules
-    log_info "Step 4: Processing templates..."
-    process_templates
-    log_info "Step 5: Merging personal configurations..."
-    merge_personal_configs
-    log_info "Step 6: Installing dotfiles..."
-    install_dotfiles
+    
+    log_info "Step 2: Running installation pipeline..."
+    run_installation_pipeline
     
     log_success "Installation completed successfully!"
     echo ""
@@ -591,12 +461,9 @@ cmd_validate() {
     
     local errors=0
     
-    validate_git || ((errors++))
-    validate_zsh || ((errors++))
-    validate_tmux || ((errors++))
-    validate_gh || ((errors++))
-    validate_gnuplot || ((errors++))
-    validate_bash || ((errors++))
+    for package in "${PACKAGES[@]}"; do
+        validate_package "$package" || ((errors++))
+    done
     
     echo ""
     if [[ $errors -eq 0 ]]; then
@@ -641,15 +508,18 @@ update_oh_my_zsh() {
     fi
 }
 
-cmd_update() {
-    log_info "Updating dotfiles..."
-    
+# Common installation pipeline
+run_installation_pipeline() {
     check_dependencies
     init_submodules
     process_templates
     merge_personal_configs
     install_dotfiles
-    
+}
+
+cmd_update() {
+    log_info "Updating dotfiles..."
+    run_installation_pipeline
     log_success "Update completed successfully!"
 }
 
@@ -663,11 +533,7 @@ cmd_update_all() {
     update_oh_my_zsh
     
     # Reinstall to pick up any changes
-    check_dependencies
-    init_submodules
-    process_templates
-    merge_personal_configs
-    install_dotfiles
+    run_installation_pipeline
     
     log_success "All packages updated successfully!"
 }
