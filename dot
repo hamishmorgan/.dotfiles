@@ -422,6 +422,22 @@ merge_git_config() {
     return 0
 }
 
+# Secure permissions on personal config file
+secure_personal_file() {
+    local personal="$1"
+    
+    if [[ ! -f "$personal" ]]; then
+        return 0
+    fi
+    
+    if ! chmod 600 "$personal" 2>/dev/null; then
+        log_warning "Failed to set secure permissions on ${personal#"$DOTFILES_DIR"/}"
+        return 1
+    fi
+    
+    return 0
+}
+
 # Merge personal configurations with templates (auto-discovered)
 merge_personal_configs() {
     log_info "Merging personal configurations..."
@@ -433,6 +449,9 @@ merge_personal_configs() {
     while IFS= read -r personal; do
         [[ -z "$personal" ]] && continue
         [[ ! -f "$personal" ]] && continue
+        
+        # Set secure permissions on personal file unconditionally
+        secure_personal_file "$personal"
         
         local target="${personal%.personal}"
         
@@ -450,8 +469,6 @@ merge_personal_configs() {
             git-merge)
                 if merge_git_config "$personal" "$target"; then
                     ((merge_count++))
-                    # Set secure permissions on personal config
-                    chmod 600 "$personal" 2>/dev/null || true
                 else
                     log_error "Failed to merge git config from ${personal#"$DOTFILES_DIR"/}"
                     ((failed_count++))
@@ -464,8 +481,6 @@ merge_personal_configs() {
                     cat "$personal"
                 } >> "$target" 2>/dev/null; then
                     ((merge_count++))
-                    # Set secure permissions on personal config
-                    chmod 600 "$personal" 2>/dev/null || true
                 else
                     log_error "Failed to append personal config to ${target#"$DOTFILES_DIR"/}"
                     ((failed_count++))
@@ -474,8 +489,6 @@ merge_personal_configs() {
             yaml-replace|replace)
                 if cp "$personal" "$target" 2>/dev/null; then
                     ((merge_count++))
-                    # Set secure permissions on personal config
-                    chmod 600 "$personal" 2>/dev/null || true
                 else
                     log_error "Failed to copy ${personal#"$DOTFILES_DIR"/} to ${target#"$DOTFILES_DIR"/}"
                     ((failed_count++))
