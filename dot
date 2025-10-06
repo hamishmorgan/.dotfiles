@@ -175,6 +175,23 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Portable timeout function (works on Linux and macOS)
+# Uses GNU timeout if available, otherwise falls back to Perl
+portable_timeout() {
+    local duration="$1"
+    shift
+    
+    if command_exists timeout; then
+        timeout "$duration" "$@"
+    elif command_exists perl; then
+        # Perl-based timeout (portable, available on macOS)
+        perl -e 'alarm shift; exec @ARGV' "$duration" "$@"
+    else
+        # No timeout available, run command normally
+        "$@"
+    fi
+}
+
 # Check dependencies
 check_dependencies() {
     log_info "Checking dependencies..."
@@ -304,19 +321,11 @@ init_submodules() {
         return 1
     }
     
-    # Use timeout if available, otherwise run without it
-    if command -v timeout >/dev/null 2>&1; then
-        if ! timeout 60 git submodule update --init --recursive 2>&1; then
-            log_error "Failed to initialize git submodules (timeout or git error)"
-            log_info "Try running: cd $DOTFILES_DIR && git submodule update --init --recursive"
-            return 1
-        fi
-    else
-        if ! git submodule update --init --recursive 2>&1; then
-            log_error "Failed to initialize git submodules"
-            log_info "Try running: cd $DOTFILES_DIR && git submodule update --init --recursive"
-            return 1
-        fi
+    # Use portable timeout (60 seconds)
+    if ! portable_timeout 60 git submodule update --init --recursive 2>&1; then
+        log_error "Failed to initialize git submodules (timeout or git error)"
+        log_info "Try running: cd $DOTFILES_DIR && git submodule update --init --recursive"
+        return 1
     fi
     
     log_success "Submodules initialized"
@@ -746,13 +755,8 @@ update_gitignore() {
     local url="https://www.toptal.com/developers/gitignore/api/$types"
     local gitignore_file="$DOTFILES_DIR/git/.gitignore-globals"
     
-    # Add timeout to prevent hanging (if timeout command available)
-    local curl_cmd="curl -s \"$url\""
-    if command -v timeout >/dev/null 2>&1; then
-        curl_cmd="timeout 30 $curl_cmd"
-    fi
-    
-    if eval "$curl_cmd" > "$gitignore_file.tmp" 2>&1; then
+    # Add timeout to prevent hanging (30 seconds)
+    if portable_timeout 30 curl -s "$url" > "$gitignore_file.tmp" 2>&1; then
         if [[ -s "$gitignore_file.tmp" ]]; then
             mv "$gitignore_file.tmp" "$gitignore_file"
             log_success "Updated .gitignore-globals with latest patterns"

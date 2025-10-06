@@ -50,8 +50,8 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Install dependencies
-# Note: bash and coreutils are required (macOS ships with bash 3.2, script requires 4.0+)
-brew install stow git tmux zsh bash coreutils
+# Note: bash 4.0+ is required (macOS ships with bash 3.2)
+brew install stow git tmux zsh bash
 ```
 
 **Important:** macOS ships with bash 3.2. This script requires bash 4.0+ for associative array support.
