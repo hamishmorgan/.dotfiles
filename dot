@@ -785,10 +785,11 @@ validate_config_syntax() {
     # Validate tmux config
     if [[ -f "$HOME/.tmux.conf" ]]; then
         if command_exists tmux; then
-            if tmux -f "$HOME/.tmux.conf" -C new-session -d 2>/dev/null; then
+            local tmux_test_session="dotfiles-config-test"
+            if tmux -f "$HOME/.tmux.conf" -C new-session -d -s "$tmux_test_session" 2>/dev/null; then
                 log_success "✓ Tmux configuration syntax valid"
                 # Kill the test session
-                tmux kill-session 2>/dev/null || true
+                tmux kill-session -t "$tmux_test_session" 2>/dev/null || true
             else
                 log_error "✗ Tmux configuration syntax error"
                 ((errors++))
