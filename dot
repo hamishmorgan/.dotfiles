@@ -18,6 +18,32 @@ BACKUP_DIR="$DOTFILES_DIR/backups/dotfiles-backup-$(date +%s)"
 # Track installation state for rollback
 INSTALLED_PACKAGES=()
 INSTALLATION_IN_PROGRESS=false
+ROLLBACK_STACK=()
+
+# Add action to rollback stack
+add_rollback() {
+    local action="$1"
+    ROLLBACK_STACK+=("$action")
+}
+
+# Execute rollback in reverse order
+execute_rollback() {
+    if [[ ${#ROLLBACK_STACK[@]} -eq 0 ]]; then
+        log_info "Nothing to rollback"
+        return 0
+    fi
+    
+    log_warning "Rolling back installation..."
+    
+    # Execute in reverse order (LIFO)
+    for ((i=${#ROLLBACK_STACK[@]}-1; i>=0; i--)); do
+        log_info "Rollback step: ${ROLLBACK_STACK[i]}"
+        eval "${ROLLBACK_STACK[i]}" 2>/dev/null || log_warning "Rollback step failed (non-critical)"
+    done
+    
+    log_success "Rollback completed"
+    return 0
+}
 
 # Cleanup handler
 cleanup_on_exit() {
@@ -28,10 +54,20 @@ cleanup_on_exit() {
         echo ""
         log_error "Installation interrupted or failed (exit code: $exit_code)"
         
-        if [[ ${#INSTALLED_PACKAGES[@]} -gt 0 ]]; then
-            log_warning "Partial installation detected: ${INSTALLED_PACKAGES[*]}"
-            log_info "Run './dot uninstall' to remove partial installation"
-            log_info "Or run './dot install' again to retry"
+        if [[ ${#ROLLBACK_STACK[@]} -gt 0 ]]; then
+            echo ""
+            read -p "Rollback installation? (Y/n): " -n 1 -r
+            echo ""
+            
+            if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+                execute_rollback
+            else
+                log_info "Skipping rollback"
+                if [[ ${#INSTALLED_PACKAGES[@]} -gt 0 ]]; then
+                    log_warning "Partial installation: ${INSTALLED_PACKAGES[*]}"
+                    log_info "Run './dot uninstall' to remove manually"
+                fi
+            fi
         fi
     fi
 }
@@ -192,7 +228,11 @@ backup_existing() {
     log_info "Creating backup of existing files..."
     
     # Create backup directory
-    mkdir -p "$BACKUP_DIR"
+    if ! mkdir -p "$BACKUP_DIR" 2>/dev/null; then
+        log_error "Failed to create backup directory: $BACKUP_DIR"
+        suggest_fixes "backup" "$BACKUP_DIR"
+        return 1
+    fi
     
     local backed_up=0
     
@@ -205,21 +245,24 @@ backup_existing() {
         if [[ -e "$HOME/$file" ]]; then
             log_info "Backing up $file"
             if [[ -d "$HOME/$file" ]]; then
-                cp -r "$HOME/$file" "$BACKUP_DIR/" || {
+                if ! cp -r "$HOME/$file" "$BACKUP_DIR/" 2>/dev/null; then
                     log_error "Failed to copy directory $file"
+                    suggest_fixes "backup" "$HOME/$file"
                     return 1
-                }
+                fi
             else
-                cp "$HOME/$file" "$BACKUP_DIR/" || {
+                if ! cp "$HOME/$file" "$BACKUP_DIR/" 2>/dev/null; then
                     log_error "Failed to copy file $file"
+                    suggest_fixes "backup" "$HOME/$file"
                     return 1
-                }
+                fi
             fi
             # Remove existing file after backup to prevent stow conflicts
-            rm -rf "${HOME:?}/$file" || {
+            if ! rm -rf "${HOME:?}/$file" 2>/dev/null; then
                 log_error "Failed to remove $file"
+                suggest_fixes "backup" "$HOME/$file"
                 return 1
-            }
+            fi
             ((backed_up++))
         else
             log_info "File $file does not exist, skipping"
@@ -232,6 +275,8 @@ backup_existing() {
     else
         log_info "No existing files to backup"
     fi
+    
+    return 0
 }
 
 # Initialize submodules
@@ -282,7 +327,7 @@ process_templates() {
             ((template_count++))
         else
             log_error "Failed to copy template: ${template#"$DOTFILES_DIR"/}"
-            log_error "Check permissions on $(dirname "$target")"
+            suggest_fixes "template" "$template"
             ((failed_count++))
         fi
     done < <(find "$DOTFILES_DIR" -type f -name "*.template" 2>/dev/null | sort)
@@ -311,6 +356,7 @@ merge_git_config() {
     config_output=$(git -c "core.filemode=false" config --file "$source" --list 2>&1) || {
         log_error "Failed to read git config from: ${source#"$DOTFILES_DIR"/}"
         log_error "Git error: $config_output"
+        suggest_fixes "git-config" "$source"
         return 1
     }
     
@@ -402,7 +448,7 @@ merge_personal_configs() {
     return 0
 }
 
-# Install dotfiles using Stow
+# Install dotfiles using Stow with rollback support
 install_dotfiles() {
     log_info "Installing dotfiles using Stow..."
     
@@ -414,18 +460,69 @@ install_dotfiles() {
         
         log_info "Installing package: $package"
         
+        # Add rollback action before installing
+        add_rollback "stow -v -D -d '$DOTFILES_DIR' -t '$HOME' '$package' 2>/dev/null || true"
+        
         if stow -v -R -d "$DOTFILES_DIR" -t "$HOME" "$package" 2>&1; then
             INSTALLED_PACKAGES+=("$package")
             log_success "Installed $package"
         else
             log_error "Failed to install package: $package"
-            log_info "This may be due to conflicting files in $HOME"
-            log_info "Check stow output above for details"
+            suggest_fixes "stow" "$package"
             return 1
         fi
     done
     
     return 0
+}
+
+# Suggest fixes for common errors
+suggest_fixes() {
+    local operation="$1"
+    local context="$2"
+    
+    echo ""
+    echo "Suggested fixes:"
+    
+    case $operation in
+        stow)
+            echo "  1. Check for conflicting files: ./dot status"
+            echo "  2. Remove or backup conflicting files in $HOME"
+            echo "  3. Check stow output above for specific conflicts"
+            echo "  4. Try: stow --adopt $context (adopts existing files)"
+            ;;
+        backup)
+            echo "  1. Check disk space: df -h $DOTFILES_DIR/backups"
+            echo "  2. Check permissions: ls -la $DOTFILES_DIR/backups"
+            echo "  3. Clean old backups: ./dot clean"
+            ;;
+        template)
+            echo "  1. Check template exists: ls -la $DOTFILES_DIR/$context"
+            echo "  2. Check target directory permissions"
+            echo "  3. Verify template file is readable"
+            ;;
+        git-config)
+            echo "  1. Check config syntax: git config --file $context --list"
+            echo "  2. Verify file format (key=value)"
+            echo "  3. Check for invalid characters or encoding issues"
+            ;;
+        network)
+            echo "  1. Check internet connection: ping -c 1 github.com"
+            echo "  2. Check if behind proxy/firewall"
+            echo "  3. Try again later or check $context URL manually"
+            ;;
+        submodules)
+            echo "  1. Check git access: git ls-remote $context"
+            echo "  2. Verify SSH keys: ssh -T git@github.com"
+            echo "  3. Try: cd $DOTFILES_DIR && git submodule update --init --recursive"
+            ;;
+        *)
+            echo "  1. Check logs above for specific error details"
+            echo "  2. Run with verbose mode: ./dot install -v"
+            echo "  3. Check GitHub issues: https://github.com/hamishmorgan/.dotfiles/issues"
+            ;;
+    esac
+    echo ""
 }
 
 # Check if file is properly linked
@@ -643,7 +740,7 @@ update_gitignore() {
     else
         rm -f "$gitignore_file.tmp"
         log_error "Failed to download .gitignore-globals (timeout or network error)"
-        log_info "Check your internet connection or try again later"
+        suggest_fixes "network" "$url"
         return 1
     fi
 }
@@ -671,6 +768,7 @@ run_installation_pipeline() {
     
     if ! init_submodules; then
         log_error "Submodule initialization failed"
+        suggest_fixes "submodules" "$DOTFILES_DIR/.gitmodules"
         return 1
     fi
     
