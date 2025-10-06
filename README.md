@@ -122,7 +122,29 @@ cd ~/.dotfiles
 ./dot validate
 ```
 
-Verifies symlink integrity, configuration validity, dependencies, and orphaned symlinks.
+Verifies symlink integrity for all packages.
+
+### Health Check
+
+Run a comprehensive health check:
+
+```bash
+./dot health
+```
+
+The health check performs 11 categories of checks:
+
+1. **Symlink Integrity**: Verifies all configuration symlinks point to correct files
+2. **Configuration Syntax**: Validates git, tmux, zsh, and bash configuration syntax
+3. **Submodule Health**: Checks Oh My Zsh submodule status and initialization
+4. **Git Repository Status**: Reports uncommitted changes, branch status, and sync with origin
+5. **Template Configuration Consistency**: Detects missing personal configs and stale merged files
+6. **File Permissions**: Ensures personal configs have secure permissions and aren't tracked by git
+7. **Shell Integration**: Verifies shell configs are active and PATH is properly configured
+8. **Stow Conflicts**: Detects unmanaged files that would conflict with stow
+9. **Orphaned Symlinks**: Finds broken symlinks in home and .config directories
+10. **Dependencies**: Checks all required tools are installed
+11. **Backup Health**: Reports backup directory status and suggests cleanup if needed
 
 ## What gets installed
 

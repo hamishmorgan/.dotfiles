@@ -121,6 +121,23 @@ declare -A PACKAGE_NAMES=(
 # Convention: *.template files are processed to create target files
 # Convention: *.personal files are merged with targets based on file type
 
+# Discover all template files and output template:target pairs
+discover_templates() {
+    find "$DOTFILES_DIR" -type f -name "*.template" 2>/dev/null | while read -r template; do
+        local target="${template%.template}"
+        local package_dir
+        package_dir=$(dirname "$template")
+        local rel_path="${target#"$package_dir"/}"
+        
+        echo "$template:$rel_path"
+    done | sort
+}
+
+# Discover all personal config files
+discover_personal_configs() {
+    find "$DOTFILES_DIR" -type f -name "*.personal" 2>/dev/null | sort
+}
+
 # Required dependencies per platform
 declare -A REQUIRED_DEPS=(
     ["common"]="stow git"
@@ -151,6 +168,7 @@ show_usage() {
     echo "Commands:"
     echo "  install       Install dotfiles using GNU Stow"
     echo "  validate      Validate dotfiles installation"
+    echo "  health        Run comprehensive health check"
     echo "  update        Update submodules and reinstall"
     echo "  update-all    Update all packages and configurations"
     echo "  uninstall     Remove dotfiles symlinks"
@@ -165,6 +183,7 @@ show_usage() {
     echo "Examples:"
     echo "  $0 install           # Install dotfiles"
     echo "  $0 validate          # Validate installation"
+    echo "  $0 health            # Run health check"
     echo "  $0 update            # Update and reinstall"
     echo "  $0 update-all        # Update all packages and configurations"
     echo "  $0 status            # Show status"
@@ -747,6 +766,500 @@ cmd_validate() {
     fi
 }
 
+# Validate configuration syntax
+validate_config_syntax() {
+    log_info "Validating configuration syntax..."
+    
+    local errors=0
+    
+    # Validate git config
+    if [[ -f "$HOME/.gitconfig" ]]; then
+        if git config --list >/dev/null 2>&1; then
+            log_success "✓ Git configuration syntax valid"
+        else
+            log_error "✗ Git configuration syntax error"
+            ((errors++))
+        fi
+    fi
+    
+    # Validate tmux config
+    if [[ -f "$HOME/.tmux.conf" ]]; then
+        if command_exists tmux; then
+            local tmux_test_session="dotfiles-config-test"
+            if tmux -f "$HOME/.tmux.conf" -C new-session -d -s "$tmux_test_session" 2>/dev/null; then
+                log_success "✓ Tmux configuration syntax valid"
+                # Kill the test session
+                tmux kill-session -t "$tmux_test_session" 2>/dev/null || true
+            else
+                log_error "✗ Tmux configuration syntax error"
+                ((errors++))
+            fi
+        else
+            log_info "Tmux not installed, skipping syntax check"
+        fi
+    fi
+    
+    # Validate zsh config
+    if [[ -f "$HOME/.zshrc" ]]; then
+        if command_exists zsh; then
+            if zsh -n "$HOME/.zshrc" 2>/dev/null; then
+                log_success "✓ Zsh configuration syntax valid"
+            else
+                log_error "✗ Zsh configuration syntax error"
+                ((errors++))
+            fi
+        else
+            log_info "Zsh not installed, skipping syntax check"
+        fi
+    fi
+    
+    # Validate bash config
+    if [[ -f "$HOME/.bashrc" ]]; then
+        if bash -n "$HOME/.bashrc" 2>/dev/null; then
+            log_success "✓ Bash configuration syntax valid"
+        else
+            log_error "✗ Bash configuration syntax error"
+            ((errors++))
+        fi
+    fi
+    
+    return $errors
+}
+
+# Check for orphaned symlinks
+check_orphaned_symlinks() {
+    log_info "Checking for orphaned symlinks..."
+    
+    local orphaned=0
+    
+    # Check dotfiles in home directory
+    while IFS= read -r link; do
+        if [[ -L "$link" ]] && [[ ! -e "$link" ]]; then
+            log_warning "Orphaned symlink: ${link#"$HOME"/}"
+            ((orphaned++))
+        fi
+    done < <(find "$HOME" -maxdepth 1 -type l -name ".*" 2>/dev/null)
+    
+    # Check .config directory
+    if [[ -d "$HOME/.config" ]]; then
+        while IFS= read -r link; do
+            if [[ -L "$link" ]] && [[ ! -e "$link" ]]; then
+                log_warning "Orphaned symlink: ${link#"$HOME"/}"
+                ((orphaned++))
+            fi
+        done < <(find "$HOME/.config" -maxdepth 2 -type l 2>/dev/null)
+    fi
+    
+    if [[ $orphaned -eq 0 ]]; then
+        log_success "No orphaned symlinks found"
+    else
+        log_warning "Found $orphaned orphaned symlink(s)"
+    fi
+    
+    return $orphaned
+}
+
+# Check backup directory health
+check_backup_health() {
+    log_info "Checking backup directory health..."
+    
+    local backup_count=0
+    local total_size=0
+    
+    while IFS= read -r dir; do
+        [[ -z "$dir" ]] && continue
+        ((backup_count++))
+        local size
+        size=$(du -sk "$dir" 2>/dev/null | cut -f1)
+        ((total_size += size))
+    done < <(find "$DOTFILES_DIR/backups" -maxdepth 1 -type d -name "dotfiles-backup-*" 2>/dev/null)
+    
+    if [[ $backup_count -eq 0 ]]; then
+        log_info "No backup directories found"
+    else
+        log_info "Found $backup_count backup(s) using $((total_size / 1024))MB"
+        
+        if [[ $backup_count -gt 10 ]]; then
+            log_warning "Consider cleaning old backups: ./dot clean"
+        fi
+    fi
+    
+    return 0
+}
+
+# Check submodule health
+check_submodule_health() {
+    log_info "Checking submodule health..."
+    
+    local issues=0
+    
+    # Check if .gitmodules exists
+    if [[ ! -f "$DOTFILES_DIR/.gitmodules" ]]; then
+        log_info "No submodules configured"
+        return 0
+    fi
+    
+    # Check Oh My Zsh submodule
+    local omz_path="$DOTFILES_DIR/zsh/.oh-my-zsh"
+    if [[ -d "$omz_path" ]]; then
+        # Check if submodule is initialized
+        if [[ -f "$omz_path/.git" ]] || [[ -d "$omz_path/.git" ]]; then
+            # Check for uncommitted changes in submodule
+            if git -C "$omz_path" diff-index --quiet HEAD -- 2>/dev/null; then
+                log_success "✓ Oh My Zsh submodule is clean"
+            else
+                log_warning "Oh My Zsh submodule has uncommitted changes"
+            fi
+            
+            # Check if submodule is detached
+            if git -C "$omz_path" symbolic-ref -q HEAD >/dev/null 2>&1; then
+                log_success "✓ Oh My Zsh submodule on branch"
+            else
+                log_info "Oh My Zsh submodule in detached HEAD state (normal)"
+            fi
+        else
+            log_error "✗ Oh My Zsh submodule not initialized"
+            log_info "Run: git submodule update --init --recursive"
+            ((issues++))
+        fi
+    else
+        log_error "✗ Oh My Zsh directory missing"
+        ((issues++))
+    fi
+    
+    return $issues
+}
+
+# Check git repository status
+check_git_repo_status() {
+    log_info "Checking dotfiles repository status..."
+    
+    local issues=0
+    
+    # Check if in a git repository
+    if ! git -C "$DOTFILES_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+        log_error "✗ Not in a git repository"
+        return 1
+    fi
+    
+    # Check for uncommitted changes
+    if git -C "$DOTFILES_DIR" diff-index --quiet HEAD -- 2>/dev/null; then
+        log_success "✓ Working directory clean"
+    else
+        log_warning "Working directory has uncommitted changes"
+        local changed_count
+        changed_count=$(git -C "$DOTFILES_DIR" status --porcelain | wc -l)
+        log_info "  $changed_count file(s) modified"
+    fi
+    
+    # Check current branch
+    local current_branch
+    current_branch=$(git -C "$DOTFILES_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    log_info "Current branch: $current_branch"
+    
+    # Check if branch has upstream
+    if git -C "$DOTFILES_DIR" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1; then
+        # Check if up to date with remote
+        git -C "$DOTFILES_DIR" fetch origin "$current_branch" --dry-run 2>/dev/null
+        local ahead
+        local behind
+        ahead=$(git -C "$DOTFILES_DIR" rev-list --count '@{upstream}..HEAD' 2>/dev/null || echo "0")
+        behind=$(git -C "$DOTFILES_DIR" rev-list --count 'HEAD..@{upstream}' 2>/dev/null || echo "0")
+        
+        if [[ $ahead -eq 0 ]] && [[ $behind -eq 0 ]]; then
+            log_success "✓ Up to date with origin"
+        elif [[ $ahead -gt 0 ]] && [[ $behind -eq 0 ]]; then
+            log_warning "Branch is ahead of origin by $ahead commit(s)"
+            log_info "  Consider: git push"
+        elif [[ $ahead -eq 0 ]] && [[ $behind -gt 0 ]]; then
+            log_warning "Branch is behind origin by $behind commit(s)"
+            log_info "  Consider: git pull"
+            ((issues++))
+        else
+            log_warning "Branch has diverged ($ahead ahead, $behind behind)"
+            log_info "  Consider: git pull --rebase"
+            ((issues++))
+        fi
+    else
+        log_info "No upstream branch configured"
+    fi
+    
+    return $issues
+}
+
+# Check template and personal config consistency
+check_template_consistency() {
+    log_info "Checking template/personal config consistency..."
+    
+    local issues=0
+    
+    # Discover templates
+    local template_list
+    template_list=$(discover_templates)
+    
+    if [[ -z "$template_list" ]]; then
+        log_info "No templates configured"
+        return 0
+    fi
+    
+    # Check each template
+    while IFS=: read -r template target; do
+        [[ -z "$template" ]] && continue
+        
+        local personal="${template%.template}.personal"
+        local package_dir
+        package_dir=$(dirname "$template")
+        local target_file="$HOME/$target"
+        
+        # Check if personal config exists
+        if [[ ! -f "$personal" ]]; then
+            log_warning "Template without personal config: ${template#"$DOTFILES_DIR"/}"
+            log_info "  Consider creating: ${personal#"$DOTFILES_DIR"/}"
+        fi
+        
+        # Check if merged file is stale
+        if [[ -f "$target_file" ]] && [[ -f "$personal" ]]; then
+            if [[ "$template" -nt "$target_file" ]] || [[ "$personal" -nt "$target_file" ]]; then
+                log_warning "Stale merged config: ${target_file#"$HOME"/}"
+                log_info "  Source files newer than target. Run: ./dot install"
+                ((issues++))
+            else
+                log_success "✓ ${target} up to date"
+            fi
+        fi
+    done <<< "$template_list"
+    
+    # Check for orphaned personal configs
+    while IFS= read -r personal; do
+        [[ -z "$personal" ]] && continue
+        
+        local template="${personal%.personal}.template"
+        if [[ ! -f "$template" ]]; then
+            log_warning "Personal config without template: ${personal#"$DOTFILES_DIR"/}"
+        fi
+    done < <(discover_personal_configs)
+    
+    return $issues
+}
+
+# Check file permissions
+check_file_permissions() {
+    log_info "Checking file permissions..."
+    
+    local issues=0
+    
+    # Check personal config files (should not be world-readable)
+    while IFS= read -r personal; do
+        [[ -z "$personal" ]] && continue
+        [[ ! -f "$personal" ]] && continue
+        
+        local perms
+        perms=$(stat -c '%a' "$personal" 2>/dev/null || stat -f '%A' "$personal" 2>/dev/null)
+        
+        # Check if world-readable (last digit > 0)
+        if [[ "${perms: -1}" != "0" ]]; then
+            log_warning "Personal config is world-readable: ${personal#"$DOTFILES_DIR"/}"
+            log_info "  Consider: chmod 600 $personal"
+            ((issues++))
+        else
+            log_success "✓ ${personal#"$DOTFILES_DIR"/} has secure permissions"
+        fi
+    done < <(discover_personal_configs)
+    
+    # Check for accidentally committed secrets
+    if [[ -f "$DOTFILES_DIR/git/.gitconfig.personal" ]]; then
+        if git -C "$DOTFILES_DIR" ls-files --error-unmatch "git/.gitconfig.personal" >/dev/null 2>&1; then
+            log_error "✗ Personal git config is tracked by git (potential secrets leak)"
+            log_info "  Run: git rm --cached git/.gitconfig.personal"
+            ((issues++))
+        else
+            log_success "✓ Personal configs properly ignored by git"
+        fi
+    fi
+    
+    return $issues
+}
+
+# Check shell integration
+check_shell_integration() {
+    log_info "Checking shell integration..."
+    
+    local issues=0
+    
+    # Check if we're actually using our shell configs
+    if [[ -n "$ZSH_VERSION" ]]; then
+        if [[ -L "$HOME/.zshrc" ]]; then
+            local target
+            target=$(readlink "$HOME/.zshrc")
+            if [[ "$target" == *".dotfiles"* ]]; then
+                log_success "✓ Using dotfiles .zshrc"
+            else
+                log_warning "Shell config symlink points elsewhere: $target"
+                ((issues++))
+            fi
+        else
+            log_error "✗ .zshrc is not a symlink to dotfiles"
+            ((issues++))
+        fi
+    elif [[ -n "$BASH_VERSION" ]]; then
+        if [[ -L "$HOME/.bashrc" ]]; then
+            local target
+            target=$(readlink "$HOME/.bashrc")
+            if [[ "$target" == *".dotfiles"* ]]; then
+                log_success "✓ Using dotfiles .bashrc"
+            else
+                log_warning "Shell config symlink points elsewhere: $target"
+                ((issues++))
+            fi
+        else
+            log_error "✗ .bashrc is not a symlink to dotfiles"
+            ((issues++))
+        fi
+    fi
+    
+    # Check PATH includes our custom directories
+    if [[ ":$PATH:" == *":$HOME/bin:"* ]] || [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; then
+        log_success "✓ Custom bin directories in PATH"
+    else
+        log_warning "Custom bin directories not in PATH"
+        log_info "  Expected: ~/bin or ~/.local/bin in PATH"
+    fi
+    
+    # Check if dotfiles repo is in expected location
+    if [[ "$DOTFILES_DIR" == "$HOME/.dotfiles" ]]; then
+        log_success "✓ Dotfiles in standard location"
+    else
+        log_info "Dotfiles location: $DOTFILES_DIR (non-standard)"
+    fi
+    
+    return $issues
+}
+
+# Check for stow conflicts
+check_stow_conflicts() {
+    log_info "Checking for potential stow conflicts..."
+    
+    local issues=0
+    
+    # Check each package for potential conflicts
+    for package in "${PACKAGES[@]}"; do
+        local package_dir="$DOTFILES_DIR/$package"
+        [[ ! -d "$package_dir" ]] && continue
+        
+        # Find all files in package
+        while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            
+            local rel_path="${file#"$package_dir"/}"
+            local target_path="$HOME/$rel_path"
+            
+            # Skip if it's already our symlink
+            if [[ -L "$target_path" ]]; then
+                local link_target
+                link_target=$(readlink "$target_path")
+                if [[ "$link_target" == *".dotfiles/$package"* ]]; then
+                    continue
+                fi
+            fi
+            
+            # Check if target exists but is not our symlink
+            if [[ -e "$target_path" ]] && [[ ! -L "$target_path" ]]; then
+                log_warning "Unmanaged file would conflict: $rel_path"
+                log_info "  File exists but not managed by stow"
+                ((issues++))
+            fi
+        done < <(find "$package_dir" -type f -not -path "*/.*" 2>/dev/null)
+    done
+    
+    if [[ $issues -eq 0 ]]; then
+        log_success "No stow conflicts detected"
+    fi
+    
+    return $issues
+}
+
+# Comprehensive health check command
+cmd_health() {
+    log_info "Running comprehensive dotfiles health check..."
+    echo ""
+    
+    local total_issues=0
+    
+    # 1. Symlink integrity
+    log_info "=== Symlink Integrity ==="
+    for package in "${PACKAGES[@]}"; do
+        validate_package "$package" || ((total_issues++))
+    done
+    echo ""
+    
+    # 2. Configuration syntax
+    log_info "=== Configuration Syntax ==="
+    validate_config_syntax || ((total_issues += $?))
+    echo ""
+    
+    # 3. Submodule health
+    log_info "=== Submodule Health ==="
+    check_submodule_health || ((total_issues += $?))
+    echo ""
+    
+    # 4. Git repository status
+    log_info "=== Git Repository Status ==="
+    check_git_repo_status || ((total_issues += $?))
+    echo ""
+    
+    # 5. Template/personal config consistency
+    log_info "=== Template Configuration Consistency ==="
+    check_template_consistency || ((total_issues += $?))
+    echo ""
+    
+    # 6. File permissions
+    log_info "=== File Permissions ==="
+    check_file_permissions || ((total_issues += $?))
+    echo ""
+    
+    # 7. Shell integration
+    log_info "=== Shell Integration ==="
+    check_shell_integration || ((total_issues += $?))
+    echo ""
+    
+    # 8. Stow conflicts
+    log_info "=== Stow Conflicts ==="
+    check_stow_conflicts || ((total_issues += $?))
+    echo ""
+    
+    # 9. Orphaned symlinks
+    log_info "=== Orphaned Symlinks ==="
+    check_orphaned_symlinks
+    # Note: Orphaned symlinks are warnings, not errors
+    echo ""
+    
+    # 10. Dependencies
+    log_info "=== Dependencies ==="
+    if check_dependencies 2>/dev/null; then
+        log_success "All dependencies satisfied"
+    else
+        log_warning "Some dependencies missing (see above)"
+        ((total_issues++))
+    fi
+    echo ""
+    
+    # 11. Backup health
+    log_info "=== Backup Health ==="
+    check_backup_health
+    echo ""
+    
+    # Summary
+    echo "========================================"
+    if [[ $total_issues -eq 0 ]]; then
+        log_success "Health check passed! No issues found."
+        return 0
+    else
+        log_error "Health check found $total_issues issue(s)"
+        log_info "Run './dot install' to fix installation issues"
+        return 1
+    fi
+}
+
 # Update gitignore globals from gitignore.io
 update_gitignore() {
     log_info "Updating .gitignore-globals from toptal.com..."
@@ -872,7 +1385,7 @@ main() {
                 verbose=true
                 shift
                 ;;
-            install|validate|update|update-all|status|backup|clean|uninstall)
+            install|validate|health|update|update-all|status|backup|clean|uninstall)
                 if [[ -n "$command" ]]; then
                     log_error "Multiple commands specified"
                     exit 1
@@ -906,6 +1419,9 @@ main() {
             ;;
         validate)
             cmd_validate
+            ;;
+        health)
+            cmd_health
             ;;
         update)
             cmd_update
