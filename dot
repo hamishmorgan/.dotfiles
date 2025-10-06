@@ -671,6 +671,14 @@ show_status() {
     fi
 }
 
+# Get backup age in days
+get_backup_age_days() {
+    local backup="$1"
+    local backup_mtime
+    backup_mtime=$(stat -c %Y "$backup" 2>/dev/null || stat -f %m "$backup" 2>/dev/null)
+    echo $(( ($(date +%s) - backup_mtime) / 86400 ))
+}
+
 # Clean up backup directories
 clean_backups() {
     log_info "Cleaning up old backup directories..."
@@ -711,7 +719,7 @@ clean_backups() {
         
         # For older backups, check age
         local backup_age_days
-        backup_age_days=$(( ($(date +%s) - $(stat -c %Y "$backup" 2>/dev/null || stat -f %m "$backup" 2>/dev/null)) / 86400 ))
+        backup_age_days=$(get_backup_age_days "$backup")
         
         if [[ $backup_age_days -gt $keep_days ]]; then
             to_remove+=("$backup")
@@ -733,7 +741,7 @@ clean_backups() {
         local size
         size=$(du -sh "$backup" 2>/dev/null | cut -f1)
         local age_days
-        age_days=$(( ($(date +%s) - $(stat -c %Y "$backup" 2>/dev/null || stat -f %m "$backup" 2>/dev/null)) / 86400 ))
+        age_days=$(get_backup_age_days "$backup")
         echo "  - $backup_name ($size, ${age_days}d old)"
     done
     
@@ -777,7 +785,7 @@ clean_backups() {
     
     echo ""
     log_success "Removed $removed_count backup(s)"
-    log_info "Freed $((freed_space / 1024))MB of disk space"
+    log_info "Freed $((freed_space / 1024))MiB of disk space"
     
     return 0
 }
