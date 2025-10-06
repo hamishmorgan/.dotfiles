@@ -1,5 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Dotfiles management script
+# Requires: bash 4.0+ for associative arrays
+
+# Check bash version
+if ((BASH_VERSINFO[0] < 4)); then
+    echo "Error: This script requires bash 4.0 or higher"
+    echo "Current version: $BASH_VERSION"
+    echo ""
+    echo "On macOS, install bash 4+ with: brew install bash"
+    echo "Then run with: /usr/local/bin/bash ./dot install"
+    exit 1
+fi
 
 # Note: Not using 'set -e' for better error handling control
 # Errors are explicitly checked and handled with context
@@ -293,10 +304,19 @@ init_submodules() {
         return 1
     }
     
-    if ! timeout 60 git submodule update --init --recursive 2>&1; then
-        log_error "Failed to initialize git submodules (timeout or git error)"
-        log_info "Try running: cd $DOTFILES_DIR && git submodule update --init --recursive"
-        return 1
+    # Use timeout if available, otherwise run without it
+    if command -v timeout >/dev/null 2>&1; then
+        if ! timeout 60 git submodule update --init --recursive 2>&1; then
+            log_error "Failed to initialize git submodules (timeout or git error)"
+            log_info "Try running: cd $DOTFILES_DIR && git submodule update --init --recursive"
+            return 1
+        fi
+    else
+        if ! git submodule update --init --recursive 2>&1; then
+            log_error "Failed to initialize git submodules"
+            log_info "Try running: cd $DOTFILES_DIR && git submodule update --init --recursive"
+            return 1
+        fi
     fi
     
     log_success "Submodules initialized"
@@ -726,8 +746,13 @@ update_gitignore() {
     local url="https://www.toptal.com/developers/gitignore/api/$types"
     local gitignore_file="$DOTFILES_DIR/git/.gitignore-globals"
     
-    # Add timeout to prevent hanging
-    if timeout 30 curl -s "$url" > "$gitignore_file.tmp" 2>&1; then
+    # Add timeout to prevent hanging (if timeout command available)
+    local curl_cmd="curl -s \"$url\""
+    if command -v timeout >/dev/null 2>&1; then
+        curl_cmd="timeout 30 $curl_cmd"
+    fi
+    
+    if eval "$curl_cmd" > "$gitignore_file.tmp" 2>&1; then
         if [[ -s "$gitignore_file.tmp" ]]; then
             mv "$gitignore_file.tmp" "$gitignore_file"
             log_success "Updated .gitignore-globals with latest patterns"

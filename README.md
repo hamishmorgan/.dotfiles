@@ -50,8 +50,12 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Install dependencies
-brew install stow git tmux zsh
+# Note: bash and coreutils are required (macOS ships with bash 3.2, script requires 4.0+)
+brew install stow git tmux zsh bash coreutils
 ```
+
+**Important:** macOS ships with bash 3.2. This script requires bash 4.0+ for associative array support.
+After installing, run the script with: `/opt/homebrew/bin/bash ./dot install`
 
 ### Linux
 
@@ -74,6 +78,12 @@ cd ~/.dotfiles
 ./dot install
 ```
 
+**macOS users:** If you get an error about bash version, use homebrew bash:
+
+```bash
+/opt/homebrew/bin/bash ./dot install
+```
+
 The installer verifies dependencies, backs up existing files, initializes submodules, and creates symlinks.
 
 ## Optional: Set zsh as default shell
@@ -92,6 +102,9 @@ cd ~/.dotfiles
 git submodule update --init --recursive
 stow -v git zsh tmux gh gnuplot bash
 ```
+
+**Note:** Manual installation still requires processing templates and merging personal configs.
+Use `./dot install` for the complete installation process.
 
 ## Validation
 
@@ -224,13 +237,25 @@ stow -D git zsh tmux gh gnuplot bash
 
 ## Troubleshooting
 
-Permission errors:
+### Bash Version Error (macOS)
+
+If you see `declare: -A: invalid option`:
+
+```bash
+# macOS ships with bash 3.2, script requires 4.0+
+brew install bash
+
+# Run with homebrew bash
+/opt/homebrew/bin/bash ./dot install
+```
+
+### Permission Errors
 
 ```bash
 chmod +x dot
 ```
 
-Stow conflicts:
+### Stow Conflicts
 
 ```bash
 stow -v -R git zsh tmux gh gnuplot bash

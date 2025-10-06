@@ -66,14 +66,15 @@ jobs:
     
     - name: Install dependencies
       run: |
-        brew install stow git tmux zsh
+        brew install stow git tmux zsh bash coreutils
     
     - name: Validate installation
       run: |
         cd ${{ github.workspace }}
         chmod +x dot
-        ./dot install
-        ./dot validate
+        # Use homebrew bash (4.0+) instead of system bash (3.2)
+        /opt/homebrew/bin/bash ./dot install
+        /opt/homebrew/bin/bash ./dot validate
     
     - name: Test configurations
       run: |
