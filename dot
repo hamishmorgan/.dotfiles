@@ -450,6 +450,8 @@ merge_personal_configs() {
             git-merge)
                 if merge_git_config "$personal" "$target"; then
                     ((merge_count++))
+                    # Set secure permissions on personal config
+                    chmod 600 "$personal" 2>/dev/null || true
                 else
                     log_error "Failed to merge git config from ${personal#"$DOTFILES_DIR"/}"
                     ((failed_count++))
@@ -462,6 +464,8 @@ merge_personal_configs() {
                     cat "$personal"
                 } >> "$target" 2>/dev/null; then
                     ((merge_count++))
+                    # Set secure permissions on personal config
+                    chmod 600 "$personal" 2>/dev/null || true
                 else
                     log_error "Failed to append personal config to ${target#"$DOTFILES_DIR"/}"
                     ((failed_count++))
@@ -470,6 +474,8 @@ merge_personal_configs() {
             yaml-replace|replace)
                 if cp "$personal" "$target" 2>/dev/null; then
                     ((merge_count++))
+                    # Set secure permissions on personal config
+                    chmod 600 "$personal" 2>/dev/null || true
                 else
                     log_error "Failed to copy ${personal#"$DOTFILES_DIR"/} to ${target#"$DOTFILES_DIR"/}"
                     ((failed_count++))
