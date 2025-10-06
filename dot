@@ -151,6 +151,7 @@ show_usage() {
     echo "Commands:"
     echo "  install       Install dotfiles using GNU Stow"
     echo "  validate      Validate dotfiles installation"
+    echo "  health        Run comprehensive health check"
     echo "  update        Update submodules and reinstall"
     echo "  update-all    Update all packages and configurations"
     echo "  uninstall     Remove dotfiles symlinks"
@@ -165,6 +166,7 @@ show_usage() {
     echo "Examples:"
     echo "  $0 install           # Install dotfiles"
     echo "  $0 validate          # Validate installation"
+    echo "  $0 health            # Run health check"
     echo "  $0 update            # Update and reinstall"
     echo "  $0 update-all        # Update all packages and configurations"
     echo "  $0 status            # Show status"
@@ -747,6 +749,178 @@ cmd_validate() {
     fi
 }
 
+# Validate configuration syntax
+validate_config_syntax() {
+    log_info "Validating configuration syntax..."
+    
+    local errors=0
+    
+    # Validate git config
+    if [[ -f "$HOME/.gitconfig" ]]; then
+        if git config --list >/dev/null 2>&1; then
+            log_success "✓ Git configuration syntax valid"
+        else
+            log_error "✗ Git configuration syntax error"
+            ((errors++))
+        fi
+    fi
+    
+    # Validate tmux config
+    if [[ -f "$HOME/.tmux.conf" ]]; then
+        if command_exists tmux; then
+            if tmux -f "$HOME/.tmux.conf" -C new-session -d 2>/dev/null; then
+                log_success "✓ Tmux configuration syntax valid"
+                # Kill the test session
+                tmux kill-session 2>/dev/null || true
+            else
+                log_error "✗ Tmux configuration syntax error"
+                ((errors++))
+            fi
+        else
+            log_info "Tmux not installed, skipping syntax check"
+        fi
+    fi
+    
+    # Validate zsh config
+    if [[ -f "$HOME/.zshrc" ]]; then
+        if command_exists zsh; then
+            if zsh -n "$HOME/.zshrc" 2>/dev/null; then
+                log_success "✓ Zsh configuration syntax valid"
+            else
+                log_error "✗ Zsh configuration syntax error"
+                ((errors++))
+            fi
+        else
+            log_info "Zsh not installed, skipping syntax check"
+        fi
+    fi
+    
+    # Validate bash config
+    if [[ -f "$HOME/.bashrc" ]]; then
+        if bash -n "$HOME/.bashrc" 2>/dev/null; then
+            log_success "✓ Bash configuration syntax valid"
+        else
+            log_error "✗ Bash configuration syntax error"
+            ((errors++))
+        fi
+    fi
+    
+    return $errors
+}
+
+# Check for orphaned symlinks
+check_orphaned_symlinks() {
+    log_info "Checking for orphaned symlinks..."
+    
+    local orphaned=0
+    
+    # Check dotfiles in home directory
+    while IFS= read -r link; do
+        if [[ -L "$link" ]] && [[ ! -e "$link" ]]; then
+            log_warning "Orphaned symlink: ${link#"$HOME"/}"
+            ((orphaned++))
+        fi
+    done < <(find "$HOME" -maxdepth 1 -type l -name ".*" 2>/dev/null)
+    
+    # Check .config directory
+    if [[ -d "$HOME/.config" ]]; then
+        while IFS= read -r link; do
+            if [[ -L "$link" ]] && [[ ! -e "$link" ]]; then
+                log_warning "Orphaned symlink: ${link#"$HOME"/}"
+                ((orphaned++))
+            fi
+        done < <(find "$HOME/.config" -maxdepth 2 -type l 2>/dev/null)
+    fi
+    
+    if [[ $orphaned -eq 0 ]]; then
+        log_success "No orphaned symlinks found"
+    else
+        log_warning "Found $orphaned orphaned symlink(s)"
+    fi
+    
+    return $orphaned
+}
+
+# Check backup directory health
+check_backup_health() {
+    log_info "Checking backup directory health..."
+    
+    local backup_count=0
+    local total_size=0
+    
+    while IFS= read -r dir; do
+        [[ -z "$dir" ]] && continue
+        ((backup_count++))
+        local size
+        size=$(du -sk "$dir" 2>/dev/null | cut -f1)
+        ((total_size += size))
+    done < <(find "$DOTFILES_DIR/backups" -maxdepth 1 -type d -name "dotfiles-backup-*" 2>/dev/null)
+    
+    if [[ $backup_count -eq 0 ]]; then
+        log_info "No backup directories found"
+    else
+        log_info "Found $backup_count backup(s) using $((total_size / 1024))MB"
+        
+        if [[ $backup_count -gt 10 ]]; then
+            log_warning "Consider cleaning old backups: ./dot clean"
+        fi
+    fi
+    
+    return 0
+}
+
+# Comprehensive health check command
+cmd_health() {
+    log_info "Running comprehensive dotfiles health check..."
+    echo ""
+    
+    local total_issues=0
+    
+    # 1. Symlink integrity
+    log_info "=== Symlink Integrity ==="
+    for package in "${PACKAGES[@]}"; do
+        validate_package "$package" || ((total_issues++))
+    done
+    echo ""
+    
+    # 2. Configuration syntax
+    log_info "=== Configuration Syntax ==="
+    validate_config_syntax || ((total_issues += $?))
+    echo ""
+    
+    # 3. Orphaned symlinks
+    log_info "=== Orphaned Symlinks ==="
+    check_orphaned_symlinks
+    # Note: Orphaned symlinks are warnings, not errors
+    echo ""
+    
+    # 4. Dependencies
+    log_info "=== Dependencies ==="
+    if check_dependencies 2>/dev/null; then
+        log_success "All dependencies satisfied"
+    else
+        log_warning "Some dependencies missing (see above)"
+        ((total_issues++))
+    fi
+    echo ""
+    
+    # 5. Backup health
+    log_info "=== Backup Health ==="
+    check_backup_health
+    echo ""
+    
+    # Summary
+    echo "========================================"
+    if [[ $total_issues -eq 0 ]]; then
+        log_success "Health check passed! No issues found."
+        return 0
+    else
+        log_error "Health check found $total_issues issue(s)"
+        log_info "Run './dot install' to fix installation issues"
+        return 1
+    fi
+}
+
 # Update gitignore globals from gitignore.io
 update_gitignore() {
     log_info "Updating .gitignore-globals from toptal.com..."
@@ -872,7 +1046,7 @@ main() {
                 verbose=true
                 shift
                 ;;
-            install|validate|update|update-all|status|backup|clean|uninstall)
+            install|validate|health|update|update-all|status|backup|clean|uninstall)
                 if [[ -n "$command" ]]; then
                     log_error "Multiple commands specified"
                     exit 1
@@ -906,6 +1080,9 @@ main() {
             ;;
         validate)
             cmd_validate
+            ;;
+        health)
+            cmd_health
             ;;
         update)
             cmd_update
