@@ -129,3 +129,41 @@ fi
 
 # Custom aliases
 alias cursor='~/Applications/cursor.AppImage --no-sandbox'
+
+# Dotfiles management function
+d() {
+    local cmd="${1:-help}"
+    shift 2>/dev/null
+    
+    case "$cmd" in
+        h|health)      ~/.dotfiles/dot health "$@" ;;
+        v|validate)    ~/.dotfiles/dot validate "$@" ;;
+        u|update)      ~/.dotfiles/dot update "$@" ;;
+        ua|update-all) ~/.dotfiles/dot update-all "$@" ;;
+        s|status)      ~/.dotfiles/dot status "$@" ;;
+        b|backup)      ~/.dotfiles/dot backup "$@" ;;
+        c|clean)       ~/.dotfiles/dot clean "$@" ;;
+        i|install)     ~/.dotfiles/dot install "$@" ;;
+        cd)            builtin cd ~/.dotfiles || return ;;
+        *)             ~/.dotfiles/dot "$cmd" "$@" ;;
+    esac
+}
+
+# Zsh completion for dotfiles function
+_d_completion() {
+    local -a commands
+    commands=(
+        'health:Run comprehensive health check'
+        'validate:Validate installation'
+        'update:Update submodules'
+        'update-all:Update all configurations'
+        'status:Show installation status'
+        'backup:Create backup'
+        'clean:Clean up old backups'
+        'install:Install dotfiles'
+        'uninstall:Remove dotfiles'
+        'cd:Change to dotfiles directory'
+    )
+    _describe 'dotfiles command' commands
+}
+compdef _d_completion d
