@@ -4,9 +4,17 @@ Instructions for AI agents working with this dotfiles repository.
 
 ## Project Context
 
-This repository contains dotfiles managed with GNU Stow. Files are organized into packages: git, zsh, tmux.
+This repository contains dotfiles managed with GNU Stow. Files are organized into packages: git, zsh, tmux, bash.
 Oh My Zsh is included as a submodule within the zsh package.
 Template-based secrets management separates public templates from private personal configurations.
+
+### Branch Strategy
+
+- **main branch**: Personal configurations for home use
+- **shopify branch**: Work environment configurations (Shopify-specific tools and settings)
+  - Rebase on main to pull in general improvements
+  - Allow dev tools to modify files freely without affecting main
+  - Push auto-generated changes without concern
 
 ## Documentation Standards
 
@@ -27,13 +35,14 @@ Template-based secrets management separates public templates from private person
 
 ## File Organization
 
-- Package-specific files go in their respective directories (git/, zsh/, tmux/)
+- Package-specific files go in their respective directories (git/, zsh/, tmux/, bash/)
 - Scripts (dot) remain in root
 - Configuration files use dot-prefixed names
 - .gitignore is project-specific, not managed by stow
 - Templates (.template files) contain placeholders for personal information
 - Personal configs (.personal files) are git-ignored and contain actual values
 - Installation script merges templates with personal configs during installation
+- OS-specific configs (.bashrc.osx, .bashrc.linux, .zshrc.osx, .zshrc.linux) for platform differences
 
 ## Validation
 
