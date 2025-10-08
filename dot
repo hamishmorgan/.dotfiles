@@ -117,9 +117,9 @@ declare -A PACKAGE_NAMES=(
     ["bash"]="Bash"
 )
 
-# Auto-discovery functions for templates and personal configs
+# Auto-discovery functions for templates and secret configs
 # Convention: *.template files are processed to create target files
-# Convention: *.personal files are merged with targets based on file type
+# Convention: *.secret files are merged with targets based on file type
 
 # Discover all template files and output template:target pairs
 discover_templates() {
@@ -133,9 +133,9 @@ discover_templates() {
     done | sort
 }
 
-# Discover all personal config files
-discover_personal_configs() {
-    find "$DOTFILES_DIR" -type f -name "*.personal" 2>/dev/null | sort
+# Discover all secret config files
+discover_secret_configs() {
+    find "$DOTFILES_DIR" -type f -name "*.secret" 2>/dev/null | sort
 }
 
 # Required dependencies per platform
@@ -428,93 +428,93 @@ merge_git_config() {
     return 0
 }
 
-# Secure permissions on personal config file
-secure_personal_file() {
-    local personal="$1"
+# Secure permissions on secret config file
+secure_secret_file() {
+    local secret="$1"
     
-    if [[ ! -f "$personal" ]]; then
+    if [[ ! -f "$secret" ]]; then
         return 0
     fi
     
-    if ! chmod 600 "$personal" 2>/dev/null; then
-        log_warning "Failed to set secure permissions on ${personal#"$DOTFILES_DIR"/}"
+    if ! chmod 600 "$secret" 2>/dev/null; then
+        log_warning "Failed to set secure permissions on ${secret#"$DOTFILES_DIR"/}"
         return 1
     fi
     
     return 0
 }
 
-# Merge personal configurations with templates (auto-discovered)
-merge_personal_configs() {
-    log_info "Merging personal configurations..."
+# Merge secret configurations with templates (auto-discovered)
+merge_secret_configs() {
+    log_info "Merging secret configurations..."
     
     local merge_count=0
     local failed_count=0
     
-    # Process all .personal files found in dotfiles directory
-    while IFS= read -r personal; do
-        [[ -z "$personal" ]] && continue
-        [[ ! -f "$personal" ]] && continue
+    # Process all .secret files found in dotfiles directory
+    while IFS= read -r secret; do
+        [[ -z "$secret" ]] && continue
+        [[ ! -f "$secret" ]] && continue
         
-        # Set secure permissions on personal file unconditionally
-        secure_personal_file "$personal"
+        # Set secure permissions on secret file unconditionally
+        secure_secret_file "$secret"
         
-        local target="${personal%.personal}"
+        local target="${secret%.secret}"
         
         if [[ ! -f "$target" ]]; then
-            log_warning "Target file not found for ${personal#"$DOTFILES_DIR"/}, skipping"
+            log_warning "Target file not found for ${secret#"$DOTFILES_DIR"/}, skipping"
             continue
         fi
         
         local merge_type
         merge_type=$(determine_merge_strategy "$target")
         
-        log_info "Merging ${personal#"$DOTFILES_DIR"/} -> ${target#"$DOTFILES_DIR"/} ($merge_type)"
+        log_info "Merging ${secret#"$DOTFILES_DIR"/} -> ${target#"$DOTFILES_DIR"/} ($merge_type)"
         
         case "$merge_type" in
             git-merge)
-                if merge_git_config "$personal" "$target"; then
+                if merge_git_config "$secret" "$target"; then
                     ((merge_count++))
                 else
-                    log_error "Failed to merge git config from ${personal#"$DOTFILES_DIR"/}"
+                    log_error "Failed to merge git config from ${secret#"$DOTFILES_DIR"/}"
                     ((failed_count++))
                 fi
                 ;;
             yaml-append)
                 if {
                     echo ""
-                    echo "# Personal configuration"
-                    cat "$personal"
+                    echo "# Secret configuration"
+                    cat "$secret"
                 } >> "$target" 2>/dev/null; then
                     ((merge_count++))
                 else
-                    log_error "Failed to append personal config to ${target#"$DOTFILES_DIR"/}"
+                    log_error "Failed to append secret config to ${target#"$DOTFILES_DIR"/}"
                     ((failed_count++))
                 fi
                 ;;
             yaml-replace|replace)
-                if cp "$personal" "$target" 2>/dev/null; then
+                if cp "$secret" "$target" 2>/dev/null; then
                     ((merge_count++))
                 else
-                    log_error "Failed to copy ${personal#"$DOTFILES_DIR"/} to ${target#"$DOTFILES_DIR"/}"
+                    log_error "Failed to copy ${secret#"$DOTFILES_DIR"/} to ${target#"$DOTFILES_DIR"/}"
                     ((failed_count++))
                 fi
                 ;;
             *)
-                log_warning "Unknown merge type: $merge_type for ${personal#"$DOTFILES_DIR"/}"
+                log_warning "Unknown merge type: $merge_type for ${secret#"$DOTFILES_DIR"/}"
                 ((failed_count++))
                 ;;
         esac
-    done < <(find "$DOTFILES_DIR" -type f -name "*.personal" 2>/dev/null | sort)
+    done < <(find "$DOTFILES_DIR" -type f -name "*.secret" 2>/dev/null | sort)
     
     if [[ $merge_count -eq 0 ]] && [[ $failed_count -eq 0 ]]; then
-        log_info "No personal configuration files found"
+        log_info "No secret configuration files found"
     elif [[ $merge_count -gt 0 ]]; then
-        log_success "Merged $merge_count personal config(s)"
+        log_success "Merged $merge_count secret config(s)"
     fi
     
     if [[ $failed_count -gt 0 ]]; then
-        log_error "Failed to merge $failed_count personal config(s)"
+        log_error "Failed to merge $failed_count secret config(s)"
         return 1
     fi
     
@@ -1102,9 +1102,9 @@ check_git_repo_status() {
     return $issues
 }
 
-# Check template and personal config consistency
+# Check template and secret config consistency
 check_template_consistency() {
-    log_info "Checking template/personal config consistency..."
+    log_info "Checking template/secret config consistency..."
     
     local issues=0
     
@@ -1121,20 +1121,20 @@ check_template_consistency() {
     while IFS=: read -r template target; do
         [[ -z "$template" ]] && continue
         
-        local personal="${template%.template}.personal"
+        local secret="${template%.template}.secret"
         local package_dir
         package_dir=$(dirname "$template")
         local target_file="$HOME/$target"
         
-        # Check if personal config exists
-        if [[ ! -f "$personal" ]]; then
-            log_warning "Template without personal config: ${template#"$DOTFILES_DIR"/}"
-            log_info "  Consider creating: ${personal#"$DOTFILES_DIR"/}"
+        # Check if secret config exists
+        if [[ ! -f "$secret" ]]; then
+            log_warning "Template without secret config: ${template#"$DOTFILES_DIR"/}"
+            log_info "  Consider creating: ${secret#"$DOTFILES_DIR"/}"
         fi
         
         # Check if merged file is stale
-        if [[ -f "$target_file" ]] && [[ -f "$personal" ]]; then
-            if [[ "$template" -nt "$target_file" ]] || [[ "$personal" -nt "$target_file" ]]; then
+        if [[ -f "$target_file" ]] && [[ -f "$secret" ]]; then
+            if [[ "$template" -nt "$target_file" ]] || [[ "$secret" -nt "$target_file" ]]; then
                 log_warning "Stale merged config: ${target_file#"$HOME"/}"
                 log_info "  Source files newer than target. Run: ./dot install"
                 ((issues++))
@@ -1144,15 +1144,15 @@ check_template_consistency() {
         fi
     done <<< "$template_list"
     
-    # Check for orphaned personal configs
-    while IFS= read -r personal; do
-        [[ -z "$personal" ]] && continue
+    # Check for orphaned secret configs
+    while IFS= read -r secret; do
+        [[ -z "$secret" ]] && continue
         
-        local template="${personal%.personal}.template"
+        local template="${secret%.secret}.template"
         if [[ ! -f "$template" ]]; then
-            log_warning "Personal config without template: ${personal#"$DOTFILES_DIR"/}"
+            log_warning "Secret config without template: ${secret#"$DOTFILES_DIR"/}"
         fi
-    done < <(discover_personal_configs)
+    done < <(discover_secret_configs)
     
     return $issues
 }
@@ -1164,32 +1164,32 @@ check_file_permissions() {
     local errors=0
     local warnings=0
     
-    # Check personal config files (should not be world-readable)
-    while IFS= read -r personal; do
-        [[ -z "$personal" ]] && continue
-        [[ ! -f "$personal" ]] && continue
+    # Check secret config files (should not be world-readable)
+    while IFS= read -r secret; do
+        [[ -z "$secret" ]] && continue
+        [[ ! -f "$secret" ]] && continue
         
         local perms
-        perms=$(stat -c '%a' "$personal" 2>/dev/null || stat -f '%A' "$personal" 2>/dev/null)
+        perms=$(stat -c '%a' "$secret" 2>/dev/null || stat -f '%A' "$secret" 2>/dev/null)
         
         # Check if world-readable (last digit > 0)
         if [[ "${perms: -1}" != "0" ]]; then
-            log_warning "Personal config is world-readable: ${personal#"$DOTFILES_DIR"/}"
-            log_info "  Consider: chmod 600 $personal"
+            log_warning "Secret config is world-readable: ${secret#"$DOTFILES_DIR"/}"
+            log_info "  Consider: chmod 600 $secret"
             ((warnings++))
         else
-            log_success "✓ ${personal#"$DOTFILES_DIR"/} has secure permissions"
+            log_success "✓ ${secret#"$DOTFILES_DIR"/} has secure permissions"
         fi
-    done < <(discover_personal_configs)
+    done < <(discover_secret_configs)
     
     # Check for accidentally committed secrets (this is an ERROR not a warning)
-    if [[ -f "$DOTFILES_DIR/git/.gitconfig.personal" ]]; then
-        if git -C "$DOTFILES_DIR" ls-files --error-unmatch "git/.gitconfig.personal" >/dev/null 2>&1; then
-            log_error "✗ Personal git config is tracked by git (potential secrets leak)"
-            log_info "  Run: git rm --cached git/.gitconfig.personal"
+    if [[ -f "$DOTFILES_DIR/git/.gitconfig.secret" ]]; then
+        if git -C "$DOTFILES_DIR" ls-files --error-unmatch "git/.gitconfig.secret" >/dev/null 2>&1; then
+            log_error "✗ Secret git config is tracked by git (potential secrets leak)"
+            log_info "  Run: git rm --cached git/.gitconfig.secret"
             ((errors++))
         else
-            log_success "✓ Personal configs properly ignored by git"
+            log_success "✓ Secret configs properly ignored by git"
         fi
     fi
     
@@ -1327,7 +1327,7 @@ cmd_health() {
     check_git_repo_status || ((total_issues += $?))
     echo ""
     
-    # 5. Template/personal config consistency
+    # 5. Template/secret config consistency
     log_info "=== Template Configuration Consistency ==="
     check_template_consistency || ((total_issues += $?))
     echo ""
@@ -1439,8 +1439,8 @@ run_installation_pipeline() {
         return 1
     fi
     
-    if ! merge_personal_configs; then
-        log_error "Personal config merging failed"
+    if ! merge_secret_configs; then
+        log_error "Secret config merging failed"
         return 1
     fi
     

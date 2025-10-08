@@ -1,17 +1,17 @@
 # Backup directories
 backups/
 
-# Personal configuration files (contain sensitive information)
-*.personal
+# Secret configuration files (contain sensitive information)
+*.secret
 *.local
 
-# Specific personal files
-git/.gitconfig.personal
-git/.gitconfig.shopify.personal
-gh/.config/gh/config.yml.personal
-gh/.config/gh/hosts.yml.personal
+# Specific secret files
+git/.gitconfig.secret
+git/.gitconfig.shopify.secret
+gh/.config/gh/config.yml.secret
+gh/.config/gh/hosts.yml.secret
 
-# Generated configuration files (created from templates + personal configs)
+# Generated configuration files (created from templates + secret configs)
 git/.gitconfig
 git/.gitconfig.shopify
 gh/.config/gh/config.yml

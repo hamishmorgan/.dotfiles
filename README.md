@@ -26,8 +26,8 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 .dotfiles/
 ├── git/           # Git configuration and aliases
 │   ├── .gitconfig.template      # Git config template
-│   ├── .gitconfig.personal.example  # Personal config example
-│   └── .gitconfig.personal      # Personal config (git-ignored)
+│   ├── .gitconfig.secret.example  # Secret config example
+│   └── .gitconfig.secret      # Secret config (git-ignored)
 ├── zsh/           # Zsh configuration with Oh My Zsh
 │   ├── .zshrc
 │   ├── .zprofile
@@ -38,8 +38,8 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 ├── gh/            # GitHub CLI configuration
 │   └── .config/gh/
 │       ├── config.yml.template
-│       ├── config.yml.personal.example
-│       └── config.yml.personal   # Personal config (git-ignored)
+│       ├── config.yml.secret.example
+│       └── config.yml.secret   # Secret config (git-ignored)
 ├── gnuplot/       # GNU Plot configuration
 ├── bash/          # Bash configuration
 │   ├── .bashrc
@@ -138,8 +138,8 @@ The health check performs 11 categories of checks:
 2. **Configuration Syntax**: Validates git, tmux, zsh, and bash configuration syntax
 3. **Submodule Health**: Checks Oh My Zsh submodule status and initialization
 4. **Git Repository Status**: Reports uncommitted changes, branch status, and sync with origin
-5. **Template Configuration Consistency**: Detects missing personal configs and stale merged files
-6. **File Permissions**: Ensures personal configs have secure permissions and aren't tracked by git
+5. **Template Configuration Consistency**: Detects missing secret configs and stale merged files
+6. **File Permissions**: Ensures secret configs have secure permissions and aren't tracked by git
 7. **Shell Integration**: Verifies shell configs are active and PATH is properly configured
 8. **Stow Conflicts**: Detects unmanaged files that would conflict with stow
 9. **Orphaned Symlinks**: Finds broken symlinks in home and .config directories
@@ -200,31 +200,31 @@ Or using the gi alias:
 gi linux,osx,vscode,vim,jetbrains > ~/.gitignore-globals
 ```
 
-## Personal Configuration
+## Secret Configuration
 
 This dotfiles setup uses a template-based approach for managing sensitive information.
-Personal configurations are stored in separate files that are git-ignored.
+Secret configurations are stored in separate files that are git-ignored.
 
-### Setting Up Personal Configuration
+### Setting Up Secret Configuration
 
 1. **Git Configuration**:
 
    ```bash
    # Copy the example and customize
-   cp ~/.dotfiles/git/.gitconfig.personal.example ~/.dotfiles/git/.gitconfig.personal
+   cp ~/.dotfiles/git/.gitconfig.secret.example ~/.dotfiles/git/.gitconfig.secret
    
    # Edit with your personal information
-   nano ~/.dotfiles/git/.gitconfig.personal
+   nano ~/.dotfiles/git/.gitconfig.secret
    ```
 
 2. **GitHub CLI Configuration**:
 
    ```bash
    # Copy the example and customize
-   cp ~/.dotfiles/gh/.config/gh/config.yml.personal.example ~/.dotfiles/gh/.config/gh/config.yml.personal
+   cp ~/.dotfiles/gh/.config/gh/config.yml.secret.example ~/.dotfiles/gh/.config/gh/config.yml.secret
    
    # Edit with your personal preferences
-   nano ~/.dotfiles/gh/.config/gh/config.yml.personal
+   nano ~/.dotfiles/gh/.config/gh/config.yml.secret
    ```
 
 3. **Reinstall to apply changes**:
@@ -236,13 +236,13 @@ Personal configurations are stored in separate files that are git-ignored.
 ### Template System
 
 - **Templates**: Public configuration files with placeholders (e.g., `YOUR_EMAIL_HERE`)
-- **Personal Configs**: Private files with actual values (git-ignored)
+- **Secret Configs**: Private files with actual sensitive values (git-ignored)
 - **Merged Configs**: Final configuration files created during installation
 
 The installation script automatically:
 
 1. Creates config files from templates
-2. Merges personal configurations
+2. Merges secret configurations
 3. Installs using Stow
 
 ### Update

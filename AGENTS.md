@@ -6,7 +6,7 @@ Instructions for AI agents working with this dotfiles repository.
 
 This repository contains dotfiles managed with GNU Stow. Files are organized into packages: git, zsh, tmux, bash.
 Oh My Zsh is included as a submodule within the zsh package.
-Template-based secrets management separates public templates from private personal configurations.
+Template-based secrets management separates public templates from private secret configurations.
 
 ### Branch Strategy
 
@@ -39,9 +39,9 @@ Template-based secrets management separates public templates from private person
 - Scripts (dot) remain in root
 - Configuration files use dot-prefixed names
 - .gitignore is project-specific, not managed by stow
-- Templates (.template files) contain placeholders for personal information
-- Personal configs (.personal files) are git-ignored and contain actual values
-- Installation script merges templates with personal configs during installation
+- Templates (.template files) contain placeholders for sensitive information
+- Secret configs (.secret files) are git-ignored and contain actual sensitive values
+- Installation script merges templates with secret configs during installation
 - OS-specific configs (.bashrc.osx, .bashrc.linux, .zshrc.osx, .zshrc.linux) for platform differences
 
 ## Validation
