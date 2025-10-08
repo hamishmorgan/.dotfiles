@@ -177,8 +177,9 @@ show_usage() {
     echo "  clean         Clean up backup directories"
     echo ""
     echo "Options:"
-    echo "  -h, --help    Show this help message"
-    echo "  -v, --verbose Enable verbose output"
+    echo "  -h, --help           Show this help message"
+    echo "  -v, --verbose        Enable verbose output"
+    echo "  --completion SHELL   Output shell completion script (bash or zsh)"
     echo ""
     echo "Examples:"
     echo "  $0 install           # Install dotfiles"
@@ -187,6 +188,11 @@ show_usage() {
     echo "  $0 update            # Update and reinstall"
     echo "  $0 update-all        # Update all packages and configurations"
     echo "  $0 status            # Show status"
+    echo ""
+    echo "Shell Integration:"
+    echo "  # In .bashrc or .zshrc:"
+    echo "  source <($0 --completion bash)  # for bash"
+    echo "  source <($0 --completion zsh)   # for zsh"
 }
 
 # Check if command exists
@@ -1562,6 +1568,97 @@ main() {
             ;;
     esac
 }
+
+# Shell completion support
+# This section provides completion functions that can be sourced from shell configs
+# Usage: source <(dot --completion bash) or source <(dot --completion zsh)
+
+show_bash_completion() {
+    cat << 'EOF'
+# Bash completion for dot script
+_dot_completion() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local commands="install validate health update update-all status backup clean uninstall"
+    mapfile -t COMPREPLY < <(compgen -W "$commands" -- "$cur")
+}
+complete -F _dot_completion dot
+
+# Bash completion for d function wrapper
+_d_completion_bash() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local commands="h health v validate u update ua update-all s status b backup c clean i install uninstall cd"
+    mapfile -t COMPREPLY < <(compgen -W "$commands" -- "$cur")
+}
+complete -F _d_completion_bash d
+EOF
+}
+
+show_zsh_completion() {
+    cat << 'EOF'
+# Zsh completion for dot script
+_dot_completion() {
+    local -a commands
+    commands=(
+        'install:Install dotfiles using GNU Stow'
+        'validate:Validate dotfiles installation'
+        'health:Run comprehensive health check'
+        'update:Update submodules and reinstall'
+        'update-all:Update all packages and configurations'
+        'status:Show installation status'
+        'backup:Create backup of existing files'
+        'clean:Clean up backup directories'
+        'uninstall:Remove dotfiles symlinks'
+    )
+    _describe 'dot command' commands
+}
+compdef _dot_completion dot
+
+# Zsh completion for d function wrapper
+_d_completion() {
+    local -a commands
+    commands=(
+        'h:health - Run comprehensive health check'
+        'health:Run comprehensive health check'
+        'v:validate - Validate installation'
+        'validate:Validate installation'
+        'u:update - Update submodules'
+        'update:Update submodules'
+        'ua:update-all - Update all configurations'
+        'update-all:Update all configurations'
+        's:status - Show installation status'
+        'status:Show installation status'
+        'b:backup - Create backup'
+        'backup:Create backup'
+        'c:clean - Clean up old backups'
+        'clean:Clean up old backups'
+        'i:install - Install dotfiles'
+        'install:Install dotfiles'
+        'uninstall:Remove dotfiles'
+        'cd:Change to dotfiles directory'
+    )
+    _describe 'dotfiles command' commands
+}
+compdef _d_completion d
+EOF
+}
+
+# Handle completion requests
+if [[ "${1:-}" == "--completion" ]]; then
+    case "${2:-}" in
+        bash)
+            show_bash_completion
+            exit 0
+            ;;
+        zsh)
+            show_zsh_completion
+            exit 0
+            ;;
+        *)
+            log_error "Unknown shell type: ${2:-}. Use 'bash' or 'zsh'"
+            exit 1
+            ;;
+    esac
+fi
 
 # Run main function with all arguments
 main "$@"
