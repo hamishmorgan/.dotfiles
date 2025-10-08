@@ -130,48 +130,16 @@ fi
 # Custom aliases
 alias cursor='~/Applications/cursor.AppImage --no-sandbox'
 
-# Dotfiles management function
-d() {
-    local cmd="${1:-help}"
-    if (($#)); then shift; fi
-    
-    case "$cmd" in
-        h|health)      "$HOME/.dotfiles/dot" health "$@" ;;
-        v|validate)    "$HOME/.dotfiles/dot" validate "$@" ;;
-        u|update)      "$HOME/.dotfiles/dot" update "$@" ;;
-        ua|update-all) "$HOME/.dotfiles/dot" update-all "$@" ;;
-        s|status)      "$HOME/.dotfiles/dot" status "$@" ;;
-        b|backup)      "$HOME/.dotfiles/dot" backup "$@" ;;
-        c|clean)       "$HOME/.dotfiles/dot" clean "$@" ;;
-        i|install)     "$HOME/.dotfiles/dot" install "$@" ;;
-        cd)            builtin cd "$HOME/.dotfiles" || return ;;
-        *)             "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
-    esac
-}
+# Load dotfiles management function and completions from dot script
+if [ -f "$HOME/.dotfiles/dot" ]; then
+    source <("$HOME/.dotfiles/dot" --completion zsh)
+fi
 
-# Zsh completion for dotfiles function
-_d_completion() {
-    local -a commands
-    commands=(
-        'h:health - Run comprehensive health check'
-        'health:Run comprehensive health check'
-        'v:validate - Validate installation'
-        'validate:Validate installation'
-        'u:update - Update submodules'
-        'update:Update submodules'
-        'ua:update-all - Update all configurations'
-        'update-all:Update all configurations'
-        's:status - Show installation status'
-        'status:Show installation status'
-        'b:backup - Create backup'
-        'backup:Create backup'
-        'c:clean - Clean up old backups'
-        'clean:Clean up old backups'
-        'i:install - Install dotfiles'
-        'install:Install dotfiles'
-        'uninstall:Remove dotfiles'
-        'cd:Change to dotfiles directory'
-    )
-    _describe 'dotfiles command' commands
-}
-compdef _d_completion d
+# Shopify development environment
+if [[ -f /opt/dev/dev.sh ]] && [[ $- == *i* ]]; then
+  source /opt/dev/dev.sh
+fi
+
+[[ -f /opt/dev/sh/chruby/chruby.sh ]] && { type chruby >/dev/null 2>&1 || chruby () { source /opt/dev/sh/chruby/chruby.sh; chruby "$@"; } }
+
+[[ -x /opt/homebrew/bin/brew ]] && eval $(/opt/homebrew/bin/brew shellenv)
