@@ -168,11 +168,6 @@
 	autosquash = true
 	autostash = true
 
-[includeIf "gitdir:~/src/github.com/Shopify/"]
-	path = ~/.gitconfig.shopify
-
-[include]
-	path = ~/.config/dev/gitconfig
 [gpg]
 	format = ssh
 [gpg "ssh"]

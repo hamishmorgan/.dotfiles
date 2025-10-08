@@ -1,9 +1,0 @@
-# Personal Shopify Git Configuration Example
-# Copy this file to .gitconfig.shopify.personal and customize with your information
-
-[user]
-	email = your.name@shopify.com
-	name = Your Full Name
-
-# You can add any Shopify-specific git configurations here
-# This file will be merged with the template during installation
