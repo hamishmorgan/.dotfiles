@@ -1,8 +1,8 @@
 # Linux-specific zsh configuration
 case $ZSH_HOST_OS in
   linux*)
-    # Linux-specific aliases (if any)
-    # Add your Linux-specific configuration here
+    # Linux-specific aliases
+    alias cursor='~/Applications/cursor.AppImage --no-sandbox'
     ;;
 esac
 

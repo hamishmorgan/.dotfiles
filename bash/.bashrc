@@ -117,8 +117,20 @@ if ! shopt -oq posix; then
   fi
 fi
 
+# Detect OS for conditional configuration loading
+export BASH_HOST_OS=$(uname | awk '{print tolower($0)}')
+
+# Load configs for MacOS
+if [ "$BASH_HOST_OS" = "darwin" ]; then
+  . "$HOME/.bashrc.osx"
+fi
+
+# Load configs for Linux
+if [ "$BASH_HOST_OS" = "linux" ]; then
+  . "$HOME/.bashrc.linux"
+fi
+
 # Custom aliases
-alias cursor='~/Applications/cursor.AppImage --no-sandbox'
 
 # Dotfiles management function
 d() {

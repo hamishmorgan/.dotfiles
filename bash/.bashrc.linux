@@ -1,0 +1,9 @@
+# shellcheck shell=bash
+# Linux-specific bash configuration
+
+case $BASH_HOST_OS in
+	linux*)
+		# Linux-specific aliases
+		alias cursor='~/Applications/cursor.AppImage --no-sandbox'
+	;;
+esac
