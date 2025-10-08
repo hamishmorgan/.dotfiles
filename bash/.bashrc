@@ -136,3 +136,15 @@ fi
 if [ -f "$HOME/.dotfiles/dot" ]; then
     source <("$HOME/.dotfiles/dot" --completion bash)
 fi
+
+# Shopify development environment
+# load dev, but only if present and the shell is interactive
+if [[ -f /opt/dev/dev.sh ]] && [[ $- == *i* ]]; then
+  source /opt/dev/dev.sh
+fi
+
+[[ -f /opt/dev/sh/chruby/chruby.sh ]] && { type chruby >/dev/null 2>&1 || chruby () { source /opt/dev/sh/chruby/chruby.sh; chruby "$@"; } }
+
+# Added by tec agent
+[[ -x /Users/hamish/.local/state/tec/profiles/base/current/global/init ]] && [[ $- == *i* ]] && eval "$(/Users/hamish/.local/state/tec/profiles/base/current/global/init bash)"
+
