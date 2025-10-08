@@ -110,7 +110,7 @@ git submodule update --init --recursive
 stow -v git zsh tmux gh gnuplot bash
 ```
 
-**Note:** Manual installation still requires processing templates and merging personal configs.
+**Note:** Manual installation still requires processing templates and merging secret configs.
 Use `./dot install` for the complete installation process.
 
 ## Validation
