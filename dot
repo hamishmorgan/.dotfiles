@@ -650,6 +650,11 @@ check_symlink() {
             log_warning "⚠ $file is linked to $target (expected $expected_target)"
             return 1
         fi
+    elif [[ -d "$HOME/$file" ]]; then
+        # Directory exists - check if it contains stow-managed files
+        # (Stow creates directories when linking nested structures)
+        log_success "$file exists as directory (stow-managed)"
+        return 0
     elif [[ -f "$HOME/$file" ]]; then
         log_warning "⚠ $file exists but is not a symlink"
         return 1
