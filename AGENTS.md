@@ -4,9 +4,18 @@ Instructions for AI agents working with this dotfiles repository.
 
 ## Project Context
 
-This repository contains dotfiles managed with GNU Stow. Files are organized into packages: git, zsh, tmux, bash.
-Oh My Zsh is included as a submodule within the zsh package.
+This repository contains dotfiles managed with GNU Stow. Files are organized into packages:
+
+- **system**: System-wide configuration files (`.stow-global-ignore`)
+- **git**: Git configuration and global ignore patterns
+- **zsh**: Zsh shell configuration (includes Oh My Zsh as submodule)
+- **tmux**: Terminal multiplexer configuration
+- **gh**: GitHub CLI configuration
+- **gnuplot**: GNU Plot configuration
+- **bash**: Bash shell configuration
+
 Template-based secrets management separates public templates from private secret configurations.
+The `system` package is stowed first to ensure `.stow-global-ignore` is in place before other packages.
 
 ### Branch Strategy
 
@@ -32,17 +41,52 @@ Template-based secrets management separates public templates from private secret
 - Use clear, descriptive variable names
 - Include error handling where appropriate
 - Keep functions focused and single-purpose
+- Use long-form arguments for CLI commands where available (e.g., `--verbose` not `-v`)
+- Use explicit error handling instead of `set -e` (controlled failure handling)
+- Enable bash safety features: `shopt -s nullglob extglob`
 
 ## File Organization
 
-- Package-specific files go in their respective directories (git/, zsh/, tmux/, bash/)
-- Scripts (dot) remain in root
+- Package-specific files go in their respective directories (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/)
+- Scripts (`dot`) remain in root
 - Configuration files use dot-prefixed names
-- .gitignore is project-specific, not managed by stow
-- Templates (.template files) contain placeholders for sensitive information
-- Secret configs (.secret files) are git-ignored and contain actual sensitive values
+- `.gitignore` is project-specific, not managed by stow
+
+### Stow Ignore Files
+
+- **`system/.stow-global-ignore`**: Symlinked to `~/.stow-global-ignore`, contains universal patterns
+  for all stow operations
+- **Package `.stow-local-ignore`**: In each package directory (e.g., `git/.stow-local-ignore`),
+  contains package-specific ignore patterns
+- Template/secret/example files are ignored via `.stow-local-ignore` in each package
+
+### Templates and Secrets
+
+- Templates (`.template` files) contain placeholders for sensitive information
+- Secret configs (`.secret` files) are git-ignored and contain actual sensitive values
+- Example files (`.example` files) show format for secret configs
+- **These files are NOT stowed** - ignored via package `.stow-local-ignore` files
 - Installation script merges templates with secret configs during installation
-- OS-specific configs (.bashrc.osx, .bashrc.linux, .zshrc.osx, .zshrc.linux) for platform differences
+
+### Platform-Specific Configs
+
+- OS-specific configs use suffixes: `.bashrc.osx`, `.bashrc.linux`, `.zshrc.osx`, `.zshrc.linux`
+
+## Logging System
+
+The `dot` script uses symbol-based logging for clear, scannable output:
+
+- `●` (blue) - Informational messages
+- `✓` (green) - Success messages
+- `⚠` (yellow) - Warnings
+- `✗` (red) - Errors
+
+Subcommand output is prefixed with `│` and colorized based on content:
+
+- Red: error patterns (error, failed, fatal, cannot, unable)
+- Yellow: warning patterns (warning, warn)
+- Green: success patterns (success, ok, done, complete)
+- Blue prefix: normal output
 
 ## Validation
 
@@ -79,11 +123,13 @@ When adding new instructions:
 
 ## Common Tasks
 
-- Installation: Use `./dot install`
-- Validation: Use `./dot validate`
+- Installation: `./dot install`
+- Validation: `./dot validate`
+- Health check: `./dot health`
+- Status: `./dot status`
 - Linting: `markdownlint "**/*.md"` and `shellcheck dot`
-- Package management: Use `stow -v package_name`
-- Backup location: `~/.dotfiles-backup-*`
+- Package management: `stow --verbose --restow --dir=. --target=$HOME package_name`
+- Backup location: `backups/dotfiles-backup-*` (timestamped directories)
 - CI validation: `.github/workflows/validate.yml`
 
 ## Pull Request Workflow
