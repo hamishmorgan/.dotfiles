@@ -318,7 +318,7 @@ backup_existing() {
     log_info "Creating backup of existing files..."
     
     # Create backup directory
-    if ! mkdir --parents "$BACKUP_DIR" 2>/dev/null; then
+    if ! mkdir --parents "$BACKUP_DIR"; then
         log_error "Failed to create backup directory: $BACKUP_DIR"
         suggest_fixes "backup" "$BACKUP_DIR"
         return 1
