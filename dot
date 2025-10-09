@@ -146,19 +146,44 @@ declare -A REQUIRED_DEPS=(
 
 # Logging functions
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "${BLUE}●${NC} $1"
 }
 
 log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    echo -e "${GREEN}✓${NC} $1"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    echo -e "${YELLOW}⚠${NC} $1"
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}✗${NC} $1"
+}
+
+# Prefix subcommand output for clarity with smart colorization
+# Colors lines based on content patterns (errors, warnings, info)
+prefix_output() {
+    local prefix="${1:-│ }"
+    while IFS= read -r line; do
+        # Pattern matching for line classification
+        if [[ "$line" =~ ^[[:space:]]*(ERROR|error|Error|FAIL|fail|failed|Failed|cannot|Cannot|unable|Unable|fatal|Fatal|FATAL) ]] || \
+           [[ "$line" =~ (error:|failed:|fatal:) ]]; then
+            # Error patterns - red
+            echo -e "${RED}${prefix}${line}${NC}"
+        elif [[ "$line" =~ ^[[:space:]]*(WARN|warn|Warn|WARNING|warning|Warning|BUG) ]] || \
+             [[ "$line" =~ (warning:|warn:) ]]; then
+            # Warning patterns - yellow
+            echo -e "${YELLOW}${prefix}${line}${NC}"
+        elif [[ "$line" =~ ^[[:space:]]*(SUCCESS|success|Success|OK|ok|Ok|DONE|done|Done|✓|✔) ]] || \
+             [[ "$line" =~ (success:|complete:|completed:) ]]; then
+            # Success patterns - green
+            echo -e "${GREEN}${prefix}${line}${NC}"
+        else
+            # Info/normal output - blue (subtle)
+            echo -e "${BLUE}${prefix}${NC}${line}"
+        fi
+    done
 }
 
 # Show usage information
@@ -347,7 +372,7 @@ init_submodules() {
     }
     
     # Use portable timeout (60 seconds)
-    if ! portable_timeout 60 git submodule update --init --recursive 2>&1; then
+    if ! portable_timeout 60 git submodule update --init --recursive 2>&1 | prefix_output "│ "; then
         log_error "Failed to initialize git submodules (timeout or git error)"
         log_info "Try running: cd $DOTFILES_DIR && git submodule update --init --recursive"
         return 1
@@ -536,7 +561,7 @@ install_dotfiles() {
         # Add rollback action before installing
         add_rollback "stow -v -D -d '$DOTFILES_DIR' -t '$HOME' '$package' 2>/dev/null || true"
         
-        if stow -v -R -d "$DOTFILES_DIR" -t "$HOME" "$package" 2>&1; then
+        if stow -v -R -d "$DOTFILES_DIR" -t "$HOME" "$package" 2>&1 | prefix_output "│ "; then
             INSTALLED_PACKAGES+=("$package")
             log_success "Installed $package"
         else
@@ -607,7 +632,7 @@ check_symlink() {
         local target
         target=$(readlink "$HOME/$file")
         if [[ "$target" == *"$expected_target"* ]]; then
-            log_success "✓ $file is properly linked to $target"
+            log_success "$file is properly linked to $target"
             return 0
         else
             log_warning "⚠ $file is linked to $target (expected $expected_target)"
@@ -617,7 +642,7 @@ check_symlink() {
         log_warning "⚠ $file exists but is not a symlink"
         return 1
     else
-        log_error "✗ $file not found"
+        log_error "$file not found"
         return 1
     fi
 }
@@ -822,7 +847,7 @@ uninstall_dotfiles() {
     for package in "${PACKAGES[@]}"; do
         if [[ -d "$package" ]]; then
             log_info "Uninstalling package: $package"
-            stow -v -D -d "$DOTFILES_DIR" -t "$HOME" "$package"
+            stow -v -D -d "$DOTFILES_DIR" -t "$HOME" "$package" 2>&1 | prefix_output "│ "
             log_success "Uninstalled $package"
         fi
     done
@@ -890,9 +915,9 @@ validate_config_syntax() {
     # Validate git config
     if [[ -f "$HOME/.gitconfig" ]]; then
         if git config --list >/dev/null 2>&1; then
-            log_success "✓ Git configuration syntax valid"
+            log_success "Git configuration syntax valid"
         else
-            log_error "✗ Git configuration syntax error"
+            log_error "Git configuration syntax error"
             ((errors++))
         fi
     fi
@@ -902,11 +927,11 @@ validate_config_syntax() {
         if command_exists tmux; then
             local tmux_test_session="dotfiles-config-test"
             if tmux -f "$HOME/.tmux.conf" -C new-session -d -s "$tmux_test_session" 2>/dev/null; then
-                log_success "✓ Tmux configuration syntax valid"
+                log_success "Tmux configuration syntax valid"
                 # Kill the test session
                 tmux kill-session -t "$tmux_test_session" 2>/dev/null || true
             else
-                log_error "✗ Tmux configuration syntax error"
+                log_error "Tmux configuration syntax error"
                 ((errors++))
             fi
         else
@@ -918,9 +943,9 @@ validate_config_syntax() {
     if [[ -f "$HOME/.zshrc" ]]; then
         if command_exists zsh; then
             if zsh -n "$HOME/.zshrc" 2>/dev/null; then
-                log_success "✓ Zsh configuration syntax valid"
+                log_success "Zsh configuration syntax valid"
             else
-                log_error "✗ Zsh configuration syntax error"
+                log_error "Zsh configuration syntax error"
                 ((errors++))
             fi
         else
@@ -931,9 +956,9 @@ validate_config_syntax() {
     # Validate bash config
     if [[ -f "$HOME/.bashrc" ]]; then
         if bash -n "$HOME/.bashrc" 2>/dev/null; then
-            log_success "✓ Bash configuration syntax valid"
+            log_success "Bash configuration syntax valid"
         else
-            log_error "✗ Bash configuration syntax error"
+            log_error "Bash configuration syntax error"
             ((errors++))
         fi
     fi
@@ -1021,24 +1046,24 @@ check_submodule_health() {
         if [[ -f "$omz_path/.git" ]] || [[ -d "$omz_path/.git" ]]; then
             # Check for uncommitted changes in submodule
             if git -C "$omz_path" diff-index --quiet HEAD -- 2>/dev/null; then
-                log_success "✓ Oh My Zsh submodule is clean"
+                log_success "Oh My Zsh submodule is clean"
             else
                 log_warning "Oh My Zsh submodule has uncommitted changes"
             fi
             
             # Check if submodule is detached
             if git -C "$omz_path" symbolic-ref -q HEAD >/dev/null 2>&1; then
-                log_success "✓ Oh My Zsh submodule on branch"
+                log_success "Oh My Zsh submodule on branch"
             else
                 log_info "Oh My Zsh submodule in detached HEAD state (normal)"
             fi
         else
-            log_error "✗ Oh My Zsh submodule not initialized"
+            log_error "Oh My Zsh submodule not initialized"
             log_info "Run: git submodule update --init --recursive"
             ((issues++))
         fi
     else
-        log_error "✗ Oh My Zsh directory missing"
+        log_error "Oh My Zsh directory missing"
         ((issues++))
     fi
     
@@ -1053,13 +1078,13 @@ check_git_repo_status() {
     
     # Check if in a git repository
     if ! git -C "$DOTFILES_DIR" rev-parse --git-dir >/dev/null 2>&1; then
-        log_error "✗ Not in a git repository"
+        log_error "Not in a git repository"
         return 1
     fi
     
     # Check for uncommitted changes
     if git -C "$DOTFILES_DIR" diff-index --quiet HEAD -- 2>/dev/null; then
-        log_success "✓ Working directory clean"
+        log_success "Working directory clean"
     else
         log_warning "Working directory has uncommitted changes"
         local changed_count
@@ -1082,7 +1107,7 @@ check_git_repo_status() {
         behind=$(git -C "$DOTFILES_DIR" rev-list --count 'HEAD..@{upstream}' 2>/dev/null || echo "0")
         
         if [[ $ahead -eq 0 ]] && [[ $behind -eq 0 ]]; then
-            log_success "✓ Up to date with origin"
+            log_success "Up to date with origin"
         elif [[ $ahead -gt 0 ]] && [[ $behind -eq 0 ]]; then
             log_warning "Branch is ahead of origin by $ahead commit(s)"
             log_info "  Consider: git push"
@@ -1139,7 +1164,7 @@ check_template_consistency() {
                 log_info "  Source files newer than target. Run: ./dot install"
                 ((issues++))
             else
-                log_success "✓ ${target} up to date"
+                log_success "${target} up to date"
             fi
         fi
     done <<< "$template_list"
@@ -1178,18 +1203,18 @@ check_file_permissions() {
             log_info "  Consider: chmod 600 $secret"
             ((warnings++))
         else
-            log_success "✓ ${secret#"$DOTFILES_DIR"/} has secure permissions"
+            log_success "${secret#"$DOTFILES_DIR"/} has secure permissions"
         fi
     done < <(discover_secret_configs)
     
     # Check for accidentally committed secrets (this is an ERROR not a warning)
     if [[ -f "$DOTFILES_DIR/git/.gitconfig.secret" ]]; then
         if git -C "$DOTFILES_DIR" ls-files --error-unmatch "git/.gitconfig.secret" >/dev/null 2>&1; then
-            log_error "✗ Secret git config is tracked by git (potential secrets leak)"
+            log_error "Secret git config is tracked by git (potential secrets leak)"
             log_info "  Run: git rm --cached git/.gitconfig.secret"
             ((errors++))
         else
-            log_success "✓ Secret configs properly ignored by git"
+            log_success "Secret configs properly ignored by git"
         fi
     fi
     
@@ -1212,13 +1237,13 @@ check_shell_integration() {
             local target
             target=$(readlink "$HOME/.zshrc")
             if [[ "$target" == *".dotfiles"* ]]; then
-                log_success "✓ Using dotfiles .zshrc"
+                log_success "Using dotfiles .zshrc"
             else
                 log_warning "Shell config symlink points elsewhere: $target"
                 ((issues++))
             fi
         else
-            log_error "✗ .zshrc is not a symlink to dotfiles"
+            log_error ".zshrc is not a symlink to dotfiles"
             ((issues++))
         fi
     elif [[ -n "$BASH_VERSION" ]]; then
@@ -1226,20 +1251,20 @@ check_shell_integration() {
             local target
             target=$(readlink "$HOME/.bashrc")
             if [[ "$target" == *".dotfiles"* ]]; then
-                log_success "✓ Using dotfiles .bashrc"
+                log_success "Using dotfiles .bashrc"
             else
                 log_warning "Shell config symlink points elsewhere: $target"
                 ((issues++))
             fi
         else
-            log_error "✗ .bashrc is not a symlink to dotfiles"
+            log_error ".bashrc is not a symlink to dotfiles"
             ((issues++))
         fi
     fi
     
     # Check PATH includes our custom directories
     if [[ ":$PATH:" == *":$HOME/bin:"* ]] || [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; then
-        log_success "✓ Custom bin directories in PATH"
+        log_success "Custom bin directories in PATH"
     else
         log_warning "Custom bin directories not in PATH"
         log_info "  Expected: ~/bin or ~/.local/bin in PATH"
@@ -1247,7 +1272,7 @@ check_shell_integration() {
     
     # Check if dotfiles repo is in expected location
     if [[ "$DOTFILES_DIR" == "$HOME/.dotfiles" ]]; then
-        log_success "✓ Dotfiles in standard location"
+        log_success "Dotfiles in standard location"
     else
         log_info "Dotfiles location: $DOTFILES_DIR (non-standard)"
     fi
@@ -1412,7 +1437,7 @@ update_oh_my_zsh() {
     log_info "Checking for Oh My Zsh updates..."
     
     if command_exists omz; then
-        if omz update; then
+        if omz update 2>&1 | prefix_output "│ "; then
             log_success "Oh My Zsh updated successfully"
         else
             log_warning "Oh My Zsh update failed or no updates available"
