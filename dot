@@ -170,6 +170,11 @@ log_error() {
 prefix_output() {
     local prefix="${1:-│ }"
     while IFS= read -r line; do
+        # Skip harmless stow BUG warnings about absolute path mismatches
+        if [[ "$line" =~ "BUG in find_stowed_path? Absolute/relative mismatch" ]]; then
+            continue
+        fi
+        
         # Pattern matching for line classification
         if [[ "$line" =~ ^[[:space:]]*(ERROR|error|Error|FAIL|fail|failed|Failed|cannot|Cannot|unable|Unable|fatal|Fatal|FATAL) ]] || \
            [[ "$line" =~ (error:|failed:|fatal:) ]]; then
