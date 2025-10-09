@@ -1,0 +1,16 @@
+# Stow configuration file
+# This file sets default options for all stow operations
+# See: man stow
+
+# Set default verbosity level
+# 0 = silent, 1 = show what stow is doing, 2+ = debugging info
+--verbose 1
+
+# Do not fold newly stowed directories
+# This keeps the directory structure cleaner and more predictable
+--no-folding
+
+# Dotfiles mode: remove leading dot from package filenames and add them back when stowing
+# This is useful for versioning dotfiles without dots in package names
+# NOTE: Not using this as our packages already have dotfiles with dots
+# --dotfiles

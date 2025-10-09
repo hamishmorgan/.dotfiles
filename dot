@@ -104,7 +104,7 @@ declare -a PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash")
 
 # Package file mappings (package_name:file1,file2,file3)
 declare -A PACKAGE_FILES=(
-    ["system"]=".stow-global-ignore"
+    ["system"]=".stow-global-ignore,.stowrc"
     ["git"]=".gitconfig,.gitattributes,.gitignore-globals"
     ["zsh"]=".zshrc,.zprofile,.oh-my-zsh"
     ["tmux"]=".tmux.conf"
