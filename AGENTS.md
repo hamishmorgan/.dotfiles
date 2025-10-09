@@ -149,14 +149,14 @@ When adding new instructions:
 **Before pushing:**
 
 ```bash
-# Full cross-platform tests (2-3 minutes, requires Docker)
+# Full cross-platform tests (2-3 minutes, requires Docker or Podman)
 ./tests/run-local-ci.sh
 ```
 
 ### Testing Strategy
 
 - **Smoke tests**: Fast validation of basic functionality and structure
-- **Docker tests**: Full installation on Ubuntu and Alpine (BSD-like)
+- **Container tests**: Full installation on Ubuntu and Alpine (BSD-like)
 - **GitHub Actions**: Final validation on real Ubuntu and macOS runners
 
 ### Why This Matters
@@ -166,7 +166,7 @@ Cross-platform compatibility issues (BSD vs GNU commands) are caught by:
 1. Alpine tests (BusyBox = BSD-like coreutils)
 2. GitHub Actions macOS runner (actual macOS)
 
-Always run Docker tests before pushing to catch platform-specific issues early.
+Always run container tests before pushing to catch platform-specific issues early.
 
 ### Test Documentation
 

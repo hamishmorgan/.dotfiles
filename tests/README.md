@@ -75,13 +75,15 @@ Code Change → Smoke Test → Docker Tests → Push → GitHub Actions
 - shellcheck (optional, will skip if not available)
 - markdownlint (optional, will skip if not available)
 
-### For Docker Tests
+### For Container Tests
 
-- Docker installed and running
+- Docker or Podman installed and running
 - 2GB disk space for images
 - Internet connection (first run downloads images)
 
-## Docker Test Details
+**Note:** Test framework auto-detects and works with both Docker and Podman.
+
+## Container Test Details
 
 ### Ubuntu Container
 
@@ -99,10 +101,10 @@ Code Change → Smoke Test → Docker Tests → Push → GitHub Actions
 
 ## Troubleshooting
 
-### Docker Tests Fail
+### Container Tests Fail
 
 ```bash
-# Rebuild images from scratch
+# Rebuild images from scratch (replace 'docker' with 'podman' if using Podman)
 docker rmi dotfiles-test-ubuntu dotfiles-test-alpine
 ./tests/run-local-ci.sh
 ```
@@ -110,7 +112,7 @@ docker rmi dotfiles-test-ubuntu dotfiles-test-alpine
 ### Want More Detail
 
 ```bash
-# Run container interactively
+# Run container interactively (replace 'docker' with 'podman' if using Podman)
 docker run --rm -it \
   -v "$PWD:/dotfiles:ro" \
   dotfiles-test-ubuntu \

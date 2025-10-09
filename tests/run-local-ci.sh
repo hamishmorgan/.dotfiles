@@ -25,16 +25,16 @@ run_test() {
     echo ""
     
     # Build image
-    echo "Building Docker image..."
-    if ! docker build -t dotfiles-test-$platform -f "$SCRIPT_DIR/docker/$dockerfile" "$SCRIPT_DIR/docker"; then
-        echo -e "${RED}✗ Docker build failed for $platform${NC}"
+    echo "Building container image..."
+    if ! $CONTAINER_RUNTIME build -t dotfiles-test-$platform -f "$SCRIPT_DIR/docker/$dockerfile" "$SCRIPT_DIR/docker"; then
+        echo -e "${RED}✗ Build failed for $platform${NC}"
         return 1
     fi
     
     # Run tests
     echo ""
     echo "Running tests..."
-    if docker run --rm \
+    if $CONTAINER_RUNTIME run --rm \
         -v "$DOTFILES_DIR:/dotfiles:ro" \
         -v "$SCRIPT_DIR/docker/test-in-container.sh:/test.sh:ro" \
         dotfiles-test-$platform \
@@ -49,17 +49,34 @@ run_test() {
     fi
 }
 
+# Detect container runtime (Podman or Docker)
+detect_container_runtime() {
+    if command -v podman >/dev/null 2>&1; then
+        echo "podman"
+    elif command -v docker >/dev/null 2>&1; then
+        echo "docker"
+    else
+        return 1
+    fi
+}
+
 # Main execution
 echo -e "${BLUE}Local CI Test Runner${NC}"
 echo "===================="
 echo ""
 
-# Check Docker is available
-if ! command -v docker >/dev/null 2>&1; then
-    echo -e "${RED}Error: Docker is not installed${NC}"
-    echo "Install Docker to run local CI tests"
+# Check container runtime is available
+CONTAINER_RUNTIME=$(detect_container_runtime)
+if [[ -z "$CONTAINER_RUNTIME" ]]; then
+    echo -e "${RED}Error: Neither Docker nor Podman is installed${NC}"
+    echo "Install one of:"
+    echo "  - Docker: https://docs.docker.com/get-docker/"
+    echo "  - Podman: https://podman.io/getting-started/installation"
     exit 1
 fi
+
+echo -e "${BLUE}Using container runtime: ${CONTAINER_RUNTIME}${NC}"
+echo ""
 
 case "$PLATFORM" in
     ubuntu)
