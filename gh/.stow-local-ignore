@@ -1,0 +1,7 @@
+# GitHub CLI package local ignore patterns
+# Ignore template, secret, and example files - processed by script, not stowed
+
+\.secret$
+\.secret\.example$
+\.template$
+
