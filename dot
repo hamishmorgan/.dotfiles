@@ -318,7 +318,7 @@ backup_existing() {
     log_info "Creating backup of existing files..."
     
     # Create backup directory
-    if ! mkdir --parents "$BACKUP_DIR"; then
+    if ! mkdir -p "$BACKUP_DIR"; then
         log_error "Failed to create backup directory: $BACKUP_DIR"
         suggest_fixes "backup" "$BACKUP_DIR"
         return 1
@@ -335,7 +335,7 @@ backup_existing() {
         if [[ -e "$HOME/$file" ]]; then
             log_info "Backing up $file"
             if [[ -d "$HOME/$file" ]]; then
-                if ! cp --recursive "$HOME/$file" "$BACKUP_DIR/" 2>/dev/null; then
+                if ! cp -r "$HOME/$file" "$BACKUP_DIR/" 2>/dev/null; then
                     log_error "Failed to copy directory $file"
                     suggest_fixes "backup" "$HOME/$file"
                     return 1
@@ -348,7 +348,7 @@ backup_existing() {
                 fi
             fi
             # Remove existing file after backup to prevent stow conflicts
-            if ! rm --recursive --force "${HOME:?}/$file" 2>/dev/null; then
+            if ! rm -rf "${HOME:?}/$file" 2>/dev/null; then
                 log_error "Failed to remove $file"
                 suggest_fixes "backup" "$HOME/$file"
                 return 1
@@ -731,7 +731,7 @@ show_status() {
     
     if [[ ${#backup_dirs[@]} -gt 0 ]]; then
         for dir in "${backup_dirs[@]}"; do
-            echo "  $(basename "$dir") ($(du --summarize --human-readable "$dir" | cut -f1))"
+            echo "  $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
         done
     else
         echo "  No backup directories found"
@@ -806,7 +806,7 @@ clean_backups() {
         local backup_name
         backup_name=$(basename "$backup")
         local size
-        size=$(du --summarize --human-readable "$backup" 2>/dev/null | cut -f1)
+        size=$(du -sh "$backup" 2>/dev/null | cut -f1)
         local age_days
         age_days=$(get_backup_age_days "$backup")
         echo "  - $backup_name ($size, ${age_days}d old)"
@@ -818,7 +818,7 @@ clean_backups() {
         local backup_name
         backup_name=$(basename "$backup")
         local size
-        size=$(du --summarize --human-readable "$backup" 2>/dev/null | cut -f1)
+        size=$(du -sh "$backup" 2>/dev/null | cut -f1)
         echo "  - $backup_name ($size)"
     done
     
@@ -839,9 +839,9 @@ clean_backups() {
         local backup_name
         backup_name=$(basename "$backup")
         local size_kb
-        size_kb=$(du --summarize --block-size=1K "$backup" 2>/dev/null | cut -f1)
+        size_kb=$(du -sk "$backup" 2>/dev/null | cut -f1)
         
-        if rm --recursive --force "$backup" 2>/dev/null; then
+        if rm -rf "$backup" 2>/dev/null; then
             log_success "Removed $backup_name"
             ((removed_count++))
             ((freed_space += size_kb))
@@ -1027,7 +1027,7 @@ check_backup_health() {
         [[ -z "$dir" ]] && continue
         ((backup_count++))
         local size
-        size=$(du --summarize --block-size=1K "$dir" 2>/dev/null | cut -f1)
+        size=$(du -sk "$dir" 2>/dev/null | cut -f1)
         ((total_size += size))
     done < <(find "$DOTFILES_DIR/backups" -maxdepth 1 -type d -name "dotfiles-backup-*" 2>/dev/null)
     
