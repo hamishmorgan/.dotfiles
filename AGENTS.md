@@ -41,7 +41,10 @@ The `system` package is stowed first to ensure `.stow-global-ignore` is in place
 - Use clear, descriptive variable names
 - Include error handling where appropriate
 - Keep functions focused and single-purpose
-- Use long-form arguments for CLI commands where available (e.g., `--verbose` not `-v`)
+- Use long-form arguments for stow (e.g., `--verbose` not `-v`)
+- Use POSIX-compatible short-form for coreutils (`-p`, `-r`, not `--parents`, `--recursive`)
+  - BSD/macOS do not support GNU long-form arguments
+  - Short forms work on all platforms
 - Use explicit error handling instead of `set -e` (controlled failure handling)
 - Enable bash safety features: `shopt -s nullglob extglob`
 
@@ -131,6 +134,43 @@ When adding new instructions:
 - Package management: `stow --verbose --restow --dir=. --target=$HOME package_name`
 - Backup location: `backups/dotfiles-backup-*` (timestamped directories)
 - CI validation: `.github/workflows/validate.yml`
+
+## Testing
+
+### Local Testing
+
+**Before committing:**
+
+```bash
+# Quick smoke tests (30 seconds)
+./tests/smoke-test.sh
+```
+
+**Before pushing:**
+
+```bash
+# Full cross-platform tests (2-3 minutes, requires Docker)
+./tests/run-local-ci.sh
+```
+
+### Testing Strategy
+
+- **Smoke tests**: Fast validation of basic functionality and structure
+- **Docker tests**: Full installation on Ubuntu and Alpine (BSD-like)
+- **GitHub Actions**: Final validation on real Ubuntu and macOS runners
+
+### Why This Matters
+
+Cross-platform compatibility issues (BSD vs GNU commands) are caught by:
+
+1. Alpine tests (BusyBox = BSD-like coreutils)
+2. GitHub Actions macOS runner (actual macOS)
+
+Always run Docker tests before pushing to catch platform-specific issues early.
+
+### Test Documentation
+
+See `tests/README.md` for detailed testing framework documentation.
 
 ## Pull Request Workflow
 

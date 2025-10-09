@@ -1,0 +1,30 @@
+# Ubuntu test environment (matches GitHub Actions)
+FROM ubuntu:22.04
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    stow \
+    tmux \
+    zsh \
+    bash \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create test user (non-root for realistic testing)
+RUN useradd -m -s /bin/bash testuser
+
+# Switch to test user
+USER testuser
+WORKDIR /home/testuser
+
+# Set up git config (required for tests)
+RUN git config --global user.name "Test User" && \
+    git config --global user.email "test@example.com"
+
+# Entry point will be the test script
+CMD ["/bin/bash"]
+
