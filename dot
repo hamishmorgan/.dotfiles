@@ -12,6 +12,10 @@ if ((BASH_VERSINFO[0] < 4)); then
     exit 1
 fi
 
+# Safer glob handling
+shopt -s nullglob      # Empty expansion for non-matching globs
+shopt -s extglob       # Extended pattern matching
+
 # Note: Not using 'set -e' for better error handling control
 # Errors are explicitly checked and handled with context
 
