@@ -11,13 +11,20 @@ echo "================================"
 echo ""
 
 # Copy dotfiles to home directory
-cp -r /dotfiles ~/.dotfiles
+# Ignore permission errors on secret files (will create mock ones below)
+cp -r /dotfiles ~/.dotfiles 2>/dev/null || {
+    # If cp fails due to permissions, copy what we can
+    mkdir -p ~/.dotfiles
+    cp -r /dotfiles/* ~/.dotfiles/ 2>/dev/null || true
+    cp -r /dotfiles/.* ~/.dotfiles/ 2>/dev/null || true
+}
+
 cd ~/.dotfiles
 
 # Initialize submodules
-git submodule update --init --recursive
+git submodule update --init --recursive 2>/dev/null || echo "Note: Submodule init skipped"
 
-# Create minimal secret files for testing
+# Create minimal secret files for testing (overwrite any that failed to copy)
 mkdir -p git gh/.config/gh
 
 cat > git/.gitconfig.secret << 'EOF'
