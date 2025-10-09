@@ -1,0 +1,33 @@
+# Stow global ignore patterns
+# This file is in the home directory and affects ALL stow operations system-wide
+# Uses Perl regex syntax
+
+# Version control
+\.git$
+\.gitignore$
+\.gitmodules$
+\.gitattributes$
+\.svn$
+_darcs$
+\.hg$
+CVS$
+RCS$
+
+# Editor backup and temporary files
+.+~$          # emacs backup
+\#.*\#$       # emacs autosave
+\.swp$        # vim swap
+\.swo$        # vim swap
+\.\#.+$       # CVS conflict files / emacs lock files
+
+# Common documentation
+^README
+^LICENSE
+^COPYING
+^CHANGELOG
+\.md$
+
+# Build artifacts
+\.bak$
+\.tmp$
+

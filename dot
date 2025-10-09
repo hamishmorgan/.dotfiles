@@ -99,10 +99,12 @@ trap cleanup_on_exit EXIT
 trap handle_interrupt INT TERM
 
 # Package definitions
-declare -a PACKAGES=("git" "zsh" "tmux" "gh" "gnuplot" "bash")
+# Note: system package is stowed first to ensure .stow-global-ignore is in place
+declare -a PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash")
 
 # Package file mappings (package_name:file1,file2,file3)
 declare -A PACKAGE_FILES=(
+    ["system"]=".stow-global-ignore"
     ["git"]=".gitconfig,.gitattributes,.gitignore-globals"
     ["zsh"]=".zshrc,.zprofile,.oh-my-zsh"
     ["tmux"]=".tmux.conf"
@@ -113,6 +115,7 @@ declare -A PACKAGE_FILES=(
 
 # Package display names
 declare -A PACKAGE_NAMES=(
+    ["system"]="System"
     ["git"]="Git"
     ["zsh"]="Zsh"
     ["tmux"]="Tmux"
