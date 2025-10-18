@@ -239,7 +239,7 @@ jobs:
     - name: Install dependencies
       run: |
         brew install stow git tmux zsh ncurses
-        # Link packages that may not be auto-linked  
+        # Link packages that may not be auto-linked
         brew link --overwrite stow || true
         brew link --overwrite tmux || true
         brew link --overwrite zsh || true
