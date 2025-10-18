@@ -236,14 +236,19 @@ show_usage() {
     echo "  -v       Add package names and progress details"
     echo "  -vv      Show every file touched/checked (full detail)"
     echo ""
+    echo "  Note: Verbosity flags can be combined:"
+    echo "        -v -v          Same as -vv"
+    echo "        --verbose --verbose  Same as -vv"
+    echo ""
     echo "Examples:"
-    echo "  $0 install           # Install with summary only"
-    echo "  $0 install -v        # Install showing packages"
-    echo "  $0 install -vv       # Install showing every file link"
-    echo "  $0 health            # Diagnostics table"
-    echo "  $0 health -v         # Detailed diagnostics"
-    echo "  $0 update            # Update with summary"
-    echo "  $0 update -vv        # Update with all details"
+    echo "  $0 install                # Install with summary only"
+    echo "  $0 install -v             # Install showing packages"
+    echo "  $0 install -vv            # Install showing every file link"
+    echo "  $0 install --verbose --verbose  # Same as -vv"
+    echo "  $0 health                 # Diagnostics table"
+    echo "  $0 health -v              # Detailed diagnostics"
+    echo "  $0 update                 # Update with summary"
+    echo "  $0 update -vv             # Update with all details"
     echo ""
     echo "Quick reference:"
     echo "  status   = Quick overview (symlinks + backups)"
@@ -2409,9 +2414,15 @@ is_valid_command() {
     [[ "$cmd" =~ ^(install|health|update|status|backup|clean|uninstall)$ ]]
 }
 
-# Parse verbosity flag and return level
+# Parse verbosity flag and return level increment
 # Handles: -v (1), -vv (2), -vvv (3), --verbose (1)
-# Returns: verbosity level via echo
+# Returns: verbosity increment via echo (accumulated by caller)
+# Examples:
+#   -v           → 1
+#   -vv          → 2
+#   --verbose    → 1
+#   -v -v        → 1 + 1 = 2 (accumulated)
+#   --verbose --verbose → 1 + 1 = 2 (accumulated)
 parse_verbosity() {
     local flag="$1"
     
@@ -2440,7 +2451,7 @@ die() {
 parse_arguments() {
     COMMAND=""
     VERBOSITY=0
-    
+
     while [[ $# -gt 0 ]]; do
         case $1 in
             # Help
@@ -2448,18 +2459,18 @@ parse_arguments() {
                 show_usage
                 exit 0
                 ;;
-            
+
             # Verbosity (-v, -vv, -vvv, --verbose)
             -v*|--verbose)
                 local level
                 if level=$(parse_verbosity "$1"); then
-                    VERBOSITY=$level
+                    ((VERBOSITY += level))
                     shift
                 else
                     die "Invalid verbosity flag: $1" show_usage
                 fi
                 ;;
-            
+
             # Completion
             --completion)
                 if [[ -z "${2:-}" ]]; then
@@ -2468,14 +2479,14 @@ parse_arguments() {
                 handle_completion "$2"
                 exit 0
                 ;;
-            
+
             # Deprecated validate command
             validate)
                 log_warning "'validate' is deprecated, use 'health' instead"
                 COMMAND="health"
                 shift
                 ;;
-            
+
             # Valid commands
             install|health|update|status|backup|clean|uninstall)
                 if [[ -n "$COMMAND" ]]; then
@@ -2484,19 +2495,19 @@ parse_arguments() {
                 COMMAND="$1"
                 shift
                 ;;
-            
+
             # Unknown flag
             -*)
                 die "Unknown option: $1" show_usage
                 ;;
-            
+
             # Unknown argument
             *)
                 die "Unknown argument: $1" show_usage
                 ;;
         esac
     done
-    
+
     # Default to help if no command
     if [[ -z "$COMMAND" ]]; then
         show_usage
