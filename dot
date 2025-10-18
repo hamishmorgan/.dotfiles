@@ -787,7 +787,7 @@ get_backup_dirs() {
 get_backup_stats() {
     local count=0
     local total_size=0
-    
+
     while IFS= read -r dir; do
         [[ -z "$dir" ]] && continue
         ((count++))
@@ -795,7 +795,7 @@ get_backup_stats() {
         size=$(du -sk "$dir" 2>/dev/null | cut -f1)
         ((total_size += size))
     done < <(get_backup_dirs)
-    
+
     echo "$count $total_size"
 }
 
@@ -803,19 +803,19 @@ get_backup_stats() {
 # Returns: count of orphaned symlinks
 count_orphaned_symlinks() {
     local count=0
-    
+
     # Check home directory dotfiles
     while IFS= read -r link; do
         [[ -L "$link" ]] && [[ ! -e "$link" ]] && ((count++))
     done < <(find "$HOME" -maxdepth 1 -type l -name ".*" 2>/dev/null)
-    
+
     # Check .config directory
     if [[ -d "$HOME/.config" ]]; then
         while IFS= read -r link; do
             [[ -L "$link" ]] && [[ ! -e "$link" ]] && ((count++))
         done < <(find "$HOME/.config" -maxdepth 2 -type l 2>/dev/null)
     fi
-    
+
     echo "$count"
 }
 
@@ -839,7 +839,7 @@ show_tip() {
 show_tips() {
     local title="$1"
     shift
-    
+
     echo ""
     echo -e "${BLUE}💡 ${title}:${NC}"
     while [[ $# -gt 0 ]]; do
@@ -1154,13 +1154,13 @@ cmd_install() {
     echo ""
 
     INSTALLATION_IN_PROGRESS=false
-    
+
     local end_time
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    
+
     show_command_summary "success" "INSTALLED" "$duration"
-    
+
     show_tips "Next steps" \
         "1. Restart your terminal or run: source ~/.zshrc" \
         "2. Set zsh as default shell: chsh -s \$(which zsh)" \
@@ -2175,7 +2175,7 @@ run_health_check() {
     local num="$1"
     local title="$2"
     local check_function="$3"
-    
+
     echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     $check_function 2>&1 | indent_section_output
@@ -2435,11 +2435,11 @@ cmd_update() {
         show_installation_summary
     fi
     echo ""
-    
+
     local end_time
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    
+
     show_command_summary "success" "UPDATED" "$duration"
     echo ""
 }
