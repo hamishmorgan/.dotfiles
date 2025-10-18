@@ -18,13 +18,15 @@ RUN apt-get update && apt-get install -y \
 # Build and install Bash 3.2
 # Using 3.2.57 (latest 3.2.x release)
 WORKDIR /tmp
-RUN curl -L https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz | tar xz && \
+RUN curl -LO https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz && \
+    echo "3252ef0e4c6659a4247d9c5c3c4aa021b1b0e4f4ecd667b84439fb446c0bb1b5  bash-3.2.57.tar.gz" | sha256sum -c - && \
+    tar xzf bash-3.2.57.tar.gz && \
     cd bash-3.2.57 && \
     ./configure --prefix=/usr/local && \
-    make && \
+    make -j4 && \
     make install && \
     cd / && \
-    rm -rf /tmp/bash-3.2.57
+    rm -rf /tmp/bash-3.2.57*
 
 # Verify bash version
 RUN /usr/local/bin/bash --version | head -1
