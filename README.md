@@ -85,6 +85,29 @@ cd ~/.dotfiles
 
 The installer verifies dependencies, backs up existing files, initializes submodules, and creates symlinks.
 
+### Verbosity Levels
+
+The `install` and `update` commands support multiple verbosity levels:
+
+```bash
+./dot install       # Clean summary (shows completion + errors/warnings)
+./dot install -v    # Show package names and progress details
+./dot install -vv   # Show every file symlinked (full detail)
+```
+
+Verbosity flags can be stacked:
+
+```bash
+./dot install -v -v              # Same as -vv
+./dot install --verbose --verbose  # Same as -vv
+```
+
+**Verbosity Level Guide:**
+
+- **Level 0** (default): Task completion summary with errors/warnings only
+- **Level 1** (`-v`): Add package names and key progress steps
+- **Level 2** (`-vv`): Show every file operation (symlinks, checks, etc.)
+
 ## Optional: Set zsh as default shell
 
 ```bash
@@ -244,9 +267,22 @@ The installation script automatically:
 
 ```bash
 cd ~/.dotfiles
-git pull origin main
-git submodule update --init --recursive
-./dot install
+./dot update       # Update configs, Oh My Zsh, and reinstall
+```
+
+The `update` command automatically:
+
+1. Updates global gitignore patterns
+2. Updates Oh My Zsh to latest version
+3. Pulls submodule updates
+4. Reinstalls all packages
+
+Like `install`, the `update` command supports verbosity flags:
+
+```bash
+./dot update       # Clean summary
+./dot update -v    # Show packages and progress
+./dot update -vv   # Show all file operations
 ```
 
 ## Uninstallation

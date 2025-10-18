@@ -91,6 +91,45 @@ Subcommand output is prefixed with `│` and colorized based on content:
 - Green: success patterns (success, ok, done, complete)
 - Blue prefix: normal output
 
+Status symbols are extracted to variables for consistency:
+
+- `SYMBOL_SUCCESS="✓"` - Success indicator
+- `SYMBOL_ERROR="✗"` - Error indicator
+- `SYMBOL_WARNING="⚠"` - Warning indicator
+- `SYMBOL_INFO="∙"` - Informational indicator (minimalist)
+
+## Verbosity System
+
+The `install` and `update` commands support 3 verbosity levels:
+
+- **Level 0** (default): Task completion summary + errors/warnings
+- **Level 1** (`-v`): Add package names and progress details
+- **Level 2** (`-vv`): Show every file operation (symlinks, checks)
+
+Flags can be stacked: `-v -v` or `--verbose --verbose` = level 2
+
+Implementation uses `parse_verbosity()` to accumulate levels and helper functions to reduce duplication:
+
+- `run_with_verbosity()` - Execute commands with appropriate output based on level
+- `run_step()` - Execute numbered steps with consistent formatting
+- `show_installation_summary()` - Display 5-line success summary (used by install/update)
+
+The `health` command uses binary verbosity: table format (default) or detailed (`-v`).
+
+## Helper Functions
+
+The script uses helper functions to eliminate code duplication:
+
+- `get_backup_stats()` - Returns backup count and size (used 3x)
+- `count_orphaned_symlinks()` - Returns orphaned symlink count
+- `show_installation_summary()` - Unified 5-line success message
+- `show_tip()` / `show_tips()` - Consistent tip formatting
+- `run_health_check()` - Unified health check section pattern (11 checks)
+- `run_with_verbosity()` - Execute with verbosity-appropriate output
+- `run_step()` - Execute numbered steps with error handling
+
+When modifying commands, prefer using these helpers over duplicating logic.
+
 ## Validation
 
 - All changes should pass validation script
@@ -126,13 +165,24 @@ When adding new instructions:
 
 ## Common Tasks
 
-- Installation: `./dot install`
+- Installation: `./dot install` (add `-v` or `-vv` for more detail)
+- Update: `./dot update` (add `-v` or `-vv` for more detail)
 - Status check: `./dot status`
-- Health check: `./dot health`
+- Health check: `./dot health` (add `-v` for detailed output)
 - Linting: `markdownlint "**/*.md"` and `shellcheck dot`
 - Package management: `stow --verbose --restow --dir=. --target=$HOME package_name`
 - Backup location: `backups/dotfiles-backup-*` (timestamped directories)
 - CI validation: `.github/workflows/validate.yml`
+
+**Verbosity Examples:**
+
+```bash
+./dot install          # Clean summary
+./dot install -v       # Show packages
+./dot install -vv      # Show all files
+./dot health           # Table format
+./dot health -v        # Detailed checks
+```
 
 ## Testing
 

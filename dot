@@ -2659,24 +2659,58 @@ d() {
 # Bash completion for dot script
 _dot_completion() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
-    local commands="install status health update backup clean uninstall"
-    # Bash 3.2 compatible (no mapfile)
-    COMPREPLY=()
-    while IFS= read -r word; do
-        COMPREPLY+=("$word")
-    done < <(compgen -W "$commands" -- "$cur")
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+    
+    # Complete commands
+    if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
+        local commands="install status health update backup clean uninstall"
+        local flags="-h --help -v --verbose -vv"
+        # Bash 3.2 compatible (no mapfile)
+        COMPREPLY=()
+        while IFS= read -r word; do
+            COMPREPLY+=("$word")
+        done < <(compgen -W "$commands $flags" -- "$cur")
+    else
+        # Complete flags for commands that support verbosity
+        case "$prev" in
+            install|update|health)
+                local flags="-v --verbose -vv"
+                COMPREPLY=()
+                while IFS= read -r word; do
+                    COMPREPLY+=("$word")
+                done < <(compgen -W "$flags" -- "$cur")
+                ;;
+        esac
+    fi
 }
 complete -F _dot_completion dot
 
 # Bash completion for d function wrapper
 _d_completion_bash() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
-    local commands="h health s status u update b backup c clean i install uninstall cd"
-    # Bash 3.2 compatible (no mapfile)
-    COMPREPLY=()
-    while IFS= read -r word; do
-        COMPREPLY+=("$word")
-    done < <(compgen -W "$commands" -- "$cur")
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+    
+    # Complete commands
+    if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
+        local commands="h health s status u update b backup c clean i install uninstall cd"
+        local flags="-h --help -v --verbose -vv"
+        # Bash 3.2 compatible (no mapfile)
+        COMPREPLY=()
+        while IFS= read -r word; do
+            COMPREPLY+=("$word")
+        done < <(compgen -W "$commands $flags" -- "$cur")
+    else
+        # Complete flags for commands that support verbosity
+        case "$prev" in
+            i|install|u|update|h|health)
+                local flags="-v --verbose -vv"
+                COMPREPLY=()
+                while IFS= read -r word; do
+                    COMPREPLY+=("$word")
+                done < <(compgen -W "$flags" -- "$cur")
+                ;;
+        esac
+    fi
 }
 complete -F _d_completion_bash d
 EOF
@@ -2703,40 +2737,86 @@ d() {
 
 # Zsh completion for dot script
 _dot_completion() {
-    local -a commands
-    commands=(
-        'install:Install dotfiles using GNU Stow'
-        'status:Show installation status and recent backups'
-        'health:Run comprehensive diagnostics'
-        'update:Update configurations and reinstall'
-        'backup:Create backup of existing files'
-        'clean:Clean up backup directories'
-        'uninstall:Remove dotfiles symlinks'
-    )
-    _describe 'dot command' commands
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[Show help message]' \
+        '(-v --verbose)'{-v,--verbose}'[Verbose output (can be repeated)]' \
+        '-vv[Very verbose output]' \
+        '1: :->command' \
+        '*::arg:->args'
+
+    case $state in
+        command)
+            local -a commands
+            commands=(
+                'install:Install dotfiles using GNU Stow'
+                'status:Show installation status and recent backups'
+                'health:Run comprehensive diagnostics'
+                'update:Update configurations and reinstall'
+                'backup:Create backup of existing files'
+                'clean:Clean up backup directories'
+                'uninstall:Remove dotfiles symlinks'
+            )
+            _describe 'dot command' commands
+            ;;
+        args)
+            case $words[1] in
+                install|update|health)
+                    _arguments \
+                        '(-v --verbose)'{-v,--verbose}'[Verbose output]' \
+                        '-vv[Very verbose output]'
+                    ;;
+            esac
+            ;;
+    esac
 }
 compdef _dot_completion dot
 
 # Zsh completion for d function wrapper
 _d_completion() {
-    local -a commands
-    commands=(
-        'h:health - Comprehensive diagnostics'
-        'health:Comprehensive diagnostics'
-        's:status - Quick status check'
-        'status:Quick status check'
-        'u:update - Update and reinstall'
-        'update:Update and reinstall'
-        'b:backup - Create backup'
-        'backup:Create backup'
-        'c:clean - Clean up old backups'
-        'clean:Clean up old backups'
-        'i:install - Install dotfiles'
-        'install:Install dotfiles'
-        'uninstall:Remove dotfiles'
-        'cd:Change to dotfiles directory'
-    )
-    _describe 'dotfiles command' commands
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[Show help message]' \
+        '(-v --verbose)'{-v,--verbose}'[Verbose output (can be repeated)]' \
+        '-vv[Very verbose output]' \
+        '1: :->command' \
+        '*::arg:->args'
+
+    case $state in
+        command)
+            local -a commands
+            commands=(
+                'h:health - Comprehensive diagnostics'
+                'health:Comprehensive diagnostics'
+                's:status - Quick status check'
+                'status:Quick status check'
+                'u:update - Update and reinstall'
+                'update:Update and reinstall'
+                'b:backup - Create backup'
+                'backup:Create backup'
+                'c:clean - Clean up old backups'
+                'clean:Clean up old backups'
+                'i:install - Install dotfiles'
+                'install:Install dotfiles'
+                'uninstall:Remove dotfiles'
+                'cd:Change to dotfiles directory'
+            )
+            _describe 'dotfiles command' commands
+            ;;
+        args)
+            case $words[1] in
+                i|install|u|update|h|health)
+                    _arguments \
+                        '(-v --verbose)'{-v,--verbose}'[Verbose output]' \
+                        '-vv[Very verbose output]'
+                    ;;
+            esac
+            ;;
+    esac
 }
 compdef _d_completion d
 EOF
