@@ -1393,7 +1393,7 @@ show_health_check_spinner() {
     local category="$2"
     
     # Show spinner - ⠿ is a wide character (2 cols)
-    printf " %2s %-25s ${BLUE}⠿ Checking...${NC}\r" "$num." "$category"  # Right-align number
+    printf " %3s %-25s ${BLUE}⠿ Checking...${NC}\r" "$num." "$category"  # Right-align number with dot
 }
 
 # Display table row
@@ -1430,7 +1430,7 @@ show_health_table_row() {
     # "⚠ Warn" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
     # "ℹ Info" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
     # "✗ Fail" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
-    printf "\r\033[K %2s %-25s " "$num." "$category"  # Right-align number
+    printf "\r\033[K %3s %-25s " "$num." "$category"  # Right-align number with dot (max "11.")
     printf "%b%s%b     " "$status_color" "$status_text" "$NC"  # 5 spaces for padding
     printf "%s\n" "$details"
 }
@@ -1443,7 +1443,7 @@ show_health_summary() {
     local duration="$4"
 
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
+
     if [[ "$status" == "healthy" ]]; then
         # Border = 60 chars total
         # " Result: ✓ HEALTHY" = 1 + 8 + 2 (wide ✓) + 8 = 19 visual cols
@@ -1464,12 +1464,12 @@ show_health_summary() {
         local visible_length=$((23 + ${#issues_text}))
         local padding=$((46 - visible_length))  # 60 - 14 (duration text) = 46 max before duration
         [[ $padding -lt 1 ]] && padding=1
-        
+
         printf " Result: %b✗ UNHEALTHY%b (%s)" "$RED" "$NC" "$issues_text"
         printf "%${padding}s" ""
         printf "Duration: %.1fs\n" "$duration"
     fi
-    
+
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
