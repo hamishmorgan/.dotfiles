@@ -231,15 +231,19 @@ show_usage() {
     echo "  --completion SHELL   Output shell completion script (bash or zsh)"
     echo ""
     echo "Examples:"
-    echo "  $0 install           # Install dotfiles"
+    echo "  $0 install           # Install dotfiles (clean output)"
+    echo "  $0 install -v        # Install with detailed stow output"
     echo "  $0 status            # Quick status check"
-    echo "  $0 health            # Full diagnostics"
-    echo "  $0 update            # Update and reinstall"
+    echo "  $0 health            # Full diagnostics (table format)"
+    echo "  $0 health -v         # Detailed diagnostics output"
+    echo "  $0 update            # Update and reinstall (clean output)"
+    echo "  $0 update -v         # Update with detailed output"
     echo ""
     echo "Quick reference:"
-    echo "  status = Quick overview (symlinks + backups)"
-    echo "  health = Comprehensive diagnostics (table format by default)"
-    echo "  health -v = Detailed output for troubleshooting"
+    echo "  status   = Quick overview (symlinks + backups)"
+    echo "  health   = Comprehensive diagnostics (table format)"
+    echo "  install  = Install with summary (use -v for details)"
+    echo "  update   = Update with summary (use -v for details)"
     echo ""
     echo "Shell Integration:"
     echo "  # In .bashrc or .zshrc:"
@@ -577,6 +581,8 @@ merge_secret_configs() {
 
 # Install dotfiles using Stow with rollback support
 install_dotfiles() {
+    local verbose="${1:-false}"
+    
     log_info "Installing dotfiles using Stow..."
 
     for package in "${PACKAGES[@]}"; do
@@ -590,13 +596,26 @@ install_dotfiles() {
         # Add rollback action before installing
         add_rollback "stow --verbose --delete --dir='$DOTFILES_DIR' --target='$HOME' '$package' 2>/dev/null || true"
 
-        if stow --verbose --restow --dir="$DOTFILES_DIR" --target="$HOME" "$package" 2>&1 | prefix_output "│ "; then
-            INSTALLED_PACKAGES+=("$package")
-            log_success "Installed $package"
+        if [[ "$verbose" == "true" ]]; then
+            # Verbose mode: show all stow actions
+            if stow --verbose --restow --dir="$DOTFILES_DIR" --target="$HOME" "$package" 2>&1 | prefix_output "│ "; then
+                INSTALLED_PACKAGES+=("$package")
+                log_success "Installed $package"
+            else
+                log_error "Failed to install package: $package"
+                suggest_fixes "stow" "$package"
+                return 1
+            fi
         else
-            log_error "Failed to install package: $package"
-            suggest_fixes "stow" "$package"
-            return 1
+            # Quiet mode: suppress stow details
+            if stow --restow --dir="$DOTFILES_DIR" --target="$HOME" "$package" >/dev/null 2>&1; then
+                INSTALLED_PACKAGES+=("$package")
+                log_success "Installed $package"
+            else
+                log_error "Failed to install package: $package"
+                suggest_fixes "stow" "$package"
+                return 1
+            fi
         fi
     done
 
@@ -723,13 +742,13 @@ get_backup_dirs() {
 # Show installation status
 show_status() {
     show_command_header "Dotfiles Installation Status"
-    
+
     # Count files and issues
     local total_files=0
     local installed_files=0
     local warning_files=0
     local missing_files=0
-    
+
     show_section_separator "Installed Files"
     echo ""
 
@@ -773,7 +792,7 @@ show_status() {
     echo ""
     show_section_separator "Backups"
     echo ""
-    
+
     local backup_dirs=()
     while IFS= read -r dir; do
         backup_dirs+=("$dir")
@@ -807,10 +826,10 @@ show_status() {
         echo ""
         echo "   Total: $total_backups backup(s) using $((total_size / 1024))MB"
     fi
-    
+
     echo ""
     show_command_summary "info" "$installed_files of $total_files files installed"
-    
+
     # Show actionable tips
     if [[ $missing_files -gt 0 || $warning_files -gt 0 ]]; then
         echo ""
@@ -907,7 +926,7 @@ clean_backups() {
         size_kb=$(du -sk "$backup" 2>/dev/null | cut -f1)
         ((remove_size += size_kb))
     done
-    
+
     show_section_separator "To Remove (${#to_remove[@]} backups, $((remove_size / 1024))MB)"
     echo ""
     for backup in "${to_remove[@]}"; do
@@ -927,7 +946,7 @@ clean_backups() {
         size_kb=$(du -sk "$backup" 2>/dev/null | cut -f1)
         ((keep_size += size_kb))
     done
-    
+
     echo ""
     show_section_separator "To Keep (${#to_keep[@]} backups, $((keep_size / 1024))MB)"
     echo ""
@@ -981,7 +1000,7 @@ clean_backups() {
 # Uninstall dotfiles
 uninstall_dotfiles() {
     show_command_header "Dotfiles Uninstall"
-    
+
     show_section_separator "Removing Packages"
     echo ""
 
@@ -990,7 +1009,7 @@ uninstall_dotfiles() {
         if [[ ! -d "$package" ]]; then
             continue
         fi
-        
+
         if stow --verbose --delete --dir="$DOTFILES_DIR" --target="$HOME" "$package" 2>&1 | indent_section_output; then
             ((uninstalled_count++))
         fi
@@ -1003,6 +1022,7 @@ uninstall_dotfiles() {
 
 # Main command handlers
 cmd_install() {
+    local verbose="${1:-false}"
     local start_time
     start_time=$(date +%s)
     
@@ -1010,22 +1030,48 @@ cmd_install() {
     INSTALLATION_IN_PROGRESS=true
 
     show_numbered_section "1" "Backup Existing Files"
-    if ! backup_existing 2>&1 | indent_section_output; then
-        echo ""
-        log_error "Backup failed - aborting installation"
-        log_info "Backup directory: $BACKUP_DIR"
-        INSTALLATION_IN_PROGRESS=false
-        return 1
+    if [[ "$verbose" == "true" ]]; then
+        if ! backup_existing 2>&1 | indent_section_output; then
+            echo ""
+            log_error "Backup failed - aborting installation"
+            log_info "Backup directory: $BACKUP_DIR"
+            INSTALLATION_IN_PROGRESS=false
+            return 1
+        fi
+    else
+        if ! backup_existing >/dev/null 2>&1; then
+            echo ""
+            log_error "Backup failed - aborting installation"
+            log_info "Backup directory: $BACKUP_DIR"
+            INSTALLATION_IN_PROGRESS=false
+            return 1
+        fi
+        echo -e "   ${BLUE}${SYMBOL_INFO}${NC} Backup completed"
     fi
     echo ""
 
     show_numbered_section "2" "Installation Pipeline"
-    if ! run_installation_pipeline 2>&1 | indent_section_output; then
-        echo ""
-        log_error "Installation pipeline failed"
-        log_info "Run './dot health' to check installation state"
-        INSTALLATION_IN_PROGRESS=false
-        return 1
+    if [[ "$verbose" == "true" ]]; then
+        if ! run_installation_pipeline "$verbose" 2>&1 | indent_section_output; then
+            echo ""
+            log_error "Installation pipeline failed"
+            log_info "Run './dot health' to check installation state"
+            INSTALLATION_IN_PROGRESS=false
+            return 1
+        fi
+    else
+        if ! run_installation_pipeline "$verbose" >/dev/null 2>&1; then
+            echo ""
+            log_error "Installation pipeline failed"
+            log_info "Run './dot health' to check installation state"
+            INSTALLATION_IN_PROGRESS=false
+            return 1
+        fi
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Dependencies satisfied"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Submodules initialized"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Templates processed"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Secret configs merged"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Packages installed"
     fi
 
     INSTALLATION_IN_PROGRESS=false
@@ -1502,9 +1548,9 @@ show_command_summary() {
     local status="$1"      # "success" or "info"
     local message="$2"
     local duration="$3"     # optional
-    
+
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
+
     if [[ "$status" == "success" ]]; then
         if [[ -n "$duration" ]]; then
             printf " Result: %b${SYMBOL_SUCCESS} ${message}%b" "$GREEN" "$NC"
@@ -1519,7 +1565,7 @@ show_command_summary() {
     else
         printf " %b${SYMBOL_INFO} ${message}%b\n" "$BLUE" "$NC"
     fi
-    
+
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
@@ -2195,6 +2241,8 @@ update_oh_my_zsh() {
 
 # Common installation pipeline
 run_installation_pipeline() {
+    local verbose="${1:-false}"
+    
     if ! check_dependencies; then
         return 1
     fi
@@ -2215,7 +2263,7 @@ run_installation_pipeline() {
         return 1
     fi
 
-    if ! install_dotfiles; then
+    if ! install_dotfiles "$verbose"; then
         log_error "Stow installation failed"
         return 1
     fi
@@ -2224,21 +2272,51 @@ run_installation_pipeline() {
 }
 
 cmd_update() {
+    local verbose="${1:-false}"
     local start_time
     start_time=$(date +%s)
     
     show_command_header "Dotfiles Update"
 
     show_numbered_section "1" "Update Global Configurations"
-    update_gitignore 2>&1 | indent_section_output
+    if [[ "$verbose" == "true" ]]; then
+        update_gitignore 2>&1 | indent_section_output
+    else
+        if update_gitignore >/dev/null 2>&1; then
+            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Global gitignore updated"
+        else
+            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Global gitignore update failed or skipped"
+        fi
+    fi
     echo ""
 
     show_numbered_section "2" "Update Oh My Zsh"
-    update_oh_my_zsh 2>&1 | indent_section_output
+    if [[ "$verbose" == "true" ]]; then
+        update_oh_my_zsh 2>&1 | indent_section_output
+    else
+        if update_oh_my_zsh >/dev/null 2>&1; then
+            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Oh My Zsh updated"
+        else
+            echo -e "   ${BLUE}${SYMBOL_INFO}${NC} Oh My Zsh already up to date"
+        fi
+    fi
     echo ""
 
     show_numbered_section "3" "Reinstall Dotfiles"
-    run_installation_pipeline 2>&1 | indent_section_output
+    if [[ "$verbose" == "true" ]]; then
+        run_installation_pipeline "$verbose" 2>&1 | indent_section_output
+    else
+        if ! run_installation_pipeline "$verbose" >/dev/null 2>&1; then
+            echo ""
+            log_error "Installation pipeline failed"
+            return 1
+        fi
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Dependencies satisfied"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Submodules initialized"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Templates processed"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Secret configs merged"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Packages installed"
+    fi
     
     local end_time
     end_time=$(date +%s)
@@ -2312,11 +2390,12 @@ main() {
     # Execute command
     case $command in
         install)
-            # Enable verbose output if requested
+            # Pass verbose flag to install command
             if $verbose; then
-                set -x
+                cmd_install true
+            else
+                cmd_install false
             fi
-            cmd_install
             ;;
         health)
             # Pass verbose flag to health command
@@ -2327,11 +2406,12 @@ main() {
             fi
             ;;
         update)
-            # Enable verbose output if requested
+            # Pass verbose flag to update command
             if $verbose; then
-                set -x
+                cmd_update true
+            else
+                cmd_update false
             fi
-            cmd_update
             ;;
         status)
             cmd_status
