@@ -877,7 +877,9 @@ show_status() {
             elif [[ -d "$HOME/$file" ]]; then
                 # Check if directory contains stow-managed files
                 local stow_managed=false
-                if find "$HOME/$file" -maxdepth 3 -type l -exec readlink {} \; 2>/dev/null | grep -q ".dotfiles/$package"; then
+                local stow_links
+                stow_links=$(find "$HOME/$file" -maxdepth 3 -type l -exec readlink {} \; 2>/dev/null)
+                if echo "$stow_links" | grep -q ".dotfiles/$package"; then
                     stow_managed=true
                 fi
 
