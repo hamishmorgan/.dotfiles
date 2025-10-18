@@ -1423,7 +1423,7 @@ show_health_table_row() {
             status_color="$BLUE"
             ;;
     esac
-    
+
     # Clear the spinner line and show result
     # Note: Emoji chars (✓✗⚠) are wide (2 cols each), ∙ is regular (1 col)
     # "✓ Pass" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
@@ -1431,14 +1431,14 @@ show_health_table_row() {
     # "∙ Info" visually = 1+1+4 = 6 cols, need 12 total = 6 more spaces
     # "✗ Fail" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
     printf "\r\033[K %3s %-25s " "$num." "$category"  # Right-align number with dot (max "11.")
-    
+
     # Add extra space for info status since ∙ is narrower than emoji
     if [[ "$status" == "info" ]]; then
         printf "%b%s%b      " "$status_color" "$status_text" "$NC"  # 6 spaces for info
     else
         printf "%b%s%b     " "$status_color" "$status_text" "$NC"  # 5 spaces for others
     fi
-    
+
     printf "%s\n" "$details"
 }
 
@@ -1840,7 +1840,8 @@ cmd_health() {
 
 # Indent output for verbose mode sections
 indent_section_output() {
-    sed 's/^/   /'
+    # Indent 3 spaces and replace large dot (●) with small dot (∙) for consistency
+    sed 's/^/   /' | sed 's/●/∙/g'
 }
 
 # Verbose health check (detailed output with unified design)
@@ -1848,17 +1849,17 @@ cmd_health_verbose() {
     # Track timing
     local start_time
     start_time=$(date +%s)
-    
+
     local total_errors=0
     local total_warnings=0
-    
+
     # Display same header as regular mode
     echo ""
     echo -e "${BLUE}╭──────────────────────────────────────────────────────────╮${NC}"
     echo -e "${BLUE}│${NC}  Dotfiles Health Check ${BLUE}(Detailed)${NC}                       ${BLUE}│${NC}"
     echo -e "${BLUE}╰──────────────────────────────────────────────────────────╯${NC}"
     echo ""
-    
+
     # 1. Symlink integrity
     echo -e " ${BLUE}1. Symlink Integrity${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -1866,7 +1867,7 @@ cmd_health_verbose() {
         validate_package "$package" 2>&1 | indent_section_output || ((total_errors++))
     done
     echo ""
-    
+
     # 2. Configuration syntax
     echo -e " ${BLUE}2. Configuration Syntax${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -1874,7 +1875,7 @@ cmd_health_verbose() {
     validate_config_syntax 2>&1 | indent_section_output && syntax_result=0 || syntax_result=$?
     ((total_errors += syntax_result))
     echo ""
-    
+
     # 3. Submodule health
     echo -e " ${BLUE}3. Submodule Health${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -1882,7 +1883,7 @@ cmd_health_verbose() {
     check_submodule_health 2>&1 | indent_section_output && submodule_result=0 || submodule_result=$?
     ((total_errors += submodule_result))
     echo ""
-    
+
     # 4. Git repository status
     echo -e " ${BLUE}4. Git Repository${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -1890,7 +1891,7 @@ cmd_health_verbose() {
     check_git_repo_status 2>&1 | indent_section_output && git_result=0 || git_result=$?
     ((total_warnings += git_result))
     echo ""
-    
+
     # 5. Template/secret config consistency
     echo -e " ${BLUE}5. Template Consistency${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -1898,7 +1899,7 @@ cmd_health_verbose() {
     check_template_consistency 2>&1 | indent_section_output && template_result=0 || template_result=$?
     ((total_warnings += template_result))
     echo ""
-    
+
     # 6. File permissions
     echo -e " ${BLUE}6. File Permissions${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -1906,7 +1907,7 @@ cmd_health_verbose() {
     check_file_permissions 2>&1 | indent_section_output && perm_result=0 || perm_result=$?
     ((total_errors += perm_result))
     echo ""
-    
+
     # 7. Shell integration
     echo -e " ${BLUE}7. Shell Integration${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -1914,7 +1915,7 @@ cmd_health_verbose() {
     check_shell_integration 2>&1 | indent_section_output && shell_result=0 || shell_result=$?
     ((total_warnings += shell_result))
     echo ""
-    
+
     # 8. Stow conflicts
     echo -e " ${BLUE}8. Stow Conflicts${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -1922,14 +1923,14 @@ cmd_health_verbose() {
     check_stow_conflicts 2>&1 | indent_section_output && stow_result=0 || stow_result=$?
     ((total_errors += stow_result))
     echo ""
-    
+
     # 9. Orphaned symlinks
     echo -e " ${BLUE}9. Orphaned Symlinks${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     check_orphaned_symlinks 2>&1 | indent_section_output
     # Note: Orphaned symlinks are warnings, not errors
     echo ""
-    
+
     # 10. Dependencies
     echo -e " ${BLUE}10. Dependencies${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -1939,7 +1940,7 @@ cmd_health_verbose() {
         ((total_errors++))
     fi
     echo ""
-    
+
     # 11. Backup health
     echo -e " ${BLUE}11. Backup Health${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
