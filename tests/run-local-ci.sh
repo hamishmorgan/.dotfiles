@@ -5,16 +5,47 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
 DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+readonly DOTFILES_DIR
 
 # Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m'
+
+# Show help
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    echo "Usage: $0 [PLATFORM] [OPTIONS]"
+    echo ""
+    echo "Platforms:"
+    echo "  ubuntu      Test on Ubuntu only"
+    echo "  alpine      Test on Alpine only"
+    echo "  all         Test on both platforms (default)"
+    echo ""
+    echo "Options:"
+    echo "  --no-cleanup    Keep test images for debugging"
+    echo "  --help, -h      Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0                    # Run all tests"
+    echo "  $0 ubuntu             # Test Ubuntu only"
+    echo "  $0 all --no-cleanup   # Run all tests, keep images"
+    exit 0
+fi
 
 # Parse arguments
 PLATFORM="${1:-all}"
+NO_CLEANUP=false
+
+# Check for --no-cleanup flag in any position
+for arg in "$@"; do
+    if [[ "$arg" == "--no-cleanup" ]]; then
+        NO_CLEANUP=true
+        break
+    fi
+done
 
 run_test() {
     local platform="$1"
@@ -48,8 +79,15 @@ run_test() {
     fi
 
     # Clean up image to prevent disk space accumulation
-    echo "Cleaning up test image..."
-    $CONTAINER_RUNTIME rmi -f "dotfiles-test-$platform" >/dev/null 2>&1 || true
+    if [[ "$NO_CLEANUP" == "false" ]]; then
+        echo "Cleaning up test image..."
+        if $CONTAINER_RUNTIME inspect "dotfiles-test-$platform" >/dev/null 2>&1; then
+            $CONTAINER_RUNTIME rmi "dotfiles-test-$platform" >/dev/null 2>&1 || true
+        fi
+    else
+        echo "Skipping cleanup (--no-cleanup flag set)"
+        echo "To remove later: $CONTAINER_RUNTIME rmi dotfiles-test-$platform"
+    fi
 
     return $test_result
 }
@@ -119,7 +157,8 @@ case "$PLATFORM" in
 esac
 
 # Final cleanup of any dangling images/layers
-echo ""
-echo -e "${BLUE}Cleaning up dangling images...${NC}"
-$CONTAINER_RUNTIME image prune -f >/dev/null 2>&1 || true
-
+if [[ "$NO_CLEANUP" == "false" ]]; then
+    echo ""
+    echo -e "${BLUE}Cleaning up dangling images...${NC}"
+    $CONTAINER_RUNTIME image prune -f >/dev/null 2>&1 || true
+fi

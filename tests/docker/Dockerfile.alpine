@@ -6,21 +6,21 @@ FROM alpine:3.19
 # Note: Alpine uses BusyBox which has BSD-like behavior
 RUN apk add --no-cache \
     git \
+    stow \
     perl \
     bash \
     tmux \
     zsh \
-    curl \
-    stow
+    curl
 
-# Create test user
+# Create test user (non-root for realistic testing)
 RUN adduser -D -s /bin/bash testuser
 
 # Switch to test user
 USER testuser
 WORKDIR /home/testuser
 
-# Set up git config
+# Set up git config (required for tests)
 RUN git config --global user.name "Test User" && \
     git config --global user.email "test@example.com"
 
