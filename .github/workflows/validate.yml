@@ -97,10 +97,13 @@ jobs:
         echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
         echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
 
+    - name: Update apt package lists
+      if: steps.cache-bash32.outputs.cache-hit != 'true'
+      run: sudo apt-get update -qq
+
     - name: Build Bash 3.2 and install dependencies
       if: steps.cache-bash32.outputs.cache-hit != 'true'
       run: |
-        sudo apt-get update -qq
         sudo apt-get install -y -qq build-essential stow git tmux zsh
 
         # Download and build bash 3.2.57
@@ -116,11 +119,13 @@ jobs:
         make -j4  # Use up to 4 cores for predictable resource usage
         make install
 
+    - name: Update apt package lists (cache hit)
+      if: steps.cache-bash32.outputs.cache-hit == 'true'
+      run: sudo apt-get update -qq
+
     - name: Install dependencies (cache hit)
       if: steps.cache-bash32.outputs.cache-hit == 'true'
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq stow git tmux zsh
+      run: sudo apt-get install -y -qq stow git tmux zsh
 
     - name: Install Bash 3.2
       run: |
@@ -192,10 +197,11 @@ jobs:
         echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
         echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
 
+    - name: Update apt package lists
+      run: sudo apt-get update -qq
+
     - name: Install dependencies
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq stow git tmux zsh
+      run: sudo apt-get install -y -qq stow git tmux zsh
 
     - name: Make scripts executable
       run: chmod +x dot tests/lib/*.sh
