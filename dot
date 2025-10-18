@@ -1391,8 +1391,8 @@ show_health_table_header() {
 show_health_check_spinner() {
     local num="$1"
     local category="$2"
-
-    # Show spinner (⠿ character indicates "checking")
+    
+    # Show spinner - ⠿ is a wide character (2 cols)
     printf " %-2s %-25s ${BLUE}⠿ Checking...${NC}\r" "$num." "$category"
 }
 
@@ -1402,7 +1402,7 @@ show_health_table_row() {
     local category="$2"
     local status="$3"
     local details="$4"
-    
+
     local status_text
     local status_color
     case "$status" in
@@ -1423,11 +1423,15 @@ show_health_table_row() {
             status_color="$BLUE"
             ;;
     esac
-    
+
     # Clear the spinner line and show result
-    # Print with proper alignment: status gets colored, but padding is based on visible text
+    # Note: Emoji chars (✓✗⚠ℹ) are wide (2 cols each), but text is: "X Pass/Fail/Warn/Info"
+    # "✓ Pass" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
+    # "⚠ Warn" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
+    # "ℹ Info" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
+    # "✗ Fail" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
     printf "\r\033[K %-2s %-25s " "$num." "$category"
-    printf "%b%-6s%b " "$status_color" "$status_text" "$NC"
+    printf "%b%s%b     " "$status_color" "$status_text" "$NC"  # 5 spaces for padding
     printf "%s\n" "$details"
 }
 
@@ -1437,9 +1441,9 @@ show_health_summary() {
     local error_count="$2"
     local warn_count="$3"
     local duration="$4"
-    
+
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
+
     if [[ "$status" == "healthy" ]]; then
         # "Result: ✓ HEALTHY" = 18 visible chars, pad to 47 chars before "Duration:"
         printf " Result: %b✓ HEALTHY%b" "$GREEN" "$NC"
@@ -1456,12 +1460,12 @@ show_health_summary() {
         local visible_length=$((21 + ${#issues_text}))  # "Result: ✗ UNHEALTHY ()" + issues_text
         local padding=$((47 - visible_length))
         [[ $padding -lt 1 ]] && padding=1
-        
+
         printf " Result: %b✗ UNHEALTHY%b (%s)" "$RED" "$NC" "$issues_text"
         printf "%${padding}s" ""
         printf "Duration: %.1fs\n" "$duration"
     fi
-    
+
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
