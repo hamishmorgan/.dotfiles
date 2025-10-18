@@ -39,7 +39,7 @@ jobs:
       run: ./tests/smoke-test.sh
 
   validate-bash32:
-    name: Bash 3.2 Compatibility (Compiled)
+    name: Ubuntu Latest (Bash 3.2)
     runs-on: ubuntu-latest
     needs: lint
 
