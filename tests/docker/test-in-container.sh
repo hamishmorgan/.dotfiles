@@ -51,11 +51,6 @@ create_secret_file "gh/.config/gh/hosts.yml.secret" "github.com:
 echo "Testing installation..."
 ./dot install
 
-# Run validation
-echo ""
-echo "Testing validation..."
-./dot validate
-
 # Run health check (expect some warnings in container environment)
 echo ""
 echo "Testing health check..."

@@ -39,16 +39,11 @@ jobs:
         sudo ln -s /bin/true /usr/bin/mandb
         sudo apt-get install -y stow git tmux zsh
 
-    - name: Validate installation
+    - name: Install and validate
       run: |
         cd ${{ github.workspace }}
         chmod +x dot
         ./dot install
-        ./dot validate
-
-    - name: Run health check
-      run: |
-        cd ${{ github.workspace }}
         ./dot health
 
     - name: Test configurations
@@ -73,17 +68,12 @@ jobs:
       run: |
         brew install stow git tmux zsh
 
-    - name: Validate installation
+    - name: Install and validate
       run: |
         cd ${{ github.workspace }}
         chmod +x dot
         # dot script now works with macOS default bash 3.2
         ./dot install
-        ./dot validate
-
-    - name: Run health check
-      run: |
-        cd ${{ github.workspace }}
         ./dot health
 
     - name: Test configurations

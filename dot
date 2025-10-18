@@ -212,12 +212,11 @@ show_usage() {
     echo ""
     echo "Commands:"
     echo "  install       Install dotfiles using GNU Stow"
-    echo "  validate      Validate dotfiles installation"
-    echo "  health        Run comprehensive health check"
+    echo "  status        Show installation status and recent backups"
+    echo "  health        Run comprehensive diagnostics"
     echo "  update        Update configurations and reinstall"
     echo "  uninstall     Remove dotfiles symlinks"
     echo "  backup        Create backup of existing files"
-    echo "  status        Show installation status"
     echo "  clean         Clean up backup directories"
     echo ""
     echo "Options:"
@@ -227,10 +226,13 @@ show_usage() {
     echo ""
     echo "Examples:"
     echo "  $0 install           # Install dotfiles"
-    echo "  $0 validate          # Validate installation"
-    echo "  $0 health            # Run health check"
+    echo "  $0 status            # Quick status check"
+    echo "  $0 health            # Full diagnostics"
     echo "  $0 update            # Update and reinstall"
-    echo "  $0 status            # Show status"
+    echo ""
+    echo "Quick reference:"
+    echo "  status = Quick overview (symlinks + backups)"
+    echo "  health = Comprehensive diagnostics (when troubleshooting)"
     echo ""
     echo "Shell Integration:"
     echo "  # In .bashrc or .zshrc:"
@@ -939,7 +941,7 @@ cmd_install() {
     log_info "Step 2: Running installation pipeline..."
     if ! run_installation_pipeline; then
         log_error "Installation pipeline failed"
-        log_info "Run './dot validate' to check installation state"
+        log_info "Run './dot health' to check installation state"
         INSTALLATION_IN_PROGRESS=false
         return 1
     fi
@@ -950,29 +952,11 @@ cmd_install() {
     echo "Next steps:"
     echo "  1. Restart your terminal or run: source ~/.zshrc"
     echo "  2. Set zsh as default shell: chsh -s \$(which zsh)"
-    echo "  3. Validate installation: $0 validate"
+    echo "  3. Verify installation: $0 health"
 
     return 0
 }
 
-cmd_validate() {
-    log_info "Validating dotfiles installation..."
-
-    local errors=0
-
-    for package in "${PACKAGES[@]}"; do
-        validate_package "$package" || ((errors++))
-    done
-
-    echo ""
-    if [[ $errors -eq 0 ]]; then
-        log_success "All validations passed!"
-        return 0
-    else
-        log_error "Validation failed with $errors errors"
-        return 1
-    fi
-}
 
 # Validate configuration syntax
 validate_config_syntax() {
@@ -1592,12 +1576,18 @@ main() {
                 verbose=true
                 shift
                 ;;
-            install|validate|health|update|status|backup|clean|uninstall)
+            install|health|update|status|backup|clean|uninstall)
                 if [[ -n "$command" ]]; then
                     log_error "Multiple commands specified"
                     exit 1
                 fi
                 command="$1"
+                shift
+                ;;
+            validate)
+                # Deprecated: redirect to health
+                log_warning "'validate' is deprecated, use 'health' instead"
+                command="health"
                 shift
                 ;;
             *)
@@ -1623,9 +1613,6 @@ main() {
     case $command in
         install)
             cmd_install
-            ;;
-        validate)
-            cmd_validate
             ;;
         health)
             cmd_health
@@ -1665,22 +1652,21 @@ d() {
     if (($#)); then shift; fi
 
     case "$cmd" in
-        h|health)   "$HOME/.dotfiles/dot" health "$@" ;;
-        v|validate) "$HOME/.dotfiles/dot" validate "$@" ;;
-        u|update)   "$HOME/.dotfiles/dot" update "$@" ;;
-        s|status)   "$HOME/.dotfiles/dot" status "$@" ;;
-        b|backup)   "$HOME/.dotfiles/dot" backup "$@" ;;
-        c|clean)    "$HOME/.dotfiles/dot" clean "$@" ;;
-        i|install)  "$HOME/.dotfiles/dot" install "$@" ;;
-        cd)         builtin cd "$HOME/.dotfiles" || return ;;
-        *)          "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
+        h|health) "$HOME/.dotfiles/dot" health "$@" ;;
+        s|status) "$HOME/.dotfiles/dot" status "$@" ;;
+        u|update) "$HOME/.dotfiles/dot" update "$@" ;;
+        b|backup) "$HOME/.dotfiles/dot" backup "$@" ;;
+        c|clean)  "$HOME/.dotfiles/dot" clean "$@" ;;
+        i|install) "$HOME/.dotfiles/dot" install "$@" ;;
+        cd)       builtin cd "$HOME/.dotfiles" || return ;;
+        *)        "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
     esac
 }
 
 # Bash completion for dot script
 _dot_completion() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
-    local commands="install validate health update status backup clean uninstall"
+    local commands="install status health update backup clean uninstall"
     # Bash 3.2 compatible (no mapfile)
     COMPREPLY=()
     while IFS= read -r word; do
@@ -1692,7 +1678,7 @@ complete -F _dot_completion dot
 # Bash completion for d function wrapper
 _d_completion_bash() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
-    local commands="h health v validate u update s status b backup c clean i install uninstall cd"
+    local commands="h health s status u update b backup c clean i install uninstall cd"
     # Bash 3.2 compatible (no mapfile)
     COMPREPLY=()
     while IFS= read -r word; do
@@ -1711,15 +1697,14 @@ d() {
     if (($#)); then shift; fi
 
     case "$cmd" in
-        h|health)   "$HOME/.dotfiles/dot" health "$@" ;;
-        v|validate) "$HOME/.dotfiles/dot" validate "$@" ;;
-        u|update)   "$HOME/.dotfiles/dot" update "$@" ;;
-        s|status)   "$HOME/.dotfiles/dot" status "$@" ;;
-        b|backup)   "$HOME/.dotfiles/dot" backup "$@" ;;
-        c|clean)    "$HOME/.dotfiles/dot" clean "$@" ;;
-        i|install)  "$HOME/.dotfiles/dot" install "$@" ;;
-        cd)         builtin cd "$HOME/.dotfiles" || return ;;
-        *)          "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
+        h|health) "$HOME/.dotfiles/dot" health "$@" ;;
+        s|status) "$HOME/.dotfiles/dot" status "$@" ;;
+        u|update) "$HOME/.dotfiles/dot" update "$@" ;;
+        b|backup) "$HOME/.dotfiles/dot" backup "$@" ;;
+        c|clean)  "$HOME/.dotfiles/dot" clean "$@" ;;
+        i|install) "$HOME/.dotfiles/dot" install "$@" ;;
+        cd)       builtin cd "$HOME/.dotfiles" || return ;;
+        *)        "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
     esac
 }
 
@@ -1728,10 +1713,9 @@ _dot_completion() {
     local -a commands
     commands=(
         'install:Install dotfiles using GNU Stow'
-        'validate:Validate dotfiles installation'
-        'health:Run comprehensive health check'
+        'status:Show installation status and recent backups'
+        'health:Run comprehensive diagnostics'
         'update:Update configurations and reinstall'
-        'status:Show installation status'
         'backup:Create backup of existing files'
         'clean:Clean up backup directories'
         'uninstall:Remove dotfiles symlinks'
@@ -1744,14 +1728,12 @@ compdef _dot_completion dot
 _d_completion() {
     local -a commands
     commands=(
-        'h:health - Run comprehensive health check'
-        'health:Run comprehensive health check'
-        'v:validate - Validate installation'
-        'validate:Validate installation'
+        'h:health - Comprehensive diagnostics'
+        'health:Comprehensive diagnostics'
+        's:status - Quick status check'
+        'status:Quick status check'
         'u:update - Update and reinstall'
         'update:Update and reinstall'
-        's:status - Show installation status'
-        'status:Show installation status'
         'b:backup - Create backup'
         'backup:Create backup'
         'c:clean - Clean up old backups'

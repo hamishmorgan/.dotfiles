@@ -127,9 +127,8 @@ When adding new instructions:
 ## Common Tasks
 
 - Installation: `./dot install`
-- Validation: `./dot validate`
+- Status check: `./dot status`
 - Health check: `./dot health`
-- Status: `./dot status`
 - Linting: `markdownlint "**/*.md"` and `shellcheck dot`
 - Package management: `stow --verbose --restow --dir=. --target=$HOME package_name`
 - Backup location: `backups/dotfiles-backup-*` (timestamped directories)

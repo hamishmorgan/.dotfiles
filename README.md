@@ -105,20 +105,19 @@ stow -v git zsh tmux gh gnuplot bash
 **Note:** Manual installation still requires processing templates and merging secret configs.
 Use `./dot install` for the complete installation process.
 
-## Validation
+## Verification
 
-Validate installation:
+Check installation status:
 
 ```bash
 cd ~/.dotfiles
-./dot validate
+./dot status        # Quick overview (symlinks + backups)
+./dot health        # Comprehensive diagnostics
 ```
-
-Verifies symlink integrity for all packages.
 
 ### Health Check
 
-Run a comprehensive health check:
+The health check performs comprehensive diagnostics:
 
 ```bash
 ./dot health
@@ -270,10 +269,10 @@ chmod +x dot
 stow -v -R git zsh tmux gh gnuplot bash
 ```
 
-Validation:
+Verify installation:
 
 ```bash
-./dot validate
+./dot health
 ```
 
 ## Linting
@@ -335,5 +334,5 @@ Workflow file: `.github/workflows/validate.yml`
 1. Create feature branch
 2. Make changes
 3. Run linters: `markdownlint "**/*.md" && shellcheck dot`
-4. Test with `./dot validate`
+4. Test with `./dot health`
 5. Commit changes
