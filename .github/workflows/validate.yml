@@ -259,6 +259,7 @@ jobs:
       run: |
         cd ${{ github.workspace }}
         # dot script works with macOS default bash 3.2
+        set -x  # Enable debug output
         ./tests/lib/run-installation.sh
 
     - name: Verify health
