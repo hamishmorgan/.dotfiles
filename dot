@@ -309,7 +309,7 @@ check_tool_version() {
     local tool="$1"
     local min_version="$2"
     local current_version=""
-    
+
     case "$tool" in
         git)
             current_version=$(git --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
@@ -329,14 +329,14 @@ check_tool_version() {
             current_version=$(tmux -V 2>/dev/null | grep -oE '[0-9]+\.[0-9]+[a-z]*' | head -1)
             ;;
     esac
-    
+
     # Output current version for caller
     echo "$current_version"
-    
+
     if [[ -z "$current_version" ]]; then
         return 1  # Could not determine version
     fi
-    
+
     if version_ge "$current_version" "$min_version"; then
         return 0  # Version is sufficient
     else
@@ -345,35 +345,61 @@ check_tool_version() {
 }
 
 # Check dependencies with version requirements
+# Usage: check_dependencies [verbosity]
+#   verbosity 0 (default): Only show errors
+#   verbosity 1 (-v): Show each tool being checked
+#   verbosity 2 (-vv): Show version details for each tool
 check_dependencies() {
+    local verbosity="${1:-0}"
+    
     log_info "Checking dependencies..."
 
     local missing_deps=()
     local outdated_deps=()
+    local satisfied_deps=()
     local all_deps
     all_deps="$(get_required_deps common) $(get_required_deps optional)"
 
     for dep in $all_deps; do
         if ! command_exists "$dep"; then
             missing_deps+=("$dep")
+            [[ $verbosity -ge 1 ]] && log_warning "Checking $dep... not found"
         else
             # Check version if minimum is specified
             local min_version
             min_version=$(get_min_version "$dep")
-            
+
             if [[ -n "$min_version" ]]; then
                 # Capture version and check status in one call (efficiency fix from Copilot)
                 local actual_version
                 actual_version=$(check_tool_version "$dep" "$min_version" 2>&1)
                 local check_status=$?
-                
+
                 if [[ $check_status -ne 0 ]] && [[ -n "$actual_version" ]]; then
                     outdated_deps+=("$dep (${actual_version} < ${min_version})")
+                    if [[ $verbosity -ge 1 ]]; then
+                        log_warning "Checking $dep... version too old (${actual_version} < ${min_version})"
+                    fi
+                else
+                    satisfied_deps+=("$dep:$actual_version:$min_version")
+                    if [[ $verbosity -ge 2 ]]; then
+                        log_success "Checking $dep... ${actual_version} (>= ${min_version})"
+                    elif [[ $verbosity -ge 1 ]]; then
+                        log_success "Checking $dep... ${actual_version}"
+                    fi
+                fi
+            else
+                # No version requirement
+                satisfied_deps+=("$dep:present")
+                if [[ $verbosity -ge 2 ]]; then
+                    log_success "Checking $dep... present (no version requirement)"
+                elif [[ $verbosity -ge 1 ]]; then
+                    log_success "Checking $dep... present"
                 fi
             fi
         fi
     done
-    
+
     local has_errors=false
 
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
@@ -387,7 +413,7 @@ check_dependencies() {
         echo "  Fedora: sudo dnf install ${missing_deps[*]}"
         echo ""
     fi
-    
+
     if [[ ${#outdated_deps[@]} -gt 0 ]]; then
         has_errors=true
         log_error "Outdated dependencies detected:"
@@ -402,12 +428,17 @@ check_dependencies() {
         echo "  Fedora: sudo dnf upgrade"
         echo ""
     fi
-    
+
     if $has_errors; then
         exit 1
     fi
 
     log_success "All dependencies satisfied"
+    
+    # Show summary at verbosity 1+
+    if [[ $verbosity -ge 1 ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
+        log_info "Total: ${#satisfied_deps[@]} dependencies satisfied"
+    fi
 }
 
 # Detect platform
@@ -2457,7 +2488,7 @@ update_oh_my_zsh() {
 run_installation_pipeline() {
     local verbosity="${1:-0}"
 
-    if ! check_dependencies; then
+    if ! check_dependencies "$verbosity"; then
         return 1
     fi
 
