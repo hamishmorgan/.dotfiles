@@ -285,20 +285,188 @@ portable_timeout() {
 }
 
 # Check dependencies
+# Get minimum version for a tool (bash 3.2 compatible - no associative arrays)
+get_min_version() {
+    local tool="$1"
+    case "$tool" in
+        git)  echo "2.0.0" ;;
+        stow) echo "2.3" ;;
+        zsh)  echo "5.0" ;;
+        bash) echo "3.2" ;;  # Already enforced by our script
+        tmux) echo "2.0" ;;
+        *)    echo "" ;;  # No minimum version requirement
+    esac
+}
+
+# Compare semantic versions (returns 0 if $1 >= $2)
+# Works on both Linux (GNU sort) and macOS (BSD sort)
+version_ge() {
+    local v1="$1"
+    local v2="$2"
+
+    # Try GNU sort -V (Linux)
+    if printf '%s\n%s\n' "$v2" "$v1" | sort -V -C 2>/dev/null; then
+        return 0
+    elif [[ $? -eq 2 ]]; then
+        # Exit code 2 means sort -V not supported, try gsort (Homebrew)
+        if command -v gsort >/dev/null 2>&1; then
+            printf '%s\n%s\n' "$v2" "$v1" | gsort -V -C
+            return $?
+        fi
+
+        # Fall back to bash-native comparison
+        _version_ge_fallback "$v1" "$v2"
+        return $?
+    else
+        # Exit code 1 means sort -V worked but comparison failed
+        return 1
+    fi
+}
+
+# Fallback version comparison for systems without sort -V (bash 3.2 compatible)
+# Returns 0 if $1 >= $2
+_version_ge_fallback() {
+    local v1="$1"
+    local v2="$2"
+
+    # Split versions by dots (IFS localized to read command)
+    IFS=. read -ra ver1 <<< "$v1"
+    IFS=. read -ra ver2 <<< "$v2"
+
+    # Compare each component
+    local max_len=${#ver1[@]}
+    [[ ${#ver2[@]} -gt $max_len ]] && max_len=${#ver2[@]}
+
+    local i
+    for ((i=0; i<max_len; i++)); do
+        local num1="${ver1[i]:-0}"
+        local num2="${ver2[i]:-0}"
+
+        # Strip letters from end (e.g., "3a" -> "3")
+        num1="${num1%%[a-z]*}"
+        num2="${num2%%[a-z]*}"
+
+        # Compare numerically
+        if ((10#$num1 > 10#$num2)); then
+            return 0
+        elif ((10#$num1 < 10#$num2)); then
+            return 1
+        fi
+    done
+
+    # All components equal
+    return 0
+}
+
+# Check specific tool version and return current version on stdout
+# Returns: 0 if version >= minimum, 1 otherwise
+check_tool_version() {
+    local tool="$1"
+    local min_version="$2"
+    local current_version=""
+
+    case "$tool" in
+        git)
+            current_version=$(git --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
+            ;;
+        stow)
+            current_version=$(stow --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
+            ;;
+        zsh)
+            current_version=$(zsh --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
+            ;;
+        bash)
+            # BASH_VERSION contains extra text - extract just the version
+            current_version=$(echo "$BASH_VERSION" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
+            ;;
+        tmux)
+            # Use * instead of ? to handle optional letters properly
+            current_version=$(tmux -V 2>/dev/null | grep -oE '[0-9]+\.[0-9]+[a-z]*' | head -n 1)
+            ;;
+    esac
+
+    # Output current version for caller
+    echo "$current_version"
+
+    if [[ -z "$current_version" ]]; then
+        return 1  # Could not determine version
+    fi
+
+    if version_ge "$current_version" "$min_version"; then
+        return 0  # Version is sufficient
+    else
+        return 1  # Version is too old
+    fi
+}
+
+# Check dependencies with version requirements
+# Usage: check_dependencies [verbosity]
+#   verbosity 0 (default): Only show errors
+#   verbosity 1 (-v): Show each tool being checked
+#   verbosity 2 (-vv): Show version details for each tool
 check_dependencies() {
+    local verbosity="${1:-0}"
+
     log_info "Checking dependencies..."
 
     local missing_deps=()
+    local outdated_deps=()
+    local satisfied_deps=()
     local all_deps
     all_deps="$(get_required_deps common) $(get_required_deps optional)"
 
     for dep in $all_deps; do
         if ! command_exists "$dep"; then
             missing_deps+=("$dep")
+            [[ $verbosity -ge 1 ]] && log_warning "Checking $dep... not found"
+        else
+            # Check version if minimum is specified
+            local min_version
+            min_version=$(get_min_version "$dep")
+
+            if [[ -n "$min_version" ]]; then
+                # Capture version and check status in one call (efficiency fix from Copilot)
+                local actual_version
+                actual_version=$(check_tool_version "$dep" "$min_version" 2>&1)
+                local check_status=$?
+
+                if [[ $check_status -eq 0 ]]; then
+                    # Version is sufficient
+                    satisfied_deps+=("$dep:$actual_version:$min_version")
+                    if [[ $verbosity -ge 2 ]]; then
+                        log_success "Checking $dep... ${actual_version} (>= ${min_version})"
+                    elif [[ $verbosity -ge 1 ]]; then
+                        log_success "Checking $dep... ${actual_version}"
+                    fi
+                elif [[ -n "$actual_version" ]]; then
+                    # Version was determined but is too old
+                    outdated_deps+=("$dep (${actual_version} < ${min_version})")
+                    if [[ $verbosity -ge 1 ]]; then
+                        log_warning "Checking $dep... version too old (${actual_version} < ${min_version})"
+                    fi
+                else
+                    # Could not determine version - treat as outdated
+                    outdated_deps+=("$dep (unknown < ${min_version})")
+                    if [[ $verbosity -ge 1 ]]; then
+                        log_warning "Checking $dep... unable to determine version"
+                    fi
+                fi
+            else
+                # No version requirement
+                satisfied_deps+=("$dep:present")
+                if [[ $verbosity -ge 2 ]]; then
+                    log_success "Checking $dep... present (no version requirement)"
+                elif [[ $verbosity -ge 1 ]]; then
+                    log_success "Checking $dep... present"
+                fi
+            fi
         fi
     done
 
+    local has_errors=false
+
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        has_errors=true
         log_error "Missing dependencies: ${missing_deps[*]}"
         echo ""
         echo "Install missing dependencies:"
@@ -306,10 +474,36 @@ check_dependencies() {
         echo "  macOS: brew install ${missing_deps[*]}"
         echo "  CentOS/RHEL: sudo yum install ${missing_deps[*]}"
         echo "  Fedora: sudo dnf install ${missing_deps[*]}"
-        exit 1
+        echo ""
+    fi
+
+    if [[ ${#outdated_deps[@]} -gt 0 ]]; then
+        has_errors=true
+        log_error "Outdated dependencies detected:"
+        for outdated in "${outdated_deps[@]}"; do
+            echo "  ${SYMBOL_ERROR} $outdated"
+        done
+        echo ""
+        echo "Update outdated dependencies:"
+        echo "  Ubuntu/Debian: sudo apt-get update && sudo apt-get upgrade"
+        echo "  macOS: brew upgrade"
+        echo "  CentOS/RHEL: sudo yum update"
+        echo "  Fedora: sudo dnf upgrade"
+        echo ""
+    fi
+
+    if [[ "$has_errors" == true ]]; then
+        return 1
     fi
 
     log_success "All dependencies satisfied"
+
+    # Show summary at verbosity 1+
+    if [[ $verbosity -ge 1 ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
+        log_info "Total: ${#satisfied_deps[@]} dependencies satisfied"
+    fi
+
+    return 0
 }
 
 # Detect platform
@@ -879,11 +1073,11 @@ show_status() {
                 local stow_managed=false
                 local stow_links
                 stow_links=$(find "$HOME/$file" -maxdepth 3 -type l -exec readlink {} \; 2>/dev/null)
-                if echo "$stow_links" | grep -q ".dotfiles/$package"; then
+                if echo "$stow_links" | grep -Fq ".dotfiles/$package"; then
                     stow_managed=true
                 fi
 
-                if $stow_managed; then
+                if [[ "$stow_managed" == true ]]; then
                     echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${BLUE}(stow-managed directory)${NC}"
                     ((installed_files++))
                 else
@@ -2181,9 +2375,10 @@ run_health_check() {
     echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     $check_function 2>&1 | indent_section_output
-    local result=$?
+    # Capture exit code from check_function (first command in pipe)
+    local result=${PIPESTATUS[0]}
     echo ""
-    return $result
+    return "$result"
 }
 
 # Verbose health check (detailed output with unified design)
@@ -2250,7 +2445,11 @@ cmd_health_verbose() {
     # Note: Orphaned symlinks are warnings, not errors
 
     # 10. Dependencies
-    if ! run_health_check "10" "Dependencies" check_dependencies; then
+    # Pass verbosity 1 to show each tool being checked in verbose health mode
+    check_dependencies_verbose() {
+        check_dependencies 1
+    }
+    if ! run_health_check "10" "Dependencies" check_dependencies_verbose; then
         ((total_errors++))
     fi
 
@@ -2359,8 +2558,9 @@ update_oh_my_zsh() {
 run_installation_pipeline() {
     local verbosity="${1:-0}"
 
-    if ! check_dependencies; then
-        return 1
+    if ! check_dependencies "$verbosity"; then
+        log_error "Cannot proceed without required dependencies"
+        exit 1
     fi
 
     if ! init_submodules; then
@@ -2660,7 +2860,7 @@ d() {
 _dot_completion() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     local prev="${COMP_WORDS[COMP_CWORD-1]}"
-    
+
     # Complete commands
     if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
         local commands="install status health update backup clean uninstall"
@@ -2689,7 +2889,7 @@ complete -F _dot_completion dot
 _d_completion_bash() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     local prev="${COMP_WORDS[COMP_CWORD-1]}"
-    
+
     # Complete commands
     if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
         local commands="h health s status u update b backup c clean i install uninstall cd"
