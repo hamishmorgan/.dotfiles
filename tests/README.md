@@ -38,6 +38,7 @@ Full installation and validation in clean environments:
 
 - Tests on Ubuntu 22.04 (matches GitHub Actions)
 - Tests on Alpine (BSD-like coreutils, catches macOS issues)
+- Tests on Bash 3.2 (macOS default bash version)
 - Complete install → validate → health cycle
 - Secret file processing
 - Symlink verification
@@ -45,12 +46,13 @@ Full installation and validation in clean environments:
 **Usage:**
 
 ```bash
-# Test both platforms
+# Test all platforms
 ./tests/run-local-ci.sh
 
 # Test specific platform
 ./tests/run-local-ci.sh ubuntu
 ./tests/run-local-ci.sh alpine
+./tests/run-local-ci.sh bash32
 ```
 
 **When to run:** Before pushing to GitHub
@@ -115,13 +117,42 @@ env -i PATH=/usr/bin:/bin HOME=$HOME podman system prune -a -f --volumes
 - Catches macOS compatibility issues
 - Tests with minimal POSIX-only commands
 
+### Bash 3.2 Container
+
+- Based on `ubuntu:20.04` with Bash 3.2.57 compiled from source
+- Tests compatibility with macOS default bash
+- Ensures no Bash 4.0+ features are used
+- Validates version check in dot script
+
+### Bash 3.2 Compatibility
+
+The dot script is designed for Bash 3.2 compatibility (macOS default).
+
+**Test Bash 3.2 locally:**
+
+```bash
+./tests/run-local-ci.sh bash32
+```
+
+**What we avoid:**
+
+- Associative arrays (`declare -A`) - Bash 4.0+
+- `mapfile` / `readarray` - Bash 4.0+
+- `&>>` redirect - Bash 4.0+
+
+**What we use instead:**
+
+- Functions for key-value storage
+- `while read` loops
+- Separate redirects (`> file 2>&1`)
+
 ## Troubleshooting
 
 ### Container Tests Fail
 
 ```bash
 # Rebuild images from scratch (replace 'docker' with 'podman' if using Podman)
-docker rmi dotfiles-test-ubuntu dotfiles-test-alpine
+docker rmi dotfiles-test-ubuntu dotfiles-test-alpine dotfiles-test-bash32
 ./tests/run-local-ci.sh
 ```
 

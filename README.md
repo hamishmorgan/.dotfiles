@@ -20,6 +20,16 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - Oh My Zsh submodule
 - CI/CD validation with GitHub Actions
 
+## Compatibility
+
+- **Bash 3.2+**: Works with macOS default bash (no Homebrew bash needed)
+- **Cross-platform**: Tested on Ubuntu, Alpine, and macOS
+- **Bash 3.2 verified**: Explicitly tested in CI to ensure compatibility
+
+The `dot` script is compatible with Bash 3.2, ensuring it works seamlessly with macOS's default
+bash installation without requiring Homebrew bash. This compatibility is enforced through automated
+testing on all platforms, including explicit Bash 3.2 validation in CI.
+
 ## Package Structure
 
 ```text
@@ -363,8 +373,10 @@ markdownlint "**/*.md" && shellcheck dot
 This repository includes GitHub Actions workflows for automated validation:
 
 - **Linting**: Validates Markdown and Bash scripts before installation tests
+- **Smoke Tests**: Quick validation of basic functionality and structure
 - **Ubuntu Validation**: Tests full installation on Ubuntu with dependency checks
 - **macOS Validation**: Tests full installation on macOS with dependency checks
+- **Bash 3.2 Validation**: Explicit testing with Bash 3.2 for macOS compatibility
 - **Configuration Testing**: Validates git, zsh, and other package configurations
 
 Workflow file: `.github/workflows/validate.yml`
