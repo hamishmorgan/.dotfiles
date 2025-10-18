@@ -101,7 +101,7 @@ jobs:
         # Download and build bash 3.2.57
         cd /tmp
         curl -LO https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz
-        
+
         # Verify SHA256 checksum for security
         echo "3fa9daf85ebf35068f090ce51283ddeeb3c75eb5bc70b1a4a7cb05868bfe06a4  bash-3.2.57.tar.gz" | sha256sum -c -
 
@@ -240,7 +240,12 @@ jobs:
           ${{ runner.os }}-brew-
 
     - name: Install dependencies
-      run: brew install stow git tmux zsh
+      run: |
+        brew install stow git tmux zsh
+        # Link packages that may not be auto-linked
+        brew link --overwrite stow || true
+        brew link --overwrite tmux || true
+        brew link --overwrite zsh || true
 
     - name: Make scripts executable
       run: chmod +x dot tests/lib/*.sh
