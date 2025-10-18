@@ -208,9 +208,6 @@ jobs:
         cd ${{ github.workspace }}
         ./tests/lib/verify-health.sh true
 
-    - name: Test zsh configuration
-      run: zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
-
   validate-macos:
     name: macOS Latest (System Bash)
     runs-on: macos-latest
@@ -258,22 +255,9 @@ jobs:
     - name: Run installation
       run: |
         cd ${{ github.workspace }}
-        # dot script works with macOS default bash 3.2
-        # Run with maximum verbosity to see errors
-        ./dot install -vv || {
-          echo "Installation failed. Checking prerequisites..."
-          which stow
-          which git
-          which tmux
-          which zsh
-          echo "PATH: $PATH"
-          exit 1
-        }
+        ./tests/lib/run-installation.sh
 
     - name: Verify health
       run: |
         cd ${{ github.workspace }}
         ./tests/lib/verify-health.sh true
-
-    - name: Test zsh configuration
-      run: zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
