@@ -101,9 +101,9 @@ jobs:
         # Download and build bash 3.2.57
         cd /tmp
         curl -LO https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz
-
+        
         # Verify SHA256 checksum for security
-        echo "3252ef0e4c6659a4247d9c5c3c4aa021b1b0e4f4ecd667b84439fb446c0bb1b5  bash-3.2.57.tar.gz" | sha256sum -c -
+        echo "3fa9daf85ebf35068f090ce51283ddeeb3c75eb5bc70b1a4a7cb05868bfe06a4  bash-3.2.57.tar.gz" | sha256sum -c -
 
         tar xzf bash-3.2.57.tar.gz
         cd bash-3.2.57
