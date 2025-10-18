@@ -1391,7 +1391,7 @@ show_health_table_header() {
 show_health_check_spinner() {
     local num="$1"
     local category="$2"
-    
+
     # Show spinner (⠿ character indicates "checking")
     printf " %-2s %-25s ${BLUE}⠿ Checking...${NC}\r" "$num." "$category"
 }
@@ -1403,24 +1403,32 @@ show_health_table_row() {
     local status="$3"
     local details="$4"
     
-    local status_display
+    local status_text
+    local status_color
     case "$status" in
         pass)
-            status_display="${GREEN}✓ Pass${NC}"
+            status_text="✓ Pass"
+            status_color="$GREEN"
             ;;
         fail)
-            status_display="${RED}✗ Fail${NC}"
+            status_text="✗ Fail"
+            status_color="$RED"
             ;;
         warn)
-            status_display="${YELLOW}⚠ Warn${NC}"
+            status_text="⚠ Warn"
+            status_color="$YELLOW"
             ;;
         info)
-            status_display="${BLUE}ℹ Info${NC}"
+            status_text="ℹ Info"
+            status_color="$BLUE"
             ;;
     esac
     
     # Clear the spinner line and show result
-    printf "\r\033[K %-2s %-25s %-12s %s\n" "$num." "$category" "$(echo -e "$status_display")" "$details"
+    # Print with proper alignment: status gets colored, but padding is based on visible text
+    printf "\r\033[K %-2s %-25s " "$num." "$category"
+    printf "%b%-6s%b " "$status_color" "$status_text" "$NC"
+    printf "%s\n" "$details"
 }
 
 # Display health summary
@@ -1429,11 +1437,14 @@ show_health_summary() {
     local error_count="$2"
     local warn_count="$3"
     local duration="$4"
-
+    
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
+    
     if [[ "$status" == "healthy" ]]; then
-        printf " Result: ${GREEN}✓ HEALTHY${NC}%*sDuration: %.1fs\n" $((38)) "" "$duration"
+        # "Result: ✓ HEALTHY" = 18 visible chars, pad to 47 chars before "Duration:"
+        printf " Result: %b✓ HEALTHY%b" "$GREEN" "$NC"
+        printf "%29s" ""  # 47 - 18 = 29 spaces
+        printf "Duration: %.1fs\n" "$duration"
     else
         local issues_text="$error_count error"
         [[ $error_count -ne 1 ]] && issues_text="${issues_text}s"
@@ -1441,9 +1452,16 @@ show_health_summary() {
             issues_text="$issues_text, $warn_count warning"
             [[ $warn_count -ne 1 ]] && issues_text="${issues_text}s"
         fi
-        printf " Result: ${RED}✗ UNHEALTHY${NC} (%s)%*sDuration: %.1fs\n" "$issues_text" $((20 - ${#issues_text})) "" "$duration"
+        # "Result: ✗ UNHEALTHY (text)" - calculate padding based on visible length
+        local visible_length=$((21 + ${#issues_text}))  # "Result: ✗ UNHEALTHY ()" + issues_text
+        local padding=$((47 - visible_length))
+        [[ $padding -lt 1 ]] && padding=1
+        
+        printf " Result: %b✗ UNHEALTHY%b (%s)" "$RED" "$NC" "$issues_text"
+        printf "%${padding}s" ""
+        printf "Duration: %.1fs\n" "$duration"
     fi
-
+    
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
