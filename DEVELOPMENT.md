@@ -14,6 +14,9 @@ Developer documentation for the .dotfiles repository.
 - [Debugging](#debugging)
 - [Release Process](#release-process)
 - [Architecture](#architecture)
+- [Additional Resources](#additional-resources)
+- [Quick Reference](#quick-reference)
+- [Questions](#questions)
 
 ---
 
@@ -55,14 +58,15 @@ git submodule update --init --recursive
 
 ## Development Environment
 
-### Required Tools
+### Recommended Tools
 
 **Ubuntu/Debian:**
 
 ```bash
 sudo apt-get update
-sudo apt-get install git stow shellcheck
-npm install -g markdownlint-cli
+sudo apt-get install git stow shellcheck nodejs npm
+# Use npx for markdownlint (no global install needed)
+npx --yes markdownlint-cli@0.42.0 "**/*.md"
 ```
 
 **macOS:**
@@ -148,8 +152,9 @@ Longer description if needed.
 - Multiple changes listed
 
 Benefits:
-- Benefit 1
-- Benefit 2
+- Enables automated changelog generation
+- Improves commit history searchability
+- Supports semantic versioning and release notes tooling
 ```
 
 **Types:**
@@ -318,21 +323,21 @@ function_name() {
 
 ```bash
 ./tests/run-local-ci.sh ubuntu     # Ubuntu container test
-./tests/run-local-ci.sh alpine     # Alpine container test (BSD-like)
+./tests/run-local-ci.sh alpine     # Alpine container test (BusyBox-based, non-GNU)
 ./tests/run-local-ci.sh bash32     # Bash 3.2 compatibility test
 ```
 
 ### Testing Strategy
 
 - **Smoke tests**: Fast validation of basic functionality and structure
-- **Container tests**: Full installation on Ubuntu and Alpine (BSD-like)
+- **Container tests**: Full installation on Ubuntu and Alpine (BusyBox-based, non-GNU)
 - **GitHub Actions**: Final validation on real Ubuntu and macOS runners
 
 ### Why This Matters
 
 Cross-platform compatibility issues (BSD vs GNU commands) are caught by:
 
-1. Alpine tests (BusyBox = BSD-like coreutils)
+1. Alpine tests (BusyBox-based coreutils, non-GNU)
 2. GitHub Actions macOS runner (actual macOS)
 
 Always run container tests before pushing to catch platform-specific issues early.
@@ -489,7 +494,7 @@ shellcheck -x dot
 
 ```bash
 # Disable specific checks if needed
-disable=SC2016  # Example: disable backtick warning
+disable=SC2016  # Example: disable single-quoted expression warning
 ```
 
 ### Markdownlint
@@ -702,7 +707,7 @@ Manual changelog updates in release notes:
 │       ├── config.yml.secret.example
 │       ├── config.yml.secret  # git-ignored
 │       └── .stow-local-ignore
-├── gnuplot/              # GNU Plot configuration
+├── gnuplot/              # Gnuplot configuration
 └── bash/                 # Bash configuration package
     ├── .bashrc
     └── .bash_profile
@@ -736,7 +741,7 @@ Manual changelog updates in release notes:
 
 ### Design Principles
 
-1. **Bash 3.2 Compatible**: Works on macOS out of box
+1. **Bash 3.2 Compatible**: Works on macOS out of the box
 2. **Stow-Based**: Standard tool, not custom solution
 3. **Template/Secret Separation**: Public templates, private secrets
 4. **Modular Packages**: Independent, reusable units
@@ -767,7 +772,7 @@ When modifying commands, prefer using these helpers over duplicating logic.
 
 - **Testing Guide**: `tests/README.md`
 - **AI Agent Instructions**: `AGENTS.md`
-- **Code Standards**: See `AGENTS.md` → Code Standards section
+- **Code Standards**: See [Code Standards](#code-standards)
 - **User Documentation**: `README.md`
 - **Contribution Guide**: See #46 for `CONTRIBUTING.md` proposal
 
@@ -775,18 +780,18 @@ When modifying commands, prefer using these helpers over duplicating logic.
 
 ## Quick Reference
 
-| Task | Command | Time |
-|------|---------|------|
-| Install dotfiles | `./dot install` | 1-2m |
-| Update dotfiles | `./dot update` | 1-2m |
-| Check health | `./dot health` | instant |
-| Check status | `./dot status` | instant |
-| Smoke test | `./tests/smoke-test.sh` | 30s |
-| Full local CI | `./tests/run-local-ci.sh` | 2-3m |
-| Lint Markdown | `markdownlint "**/*.md"` | 5s |
-| Lint Bash | `shellcheck dot` | 5s |
-| Monitor CI | `gh pr checks <PR>` | instant |
-| View CI logs | `gh run view --log-failed` | instant |
+Task | Command | Time
+------|---------|------
+Install dotfiles | `./dot install` | 1-2m
+Update dotfiles | `./dot update` | 1-2m
+Check health | `./dot health` | instant
+Check status | `./dot status` | instant
+Smoke test | `./tests/smoke-test.sh` | 30s
+Full local CI | `./tests/run-local-ci.sh` | 2-3m
+Lint Markdown | `markdownlint "**/*.md"` | 5s
+Lint Bash | `shellcheck dot` | 5s
+Monitor CI | `gh pr checks <PR>` | instant
+View CI logs | `gh run view --log-failed` | instant
 
 ---
 
