@@ -722,7 +722,15 @@ get_backup_dirs() {
 
 # Show installation status
 show_status() {
-    log_info "Dotfiles installation status:"
+    show_command_header "Dotfiles Installation Status"
+    
+    # Count files and issues
+    local total_files=0
+    local installed_files=0
+    local warning_files=0
+    local missing_files=0
+    
+    show_section_separator "Installed Files"
     echo ""
 
     # Generate file list dynamically from package definitions
@@ -732,10 +740,12 @@ show_status() {
         IFS=',' read -ra file_array <<< "$files"
 
         for file in "${file_array[@]}"; do
+            ((total_files++))
             if [[ -L "$HOME/$file" ]]; then
                 local target
                 target=$(readlink "$HOME/$file")
-                echo -e "  ${GREEN}${SYMBOL_SUCCESS}${NC} $file -> $target"
+                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${BLUE}→${NC} $target"
+                ((installed_files++))
             elif [[ -d "$HOME/$file" ]]; then
                 # Check if directory contains stow-managed files
                 local stow_managed=false
@@ -744,20 +754,26 @@ show_status() {
                 fi
 
                 if $stow_managed; then
-                    echo -e "  ${GREEN}${SYMBOL_SUCCESS}${NC} $file (stow-managed directory)"
+                    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${BLUE}(stow-managed directory)${NC}"
+                    ((installed_files++))
                 else
-                    echo -e "  ${YELLOW}${SYMBOL_WARNING}${NC} $file (directory, not stow-managed)"
+                    echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $file ${BLUE}(directory, not stow-managed)${NC}"
+                    ((warning_files++))
                 fi
             elif [[ -e "$HOME/$file" ]]; then
-                echo -e "  ${YELLOW}${SYMBOL_WARNING}${NC} $file (exists but not a symlink)"
+                echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $file ${BLUE}(exists but not a symlink)${NC}"
+                ((warning_files++))
             else
-                echo -e "  ${RED}${SYMBOL_ERROR}${NC} $file (not found)"
+                echo -e "   ${RED}${SYMBOL_ERROR}${NC} $file ${BLUE}(not found)${NC}"
+                ((missing_files++))
             fi
         done
     done
 
     echo ""
-    log_info "Backup directories:"
+    show_section_separator "Backups"
+    echo ""
+    
     local backup_dirs=()
     while IFS= read -r dir; do
         backup_dirs+=("$dir")
@@ -766,7 +782,7 @@ show_status() {
     local total_backups=${#backup_dirs[@]}
 
     if [[ $total_backups -eq 0 ]]; then
-        echo "  No backup directories found"
+        echo "   No backup directories found"
     else
         # Calculate total size of all backups first
         local total_size=0
@@ -781,19 +797,34 @@ show_status() {
 
         for ((i=0; i<show_count; i++)); do
             local dir="${backup_dirs[$i]}"
-            echo "  $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
+            echo "   $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
         done
 
         if [[ $total_backups -gt 5 ]]; then
-            echo "  ... and $((total_backups - 5)) older backup(s)"
+            echo "   ... and $((total_backups - 5)) older backup(s)"
         fi
 
         echo ""
-        echo "  Total: $total_backups backup(s) using $((total_size / 1024))MB"
-        if [[ $total_backups -gt 10 ]]; then
-            echo "  Run './dot clean' to remove old backups"
-        fi
+        echo "   Total: $total_backups backup(s) using $((total_size / 1024))MB"
     fi
+    
+    echo ""
+    show_command_summary "info" "$installed_files of $total_files files installed"
+    
+    # Show actionable tips
+    if [[ $missing_files -gt 0 || $warning_files -gt 0 ]]; then
+        echo ""
+        if [[ $missing_files -gt 0 ]]; then
+            echo -e "${BLUE}💡 Tip: Run './dot install' to create missing symlinks${NC}"
+        fi
+        if [[ $total_backups -gt 10 ]]; then
+            echo -e "${BLUE}💡 Tip: Run './dot clean' to remove old backups${NC}"
+        fi
+    elif [[ $total_backups -gt 10 ]]; then
+        echo ""
+        echo -e "${BLUE}💡 Tip: Run './dot clean' to remove old backups${NC}"
+    fi
+    echo ""
 }
 
 # Get backup age in days
@@ -806,7 +837,7 @@ get_backup_age_days() {
 
 # Clean up backup directories
 clean_backups() {
-    log_info "Cleaning up old backup directories..."
+    show_command_header "Backup Cleanup"
 
     local backup_dirs=()
     while IFS= read -r dir; do
@@ -816,17 +847,20 @@ clean_backups() {
     local total_backups=${#backup_dirs[@]}
 
     if [[ $total_backups -eq 0 ]]; then
+        show_section_separator
+        echo ""
         log_info "No backup directories to clean"
+        echo ""
+        show_section_separator
+        echo ""
         return 0
     fi
-
-    log_info "Found $total_backups backup(s)"
 
     # Configuration (can be overridden via environment)
     local keep_count=${BACKUP_KEEP_COUNT:-5}
     local keep_days=${BACKUP_KEEP_DAYS:-30}
 
-    log_info "Retention policy: keep $keep_count most recent OR newer than $keep_days days"
+    echo " ${BLUE}Policy:${NC} Keep $keep_count most recent OR newer than $keep_days days"
     echo ""
 
     # Categorize backups
@@ -857,11 +891,25 @@ clean_backups() {
 
     # Show summary
     if [[ ${#to_remove[@]} -eq 0 ]]; then
-        log_success "All backups within retention policy. Nothing to clean."
+        show_section_separator
+        echo ""
+        log_success "All backups within retention policy"
+        echo ""
+        show_section_separator
+        echo ""
         return 0
     fi
 
-    echo "Backups to remove (${#to_remove[@]}):"
+    # Calculate size to free
+    local remove_size=0
+    for backup in "${to_remove[@]}"; do
+        local size_kb
+        size_kb=$(du -sk "$backup" 2>/dev/null | cut -f1)
+        ((remove_size += size_kb))
+    done
+    
+    show_section_separator "To Remove (${#to_remove[@]} backups, $((remove_size / 1024))MB)"
+    echo ""
     for backup in "${to_remove[@]}"; do
         local backup_name
         backup_name=$(basename "$backup")
@@ -869,25 +917,38 @@ clean_backups() {
         size=$(du -sh "$backup" 2>/dev/null | cut -f1)
         local age_days
         age_days=$(get_backup_age_days "$backup")
-        echo "  - $backup_name ($size, ${age_days}d old)"
+        echo "   - $backup_name ($size, ${age_days}d old)"
     done
 
+    # Calculate size to keep
+    local keep_size=0
+    for backup in "${to_keep[@]}"; do
+        local size_kb
+        size_kb=$(du -sk "$backup" 2>/dev/null | cut -f1)
+        ((keep_size += size_kb))
+    done
+    
     echo ""
-    echo "Backups to keep (${#to_keep[@]}):"
+    show_section_separator "To Keep (${#to_keep[@]} backups, $((keep_size / 1024))MB)"
+    echo ""
     for backup in "${to_keep[@]}"; do
         local backup_name
         backup_name=$(basename "$backup")
         local size
         size=$(du -sh "$backup" 2>/dev/null | cut -f1)
-        echo "  - $backup_name ($size)"
+        echo "   - $backup_name ($size)"
     done
 
     echo ""
-    read -p "Remove ${#to_remove[@]} old backup(s)? (y/N): " -n 1 -r
+    show_section_separator
+    echo ""
+    read -p " Remove ${#to_remove[@]} old backup(s)? (y/N): " -n 1 -r
     echo
+    echo ""
 
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         log_info "Backup cleanup cancelled"
+        echo ""
         return 0
     fi
 
@@ -911,42 +972,56 @@ clean_backups() {
     done
 
     echo ""
-    log_success "Removed $removed_count backup(s)"
-    log_info "Freed $((freed_space / 1024))MiB of disk space"
+    show_command_summary "success" "Removed $removed_count backup(s), freed $((freed_space / 1024))MB"
+    echo ""
 
     return 0
 }
 
 # Uninstall dotfiles
 uninstall_dotfiles() {
-    log_info "Uninstalling dotfiles..."
+    show_command_header "Dotfiles Uninstall"
+    
+    show_section_separator "Removing Packages"
+    echo ""
 
+    local uninstalled_count=0
     for package in "${PACKAGES[@]}"; do
-        if [[ -d "$package" ]]; then
-            log_info "Uninstalling package: $package"
-            stow --verbose --delete --dir="$DOTFILES_DIR" --target="$HOME" "$package" 2>&1 | prefix_output "│ "
-            log_success "Uninstalled $package"
+        if [[ ! -d "$package" ]]; then
+            continue
+        fi
+        
+        if stow --verbose --delete --dir="$DOTFILES_DIR" --target="$HOME" "$package" 2>&1 | indent_section_output; then
+            ((uninstalled_count++))
         fi
     done
 
-    log_success "Dotfiles uninstalled"
+    echo ""
+    show_command_summary "success" "Uninstalled $uninstalled_count package(s)"
+    echo ""
 }
 
 # Main command handlers
 cmd_install() {
-    log_info "Starting dotfiles installation..."
+    local start_time
+    start_time=$(date +%s)
+    
+    show_command_header "Dotfiles Installation"
     INSTALLATION_IN_PROGRESS=true
 
-    log_info "Step 1: Backing up existing files..."
-    if ! backup_existing; then
+    show_numbered_section "1" "Backup Existing Files"
+    if ! backup_existing 2>&1 | indent_section_output; then
+        echo ""
         log_error "Backup failed - aborting installation"
         log_info "Backup directory: $BACKUP_DIR"
         INSTALLATION_IN_PROGRESS=false
         return 1
     fi
+    echo ""
 
-    log_info "Step 2: Running installation pipeline..."
-    if ! run_installation_pipeline; then
+    show_numbered_section "2" "Installation Pipeline"
+    if ! run_installation_pipeline 2>&1 | indent_section_output; then
+        echo ""
         log_error "Installation pipeline failed"
         log_info "Run './dot health' to check installation state"
         INSTALLATION_IN_PROGRESS=false
@@ -954,12 +1029,20 @@ cmd_install() {
     fi
 
     INSTALLATION_IN_PROGRESS=false
-    log_success "Installation completed successfully!"
+    
+    local end_time
+    end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    
     echo ""
-    echo "Next steps:"
-    echo "  1. Restart your terminal or run: source ~/.zshrc"
-    echo "  2. Set zsh as default shell: chsh -s \$(which zsh)"
-    echo "  3. Verify installation: $0 health"
+    show_command_summary "success" "INSTALLED" "$duration"
+    
+    echo ""
+    echo -e "${BLUE}💡 Next steps:${NC}"
+    echo "   1. Restart your terminal or run: source ~/.zshrc"
+    echo "   2. Set zsh as default shell: chsh -s \$(which zsh)"
+    echo "   3. Verify installation: $0 health"
+    echo ""
 
     return 0
 }
@@ -1382,6 +1465,64 @@ check_stow_conflicts() {
     return $issues
 }
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Unified Display Functions
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Display a command header
+show_command_header() {
+    local title="$1"
+    echo ""
+    echo -e "${BLUE}╭──────────────────────────────────────────────────────────╮${NC}"
+    printf "${BLUE}│${NC}  %-56s${BLUE}│${NC}\n" "$title"
+    echo -e "${BLUE}╰──────────────────────────────────────────────────────────╯${NC}"
+    echo ""
+}
+
+# Display a section separator with title
+show_section_separator() {
+    local title="$1"
+    if [[ -n "$title" ]]; then
+        echo -e " ${BLUE}${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    else
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    fi
+}
+
+# Display a numbered section separator
+show_numbered_section() {
+    local num="$1"
+    local title="$2"
+    echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+}
+
+# Display a command summary/result
+show_command_summary() {
+    local status="$1"      # "success" or "info"
+    local message="$2"
+    local duration="$3"     # optional
+    
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    if [[ "$status" == "success" ]]; then
+        if [[ -n "$duration" ]]; then
+            printf " Result: %b${SYMBOL_SUCCESS} ${message}%b" "$GREEN" "$NC"
+            local msg_len=$((10 + ${#message}))  # "Result: ✓ " + message (✓ = 2 cols)
+            local padding=$((47 - msg_len))
+            [[ $padding -lt 1 ]] && padding=1
+            printf "%${padding}s" ""
+            printf "Duration: %.1fs\n" "$duration"
+        else
+            printf " %b${SYMBOL_SUCCESS} ${message}%b\n" "$GREEN" "$NC"
+        fi
+    else
+        printf " %b${SYMBOL_INFO} ${message}%b\n" "$BLUE" "$NC"
+    fi
+    
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
 # Display table header
 show_health_table_header() {
     echo ""
@@ -1477,7 +1618,7 @@ show_health_summary() {
         local visible_length=$((23 + ${#issues_text}))
         local padding=$((42 - visible_length))  # Align with healthy case (23 spaces base)
         [[ $padding -lt 1 ]] && padding=1
-        
+
         printf " Result: %b${SYMBOL_ERROR} UNHEALTHY%b (%s)" "$RED" "$NC" "$issues_text"
         printf "%${padding}s" ""
         printf "Duration: %.1fs\n" "$duration"
@@ -1797,7 +1938,7 @@ cmd_health() {
                 # Check if there's actually output to display
                 local warning_output
                 warning_output=$(echo -e "${check_outputs[$i]}" | grep -E "^(${SYMBOL_WARNING}|${SYMBOL_INFO})")
-                
+
                 if [[ -n "$warning_output" ]]; then
                     if [[ "$shown_warnings" == "false" ]]; then
                         [[ "$shown_errors" == "true" ]] && echo ""
@@ -2083,18 +2224,29 @@ run_installation_pipeline() {
 }
 
 cmd_update() {
-    log_info "Updating dotfiles and configurations..."
+    local start_time
+    start_time=$(date +%s)
+    
+    show_command_header "Dotfiles Update"
 
-    # Update gitignore globals
-    update_gitignore
+    show_numbered_section "1" "Update Global Configurations"
+    update_gitignore 2>&1 | indent_section_output
+    echo ""
 
-    # Update Oh My Zsh
-    update_oh_my_zsh
+    show_numbered_section "2" "Update Oh My Zsh"
+    update_oh_my_zsh 2>&1 | indent_section_output
+    echo ""
 
-    # Reinstall to pick up any changes
-    run_installation_pipeline
-
-    log_success "Update completed successfully!"
+    show_numbered_section "3" "Reinstall Dotfiles"
+    run_installation_pipeline 2>&1 | indent_section_output
+    
+    local end_time
+    end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    
+    echo ""
+    show_command_summary "success" "UPDATED" "$duration"
+    echo ""
 }
 
 cmd_status() {
