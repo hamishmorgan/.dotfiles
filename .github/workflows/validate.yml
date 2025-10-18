@@ -36,7 +36,9 @@ jobs:
         echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
 
     - name: Install shellcheck
-      run: sudo apt-get install -y shellcheck
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
 
     - name: Install markdownlint and run linting
       run: |
@@ -188,7 +190,9 @@ jobs:
         echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
 
     - name: Install dependencies
-      run: sudo apt-get install -y stow git tmux zsh
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y stow git tmux zsh
 
     - name: Make scripts executable
       run: chmod +x dot tests/lib/*.sh
@@ -259,7 +263,8 @@ jobs:
         SKIP_DEPENDENCY_CHECK: "true"
       run: |
         cd ${{ github.workspace }}
-        ./dot install
+        # Run with verbose output for easier debugging
+        ./dot install -vv
 
     - name: Verify health
       run: |

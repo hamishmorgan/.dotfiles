@@ -359,8 +359,8 @@ gh run rerun <RUN_ID> --failed
 **Get run ID from PR:**
 
 ```bash
-# Extract run URL from PR checks
-gh pr checks <PR_NUMBER> | grep -oP 'runs/\K[0-9]+'
+# Extract run ID from PR using gh and jq (portable)
+gh pr view <PR_NUMBER> --json statusCheckRollup --jq '.statusCheckRollup[0].detailsUrl' | grep -oE '[0-9]+$'
 ```
 
 ### MCP GitHub Tools Limitations

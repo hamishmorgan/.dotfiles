@@ -19,8 +19,8 @@ run_installation() {
     # Make dot script executable
     chmod +x ./dot
     
-    # Run installation
-    if ./dot install; then
+    # Run installation with verbose output for easier debugging in CI
+    if ./dot install -vv; then
         log_test_success "Installation completed successfully"
         return 0
     else
