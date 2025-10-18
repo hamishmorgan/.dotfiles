@@ -159,6 +159,10 @@ jobs:
         echo "Bash version: $BASH_VERSION"
         [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Error: Not running Bash 3.2" && exit 1)
 
+    - name: Clean up apt cache lock files
+      if: always()
+      run: rm -f ~/.apt-cache/archives/lock
+
   validate-ubuntu:
     name: Ubuntu Latest (System Bash)
     runs-on: ubuntu-latest
@@ -222,6 +226,10 @@ jobs:
       run: |
         cd ${{ github.workspace }}
         ./tests/lib/verify-health.sh true
+
+    - name: Clean up apt cache lock files
+      if: always()
+      run: rm -f ~/.apt-cache/archives/lock
 
   validate-macos:
     name: macOS Latest (System Bash)
