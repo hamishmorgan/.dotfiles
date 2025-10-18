@@ -1393,7 +1393,7 @@ show_health_check_spinner() {
     local category="$2"
     
     # Show spinner - ⠿ is a wide character (2 cols)
-    printf " %-2s %-25s ${BLUE}⠿ Checking...${NC}\r" "$num." "$category"
+    printf " %2s %-25s ${BLUE}⠿ Checking...${NC}\r" "$num." "$category"  # Right-align number
 }
 
 # Display table row
@@ -1430,7 +1430,7 @@ show_health_table_row() {
     # "⚠ Warn" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
     # "ℹ Info" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
     # "✗ Fail" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
-    printf "\r\033[K %-2s %-25s " "$num." "$category"
+    printf "\r\033[K %2s %-25s " "$num." "$category"  # Right-align number
     printf "%b%s%b     " "$status_color" "$status_text" "$NC"  # 5 spaces for padding
     printf "%s\n" "$details"
 }
@@ -1443,11 +1443,14 @@ show_health_summary() {
     local duration="$4"
 
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
+    
     if [[ "$status" == "healthy" ]]; then
-        # "Result: ✓ HEALTHY" = 18 visible chars, pad to 47 chars before "Duration:"
+        # Border = 60 chars total
+        # " Result: ✓ HEALTHY" = 1 + 8 + 2 (wide ✓) + 8 = 19 visual cols
+        # "Duration: X.Xs" = 14 chars
+        # Padding: 60 - 19 - 14 = 27 spaces
         printf " Result: %b✓ HEALTHY%b" "$GREEN" "$NC"
-        printf "%29s" ""  # 47 - 18 = 29 spaces
+        printf "%27s" ""
         printf "Duration: %.1fs\n" "$duration"
     else
         local issues_text="$error_count error"
@@ -1456,16 +1459,17 @@ show_health_summary() {
             issues_text="$issues_text, $warn_count warning"
             [[ $warn_count -ne 1 ]] && issues_text="${issues_text}s"
         fi
-        # "Result: ✗ UNHEALTHY (text)" - calculate padding based on visible length
-        local visible_length=$((21 + ${#issues_text}))  # "Result: ✗ UNHEALTHY ()" + issues_text
-        local padding=$((47 - visible_length))
+        # " Result: ✗ UNHEALTHY (text)" - calculate padding to fit in 60 chars
+        # 1 + 8 + 2 (wide ✗) + 10 ("UNHEALTHY ") + 1 ("(") + text + 1 (")") = 23 + text
+        local visible_length=$((23 + ${#issues_text}))
+        local padding=$((46 - visible_length))  # 60 - 14 (duration text) = 46 max before duration
         [[ $padding -lt 1 ]] && padding=1
-
+        
         printf " Result: %b✗ UNHEALTHY%b (%s)" "$RED" "$NC" "$issues_text"
         printf "%${padding}s" ""
         printf "Duration: %.1fs\n" "$duration"
     fi
-
+    
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
