@@ -127,9 +127,6 @@ if [ "$ZSH_HOST_OS" = "linux" ]; then
   source "$HOME/.zshrc.linux"
 fi
 
-# Custom aliases
-alias cursor='~/Applications/cursor.AppImage --no-sandbox'
-
 # Load dotfiles management function and completions from dot script
 if [ -f "$HOME/.dotfiles/dot" ]; then
     source <("$HOME/.dotfiles/dot" --completion zsh)
