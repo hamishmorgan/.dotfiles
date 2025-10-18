@@ -259,8 +259,16 @@ jobs:
       run: |
         cd ${{ github.workspace }}
         # dot script works with macOS default bash 3.2
-        set -x  # Enable debug output
-        ./tests/lib/run-installation.sh
+        # Run with maximum verbosity to see errors
+        ./dot install -vv || {
+          echo "Installation failed. Checking prerequisites..."
+          which stow
+          which git
+          which tmux
+          which zsh
+          echo "PATH: $PATH"
+          exit 1
+        }
 
     - name: Verify health
       run: |
