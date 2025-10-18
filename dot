@@ -351,7 +351,7 @@ check_tool_version() {
 #   verbosity 2 (-vv): Show version details for each tool
 check_dependencies() {
     local verbosity="${1:-0}"
-    
+
     log_info "Checking dependencies..."
 
     local missing_deps=()
@@ -434,7 +434,7 @@ check_dependencies() {
     fi
 
     log_success "All dependencies satisfied"
-    
+
     # Show summary at verbosity 1+
     if [[ $verbosity -ge 1 ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
         log_info "Total: ${#satisfied_deps[@]} dependencies satisfied"
@@ -2379,7 +2379,11 @@ cmd_health_verbose() {
     # Note: Orphaned symlinks are warnings, not errors
 
     # 10. Dependencies
-    if ! run_health_check "10" "Dependencies" check_dependencies; then
+    # Pass verbosity 1 to show each tool being checked in verbose health mode
+    check_dependencies_verbose() {
+        check_dependencies 1
+    }
+    if ! run_health_check "10" "Dependencies" check_dependencies_verbose; then
         ((total_errors++))
     fi
 
