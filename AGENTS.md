@@ -69,6 +69,51 @@ Branches provide superior flexibility with standard git tooling.
 - Use explicit error handling instead of `set -e` (controlled failure handling)
 - Enable bash safety features: `shopt -s nullglob extglob`
 
+### Bash 3.2 Compatibility
+
+Required for macOS default bash support.
+
+**Prohibited features (Bash 4.0+):**
+
+```bash
+# ❌ Associative arrays
+declare -A my_map
+my_map[key]=value
+
+# ✅ Use functions instead
+get_value() {
+    case "$1" in
+        key1) echo "value1" ;;
+        key2) echo "value2" ;;
+    esac
+}
+
+# ❌ mapfile command
+mapfile -t lines < file
+
+# ✅ Use while-read loop
+lines=()
+while IFS= read -r line; do
+    lines+=("$line")
+done < file
+
+# ❌ &>> redirect operator
+command &>> file
+
+# ✅ Use separate redirects
+command > file 2>&1
+```
+
+**Testing Bash 3.2 compatibility:**
+
+```bash
+# Local CI test
+./tests/run-local-ci.sh bash32
+
+# Manual test with bash 3.2
+docker run -it dotfiles-test-bash32 bash
+```
+
 ## File Organization
 
 - Package-specific files go in their respective directories (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/)

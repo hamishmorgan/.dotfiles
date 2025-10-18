@@ -36,6 +36,59 @@ jobs:
     - name: Run smoke tests
       run: ./tests/smoke-test.sh
 
+  validate-bash32:
+    name: Validate on Bash 3.2
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install Bash 3.2
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential stow git tmux zsh
+        
+        # Download and build bash 3.2.57
+        cd /tmp
+        curl -L https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz | tar xz
+        cd bash-3.2.57
+        ./configure --prefix=/usr/local
+        make
+        sudo make install
+        
+        # Verify version
+        /usr/local/bin/bash --version
+
+    - name: Create test secrets
+      shell: /usr/local/bin/bash {0}
+      run: |
+        cd ${{ github.workspace }}
+        chmod +x tests/lib/*.sh
+        ./tests/lib/create-secrets.sh
+
+    - name: Run installation with Bash 3.2
+      shell: /usr/local/bin/bash {0}
+      run: |
+        cd ${{ github.workspace }}
+        chmod +x dot
+        ./tests/lib/run-installation.sh
+
+    - name: Verify health with Bash 3.2
+      shell: /usr/local/bin/bash {0}
+      run: |
+        cd ${{ github.workspace }}
+        ./tests/lib/verify-health.sh true
+
+    - name: Verify bash version used
+      shell: /usr/local/bin/bash {0}
+      run: |
+        echo "Bash version: $BASH_VERSION"
+        [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Error: Not running Bash 3.2" && exit 1)
+
   validate-ubuntu:
     runs-on: ubuntu-latest
     needs: lint

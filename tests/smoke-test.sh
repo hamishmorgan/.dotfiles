@@ -126,6 +126,28 @@ else
     exit 1
 fi
 
+# Test 11: No bash 4.0+ features used
+echo -n "Test 11: No bash 4.0+ features... "
+# Exclude comments and look for actual usage of bash 4.0+ features
+if grep -E '^\s*[^#]*\b(declare -A|mapfile|readarray)\b' "$DOTFILES_DIR/dot" >/dev/null 2>&1; then
+    echo -e "${RED}✗${NC}"
+    echo "Error: Bash 4.0+ features detected:"
+    grep -n -E '^\s*[^#]*\b(declare -A|mapfile|readarray)\b' "$DOTFILES_DIR/dot"
+    exit 1
+else
+    echo -e "${GREEN}✓${NC}"
+fi
+
+# Test 12: Bash version check present
+echo -n "Test 12: Bash version check present... "
+if grep -q 'BASH_VERSINFO' "$DOTFILES_DIR/dot" && \
+   grep -q 'requires bash 3.2' "$DOTFILES_DIR/dot"; then
+    echo -e "${GREEN}✓${NC}"
+else
+    echo -e "${RED}✗${NC}"
+    exit 1
+fi
+
 echo ""
 echo -e "${GREEN}All smoke tests passed!${NC}"
 
