@@ -128,13 +128,12 @@ fi
 
 # Test 11: No bash 4.0+ features used
 echo -n "Test 11: No bash 4.0+ features... "
-# Exclude comments and look for actual usage of bash 4.0+ features
-# The following regex searches for usage of Bash 4.0+ features (declare -A, mapfile, readarray)
-# outside of commented lines, to ensure compatibility with Bash 3.2.
-if grep -E '^\s*[^#]*\b(declare -A|mapfile|readarray)\b' "$DOTFILES_DIR/dot" >/dev/null 2>&1; then
+# Strip comments and look for Bash 4.0+ features (declare -A, mapfile, readarray)
+# This catches features even after inline comments: echo hello # comment; declare -A arr
+if sed 's/#.*//' "$DOTFILES_DIR/dot" | grep -E '\b(declare -A|mapfile|readarray)\b' >/dev/null 2>&1; then
     echo -e "${RED}✗${NC}"
     echo "Error: Bash 4.0+ features detected:"
-    grep -n -E '^\s*[^#]*\b(declare -A|mapfile|readarray)\b' "$DOTFILES_DIR/dot"
+    sed 's/#.*//' "$DOTFILES_DIR/dot" | grep -n -E '\b(declare -A|mapfile|readarray)\b'
     exit 1
 else
     echo -e "${GREEN}✓${NC}"
