@@ -83,9 +83,8 @@ jobs:
     - name: Cache apt packages
       uses: actions/cache@v4
       with:
-        path: |
-          /var/cache/apt/archives
-          /var/lib/apt/lists
+        # Only cache downloaded packages, not package lists (avoids stale indices and permission issues)
+        path: /var/cache/apt/archives
         key: ${{ runner.os }}-apt-bash32-${{ hashFiles('dot') }}
         restore-keys: |
           ${{ runner.os }}-apt-bash32-
@@ -183,9 +182,8 @@ jobs:
     - name: Cache apt packages
       uses: actions/cache@v4
       with:
-        path: |
-          /var/cache/apt/archives
-          /var/lib/apt/lists
+        # Only cache downloaded packages, not package lists (avoids stale indices and permission issues)
+        path: /var/cache/apt/archives
         key: ${{ runner.os }}-apt-ubuntu-${{ hashFiles('dot') }}
         restore-keys: |
           ${{ runner.os }}-apt-ubuntu-
