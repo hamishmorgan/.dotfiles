@@ -117,11 +117,15 @@ cd ~/.dotfiles
 
 ### Health Check
 
-The health check performs comprehensive diagnostics:
+The health check performs comprehensive diagnostics in a clean, scannable table format:
 
 ```bash
-./dot health
+./dot health        # Table format (quick overview)
+./dot health -v     # Verbose mode (detailed output)
 ```
+
+The table format shows all checks at a glance with Pass/Fail/Warn status and identifies
+maintenance items that need attention.
 
 The health check performs 11 categories of checks:
 
