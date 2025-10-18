@@ -19,11 +19,32 @@ The `system` package is stowed first to ensure `.stow-global-ignore` is in place
 
 ### Branch Strategy
 
+Branch-based profile management provides configuration flexibility without runtime complexity.
+
 - **main branch**: Personal configurations for home use
 - **shopify branch**: Work environment configurations (Shopify-specific tools and settings)
   - Rebase on main to pull in general improvements
   - Allow dev tools to modify files freely without affecting main
   - Push auto-generated changes without concern
+
+**Switching contexts:**
+
+```bash
+git checkout shopify    # Switch to work environment
+git checkout main       # Switch to personal environment
+```
+
+**Why branches instead of runtime profiles:**
+
+- Full git version control for each configuration set
+- Complete flexibility (different files, configs, templates, dependencies)
+- Simpler workflow (standard git commands)
+- No state management or profile tracking files
+- Better collaboration (work branch shareable with team)
+- Leverage git rebase to sync improvements between profiles
+
+Runtime profile systems add unnecessary complexity for single-user dotfiles.
+Branches provide superior flexibility with standard git tooling.
 
 ## Documentation Standards
 
