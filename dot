@@ -299,8 +299,63 @@ get_min_version() {
 }
 
 # Compare semantic versions (returns 0 if $1 >= $2)
+# Works on both Linux (GNU sort) and macOS (BSD sort)
 version_ge() {
-    printf '%s\n%s\n' "$2" "$1" | sort -V -C
+    local v1="$1"
+    local v2="$2"
+    
+    # Try GNU sort -V (Linux)
+    if printf '%s\n%s\n' "$v2" "$v1" | sort -V -C 2>/dev/null; then
+        return 0
+    elif [[ $? -eq 2 ]]; then
+        # Exit code 2 means sort -V not supported, try gsort (Homebrew)
+        if command -v gsort >/dev/null 2>&1; then
+            printf '%s\n%s\n' "$v2" "$v1" | gsort -V -C
+            return $?
+        fi
+        
+        # Fall back to bash-native comparison
+        _version_ge_fallback "$v1" "$v2"
+        return $?
+    else
+        # Exit code 1 means sort -V worked but comparison failed
+        return 1
+    fi
+}
+
+# Fallback version comparison for systems without sort -V (bash 3.2 compatible)
+# Returns 0 if $1 >= $2
+_version_ge_fallback() {
+    local v1="$1"
+    local v2="$2"
+    
+    # Split versions by dots
+    IFS='.' read -ra ver1 <<< "$v1"
+    IFS='.' read -ra ver2 <<< "$v2"
+    
+    # Compare each component
+    local max_len=${#ver1[@]}
+    [[ ${#ver2[@]} -gt $max_len ]] && max_len=${#ver2[@]}
+    
+    local i
+    for ((i=0; i<max_len; i++)); do
+        local num1="${ver1[i]:-0}"
+        local num2="${ver2[i]:-0}"
+        
+        # Strip letters from end (e.g., "3a" -> "3")
+        num1="${num1%%[a-z]*}"
+        num2="${num2%%[a-z]*}"
+        
+        # Compare numerically
+        if ((10#$num1 > 10#$num2)); then
+            return 0
+        elif ((10#$num1 < 10#$num2)); then
+            return 1
+        fi
+    done
+    
+    # All components equal
+    return 0
 }
 
 # Check specific tool version and return current version on stdout
@@ -375,17 +430,25 @@ check_dependencies() {
                 actual_version=$(check_tool_version "$dep" "$min_version" 2>&1)
                 local check_status=$?
 
-                if [[ $check_status -ne 0 ]] && [[ -n "$actual_version" ]]; then
-                    outdated_deps+=("$dep (${actual_version} < ${min_version})")
-                    if [[ $verbosity -ge 1 ]]; then
-                        log_warning "Checking $dep... version too old (${actual_version} < ${min_version})"
-                    fi
-                else
+                if [[ $check_status -eq 0 ]]; then
+                    # Version is sufficient
                     satisfied_deps+=("$dep:$actual_version:$min_version")
                     if [[ $verbosity -ge 2 ]]; then
                         log_success "Checking $dep... ${actual_version} (>= ${min_version})"
                     elif [[ $verbosity -ge 1 ]]; then
                         log_success "Checking $dep... ${actual_version}"
+                    fi
+                elif [[ -n "$actual_version" ]]; then
+                    # Version was determined but is too old
+                    outdated_deps+=("$dep (${actual_version} < ${min_version})")
+                    if [[ $verbosity -ge 1 ]]; then
+                        log_warning "Checking $dep... version too old (${actual_version} < ${min_version})"
+                    fi
+                else
+                    # Could not determine version - treat as outdated
+                    outdated_deps+=("$dep (unknown < ${min_version})")
+                    if [[ $verbosity -ge 1 ]]; then
+                        log_warning "Checking $dep... unable to determine version"
                     fi
                 fi
             else
@@ -430,7 +493,7 @@ check_dependencies() {
     fi
 
     if $has_errors; then
-        exit 1
+        return 1
     fi
 
     log_success "All dependencies satisfied"
@@ -439,6 +502,8 @@ check_dependencies() {
     if [[ $verbosity -ge 1 ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
         log_info "Total: ${#satisfied_deps[@]} dependencies satisfied"
     fi
+    
+    return 0
 }
 
 # Detect platform
@@ -2310,9 +2375,10 @@ run_health_check() {
     echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     $check_function 2>&1 | indent_section_output
-    local result=$?
+    # Capture exit code from check_function (first command in pipe)
+    local result=${PIPESTATUS[0]}
     echo ""
-    return $result
+    return "$result"
 }
 
 # Verbose health check (detailed output with unified design)
@@ -2493,7 +2559,8 @@ run_installation_pipeline() {
     local verbosity="${1:-0}"
 
     if ! check_dependencies "$verbosity"; then
-        return 1
+        log_error "Cannot proceed without required dependencies"
+        exit 1
     fi
 
     if ! init_submodules; then
