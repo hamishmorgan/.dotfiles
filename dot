@@ -729,6 +729,18 @@ show_status() {
                 local target
                 target=$(readlink "$HOME/$file")
                 echo -e "  ${GREEN}✓${NC} $file -> $target"
+            elif [[ -d "$HOME/$file" ]]; then
+                # Check if directory contains stow-managed files
+                local stow_managed=false
+                if find "$HOME/$file" -maxdepth 3 -type l -exec readlink {} \; 2>/dev/null | grep -q ".dotfiles/$package"; then
+                    stow_managed=true
+                fi
+                
+                if $stow_managed; then
+                    echo -e "  ${GREEN}✓${NC} $file (stow-managed directory)"
+                else
+                    echo -e "  ${YELLOW}⚠${NC} $file (directory, not stow-managed)"
+                fi
             elif [[ -e "$HOME/$file" ]]; then
                 echo -e "  ${YELLOW}⚠${NC} $file (exists but not a symlink)"
             else
