@@ -735,7 +735,7 @@ show_status() {
                 if find "$HOME/$file" -maxdepth 3 -type l -exec readlink {} \; 2>/dev/null | grep -q ".dotfiles/$package"; then
                     stow_managed=true
                 fi
-                
+
                 if $stow_managed; then
                     echo -e "  ${GREEN}✓${NC} $file (stow-managed directory)"
                 else
@@ -754,14 +754,38 @@ show_status() {
     local backup_dirs=()
     while IFS= read -r dir; do
         backup_dirs+=("$dir")
-    done < <(get_backup_dirs)
+    done < <(get_backup_dirs | sort -r)
 
-    if [[ ${#backup_dirs[@]} -gt 0 ]]; then
+    local total_backups=${#backup_dirs[@]}
+
+    if [[ $total_backups -eq 0 ]]; then
+        echo "  No backup directories found"
+    else
+        # Calculate total size of all backups first
+        local total_size=0
         for dir in "${backup_dirs[@]}"; do
+            local size_kb
+            size_kb=$(du -sk "$dir" 2>/dev/null | cut -f1)
+            ((total_size += size_kb))
+        done
+
+        # Show only the most recent 5 backups
+        local show_count=$((total_backups < 5 ? total_backups : 5))
+
+        for ((i=0; i<show_count; i++)); do
+            local dir="${backup_dirs[$i]}"
             echo "  $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
         done
-    else
-        echo "  No backup directories found"
+
+        if [[ $total_backups -gt 5 ]]; then
+            echo "  ... and $((total_backups - 5)) older backup(s)"
+        fi
+
+        echo ""
+        echo "  Total: $total_backups backup(s) using $((total_size / 1024))MB"
+        if [[ $total_backups -gt 10 ]]; then
+            echo "  Run './dot clean' to remove old backups"
+        fi
     fi
 }
 
