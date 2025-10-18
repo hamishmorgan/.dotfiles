@@ -300,3 +300,75 @@ For all code changes:
 7. **Merge**: Only merge after both CI and Copilot are satisfied
 
 This ensures code quality through automated testing and AI review.
+
+## Monitoring CI and GitHub Actions
+
+Use GitHub CLI (`gh`) to monitor CI status and troubleshoot failures.
+
+### Check PR Status
+
+```bash
+# Quick status overview
+gh pr checks <PR_NUMBER>
+
+# View detailed check information with URLs
+gh pr view <PR_NUMBER> --json statusCheckRollup --jq '.statusCheckRollup[] | "\(.name)\t\(.conclusion)\t\(.detailsUrl)"'
+
+# Check overall PR status
+gh pr view <PR_NUMBER> --json statusCheckRollup,state
+```
+
+### View CI Logs
+
+```bash
+# View logs for failed jobs only
+gh run view <RUN_ID> --log-failed
+
+# View logs for specific job
+gh run view <RUN_ID> --log --job <JOB_ID>
+
+# List recent workflow runs
+gh run list --workflow=validate.yml --limit 5
+
+# Watch run in real-time
+gh run watch <RUN_ID>
+```
+
+### Common Patterns
+
+**After pushing changes:**
+
+```bash
+# Wait for CI to start, then check status
+sleep 30 && gh pr checks <PR_NUMBER>
+
+# Watch run progress
+gh run watch  # Watches latest run
+```
+
+**When CI fails:**
+
+```bash
+# Get failed job logs
+gh run view --log-failed
+
+# Re-run failed jobs (after fixing)
+gh run rerun <RUN_ID> --failed
+```
+
+**Get run ID from PR:**
+
+```bash
+# Extract run URL from PR checks
+gh pr checks <PR_NUMBER> | grep -oP 'runs/\K[0-9]+'
+```
+
+### MCP GitHub Tools Limitations
+
+While MCP GitHub tools provide rich PR/issue management:
+
+- **Use `gh` CLI for CI monitoring**: MCP tools don't provide formatted log output
+- **Use `gh` for workflow runs**: Real-time watching and log filtering unavailable via MCP
+- **Use MCP for PR management**: Creating, updating, reviewing, merging PRs
+
+**Best practice:** Combine both tools - MCP for PR operations, `gh` for CI monitoring.
