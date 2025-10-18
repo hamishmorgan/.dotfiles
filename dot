@@ -1419,19 +1419,26 @@ show_health_table_row() {
             status_color="$YELLOW"
             ;;
         info)
-            status_text="ℹ Info"
+            status_text="∙ Info"
             status_color="$BLUE"
             ;;
     esac
-
+    
     # Clear the spinner line and show result
-    # Note: Emoji chars (✓✗⚠ℹ) are wide (2 cols each), but text is: "X Pass/Fail/Warn/Info"
+    # Note: Emoji chars (✓✗⚠) are wide (2 cols each), ∙ is regular (1 col)
     # "✓ Pass" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
     # "⚠ Warn" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
-    # "ℹ Info" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
+    # "∙ Info" visually = 1+1+4 = 6 cols, need 12 total = 6 more spaces
     # "✗ Fail" visually = 2+1+4 = 7 cols, need 12 total = 5 more spaces
     printf "\r\033[K %3s %-25s " "$num." "$category"  # Right-align number with dot (max "11.")
-    printf "%b%s%b     " "$status_color" "$status_text" "$NC"  # 5 spaces for padding
+    
+    # Add extra space for info status since ∙ is narrower than emoji
+    if [[ "$status" == "info" ]]; then
+        printf "%b%s%b      " "$status_color" "$status_text" "$NC"  # 6 spaces for info
+    else
+        printf "%b%s%b     " "$status_color" "$status_text" "$NC"  # 5 spaces for others
+    fi
+    
     printf "%s\n" "$details"
 }
 
@@ -1831,6 +1838,11 @@ cmd_health() {
     fi
 }
 
+# Indent output for verbose mode sections
+indent_section_output() {
+    sed 's/^/   /'
+}
+
 # Verbose health check (detailed output with unified design)
 cmd_health_verbose() {
     # Track timing
@@ -1851,7 +1863,7 @@ cmd_health_verbose() {
     echo -e " ${BLUE}1. Symlink Integrity${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     for package in "${PACKAGES[@]}"; do
-        validate_package "$package" || ((total_errors++))
+        validate_package "$package" 2>&1 | indent_section_output || ((total_errors++))
     done
     echo ""
     
@@ -1859,7 +1871,7 @@ cmd_health_verbose() {
     echo -e " ${BLUE}2. Configuration Syntax${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     local syntax_result
-    validate_config_syntax && syntax_result=0 || syntax_result=$?
+    validate_config_syntax 2>&1 | indent_section_output && syntax_result=0 || syntax_result=$?
     ((total_errors += syntax_result))
     echo ""
     
@@ -1867,7 +1879,7 @@ cmd_health_verbose() {
     echo -e " ${BLUE}3. Submodule Health${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     local submodule_result
-    check_submodule_health && submodule_result=0 || submodule_result=$?
+    check_submodule_health 2>&1 | indent_section_output && submodule_result=0 || submodule_result=$?
     ((total_errors += submodule_result))
     echo ""
     
@@ -1875,7 +1887,7 @@ cmd_health_verbose() {
     echo -e " ${BLUE}4. Git Repository${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     local git_result
-    check_git_repo_status && git_result=0 || git_result=$?
+    check_git_repo_status 2>&1 | indent_section_output && git_result=0 || git_result=$?
     ((total_warnings += git_result))
     echo ""
     
@@ -1883,7 +1895,7 @@ cmd_health_verbose() {
     echo -e " ${BLUE}5. Template Consistency${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     local template_result
-    check_template_consistency && template_result=0 || template_result=$?
+    check_template_consistency 2>&1 | indent_section_output && template_result=0 || template_result=$?
     ((total_warnings += template_result))
     echo ""
     
@@ -1891,7 +1903,7 @@ cmd_health_verbose() {
     echo -e " ${BLUE}6. File Permissions${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     local perm_result
-    check_file_permissions && perm_result=0 || perm_result=$?
+    check_file_permissions 2>&1 | indent_section_output && perm_result=0 || perm_result=$?
     ((total_errors += perm_result))
     echo ""
     
@@ -1899,7 +1911,7 @@ cmd_health_verbose() {
     echo -e " ${BLUE}7. Shell Integration${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     local shell_result
-    check_shell_integration && shell_result=0 || shell_result=$?
+    check_shell_integration 2>&1 | indent_section_output && shell_result=0 || shell_result=$?
     ((total_warnings += shell_result))
     echo ""
     
@@ -1907,24 +1919,23 @@ cmd_health_verbose() {
     echo -e " ${BLUE}8. Stow Conflicts${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     local stow_result
-    check_stow_conflicts && stow_result=0 || stow_result=$?
+    check_stow_conflicts 2>&1 | indent_section_output && stow_result=0 || stow_result=$?
     ((total_errors += stow_result))
     echo ""
     
     # 9. Orphaned symlinks
     echo -e " ${BLUE}9. Orphaned Symlinks${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    check_orphaned_symlinks
+    check_orphaned_symlinks 2>&1 | indent_section_output
     # Note: Orphaned symlinks are warnings, not errors
     echo ""
     
     # 10. Dependencies
     echo -e " ${BLUE}10. Dependencies${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    if check_dependencies 2>/dev/null; then
-        log_success "All dependencies satisfied"
+    if check_dependencies 2>&1 | indent_section_output; then
+        :
     else
-        log_warning "Some dependencies missing (see above)"
         ((total_errors++))
     fi
     echo ""
@@ -1932,41 +1943,41 @@ cmd_health_verbose() {
     # 11. Backup health
     echo -e " ${BLUE}11. Backup Health${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    check_backup_health
+    check_backup_health 2>&1 | indent_section_output
     echo ""
-    
+
     # Calculate duration
     local end_time
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    
+
     # Show summary using same format as regular mode
     if [[ $total_errors -eq 0 ]]; then
         show_health_summary "healthy" 0 "$total_warnings" "$duration"
     else
         show_health_summary "unhealthy" "$total_errors" "$total_warnings" "$duration"
     fi
-    
+
     # Show maintenance items if any
     local backup_count=0
     while IFS= read -r dir; do
         [[ -z "$dir" ]] && continue
         ((backup_count++))
     done < <(get_backup_dirs)
-    
+
     local orphaned_count=0
     orphaned_count=$(find "$HOME" -maxdepth 1 -type l -name ".*" 2>/dev/null | while IFS= read -r link; do
         [[ -L "$link" ]] && [[ ! -e "$link" ]] && echo 1
     done | wc -l)
-    
+
     if [[ $orphaned_count -gt 0 || $backup_count -gt 10 ]]; then
         echo ""
         echo -e "${YELLOW}⚠ Maintenance Items:${NC}"
-        
+
         if [[ $orphaned_count -gt 0 ]]; then
             echo "  • $orphaned_count orphaned symlink(s) (non-critical)"
         fi
-        
+
         if [[ $backup_count -gt 10 ]]; then
             local backup_size=0
             while IFS= read -r dir; do
@@ -1978,11 +1989,11 @@ cmd_health_verbose() {
             echo "  • $backup_count backups using $((backup_size / 1024))MB - run './dot clean' to free space"
         fi
     fi
-    
+
     echo ""
     echo -e "${BLUE}💡 Tip: Run './dot health' for quick summary view${NC}"
     echo ""
-    
+
     # Return appropriate exit code
     if [[ $total_errors -eq 0 ]]; then
         return 0
