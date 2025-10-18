@@ -51,7 +51,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential stow git tmux zsh
-        
+
         # Download and build bash 3.2.57
         cd /tmp
         curl -L https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz | tar xz
@@ -59,7 +59,7 @@ jobs:
         ./configure --prefix=/usr/local
         make
         sudo make install
-        
+
         # Verify version
         /usr/local/bin/bash --version
 
@@ -87,7 +87,7 @@ jobs:
       shell: /usr/local/bin/bash {0}
       run: |
         echo "Bash version: $BASH_VERSION"
-        [[ "$BASH_VERSION" =~ ^3\\.2 ]] || (echo "Error: Not running Bash 3.2" && exit 1)
+        [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Error: Not running Bash 3.2" && exit 1)
 
   validate-ubuntu:
     runs-on: ubuntu-latest
