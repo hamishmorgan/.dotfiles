@@ -781,6 +781,73 @@ get_backup_dirs() {
     printf '%s\n' "${backup_dirs[@]}"
 }
 
+# Get backup statistics (count and total size)
+# Returns: "count size_kb" (space-separated)
+# Usage: read -r count size_kb <<< "$(get_backup_stats)"
+get_backup_stats() {
+    local count=0
+    local total_size=0
+    
+    while IFS= read -r dir; do
+        [[ -z "$dir" ]] && continue
+        ((count++))
+        local size
+        size=$(du -sk "$dir" 2>/dev/null | cut -f1)
+        ((total_size += size))
+    done < <(get_backup_dirs)
+    
+    echo "$count $total_size"
+}
+
+# Count orphaned symlinks in home and .config directories
+# Returns: count of orphaned symlinks
+count_orphaned_symlinks() {
+    local count=0
+    
+    # Check home directory dotfiles
+    while IFS= read -r link; do
+        [[ -L "$link" ]] && [[ ! -e "$link" ]] && ((count++))
+    done < <(find "$HOME" -maxdepth 1 -type l -name ".*" 2>/dev/null)
+    
+    # Check .config directory
+    if [[ -d "$HOME/.config" ]]; then
+        while IFS= read -r link; do
+            [[ -L "$link" ]] && [[ ! -e "$link" ]] && ((count++))
+        done < <(find "$HOME/.config" -maxdepth 2 -type l 2>/dev/null)
+    fi
+    
+    echo "$count"
+}
+
+# Show installation summary (used by install and update at verbosity 0)
+show_installation_summary() {
+    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Dependencies satisfied"
+    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Submodules initialized"
+    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Templates processed"
+    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Secret configs merged"
+    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Packages installed"
+}
+
+# Display a single tip message
+# Usage: show_tip "Run './dot health' to check"
+show_tip() {
+    echo -e "${BLUE}💡 Tip: $1${NC}"
+}
+
+# Display titled tips section with multiple items
+# Usage: show_tips "Title" "Tip 1" "Tip 2" ...
+show_tips() {
+    local title="$1"
+    shift
+    
+    echo ""
+    echo -e "${BLUE}💡 ${title}:${NC}"
+    while [[ $# -gt 0 ]]; do
+        echo "   $1"
+        shift
+    done
+}
+
 # Show installation status
 show_status() {
     show_command_header "Dotfiles Installation Status"
@@ -835,38 +902,33 @@ show_status() {
     show_section_separator "Backups"
     echo ""
 
-    local backup_dirs=()
-    while IFS= read -r dir; do
-        backup_dirs+=("$dir")
-    done < <(get_backup_dirs | sort -r)
+    # Get backup statistics
+    local backup_count backup_size_kb
+    read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
-    local total_backups=${#backup_dirs[@]}
-
-    if [[ $total_backups -eq 0 ]]; then
+    if [[ $backup_count -eq 0 ]]; then
         echo "   No backup directories found"
     else
-        # Calculate total size of all backups first
-        local total_size=0
-        for dir in "${backup_dirs[@]}"; do
-            local size_kb
-            size_kb=$(du -sk "$dir" 2>/dev/null | cut -f1)
-            ((total_size += size_kb))
-        done
+        # Get sorted backup directories for display
+        local backup_dirs=()
+        while IFS= read -r dir; do
+            backup_dirs+=("$dir")
+        done < <(get_backup_dirs | sort -r)
 
         # Show only the most recent 5 backups
-        local show_count=$((total_backups < 5 ? total_backups : 5))
+        local show_count=$((backup_count < 5 ? backup_count : 5))
 
         for ((i=0; i<show_count; i++)); do
             local dir="${backup_dirs[$i]}"
             echo "   $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
         done
 
-        if [[ $total_backups -gt 5 ]]; then
-            echo "   ... and $((total_backups - 5)) older backup(s)"
+        if [[ $backup_count -gt 5 ]]; then
+            echo "   ... and $((backup_count - 5)) older backup(s)"
         fi
 
         echo ""
-        echo "   Total: $total_backups backup(s) using $((total_size / 1024))MB"
+        echo "   Total: $backup_count backup(s) using $((backup_size_kb / 1024))MB"
     fi
 
     echo ""
@@ -875,15 +937,11 @@ show_status() {
     # Show actionable tips
     if [[ $missing_files -gt 0 || $warning_files -gt 0 ]]; then
         echo ""
-        if [[ $missing_files -gt 0 ]]; then
-            echo -e "${BLUE}💡 Tip: Run './dot install' to create missing symlinks${NC}"
-        fi
-        if [[ $total_backups -gt 10 ]]; then
-            echo -e "${BLUE}💡 Tip: Run './dot clean' to remove old backups${NC}"
-        fi
-    elif [[ $total_backups -gt 10 ]]; then
+        [[ $missing_files -gt 0 ]] && show_tip "Run './dot install' to create missing symlinks"
+        [[ $backup_count -gt 10 ]] && show_tip "Run './dot clean' to remove old backups"
+    elif [[ $backup_count -gt 10 ]]; then
         echo ""
-        echo -e "${BLUE}💡 Tip: Run './dot clean' to remove old backups${NC}"
+        show_tip "Run './dot clean' to remove old backups"
     fi
     echo ""
 }
@@ -1067,7 +1125,7 @@ cmd_install() {
     local verbosity="${1:-0}"
     local start_time
     start_time=$(date +%s)
-    
+
     show_command_header "Dotfiles Installation"
     INSTALLATION_IN_PROGRESS=true
 
@@ -1088,14 +1146,10 @@ cmd_install() {
         INSTALLATION_IN_PROGRESS=false
         return 1
     fi
-    
+
     # Show summary for level 0
     if [[ $verbosity -eq 0 ]]; then
-        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Dependencies satisfied"
-        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Submodules initialized"
-        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Templates processed"
-        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Secret configs merged"
-        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Packages installed"
+        show_installation_summary
     fi
     echo ""
 
@@ -1107,11 +1161,10 @@ cmd_install() {
     
     show_command_summary "success" "INSTALLED" "$duration"
     
-    echo ""
-    echo -e "${BLUE}💡 Next steps:${NC}"
-    echo "   1. Restart your terminal or run: source ~/.zshrc"
-    echo "   2. Set zsh as default shell: chsh -s \$(which zsh)"
-    echo "   3. Verify installation: $0 health"
+    show_tips "Next steps" \
+        "1. Restart your terminal or run: source ~/.zshrc" \
+        "2. Set zsh as default shell: chsh -s \$(which zsh)" \
+        "3. Verify installation: $0 health"
     echo ""
 
     return 0
@@ -1925,15 +1978,8 @@ cmd_health() {
 
     # 11. Backup health
     show_health_check_spinner "11" "Backup Health"
-    local backup_count=0
-    local backup_size=0
-    while IFS= read -r dir; do
-        [[ -z "$dir" ]] && continue
-        ((backup_count++))
-        local size
-        size=$(du -sk "$dir" 2>/dev/null | cut -f1)
-        ((backup_size += size))
-    done < <(get_backup_dirs)
+    local backup_count backup_size_kb
+    read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
     if [[ $backup_count -eq 0 ]]; then
         check_statuses+=("pass")
@@ -1942,9 +1988,9 @@ cmd_health() {
         show_health_table_row "11" "Backup Health" "pass" "No backups"
     else
         check_statuses+=("info")
-        check_details+=("$backup_count backups ($((backup_size / 1024))MB)")
+        check_details+=("$backup_count backups ($((backup_size_kb / 1024))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size / 1024))MB)"
+        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / 1024))MB)"
     fi
 
     # Calculate duration
@@ -2039,12 +2085,12 @@ cmd_health() {
         # Show quick fix suggestion
         if [[ $total_errors -gt 0 ]]; then
             echo ""
-            echo -e "${BLUE}💡 Quick fix: Run './dot install' to resolve most issues${NC}"
+            show_tip "Quick fix: Run './dot install' to resolve most issues"
         fi
     fi
 
     echo ""
-    echo -e "${BLUE}💡 Tip: Run './dot health -v' for detailed output${NC}"
+    show_tip "Run './dot health -v' for detailed output"
     echo ""
 
     # Return appropriate exit code
@@ -2081,7 +2127,7 @@ run_with_verbosity() {
     local success_msg="$3"
     shift 3
     # Remaining args are the command to execute
-    
+
     if [[ $verbosity -ge $threshold ]]; then
         # Show detailed output (indented)
         "$@" 2>&1 | indent_section_output
@@ -2110,9 +2156,9 @@ run_step() {
     local error_msg="$6"
     shift 6
     # Remaining args are the command
-    
+
     show_numbered_section "$num" "$title"
-    
+
     if run_with_verbosity "$verbosity" "$threshold" "$success_msg" "$@"; then
         echo ""
         return 0
@@ -2121,6 +2167,21 @@ run_step() {
         log_error "$error_msg"
         return 1
     fi
+}
+
+# Execute a health check section with consistent formatting
+# Usage: run_health_check NUM TITLE CHECK_FUNCTION
+run_health_check() {
+    local num="$1"
+    local title="$2"
+    local check_function="$3"
+    
+    echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    $check_function 2>&1 | indent_section_output
+    local result=$?
+    echo ""
+    return $result
 }
 
 # Verbose health check (detailed output with unified design)
@@ -2148,83 +2209,51 @@ cmd_health_verbose() {
     echo ""
 
     # 2. Configuration syntax
-    echo -e " ${BLUE}2. Configuration Syntax${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
     local syntax_result
-    validate_config_syntax 2>&1 | indent_section_output && syntax_result=0 || syntax_result=$?
+    run_health_check "2" "Configuration Syntax" validate_config_syntax && syntax_result=0 || syntax_result=$?
     ((total_errors += syntax_result))
-    echo ""
 
     # 3. Submodule health
-    echo -e " ${BLUE}3. Submodule Health${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
     local submodule_result
-    check_submodule_health 2>&1 | indent_section_output && submodule_result=0 || submodule_result=$?
+    run_health_check "3" "Submodule Health" check_submodule_health && submodule_result=0 || submodule_result=$?
     ((total_errors += submodule_result))
-    echo ""
 
     # 4. Git repository status
-    echo -e " ${BLUE}4. Git Repository${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
     local git_result
-    check_git_repo_status 2>&1 | indent_section_output && git_result=0 || git_result=$?
+    run_health_check "4" "Git Repository" check_git_repo_status && git_result=0 || git_result=$?
     ((total_warnings += git_result))
-    echo ""
 
     # 5. Template/secret config consistency
-    echo -e " ${BLUE}5. Template Consistency${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
     local template_result
-    check_template_consistency 2>&1 | indent_section_output && template_result=0 || template_result=$?
+    run_health_check "5" "Template Consistency" check_template_consistency && template_result=0 || template_result=$?
     ((total_warnings += template_result))
-    echo ""
 
     # 6. File permissions
-    echo -e " ${BLUE}6. File Permissions${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
     local perm_result
-    check_file_permissions 2>&1 | indent_section_output && perm_result=0 || perm_result=$?
+    run_health_check "6" "File Permissions" check_file_permissions && perm_result=0 || perm_result=$?
     ((total_errors += perm_result))
-    echo ""
 
     # 7. Shell integration
-    echo -e " ${BLUE}7. Shell Integration${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
     local shell_result
-    check_shell_integration 2>&1 | indent_section_output && shell_result=0 || shell_result=$?
+    run_health_check "7" "Shell Integration" check_shell_integration && shell_result=0 || shell_result=$?
     ((total_warnings += shell_result))
-    echo ""
 
     # 8. Stow conflicts
-    echo -e " ${BLUE}8. Stow Conflicts${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
     local stow_result
-    check_stow_conflicts 2>&1 | indent_section_output && stow_result=0 || stow_result=$?
+    run_health_check "8" "Stow Conflicts" check_stow_conflicts && stow_result=0 || stow_result=$?
     ((total_errors += stow_result))
-    echo ""
 
     # 9. Orphaned symlinks
-    echo -e " ${BLUE}9. Orphaned Symlinks${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    check_orphaned_symlinks 2>&1 | indent_section_output
+    run_health_check "9" "Orphaned Symlinks" check_orphaned_symlinks
     # Note: Orphaned symlinks are warnings, not errors
-    echo ""
 
     # 10. Dependencies
-    echo -e " ${BLUE}10. Dependencies${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    if check_dependencies 2>&1 | indent_section_output; then
-        :
-    else
+    if ! run_health_check "10" "Dependencies" check_dependencies; then
         ((total_errors++))
     fi
-    echo ""
 
     # 11. Backup health
-    echo -e " ${BLUE}11. Backup Health${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    check_backup_health 2>&1 | indent_section_output
-    echo ""
+    run_health_check "11" "Backup Health" check_backup_health
 
     # Calculate duration
     local end_time
@@ -2271,7 +2300,7 @@ cmd_health_verbose() {
     fi
 
     echo ""
-    echo -e "${BLUE}💡 Tip: Run './dot health' for quick summary view${NC}"
+    show_tip "Run './dot health' for quick summary view"
     echo ""
 
     # Return appropriate exit code
@@ -2360,7 +2389,7 @@ cmd_update() {
     local verbosity="${1:-0}"
     local start_time
     start_time=$(date +%s)
-    
+
     show_command_header "Dotfiles Update"
 
     # Step 1: Update global configs
@@ -2400,14 +2429,10 @@ cmd_update() {
         log_error "Installation pipeline failed"
         return 1
     fi
-    
+
     # Show summary for level 0
     if [[ $verbosity -eq 0 ]]; then
-        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Dependencies satisfied"
-        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Submodules initialized"
-        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Templates processed"
-        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Secret configs merged"
-        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Packages installed"
+        show_installation_summary
     fi
     echo ""
     
