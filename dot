@@ -1387,13 +1387,22 @@ show_health_table_header() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
+# Display table row with spinner
+show_health_check_spinner() {
+    local num="$1"
+    local category="$2"
+    
+    # Show spinner (⠿ character indicates "checking")
+    printf " %-2s %-25s ${BLUE}⠿ Checking...${NC}\r" "$num." "$category"
+}
+
 # Display table row
 show_health_table_row() {
     local num="$1"
     local category="$2"
     local status="$3"
     local details="$4"
-
+    
     local status_display
     case "$status" in
         pass)
@@ -1409,8 +1418,9 @@ show_health_table_row() {
             status_display="${BLUE}ℹ Info${NC}"
             ;;
     esac
-
-    printf " %-2s %-25s %-12s %s\n" "$num." "$category" "$(echo -e "$status_display")" "$details"
+    
+    # Clear the spinner line and show result
+    printf "\r\033[K %-2s %-25s %-12s %s\n" "$num." "$category" "$(echo -e "$status_display")" "$details"
 }
 
 # Display health summary
@@ -1452,33 +1462,34 @@ count_symlinks() {
 # Comprehensive health check command (table format)
 cmd_health() {
     local verbose="${1:-false}"
-    
+
     # If verbose mode, show the old detailed output
     if [[ "$verbose" == "true" ]]; then
         cmd_health_verbose
         return $?
     fi
-    
+
     # Track timing
     local start_time
     start_time=$(date +%s)
-    
+
     # Initialize result tracking (bash 3.2 compatible - parallel arrays)
     local check_statuses=()
     local check_details=()
     local check_outputs=()
-    
+
     local total_errors=0
     local total_warnings=0
-    
+
     # Display table header immediately
     show_health_table_header
-    
+
     # Run checks and display results progressively
     local output
     local result
 
     # 1. Symlink integrity
+    show_health_check_spinner "1" "Symlink Integrity"
     output=""
     for package in "${PACKAGES[@]}"; do
         if ! validate_package "$package" >/dev/null 2>&1; then
@@ -1486,7 +1497,7 @@ cmd_health() {
             ((total_errors++))
         fi
     done
-    
+
     if [[ -n "$output" ]]; then
         check_statuses+=("fail")
         check_details+=("Validation errors")
@@ -1502,6 +1513,7 @@ cmd_health() {
     fi
 
     # 2. Configuration syntax
+    show_health_check_spinner "2" "Configuration Syntax"
     output=$(validate_config_syntax 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -1516,8 +1528,9 @@ cmd_health() {
         check_outputs+=("")
         show_health_table_row "2" "Configuration Syntax" "pass" "All configs valid"
     fi
-    
+
     # 3. Submodule health
+    show_health_check_spinner "3" "Submodule Health"
     output=$(check_submodule_health 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -1532,8 +1545,9 @@ cmd_health() {
         check_outputs+=("")
         show_health_table_row "3" "Submodule Health" "pass" "Oh My Zsh clean"
     fi
-    
+
     # 4. Git repository status
+    show_health_check_spinner "4" "Git Repository"
     output=$(check_git_repo_status 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -1548,8 +1562,9 @@ cmd_health() {
         check_outputs+=("")
         show_health_table_row "4" "Git Repository" "pass" "Clean, up-to-date"
     fi
-    
+
     # 5. Template/secret config consistency
+    show_health_check_spinner "5" "Template Consistency"
     output=$(check_template_consistency 2>&1)
     result=$?
     local template_count=0
@@ -1566,8 +1581,9 @@ cmd_health() {
         check_outputs+=("")
         show_health_table_row "5" "Template Consistency" "pass" "$template_count template(s) synced"
     fi
-    
+
     # 6. File permissions
+    show_health_check_spinner "6" "File Permissions"
     output=$(check_file_permissions 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -1582,8 +1598,9 @@ cmd_health() {
         check_outputs+=("")
         show_health_table_row "6" "File Permissions" "pass" "Secrets secured"
     fi
-    
+
     # 7. Shell integration
+    show_health_check_spinner "7" "Shell Integration"
     output=$(check_shell_integration 2>&1)
     result=$?
     local shell_name=""
@@ -1592,7 +1609,7 @@ cmd_health() {
     elif [[ -n "$BASH_VERSION" ]]; then
         shell_name="Bash"
     fi
-    
+
     if [[ $result -ne 0 ]]; then
         check_statuses+=("warn")
         check_details+=("Issues detected")
@@ -1605,8 +1622,9 @@ cmd_health() {
         check_outputs+=("")
         show_health_table_row "7" "Shell Integration" "pass" "$shell_name active"
     fi
-    
+
     # 8. Stow conflicts
+    show_health_check_spinner "8" "Stow Conflicts"
     output=$(check_stow_conflicts 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -1621,8 +1639,9 @@ cmd_health() {
         check_outputs+=("")
         show_health_table_row "8" "Stow Conflicts" "pass" "No conflicts"
     fi
-    
+
     # 9. Orphaned symlinks
+    show_health_check_spinner "9" "Orphaned Symlinks"
     output=$(check_orphaned_symlinks 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -1637,8 +1656,9 @@ cmd_health() {
         check_outputs+=("")
         show_health_table_row "9" "Orphaned Symlinks" "pass" "None found"
     fi
-    
+
     # 10. Dependencies
+    show_health_check_spinner "10" "Dependencies"
     if check_dependencies >/dev/null 2>&1; then
         check_statuses+=("pass")
         check_details+=("All satisfied")
@@ -1652,8 +1672,9 @@ cmd_health() {
         ((total_errors++))
         show_health_table_row "10" "Dependencies" "fail" "Missing deps"
     fi
-    
+
     # 11. Backup health
+    show_health_check_spinner "11" "Backup Health"
     local backup_count=0
     local backup_size=0
     while IFS= read -r dir; do
@@ -1663,7 +1684,7 @@ cmd_health() {
         size=$(du -sk "$dir" 2>/dev/null | cut -f1)
         ((backup_size += size))
     done < <(get_backup_dirs)
-    
+
     if [[ $backup_count -eq 0 ]]; then
         check_statuses+=("pass")
         check_details+=("No backups")
@@ -1680,9 +1701,9 @@ cmd_health() {
     local end_time
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    
+
     echo ""
-    
+
     # Show summary
     if [[ $total_errors -eq 0 ]]; then
         show_health_summary "healthy" 0 "$total_warnings" "$duration"
