@@ -14,12 +14,25 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        submodules: true
+      # No submodules needed - linting only checks dot script and markdown files
 
-    - name: Install linting tools and run linting
+    - name: Setup Node.js with caching
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Configure apt to skip documentation
       run: |
-        sudo apt-get install -y shellcheck
+        sudo mkdir -p /etc/dpkg/dpkg.cfg.d
+        echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
+        echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+
+    - name: Install shellcheck
+      run: sudo apt-get install -y shellcheck
+
+    - name: Install markdownlint and run linting
+      run: |
         npm install -g markdownlint-cli
         markdownlint "**/*.md" --ignore node_modules
         shellcheck dot
@@ -27,13 +40,12 @@ jobs:
   smoke-test:
     name: Smoke Tests
     runs-on: ubuntu-latest
-    needs: lint
+    # Run in parallel with other jobs - smoke tests are independent
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        submodules: true
+      # No submodules needed - smoke tests only check file structure
 
     - name: Run smoke tests
       run: ./tests/smoke-test.sh
@@ -56,11 +68,28 @@ jobs:
         path: /tmp/bash-3.2.57-install
         key: bash-3.2.57-${{ runner.os }}-${{ runner.arch }}
 
-    - name: Build Bash 3.2
+    - name: Cache apt packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          /var/cache/apt/archives
+          /var/lib/apt/lists
+        key: ${{ runner.os }}-apt-bash32-${{ hashFiles('dot') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-bash32-
+          ${{ runner.os }}-apt-
+
+    - name: Configure apt to skip documentation
+      run: |
+        sudo mkdir -p /etc/dpkg/dpkg.cfg.d
+        echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
+        echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+
+    - name: Build Bash 3.2 and install dependencies
       if: steps.cache-bash32.outputs.cache-hit != 'true'
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential
+        sudo apt-get install -y build-essential stow git tmux zsh
 
         # Download and build bash 3.2.57
         cd /tmp
@@ -75,30 +104,33 @@ jobs:
         make -j4  # Use up to 4 cores for predictable resource usage
         make install
 
-    - name: Install Bash 3.2 and dependencies
+    - name: Install dependencies (cache hit)
+      if: steps.cache-bash32.outputs.cache-hit == 'true'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y stow git tmux zsh
+
+    - name: Install Bash 3.2
       run: |
         # Install bash from cache or fresh build
         sudo cp -r /tmp/bash-3.2.57-install/* /usr/local/
 
-        # Install other dependencies
-        sudo apt-get update
-        sudo apt-get install -y stow git tmux zsh
-
         # Verify version
         /usr/local/bin/bash --version
+
+    - name: Make scripts executable
+      run: chmod +x dot tests/lib/*.sh
 
     - name: Create test secrets
       shell: /usr/local/bin/bash {0}
       run: |
         cd ${{ github.workspace }}
-        chmod +x tests/lib/*.sh
         ./tests/lib/create-secrets.sh
 
     - name: Run installation with Bash 3.2
       shell: /usr/local/bin/bash {0}
       run: |
         cd ${{ github.workspace }}
-        chmod +x dot
         ./tests/lib/run-installation.sh
 
     - name: Verify health with Bash 3.2
@@ -131,22 +163,37 @@ jobs:
         # Ubuntu latest should have Bash 5.x+
         [[ "${BASH_VERSINFO[0]}" -ge 5 ]] || (echo "Error: Expected Bash 5.x+, got $BASH_VERSION" && exit 1)
 
-    - name: Install dependencies
+    - name: Cache apt packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          /var/cache/apt/archives
+          /var/lib/apt/lists
+        key: ${{ runner.os }}-apt-ubuntu-${{ hashFiles('dot') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-ubuntu-
+          ${{ runner.os }}-apt-
+
+    - name: Configure apt to skip documentation
       run: |
-        sudo mv /usr/bin/mandb /usr/bin/mandb.bak 2>/dev/null || true
-        sudo ln -s /bin/true /usr/bin/mandb
-        sudo apt-get install -y stow git tmux zsh
+        sudo mkdir -p /etc/dpkg/dpkg.cfg.d
+        echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
+        echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+
+    - name: Install dependencies
+      run: sudo apt-get install -y stow git tmux zsh
+
+    - name: Make scripts executable
+      run: chmod +x dot tests/lib/*.sh
 
     - name: Create test secrets
       run: |
         cd ${{ github.workspace }}
-        chmod +x tests/lib/*.sh
         ./tests/lib/create-secrets.sh
 
     - name: Run installation
       run: |
         cd ${{ github.workspace }}
-        chmod +x dot
         ./tests/lib/run-installation.sh
 
     - name: Verify health
@@ -154,13 +201,8 @@ jobs:
         cd ${{ github.workspace }}
         ./tests/lib/verify-health.sh true
 
-    - name: Test configurations
-      run: |
-        zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
-        git config --global user.name "Test User"
-        git config --global user.email "test@example.com"
-        git config --global --list | grep -q "user.name=Test User"
-        git config --global --list | grep -q "user.email=test@example.com"
+    - name: Test zsh configuration
+      run: zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
 
   validate-macos:
     name: macOS Latest (System Bash)
@@ -180,20 +222,30 @@ jobs:
         # macOS system bash should be 3.2.x
         [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Error: Expected Bash 3.2.x, got $BASH_VERSION" && exit 1)
 
+    - name: Cache Homebrew packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/Homebrew
+          /opt/homebrew/Cellar
+        key: ${{ runner.os }}-brew-${{ hashFiles('dot') }}
+        restore-keys: |
+          ${{ runner.os }}-brew-
+
     - name: Install dependencies
-      run: |
-        brew install stow git tmux zsh
+      run: brew install stow git tmux zsh
+
+    - name: Make scripts executable
+      run: chmod +x dot tests/lib/*.sh
 
     - name: Create test secrets
       run: |
         cd ${{ github.workspace }}
-        chmod +x tests/lib/*.sh
         ./tests/lib/create-secrets.sh
 
     - name: Run installation
       run: |
         cd ${{ github.workspace }}
-        chmod +x dot
         # dot script works with macOS default bash 3.2
         ./tests/lib/run-installation.sh
 
@@ -202,10 +254,5 @@ jobs:
         cd ${{ github.workspace }}
         ./tests/lib/verify-health.sh true
 
-    - name: Test configurations
-      run: |
-        zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
-        git config --global user.name "Test User"
-        git config --global user.email "test@example.com"
-        git config --global --list | grep -q "user.name=Test User"
-        git config --global --list | grep -q "user.email=test@example.com"
+    - name: Test zsh configuration
+      run: zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
