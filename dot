@@ -214,8 +214,7 @@ show_usage() {
     echo "  install       Install dotfiles using GNU Stow"
     echo "  validate      Validate dotfiles installation"
     echo "  health        Run comprehensive health check"
-    echo "  update        Update submodules and reinstall"
-    echo "  update-all    Update all packages and configurations"
+    echo "  update        Update configurations and reinstall"
     echo "  uninstall     Remove dotfiles symlinks"
     echo "  backup        Create backup of existing files"
     echo "  status        Show installation status"
@@ -231,7 +230,6 @@ show_usage() {
     echo "  $0 validate          # Validate installation"
     echo "  $0 health            # Run health check"
     echo "  $0 update            # Update and reinstall"
-    echo "  $0 update-all        # Update all packages and configurations"
     echo "  $0 status            # Show status"
     echo ""
     echo "Shell Integration:"
@@ -1548,13 +1546,7 @@ run_installation_pipeline() {
 }
 
 cmd_update() {
-    log_info "Updating dotfiles..."
-    run_installation_pipeline
-    log_success "Update completed successfully!"
-}
-
-cmd_update_all() {
-    log_info "Updating all packages and configurations..."
+    log_info "Updating dotfiles and configurations..."
 
     # Update gitignore globals
     update_gitignore
@@ -1565,7 +1557,7 @@ cmd_update_all() {
     # Reinstall to pick up any changes
     run_installation_pipeline
 
-    log_success "All packages updated successfully!"
+    log_success "Update completed successfully!"
 }
 
 cmd_status() {
@@ -1600,7 +1592,7 @@ main() {
                 verbose=true
                 shift
                 ;;
-            install|validate|health|update|update-all|status|backup|clean|uninstall)
+            install|validate|health|update|status|backup|clean|uninstall)
                 if [[ -n "$command" ]]; then
                     log_error "Multiple commands specified"
                     exit 1
@@ -1641,9 +1633,6 @@ main() {
         update)
             cmd_update
             ;;
-        update-all)
-            cmd_update_all
-            ;;
         status)
             cmd_status
             ;;
@@ -1676,23 +1665,22 @@ d() {
     if (($#)); then shift; fi
 
     case "$cmd" in
-        h|health)      "$HOME/.dotfiles/dot" health "$@" ;;
-        v|validate)    "$HOME/.dotfiles/dot" validate "$@" ;;
-        u|update)      "$HOME/.dotfiles/dot" update "$@" ;;
-        ua|update-all) "$HOME/.dotfiles/dot" update-all "$@" ;;
-        s|status)      "$HOME/.dotfiles/dot" status "$@" ;;
-        b|backup)      "$HOME/.dotfiles/dot" backup "$@" ;;
-        c|clean)       "$HOME/.dotfiles/dot" clean "$@" ;;
-        i|install)     "$HOME/.dotfiles/dot" install "$@" ;;
-        cd)            builtin cd "$HOME/.dotfiles" || return ;;
-        *)             "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
+        h|health)   "$HOME/.dotfiles/dot" health "$@" ;;
+        v|validate) "$HOME/.dotfiles/dot" validate "$@" ;;
+        u|update)   "$HOME/.dotfiles/dot" update "$@" ;;
+        s|status)   "$HOME/.dotfiles/dot" status "$@" ;;
+        b|backup)   "$HOME/.dotfiles/dot" backup "$@" ;;
+        c|clean)    "$HOME/.dotfiles/dot" clean "$@" ;;
+        i|install)  "$HOME/.dotfiles/dot" install "$@" ;;
+        cd)         builtin cd "$HOME/.dotfiles" || return ;;
+        *)          "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
     esac
 }
 
 # Bash completion for dot script
 _dot_completion() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
-    local commands="install validate health update update-all status backup clean uninstall"
+    local commands="install validate health update status backup clean uninstall"
     # Bash 3.2 compatible (no mapfile)
     COMPREPLY=()
     while IFS= read -r word; do
@@ -1704,7 +1692,7 @@ complete -F _dot_completion dot
 # Bash completion for d function wrapper
 _d_completion_bash() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
-    local commands="h health v validate u update ua update-all s status b backup c clean i install uninstall cd"
+    local commands="h health v validate u update s status b backup c clean i install uninstall cd"
     # Bash 3.2 compatible (no mapfile)
     COMPREPLY=()
     while IFS= read -r word; do
@@ -1723,16 +1711,15 @@ d() {
     if (($#)); then shift; fi
 
     case "$cmd" in
-        h|health)      "$HOME/.dotfiles/dot" health "$@" ;;
-        v|validate)    "$HOME/.dotfiles/dot" validate "$@" ;;
-        u|update)      "$HOME/.dotfiles/dot" update "$@" ;;
-        ua|update-all) "$HOME/.dotfiles/dot" update-all "$@" ;;
-        s|status)      "$HOME/.dotfiles/dot" status "$@" ;;
-        b|backup)      "$HOME/.dotfiles/dot" backup "$@" ;;
-        c|clean)       "$HOME/.dotfiles/dot" clean "$@" ;;
-        i|install)     "$HOME/.dotfiles/dot" install "$@" ;;
-        cd)            builtin cd "$HOME/.dotfiles" || return ;;
-        *)             "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
+        h|health)   "$HOME/.dotfiles/dot" health "$@" ;;
+        v|validate) "$HOME/.dotfiles/dot" validate "$@" ;;
+        u|update)   "$HOME/.dotfiles/dot" update "$@" ;;
+        s|status)   "$HOME/.dotfiles/dot" status "$@" ;;
+        b|backup)   "$HOME/.dotfiles/dot" backup "$@" ;;
+        c|clean)    "$HOME/.dotfiles/dot" clean "$@" ;;
+        i|install)  "$HOME/.dotfiles/dot" install "$@" ;;
+        cd)         builtin cd "$HOME/.dotfiles" || return ;;
+        *)          "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
     esac
 }
 
@@ -1743,8 +1730,7 @@ _dot_completion() {
         'install:Install dotfiles using GNU Stow'
         'validate:Validate dotfiles installation'
         'health:Run comprehensive health check'
-        'update:Update submodules and reinstall'
-        'update-all:Update all packages and configurations'
+        'update:Update configurations and reinstall'
         'status:Show installation status'
         'backup:Create backup of existing files'
         'clean:Clean up backup directories'
@@ -1762,10 +1748,8 @@ _d_completion() {
         'health:Run comprehensive health check'
         'v:validate - Validate installation'
         'validate:Validate installation'
-        'u:update - Update submodules'
-        'update:Update submodules'
-        'ua:update-all - Update all configurations'
-        'update-all:Update all configurations'
+        'u:update - Update and reinstall'
+        'update:Update and reinstall'
         's:status - Show installation status'
         'status:Show installation status'
         'b:backup - Create backup'
