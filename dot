@@ -1393,7 +1393,7 @@ show_health_table_row() {
     local category="$2"
     local status="$3"
     local details="$4"
-    
+
     local status_display
     case "$status" in
         pass)
@@ -1409,7 +1409,7 @@ show_health_table_row() {
             status_display="${BLUE}ℹ Info${NC}"
             ;;
     esac
-    
+
     printf " %-2s %-25s %-12s %s\n" "$num." "$category" "$(echo -e "$status_display")" "$details"
 }
 
@@ -1419,9 +1419,9 @@ show_health_summary() {
     local error_count="$2"
     local warn_count="$3"
     local duration="$4"
-    
+
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
+
     if [[ "$status" == "healthy" ]]; then
         printf " Result: ${GREEN}✓ HEALTHY${NC}%*sDuration: %.1fs\n" $((38)) "" "$duration"
     else
@@ -1433,7 +1433,7 @@ show_health_summary() {
         fi
         printf " Result: ${RED}✗ UNHEALTHY${NC} (%s)%*sDuration: %.1fs\n" "$issues_text" $((20 - ${#issues_text})) "" "$duration"
     fi
-    
+
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
@@ -1471,10 +1471,13 @@ cmd_health() {
     local total_errors=0
     local total_warnings=0
     
-    # Run checks and collect results
+    # Display table header immediately
+    show_health_table_header
+    
+    # Run checks and display results progressively
     local output
     local result
-    
+
     # 1. Symlink integrity
     output=""
     for package in "${PACKAGES[@]}"; do
@@ -1488,14 +1491,16 @@ cmd_health() {
         check_statuses+=("fail")
         check_details+=("Validation errors")
         check_outputs+=("$output")
+        show_health_table_row "1" "Symlink Integrity" "fail" "Validation errors"
     else
         local file_count
         file_count=$(count_symlinks)
         check_statuses+=("pass")
         check_details+=("$file_count files linked")
         check_outputs+=("")
+        show_health_table_row "1" "Symlink Integrity" "pass" "$file_count files linked"
     fi
-    
+
     # 2. Configuration syntax
     output=$(validate_config_syntax 2>&1)
     result=$?
@@ -1504,10 +1509,12 @@ cmd_health() {
         check_details+=("Syntax errors")
         check_outputs+=("$output")
         ((total_errors += result))
+        show_health_table_row "2" "Configuration Syntax" "fail" "Syntax errors"
     else
         check_statuses+=("pass")
         check_details+=("All configs valid")
         check_outputs+=("")
+        show_health_table_row "2" "Configuration Syntax" "pass" "All configs valid"
     fi
     
     # 3. Submodule health
@@ -1518,10 +1525,12 @@ cmd_health() {
         check_details+=("Issues found")
         check_outputs+=("$output")
         ((total_errors += result))
+        show_health_table_row "3" "Submodule Health" "fail" "Issues found"
     else
         check_statuses+=("pass")
         check_details+=("Oh My Zsh clean")
         check_outputs+=("")
+        show_health_table_row "3" "Submodule Health" "pass" "Oh My Zsh clean"
     fi
     
     # 4. Git repository status
@@ -1532,10 +1541,12 @@ cmd_health() {
         check_details+=("Uncommitted changes")
         check_outputs+=("$output")
         ((total_warnings += result))
+        show_health_table_row "4" "Git Repository" "warn" "Uncommitted changes"
     else
         check_statuses+=("pass")
         check_details+=("Clean, up-to-date")
         check_outputs+=("")
+        show_health_table_row "4" "Git Repository" "pass" "Clean, up-to-date"
     fi
     
     # 5. Template/secret config consistency
@@ -1548,10 +1559,12 @@ cmd_health() {
         check_details+=("Stale configs")
         check_outputs+=("$output")
         ((total_warnings += result))
+        show_health_table_row "5" "Template Consistency" "warn" "Stale configs"
     else
         check_statuses+=("pass")
         check_details+=("$template_count template(s) synced")
         check_outputs+=("")
+        show_health_table_row "5" "Template Consistency" "pass" "$template_count template(s) synced"
     fi
     
     # 6. File permissions
@@ -1562,10 +1575,12 @@ cmd_health() {
         check_details+=("Insecure permissions")
         check_outputs+=("$output")
         ((total_errors += result))
+        show_health_table_row "6" "File Permissions" "fail" "Insecure permissions"
     else
         check_statuses+=("pass")
         check_details+=("Secrets secured")
         check_outputs+=("")
+        show_health_table_row "6" "File Permissions" "pass" "Secrets secured"
     fi
     
     # 7. Shell integration
@@ -1583,10 +1598,12 @@ cmd_health() {
         check_details+=("Issues detected")
         check_outputs+=("$output")
         ((total_warnings += result))
+        show_health_table_row "7" "Shell Integration" "warn" "Issues detected"
     else
         check_statuses+=("pass")
         check_details+=("$shell_name active")
         check_outputs+=("")
+        show_health_table_row "7" "Shell Integration" "pass" "$shell_name active"
     fi
     
     # 8. Stow conflicts
@@ -1597,10 +1614,12 @@ cmd_health() {
         check_details+=("$result conflict(s)")
         check_outputs+=("$output")
         ((total_errors += result))
+        show_health_table_row "8" "Stow Conflicts" "fail" "$result conflict(s)"
     else
         check_statuses+=("pass")
         check_details+=("No conflicts")
         check_outputs+=("")
+        show_health_table_row "8" "Stow Conflicts" "pass" "No conflicts"
     fi
     
     # 9. Orphaned symlinks
@@ -1610,11 +1629,13 @@ cmd_health() {
         check_statuses+=("warn")
         check_details+=("$result found")
         check_outputs+=("$output")
+        show_health_table_row "9" "Orphaned Symlinks" "warn" "$result found"
         # Don't count as error, just warning
     else
         check_statuses+=("pass")
         check_details+=("None found")
         check_outputs+=("")
+        show_health_table_row "9" "Orphaned Symlinks" "pass" "None found"
     fi
     
     # 10. Dependencies
@@ -1622,12 +1643,14 @@ cmd_health() {
         check_statuses+=("pass")
         check_details+=("All satisfied")
         check_outputs+=("")
+        show_health_table_row "10" "Dependencies" "pass" "All satisfied"
     else
         output=$(check_dependencies 2>&1)
         check_statuses+=("fail")
         check_details+=("Missing deps")
         check_outputs+=("$output")
         ((total_errors++))
+        show_health_table_row "10" "Dependencies" "fail" "Missing deps"
     fi
     
     # 11. Backup health
@@ -1645,31 +1668,18 @@ cmd_health() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
+        show_health_table_row "11" "Backup Health" "pass" "No backups"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size / 1024))MB)")
         check_outputs+=("")
+        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size / 1024))MB)"
     fi
-    
+
     # Calculate duration
     local end_time
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    
-    # Display table
-    show_health_table_header
-    
-    show_health_table_row "1" "Symlink Integrity" "${check_statuses[0]}" "${check_details[0]}"
-    show_health_table_row "2" "Configuration Syntax" "${check_statuses[1]}" "${check_details[1]}"
-    show_health_table_row "3" "Submodule Health" "${check_statuses[2]}" "${check_details[2]}"
-    show_health_table_row "4" "Git Repository" "${check_statuses[3]}" "${check_details[3]}"
-    show_health_table_row "5" "Template Consistency" "${check_statuses[4]}" "${check_details[4]}"
-    show_health_table_row "6" "File Permissions" "${check_statuses[5]}" "${check_details[5]}"
-    show_health_table_row "7" "Shell Integration" "${check_statuses[6]}" "${check_details[6]}"
-    show_health_table_row "8" "Stow Conflicts" "${check_statuses[7]}" "${check_details[7]}"
-    show_health_table_row "9" "Orphaned Symlinks" "${check_statuses[8]}" "${check_details[8]}"
-    show_health_table_row "10" "Dependencies" "${check_statuses[9]}" "${check_details[9]}"
-    show_health_table_row "11" "Backup Health" "${check_statuses[10]}" "${check_details[10]}"
     
     echo ""
     
@@ -1679,20 +1689,20 @@ cmd_health() {
     else
         show_health_summary "unhealthy" "$total_errors" "$total_warnings" "$duration"
     fi
-    
+
     echo ""
-    
+
     # Check if we have maintenance items to show
     local has_maintenance=false
     if [[ "${check_statuses[8]}" == "warn" ]] || [[ "${check_statuses[10]}" == "info" && $backup_count -gt 10 ]]; then
         has_maintenance=true
     fi
-    
+
     # Show detailed issues if any
     if [[ $total_errors -gt 0 ]] || [[ $total_warnings -gt 0 ]] || [[ "$has_maintenance" == "true" ]]; then
         local shown_errors=false
         local shown_warnings=false
-        
+
         # Show errors first
         for i in "${!check_statuses[@]}"; do
             if [[ "${check_statuses[$i]}" == "fail" ]] && [[ -n "${check_outputs[$i]}" ]]; then
@@ -1700,7 +1710,7 @@ cmd_health() {
                     echo -e "${RED}✗ Critical Issues:${NC}"
                     shown_errors=true
                 fi
-                
+
                 local category_name=""
                 case $i in
                     0) category_name="Symlink Integrity" ;;
@@ -1715,57 +1725,57 @@ cmd_health() {
                     9) category_name="Dependencies" ;;
                     10) category_name="Backup Health" ;;
                 esac
-                
+
                 echo "  $((i + 1)). $category_name"
                 echo -e "${check_outputs[$i]}" | sed 's/^/     /'
             fi
         done
-        
+
         # Show warnings
         for i in "${!check_statuses[@]}"; do
             if [[ "${check_statuses[$i]}" == "warn" ]] && [[ -n "${check_outputs[$i]}" ]]; then
                 # Check if there's actually output to display
                 local warning_output
                 warning_output=$(echo -e "${check_outputs[$i]}" | grep -E "^(⚠|●)")
-                
+
                 if [[ -n "$warning_output" ]]; then
                     if [[ "$shown_warnings" == "false" ]]; then
                         [[ "$shown_errors" == "true" ]] && echo ""
                         echo -e "${YELLOW}⚠ Warnings:${NC}"
                         shown_warnings=true
                     fi
-                    
+
                     # shellcheck disable=SC2001
                     echo "$warning_output" | sed 's/^/  /'
                 fi
             fi
         done
-        
+
         # Show maintenance items
         if [[ "$has_maintenance" == "true" ]]; then
             [[ "$shown_errors" == "true" || "$shown_warnings" == "true" ]] && echo ""
             echo -e "${YELLOW}⚠ Maintenance Items:${NC}"
-            
+
             if [[ "${check_statuses[8]}" == "warn" ]]; then
                 echo "  • ${check_details[8]} orphaned symlinks (non-critical)"
             fi
-            
+
             if [[ "${check_statuses[10]}" == "info" && $backup_count -gt 10 ]]; then
                 echo "  • $backup_count backups using $((backup_size / 1024))MB - run './dot clean' to free space"
             fi
         fi
-        
+
         # Show quick fix suggestion
         if [[ $total_errors -gt 0 ]]; then
             echo ""
             echo -e "${BLUE}💡 Quick fix: Run './dot install' to resolve most issues${NC}"
         fi
     fi
-    
+
     echo ""
     echo -e "${BLUE}💡 Tip: Run './dot health -v' for detailed output${NC}"
     echo ""
-    
+
     # Return appropriate exit code
     if [[ $total_errors -eq 0 ]]; then
         return 0
