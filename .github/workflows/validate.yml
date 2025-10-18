@@ -230,17 +230,8 @@ jobs:
         # macOS system bash should be 3.2.x
         [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Error: Expected Bash 3.2.x, got $BASH_VERSION" && exit 1)
 
-    - name: Cache Homebrew packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/Library/Caches/Homebrew
-          /opt/homebrew/Cellar
-        key: ${{ runner.os }}-brew-${{ hashFiles('dot') }}
-        restore-keys: |
-          ${{ runner.os }}-brew-
-
     - name: Install dependencies
+      # Note: No caching - Homebrew bottles install faster than cache restore
       run: |
         brew install stow git tmux zsh ncurses
         # Link packages that may not be auto-linked
