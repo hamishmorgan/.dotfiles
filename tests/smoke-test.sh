@@ -126,6 +126,29 @@ else
     exit 1
 fi
 
+# Test 11: No bash 4.0+ features used
+echo -n "Test 11: No bash 4.0+ features... "
+# Strip comments and look for Bash 4.0+ features (declare -A, mapfile, readarray)
+# This catches features even after inline comments: echo hello # comment; declare -A arr
+if sed 's/#.*//' "$DOTFILES_DIR/dot" | grep -E '\b(declare -A|mapfile|readarray)\b' >/dev/null 2>&1; then
+    echo -e "${RED}✗${NC}"
+    echo "Error: Bash 4.0+ features detected:"
+    sed 's/#.*//' "$DOTFILES_DIR/dot" | grep -n -E '\b(declare -A|mapfile|readarray)\b'
+    exit 1
+else
+    echo -e "${GREEN}✓${NC}"
+fi
+
+# Test 12: Bash version check present
+echo -n "Test 12: Bash version check present... "
+if grep -q 'BASH_VERSINFO' "$DOTFILES_DIR/dot" && \
+   grep -q 'requires bash 3.2' "$DOTFILES_DIR/dot"; then
+    echo -e "${GREEN}✓${NC}"
+else
+    echo -e "${RED}✗${NC}"
+    exit 1
+fi
+
 echo ""
 echo -e "${GREEN}All smoke tests passed!${NC}"
 

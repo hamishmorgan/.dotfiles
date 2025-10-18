@@ -21,8 +21,9 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo ""
     echo "Platforms:"
     echo "  ubuntu      Test on Ubuntu only"
-    echo "  alpine      Test on Alpine only"
-    echo "  all         Test on both platforms (default)"
+    echo "  alpine      Test on Alpine only (BSD-like)"
+    echo "  bash32      Test on Bash 3.2 only (macOS default)"
+    echo "  all         Test on all platforms (default)"
     echo ""
     echo "Options:"
     echo "  --no-cleanup    Keep test images for debugging"
@@ -31,6 +32,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "Examples:"
     echo "  $0                    # Run all tests"
     echo "  $0 ubuntu             # Test Ubuntu only"
+    echo "  $0 bash32             # Test Bash 3.2 only"
     echo "  $0 all --no-cleanup   # Run all tests, keep images"
     exit 0
 fi
@@ -129,6 +131,9 @@ case "$PLATFORM" in
     alpine)
         run_test "alpine" "Dockerfile.alpine"
         ;;
+    bash32)
+        run_test "bash32" "Dockerfile.bash32"
+        ;;
     all)
         echo "Testing on all platforms..."
         echo ""
@@ -148,11 +153,20 @@ case "$PLATFORM" in
         fi
 
         echo ""
+        echo "=========================================="
+        echo ""
+
+        if ! run_test "bash32" "Dockerfile.bash32"; then
+            echo -e "${RED}Bash 3.2 tests failed${NC}"
+            exit 1
+        fi
+
+        echo ""
         echo -e "${GREEN}✅ All platform tests passed!${NC}"
         ;;
     *)
         echo -e "${RED}Unknown platform: $PLATFORM${NC}"
-        echo "Usage: $0 [ubuntu|alpine|all]"
+        echo "Usage: $0 [ubuntu|alpine|bash32|all]"
         exit 1
         ;;
 esac
