@@ -1,0 +1,13 @@
+# Cursor Rules for .dotfiles Repository
+
+Please read and follow the comprehensive guidelines in AGENTS.md.
+
+Key instructions:
+
+- Review AGENTS.md for all technical implementation guidance
+- Follow the branch strategy, code standards, and testing requirements
+- Use the Pull Request Workflow for all changes
+- Update AGENTS.md when establishing new patterns
+- Document structure: README.md (users), DEVELOPMENT.md (developers), AGENTS.md (AI agents)
+
+Path: ./AGENTS.md
