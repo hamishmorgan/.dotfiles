@@ -67,6 +67,7 @@ run_test() {
     echo "Running tests..."
     if $CONTAINER_RUNTIME run --rm \
         -v "$DOTFILES_DIR:/dotfiles:ro" \
+        -v "$SCRIPT_DIR/lib:/tests/lib:ro" \
         -v "$SCRIPT_DIR/docker/test-in-container.sh:/test.sh:ro" \
         "dotfiles-test-$platform" \
         bash /test.sh; then

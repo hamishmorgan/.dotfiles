@@ -3,6 +3,12 @@
 # Bash 3.2 compatible
 # Used by both local CI and GitHub CI
 
+# Guard against multiple sourcing
+if [[ -n "${_TESTS_COMMON_LOADED:-}" ]]; then
+    return 0
+fi
+_TESTS_COMMON_LOADED=1
+
 # Colors for test output
 readonly TEST_RED='\033[0;31m'
 readonly TEST_GREEN='\033[0;32m'
