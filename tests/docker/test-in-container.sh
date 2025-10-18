@@ -46,10 +46,11 @@ if ! run_installation; then
 fi
 
 # Run health check using shared function
+# verify_health with allow_warnings=true will:
+#   - Return 0 if passed or has only warnings
+#   - Return 1 and log error if critical failures found
 log_test_section "Running Health Checks"
-if ! verify_health true; then
-    log_test_warning "Health check completed with warnings (expected in containers)"
-fi
+verify_health true || exit 1
 
 # Verify symlinks were created
 log_test_section "Verifying Symlinks"
