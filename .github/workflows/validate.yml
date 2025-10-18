@@ -67,7 +67,7 @@ jobs:
         curl -L https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz | tar xz
         cd bash-3.2.57
         ./configure --prefix=/tmp/bash-3.2.57-install
-        make
+        make -j$(nproc)  # Use all CPU cores for faster compilation
         make install
 
     - name: Install Bash 3.2 and dependencies
