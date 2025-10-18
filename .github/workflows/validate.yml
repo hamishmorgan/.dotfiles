@@ -39,7 +39,7 @@ jobs:
       run: ./tests/smoke-test.sh
 
   validate-bash32:
-    name: Ubuntu 20.04 (Bash 3.2.57)
+    name: Bash 3.2 Compatibility (Compiled)
     runs-on: ubuntu-latest
     needs: lint
 
@@ -109,7 +109,7 @@ jobs:
         [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Error: Not running Bash 3.2" && exit 1)
 
   validate-ubuntu:
-    name: Ubuntu 22.04 (Bash 5.2+)
+    name: Ubuntu Latest (System Bash)
     runs-on: ubuntu-latest
     needs: lint
 
@@ -122,8 +122,9 @@ jobs:
     - name: Verify bash version
       run: |
         echo "Bash version: $BASH_VERSION"
-        # Ubuntu 22.04 should have Bash 5.2+
-        [[ "${BASH_VERSINFO[0]}" -ge 5 ]] || (echo "Error: Expected Bash 5.x, got $BASH_VERSION" && exit 1)
+        echo "OS: $(lsb_release -d | cut -f2)"
+        # Ubuntu latest should have Bash 5.x+
+        [[ "${BASH_VERSINFO[0]}" -ge 5 ]] || (echo "Error: Expected Bash 5.x+, got $BASH_VERSION" && exit 1)
 
     - name: Install dependencies
       run: |
@@ -157,7 +158,7 @@ jobs:
         git config --global --list | grep -q "user.email=test@example.com"
 
   validate-macos:
-    name: macOS (Bash 3.2 Default)
+    name: macOS Latest (System Bash)
     runs-on: macos-latest
     needs: lint
 
@@ -170,8 +171,9 @@ jobs:
     - name: Verify bash version
       run: |
         echo "Bash version: $BASH_VERSION"
-        # macOS default bash should be 3.2.x
-        [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Warning: Expected Bash 3.2.x, got $BASH_VERSION" && exit 1)
+        echo "OS: $(sw_vers -productName) $(sw_vers -productVersion)"
+        # macOS system bash should be 3.2.x
+        [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Error: Expected Bash 3.2.x, got $BASH_VERSION" && exit 1)
 
     - name: Install dependencies
       run: |
