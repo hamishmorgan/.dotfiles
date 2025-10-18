@@ -74,6 +74,7 @@ jobs:
 
     - name: Cache apt packages
       uses: actions/cache@v4
+      continue-on-error: true  # Ignore permission errors on lock files during save
       with:
         # Only cache downloaded packages, not package lists (avoids stale indices and permission issues)
         path: /var/cache/apt/archives
@@ -173,6 +174,7 @@ jobs:
 
     - name: Cache apt packages
       uses: actions/cache@v4
+      continue-on-error: true  # Ignore permission errors on lock files during save
       with:
         # Only cache downloaded packages, not package lists (avoids stale indices and permission issues)
         path: /var/cache/apt/archives
@@ -233,11 +235,7 @@ jobs:
       # Note: No caching - Homebrew bottles install faster than cache restore
       run: |
         brew install stow git tmux zsh ncurses
-        # Link packages that may not be auto-linked
-        brew link --overwrite stow || true
-        brew link --overwrite tmux || true
-        brew link --overwrite zsh || true
-        # ncurses is keg-only and requires --force
+        # ncurses is keg-only and requires explicit linking
         brew link --overwrite --force ncurses || true
 
     - name: Make scripts executable
