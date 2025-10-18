@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
 # Dotfiles management script
-# Requires: bash 4.0+ for associative arrays
-
-# Check bash version
-if ((BASH_VERSINFO[0] < 4)); then
-    echo "Error: This script requires bash 4.0 or higher"
-    echo "Current version: $BASH_VERSION"
-    echo ""
-    echo "On macOS, install bash 4+ with: brew install bash"
-    echo "Then run with: /usr/local/bin/bash ./dot install"
-    exit 1
-fi
+# Compatible with bash 3.2+ (including macOS default bash)
+#
+# Bash 3.2 Compatibility Notes:
+# - Uses functions instead of associative arrays (bash 4+ feature)
+# - Uses while-read loops instead of mapfile (bash 4+ feature)
+# - Avoids process substitution where possible for portability
+# - All array operations use bash 3.2 compatible syntax
 
 # Safer glob handling
 shopt -s nullglob      # Empty expansion for non-matching globs
@@ -100,29 +96,47 @@ trap handle_interrupt INT TERM
 
 # Package definitions
 # Note: system package is stowed first to ensure .stow-global-ignore is in place
-declare -a PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash")
+PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash")
 
-# Package file mappings (package_name:file1,file2,file3)
-declare -A PACKAGE_FILES=(
-    ["system"]=".stow-global-ignore,.stowrc,.editorconfig,.inputrc"
-    ["git"]=".gitconfig,.gitattributes,.gitignore-globals"
-    ["zsh"]=".zshrc,.zprofile,.oh-my-zsh"
-    ["tmux"]=".tmux.conf"
-    ["gh"]=".config/gh"
-    ["gnuplot"]=".gnuplot"
-    ["bash"]=".bashrc,.bash_profile"
-)
+# Get package files (bash 3.2 compatible - no associative arrays)
+get_package_files() {
+    local package="$1"
+    case "$package" in
+        system)  echo ".stow-global-ignore,.stowrc,.editorconfig,.inputrc" ;;
+        git)     echo ".gitconfig,.gitattributes,.gitignore-globals" ;;
+        zsh)     echo ".zshrc,.zprofile,.oh-my-zsh" ;;
+        tmux)    echo ".tmux.conf" ;;
+        gh)      echo ".config/gh" ;;
+        gnuplot) echo ".gnuplot" ;;
+        bash)    echo ".bashrc,.bash_profile" ;;
+        *)       echo "" ;;
+    esac
+}
 
-# Package display names
-declare -A PACKAGE_NAMES=(
-    ["system"]="System"
-    ["git"]="Git"
-    ["zsh"]="Zsh"
-    ["tmux"]="Tmux"
-    ["gh"]="GitHub CLI"
-    ["gnuplot"]="GNU Plot"
-    ["bash"]="Bash"
-)
+# Get package display name (bash 3.2 compatible - no associative arrays)
+get_package_name() {
+    local package="$1"
+    case "$package" in
+        system)  echo "System" ;;
+        git)     echo "Git" ;;
+        zsh)     echo "Zsh" ;;
+        tmux)    echo "Tmux" ;;
+        gh)      echo "GitHub CLI" ;;
+        gnuplot) echo "GNU Plot" ;;
+        bash)    echo "Bash" ;;
+        *)       echo "$package" ;;
+    esac
+}
+
+# Get required dependencies (bash 3.2 compatible - no associative arrays)
+get_required_deps() {
+    local type="$1"
+    case "$type" in
+        common)   echo "stow git" ;;
+        optional) echo "tmux zsh" ;;
+        *)        echo "" ;;
+    esac
+}
 
 # Auto-discovery functions for templates and secret configs
 # Convention: *.template files are processed to create target files
@@ -144,12 +158,6 @@ discover_templates() {
 discover_secret_configs() {
     find "$DOTFILES_DIR" -type f -name "*.secret" 2>/dev/null | sort
 }
-
-# Required dependencies per platform
-declare -A REQUIRED_DEPS=(
-    ["common"]="stow git"
-    ["optional"]="tmux zsh"
-)
 
 # Logging functions
 log_info() {
@@ -259,7 +267,8 @@ check_dependencies() {
     log_info "Checking dependencies..."
     
     local missing_deps=()
-    local all_deps="${REQUIRED_DEPS[common]} ${REQUIRED_DEPS[optional]}"
+    local all_deps
+    all_deps="$(get_required_deps common) $(get_required_deps optional)"
     
     for dep in $all_deps; do
         if ! command_exists "$dep"; then
@@ -326,9 +335,10 @@ backup_existing() {
     
     local backed_up=0
     
-    # Generate backup list dynamically from PACKAGE_FILES
+    # Generate backup list dynamically from package definitions
     for package in "${PACKAGES[@]}"; do
-        local files="${PACKAGE_FILES[$package]}"
+        local files
+        files=$(get_package_files "$package")
         IFS=',' read -ra file_array <<< "$files"
         
         for file in "${file_array[@]}"; do
@@ -667,8 +677,10 @@ check_symlink() {
 # Generic package validation function
 validate_package() {
     local package="$1"
-    local display_name="${PACKAGE_NAMES[$package]}"
-    local files="${PACKAGE_FILES[$package]}"
+    local display_name
+    display_name=$(get_package_name "$package")
+    local files
+    files=$(get_package_files "$package")
     
     log_info "Validating $display_name configuration..."
     
@@ -706,9 +718,10 @@ show_status() {
     log_info "Dotfiles installation status:"
     echo ""
     
-    # Generate file list dynamically from PACKAGE_FILES
+    # Generate file list dynamically from package definitions
     for package in "${PACKAGES[@]}"; do
-        local files="${PACKAGE_FILES[$package]}"
+        local files
+        files=$(get_package_files "$package")
         IFS=',' read -ra file_array <<< "$files"
         
         for file in "${file_array[@]}"; do
@@ -727,7 +740,9 @@ show_status() {
     echo ""
     log_info "Backup directories:"
     local backup_dirs=()
-    mapfile -t backup_dirs < <(get_backup_dirs)
+    while IFS= read -r dir; do
+        backup_dirs+=("$dir")
+    done < <(get_backup_dirs)
     
     if [[ ${#backup_dirs[@]} -gt 0 ]]; then
         for dir in "${backup_dirs[@]}"; do
@@ -751,7 +766,9 @@ clean_backups() {
     log_info "Cleaning up old backup directories..."
     
     local backup_dirs=()
-    mapfile -t backup_dirs < <(get_backup_dirs | sort -r)
+    while IFS= read -r dir; do
+        backup_dirs+=("$dir")
+    done < <(get_backup_dirs | sort -r)
     
     local total_backups=${#backup_dirs[@]}
     
@@ -1640,7 +1657,11 @@ d() {
 _dot_completion() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     local commands="install validate health update update-all status backup clean uninstall"
-    mapfile -t COMPREPLY < <(compgen -W "$commands" -- "$cur")
+    # Bash 3.2 compatible (no mapfile)
+    COMPREPLY=()
+    while IFS= read -r word; do
+        COMPREPLY+=("$word")
+    done < <(compgen -W "$commands" -- "$cur")
 }
 complete -F _dot_completion dot
 
@@ -1648,7 +1669,11 @@ complete -F _dot_completion dot
 _d_completion_bash() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     local commands="h health v validate u update ua update-all s status b backup c clean i install uninstall cd"
-    mapfile -t COMPREPLY < <(compgen -W "$commands" -- "$cur")
+    # Bash 3.2 compatible (no mapfile)
+    COMPREPLY=()
+    while IFS= read -r word; do
+        COMPREPLY+=("$word")
+    done < <(compgen -W "$commands" -- "$cur")
 }
 complete -F _d_completion_bash d
 EOF
