@@ -114,10 +114,12 @@ fi
 
 # Test 10: Logging functions use symbols
 echo -n "Test 10: Symbol-based logging... "
-if grep -q 'echo.*●' "$DOTFILES_DIR/dot" && \
-   grep -q 'echo.*✓' "$DOTFILES_DIR/dot" && \
-   grep -q 'echo.*⚠' "$DOTFILES_DIR/dot" && \
-   grep -q 'echo.*✗' "$DOTFILES_DIR/dot"; then
+if grep -q 'SYMBOL_INFO=' "$DOTFILES_DIR/dot" && \
+   grep -q 'SYMBOL_SUCCESS=' "$DOTFILES_DIR/dot" && \
+   grep -q 'SYMBOL_WARNING=' "$DOTFILES_DIR/dot" && \
+   grep -q 'SYMBOL_ERROR=' "$DOTFILES_DIR/dot" && \
+   grep -q 'SYMBOL_INFO}' "$DOTFILES_DIR/dot" && \
+   grep -q 'SYMBOL_SUCCESS}' "$DOTFILES_DIR/dot"; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
