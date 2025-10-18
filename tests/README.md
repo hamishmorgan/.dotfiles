@@ -83,6 +83,22 @@ Code Change → Smoke Test → Docker Tests → Push → GitHub Actions
 
 **Note:** Test framework auto-detects and works with both Docker and Podman.
 
+### Disk Space Management
+
+Test images are automatically cleaned up after each test run to prevent disk space accumulation.
+If needed, manually clean up container storage:
+
+```bash
+# For Docker
+docker system prune -a -f --volumes
+
+# For Podman
+podman system prune -a -f --volumes
+
+# If podman commands fail with electron errors, use clean environment:
+env -i PATH=/usr/bin:/bin HOME=$HOME podman system prune -a -f --volumes
+```
+
 ## Container Test Details
 
 ### Ubuntu Container
@@ -108,6 +124,23 @@ Code Change → Smoke Test → Docker Tests → Push → GitHub Actions
 docker rmi dotfiles-test-ubuntu dotfiles-test-alpine
 ./tests/run-local-ci.sh
 ```
+
+### Disk Space Issues
+
+If disk fills up from container overlays:
+
+```bash
+# Check disk usage
+df -h
+
+# Clean all container data (replace 'docker' with 'podman' if using Podman)
+docker system prune -a -f --volumes
+
+# For podman with environment interference:
+env -i PATH=/usr/bin:/bin HOME=$HOME podman system prune -a -f --volumes
+```
+
+Note: Test script now automatically cleans up images after each run to prevent accumulation.
 
 ### Want More Detail
 
