@@ -207,12 +207,26 @@ When modifying commands, prefer using these helpers over duplicating logic.
 
 **This file must be updated whenever new guidance is provided during conversations.**
 
-When adding new instructions:
+### Triggers for Updates
+
+Update AGENTS.md when:
+
+- **New patterns emerge** from multi-iteration problem-solving (like CI optimization)
+- **Significant bugs fixed** that reveal broader lessons (dependency detection, caching)
+- **Performance optimizations** with measured results
+- **Tool/workflow discoveries** (like `gh` CLI for CI monitoring)
+- **Cross-platform issues resolved** (macOS vs Linux compatibility)
+- **New helper functions** or code patterns established
+- **Build/CI configuration changes** that set precedents
+
+### When Adding Instructions
 
 - Maintain the formal, minimal tone
 - Be technically precise
 - Include only essential information
-- Update the timestamp or version if needed
+- **Include measured data** when available (performance improvements, timing)
+- **Document both what worked and what didn't** (negative results prevent repeated mistakes)
+- Reference the issue/PR that led to the guidance
 
 ## Code Quality
 
@@ -347,9 +361,12 @@ For all code changes:
 4. **Wait for Copilot Review**: Review Copilot feedback
 5. **Address Issues**: Fix any problems identified
 6. **Repeat**: Continue until both CI and Copilot approve
-7. **Merge**: Only merge after both CI and Copilot are satisfied
+7. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
+8. **Merge**: Only merge after both CI and Copilot are satisfied
 
 This ensures code quality through automated testing and AI review.
+
+**Note:** The PR template includes an AGENTS.md update checklist to remind about documentation.
 
 ## Monitoring CI and GitHub Actions
 
