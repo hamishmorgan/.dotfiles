@@ -87,7 +87,7 @@ jobs:
       shell: /usr/local/bin/bash {0}
       run: |
         echo "Bash version: $BASH_VERSION"
-        [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Error: Not running Bash 3.2" && exit 1)
+        [[ "$BASH_VERSION" =~ ^3\\.2 ]] || (echo "Error: Not running Bash 3.2" && exit 1)
 
   validate-ubuntu:
     runs-on: ubuntu-latest
