@@ -2,6 +2,34 @@
 
 Instructions for AI agents working with this dotfiles repository.
 
+## Table of Contents
+
+- [Project Context](#project-context)
+  - [Branch Strategy](#branch-strategy)
+- [Dependencies](#dependencies)
+- [Documentation Standards](#documentation-standards)
+- [Code Standards](#code-standards)
+  - [Error Handling Patterns](#error-handling-patterns)
+  - [Bash 3.2 Compatibility](#bash-32-compatibility)
+- [File Organization](#file-organization)
+  - [Stow Ignore Files](#stow-ignore-files)
+  - [Templates and Secrets](#templates-and-secrets)
+  - [Platform-Specific Configs](#platform-specific-configs)
+- [Logging System](#logging-system)
+- [Verbosity System](#verbosity-system)
+- [Helper Functions](#helper-functions)
+- [Validation](#validation)
+- [Update Instructions](#update-instructions)
+- [Code Quality](#code-quality)
+- [CI/CD](#cicd)
+  - [CI Performance Optimization](#ci-performance-optimization)
+- [Quick Reference](#quick-reference)
+- [Common Tasks](#common-tasks)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Pull Request Workflow](#pull-request-workflow)
+- [GitHub Integration](#github-integration)
+
 ## Project Context
 
 This repository contains dotfiles managed with GNU Stow. Files are organized into packages:
@@ -46,6 +74,63 @@ git checkout main       # Switch to personal environment
 Runtime profile systems add unnecessary complexity for single-user dotfiles.
 Branches provide superior flexibility with standard git tooling.
 
+## Dependencies
+
+### Required Tools
+
+- **stow**: GNU Stow 2.x+ (symlink management)
+- **git**: 2.x+ (version control)
+- **bash**: 3.2+ (script execution, macOS default is 3.2.57)
+
+### Optional Tools
+
+- **gh**: GitHub CLI (CI monitoring, PR management)
+- **jq**: JSON processing (used with `gh` for CI status parsing)
+- **docker** or **podman**: Container runtime for local CI testing
+- **markdownlint-cli**: Markdown linting (or use `npx`)
+- **shellcheck**: Bash script linting
+
+### Version Requirements
+
+Check versions:
+
+```bash
+bash --version      # Minimum: 3.2
+stow --version      # Minimum: 2.0
+git --version       # Minimum: 2.0
+```
+
+### Checking Dependencies
+
+```bash
+./dot status        # Shows missing dependencies and their installation status
+```
+
+### Platform-Specific Installation
+
+**macOS:**
+
+```bash
+brew install stow git gh jq
+brew install shellcheck markdownlint-cli
+```
+
+**Ubuntu/Debian:**
+
+```bash
+sudo apt-get update
+sudo apt-get install stow git gh jq
+sudo apt-get install shellcheck
+# Use npx for markdownlint: npx --yes markdownlint-cli@0.42.0
+```
+
+**Alpine:**
+
+```bash
+apk add stow git bash
+# gh, jq available but optional for core functionality
+```
+
 ## Documentation Standards
 
 - Use formal, minimal, reserved tone
@@ -68,6 +153,82 @@ Branches provide superior flexibility with standard git tooling.
   - Short forms work on all platforms
 - Use explicit error handling instead of `set -e` (controlled failure handling)
 - Enable bash safety features: `shopt -s nullglob extglob`
+
+### Error Handling Patterns
+
+**Check command success:**
+
+```bash
+if ! command_name arg1 arg2; then
+    log_error "Command failed: command_name"
+    return 1
+fi
+
+# Alternative: capture and check exit status
+if ! output=$(command_name 2>&1); then
+    log_error "Command failed: $output"
+    return 1
+fi
+```
+
+**Validate required input:**
+
+```bash
+if [[ -z "$variable" ]]; then
+    log_error "Variable 'variable' is required"
+    return 1
+fi
+
+if [[ ! -f "$file_path" ]]; then
+    log_error "File not found: $file_path"
+    return 1
+fi
+
+if [[ ! -d "$directory" ]]; then
+    log_error "Directory not found: $directory"
+    return 1
+fi
+```
+
+**Handle optional parameters with defaults:**
+
+```bash
+# Use parameter expansion for defaults
+local verbosity="${1:-0}"
+local target="${2:-$HOME}"
+
+# Or explicit checks
+if [[ -z "$optional_arg" ]]; then
+    optional_arg="default_value"
+fi
+```
+
+**Function return patterns:**
+
+```bash
+# Return 0 for success, 1 for failure
+function_name() {
+    # ... logic ...
+    if [[ condition ]]; then
+        return 0  # Success
+    else
+        return 1  # Failure
+    fi
+}
+
+# Check function result
+if function_name; then
+    log_success "Operation completed"
+else
+    log_error "Operation failed"
+    exit 1
+fi
+```
+
+**Avoid `set -e`:**
+
+Do not use `set -e` (exit on error). Use explicit error checking for controlled failure handling.
+This allows proper cleanup, logging, and user-friendly error messages.
 
 ### Bash 3.2 Compatibility
 
@@ -198,10 +359,35 @@ When modifying commands, prefer using these helpers over duplicating logic.
 
 ## Validation
 
-- All changes should pass validation script
-- Symlinks must point to dotfiles repository
-- Dependencies must be properly checked
-- Backup functionality must be preserved
+Before committing changes, verify:
+
+**1. Linting passes:**
+
+```bash
+markdownlint "**/*.md"
+shellcheck dot tests/**/*.sh
+```
+
+**2. Smoke tests pass (30 seconds):**
+
+```bash
+./tests/smoke-test.sh
+```
+
+**3. Full CI passes (2-3 minutes):**
+
+```bash
+./tests/run-local-ci.sh
+```
+
+**What gets validated:**
+
+- Symlinks point to dotfiles repository (not copies)
+- Required dependencies are installed
+- Backup functionality works correctly
+- Cross-platform compatibility (Ubuntu, Alpine, macOS)
+- Bash 3.2 compatibility
+- Package stowing completes without errors
 
 ## Update Instructions
 
@@ -227,6 +413,19 @@ Update AGENTS.md when:
 - **Include measured data** when available (performance improvements, timing)
 - **Document both what worked and what didn't** (negative results prevent repeated mistakes)
 - Reference the issue/PR that led to the guidance
+
+### Update Frequency
+
+Update AGENTS.md for both major and minor changes as they occur. Do not batch changes.
+
+Examples of minor updates:
+
+- Clarifications that prevent common mistakes
+- Tool usage tips discovered during work
+- Small workflow improvements
+- Command examples that prove useful
+
+Immediate updates ensure the document stays current and prevents repeated mistakes.
 
 ## Code Quality
 
@@ -293,6 +492,21 @@ Optimizations reduced CI time from 8-12 minutes to ~1 minute (92% improvement):
 - Bash 3.2: 120s → 32s (73% faster, cache miss)
 - macOS: 180s → 26s (86% faster)
 
+## Quick Reference
+
+| Task | Command | Time |
+|------|---------|------|
+| Install dotfiles | `./dot install` | 1-2m |
+| Update dotfiles | `./dot update` | 1-2m |
+| Check health | `./dot health` | instant |
+| Check status | `./dot status` | instant |
+| Smoke test | `./tests/smoke-test.sh` | 30s |
+| Full local CI | `./tests/run-local-ci.sh` | 2-3m |
+| Lint Markdown | `markdownlint "**/*.md"` | 5s |
+| Lint Bash | `shellcheck dot tests/**/*.sh` | 5s |
+| Monitor CI | `gh pr checks <PR>` | instant |
+| View CI logs | `gh run view --log-failed` | instant |
+
 ## Common Tasks
 
 - Installation: `./dot install` (add `-v` or `-vv` for more detail)
@@ -351,6 +565,121 @@ Always run container tests before pushing to catch platform-specific issues earl
 
 See `tests/README.md` for detailed testing framework documentation.
 
+## Troubleshooting
+
+### Symlink Issues
+
+**Broken or orphaned symlinks:**
+
+```bash
+./dot health           # Identify broken symlinks
+./dot health -v        # Detailed information
+
+# Remove broken symlinks
+find ~ -maxdepth 1 -type l ! -exec test -e {} \; -delete
+
+# Re-stow package
+stow --verbose --restow --dir=. --target=$HOME package_name
+```
+
+**Stow fails with "existing target is not owned by stow":**
+
+```bash
+# Back up conflicting file
+mv ~/.conflicting_file ~/.conflicting_file.backup
+
+# Re-run stow
+stow --verbose --restow --dir=. --target=$HOME package_name
+
+# Or use ./dot install which handles conflicts
+./dot install -vv
+```
+
+### Installation Problems
+
+**Missing dependencies:**
+
+```bash
+./dot status           # Lists missing dependencies
+```
+
+Install missing tools based on platform:
+
+```bash
+# macOS
+brew install stow git
+
+# Ubuntu/Debian
+sudo apt-get install stow git
+
+# Alpine
+apk add stow git
+```
+
+**Permission errors:**
+
+Ensure `$HOME` is writable. Stow creates symlinks in `$HOME` pointing to files in the dotfiles repository.
+
+### CI/CD Issues
+
+**CI fails on platform-specific commands:**
+
+1. Check Alpine test results (BSD-like coreutils compatibility)
+2. Verify short-form arguments used for coreutils (`-p`, `-r`)
+3. Test locally: `./tests/run-local-ci.sh alpine`
+
+**CI fails on macOS Bash compatibility:**
+
+1. Test Bash 3.2 compatibility: `./tests/run-local-ci.sh bash32`
+2. Avoid Bash 4.0+ features (associative arrays, mapfile, &>>)
+3. See Bash 3.2 Compatibility section for alternatives
+
+**CI caching issues:**
+
+Clear GitHub Actions cache if persistent failures occur:
+
+```bash
+# List caches
+gh cache list
+
+# Delete specific cache
+gh cache delete <CACHE_ID>
+```
+
+### Rollback Procedures
+
+**Restore from backup:**
+
+```bash
+# List available backups
+ls -lt backups/
+
+# Restore specific backup (replaces current symlinks)
+cp -r backups/dotfiles-backup-YYYYMMDD-HHMMSS/* ~/
+```
+
+**Undo stow operations:**
+
+```bash
+# Remove all symlinks for specific package
+stow --verbose --delete --dir=. --target=$HOME package_name
+
+# Remove all dotfiles symlinks
+for pkg in system git zsh tmux gh gnuplot bash; do
+    stow --verbose --delete --dir=. --target=$HOME "$pkg"
+done
+```
+
+**Restore repository to clean state:**
+
+```bash
+git status             # Check for uncommitted changes
+git stash              # Stash changes if needed
+git checkout main      # Return to main branch
+git pull               # Update to latest
+./dot update           # Re-apply dotfiles
+```
+
 ## Pull Request Workflow
 
 For all code changes:
@@ -368,11 +697,58 @@ This ensures code quality through automated testing and AI review.
 
 **Note:** The PR template includes an AGENTS.md update checklist to remind about documentation.
 
-## Monitoring CI and GitHub Actions
+## GitHub Integration
 
-Use GitHub CLI (`gh`) to monitor CI status and troubleshoot failures.
+GitHub can be accessed through both MCP tools and `gh` CLI. Each has strengths for different tasks.
 
-### Check PR Status
+### When to Use Each Tool
+
+**Use MCP GitHub tools for:**
+
+- Creating pull requests (`mcp_github_create_pull_request`)
+- Updating PRs and issues (`mcp_github_update_pull_request`)
+- Requesting reviews (`mcp_github_request_copilot_review`)
+- Managing PR comments and reviews
+- Creating and managing issues
+- Repository operations (fork, create, branches)
+- Searching code, issues, PRs across GitHub
+
+**Use `gh` CLI for:**
+
+- Monitoring CI status in real-time
+- Viewing workflow logs with formatting
+- Watching test runs as they execute
+- Re-running failed jobs
+- Quick status checks during iteration
+
+**Common mistake:** Attempting a task with only one tool. If MCP doesn't provide the needed
+output format or `gh` lacks the functionality, try the other tool. Both can read/write GitHub
+data but have different interfaces and capabilities.
+
+### MCP GitHub Tools
+
+**Create and manage PRs:**
+
+```bash
+# Use MCP functions in Cursor
+mcp_github_create_pull_request
+mcp_github_update_pull_request
+mcp_github_request_copilot_review
+mcp_github_merge_pull_request
+```
+
+**Search and explore:**
+
+```bash
+# Search across all of GitHub
+mcp_github_search_code         # Find code patterns
+mcp_github_search_issues       # Find relevant issues
+mcp_github_search_pull_requests # Find PRs by criteria
+```
+
+### GitHub CLI (`gh`)
+
+**Monitor CI status:**
 
 ```bash
 # Quick status overview
@@ -385,7 +761,7 @@ gh pr view <PR_NUMBER> --json statusCheckRollup --jq '.statusCheckRollup[] | "\(
 gh pr view <PR_NUMBER> --json statusCheckRollup,state
 ```
 
-### View CI Logs
+**View CI logs:**
 
 ```bash
 # View logs for failed jobs only
@@ -401,41 +777,26 @@ gh run list --workflow=validate.yml --limit 5
 gh run watch <RUN_ID>
 ```
 
-### Common Patterns
-
-**After pushing changes:**
+**Common patterns:**
 
 ```bash
-# Wait for CI to start, then check status
+# After pushing changes
 sleep 30 && gh pr checks <PR_NUMBER>
+gh run watch  # Watch latest run
 
-# Watch run progress
-gh run watch  # Watches latest run
-```
-
-**When CI fails:**
-
-```bash
-# Get failed job logs
+# When CI fails
 gh run view --log-failed
-
-# Re-run failed jobs (after fixing)
 gh run rerun <RUN_ID> --failed
-```
 
-**Get run ID from PR:**
-
-```bash
-# Extract run ID from PR using gh and jq (portable)
+# Get run ID from PR (portable)
 gh pr view <PR_NUMBER> --json statusCheckRollup --jq '.statusCheckRollup[0].detailsUrl' | grep -oE '[0-9]+$'
 ```
 
-### MCP GitHub Tools Limitations
+### Best Practice
 
-While MCP GitHub tools provide rich PR/issue management:
+Use both tools complementarily:
 
-- **Use `gh` CLI for CI monitoring**: MCP tools don't provide formatted log output
-- **Use `gh` for workflow runs**: Real-time watching and log filtering unavailable via MCP
-- **Use MCP for PR management**: Creating, updating, reviewing, merging PRs
+- **MCP**: PR lifecycle management (create, update, review, merge)
+- **gh**: CI monitoring and debugging (status, logs, re-runs)
 
-**Best practice:** Combine both tools - MCP for PR operations, `gh` for CI monitoring.
+When one tool doesn't provide what you need, try the other before concluding the task is impossible.
