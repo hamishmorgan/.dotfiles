@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/hamishmorgan/.dotfiles/workflows/CI/badge.svg)](https://github.com/hamishmorgan/.dotfiles/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Bash](https://img.shields.io/badge/Bash-4.0%2B-green.svg)](https://www.gnu.org/software/bash/)
+[![Bash](https://img.shields.io/badge/Bash-3.2%2B-green.svg)](https://www.gnu.org/software/bash/)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-blue.svg)](#prerequisites)
 [![GNU Stow](https://img.shields.io/badge/GNU-Stow-orange.svg)](https://www.gnu.org/software/stow/)
 [![Shell](https://img.shields.io/github/languages/top/hamishmorgan/.dotfiles)](https://github.com/hamishmorgan/.dotfiles)
@@ -57,12 +57,10 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Install dependencies
-# Note: bash 4.0+ is required (macOS ships with bash 3.2)
-brew install stow git tmux zsh bash
+brew install stow git tmux zsh
 ```
 
-**Important:** macOS ships with bash 3.2. This script requires bash 4.0+ for associative array support.
-After installing, run the script with: `/opt/homebrew/bin/bash ./dot install`
+The `dot` script works with macOS's default bash 3.2, so no additional bash installation is needed.
 
 ### Linux
 
@@ -83,12 +81,6 @@ sudo dnf install stow git tmux zsh
 git clone git@github.com:hamishmorgan/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 ./dot install
-```
-
-**macOS users:** If you get an error about bash version, use homebrew bash:
-
-```bash
-/opt/homebrew/bin/bash ./dot install
 ```
 
 The installer verifies dependencies, backs up existing files, initializes submodules, and creates symlinks.
@@ -265,18 +257,6 @@ stow -D git zsh tmux gh gnuplot bash
 ```
 
 ## Troubleshooting
-
-### Bash Version Error (macOS)
-
-If you see `declare: -A: invalid option`:
-
-```bash
-# macOS ships with bash 3.2, script requires 4.0+
-brew install bash
-
-# Run with homebrew bash
-/opt/homebrew/bin/bash ./dot install
-```
 
 ### Permission Errors
 

@@ -71,7 +71,7 @@ Code Change → Smoke Test → Docker Tests → Push → GitHub Actions
 
 ### For Smoke Tests
 
-- bash 4.0+
+- bash 3.2+ (works with macOS default bash)
 - shellcheck (optional, will skip if not available)
 - markdownlint (optional, will skip if not available)
 

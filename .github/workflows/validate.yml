@@ -71,20 +71,20 @@ jobs:
     
     - name: Install dependencies
       run: |
-        brew install stow git tmux zsh bash
+        brew install stow git tmux zsh
     
     - name: Validate installation
       run: |
         cd ${{ github.workspace }}
         chmod +x dot
-        # Use homebrew bash (4.0+) instead of system bash (3.2)
-        /opt/homebrew/bin/bash ./dot install
-        /opt/homebrew/bin/bash ./dot validate
+        # dot script now works with macOS default bash 3.2
+        ./dot install
+        ./dot validate
     
     - name: Run health check
       run: |
         cd ${{ github.workspace }}
-        /opt/homebrew/bin/bash ./dot health
+        ./dot health
     
     - name: Test configurations
       run: |
