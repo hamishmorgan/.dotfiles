@@ -230,6 +230,8 @@ show_usage() {
     echo "  update        Update configurations and reinstall"
     echo "  uninstall     Remove dotfiles symlinks"
     echo "  backup        Create backup of existing files"
+    echo "  backups       List all available backups with details"
+    echo "  restore       Restore from backup (default: latest)"
     echo "  clean         Clean up backup directories"
     echo ""
     echo "Options:"
@@ -1155,6 +1157,191 @@ get_backup_age_days() {
     local backup_mtime
     backup_mtime=$(stat -c %Y "$backup" 2>/dev/null || stat -f %m "$backup" 2>/dev/null)
     echo $(( ($(date +%s) - backup_mtime) / 86400 ))
+}
+
+# List all available backups with details
+list_backups() {
+    show_command_header "Available Backups"
+    
+    local backup_dirs=()
+    while IFS= read -r dir; do
+        backup_dirs+=("$dir")
+    done < <(get_backup_dirs | sort -r)
+    
+    if [[ ${#backup_dirs[@]} -eq 0 ]]; then
+        show_section_separator
+        echo ""
+        log_info "No backups found"
+        echo ""
+        show_section_separator
+        echo ""
+        return 0
+    fi
+    
+    show_section_separator
+    echo ""
+    printf "  ${BLUE}%-5s %-35s %-12s %-20s${NC}\n" "ID" "Name" "Size" "Created"
+    echo "  ────────────────────────────────────────────────────────────────────────────"
+    
+    local id=1
+    for dir in "${backup_dirs[@]}"; do
+        local name
+        name=$(basename "$dir")
+        local created
+        created=$(date -r "$dir" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "unknown")
+        local size
+        size=$(du -sh "$dir" 2>/dev/null | cut -f1)
+        
+        printf "  %-5s %-35s %-12s %-20s\n" "$id" "$name" "$size" "$created"
+        ((id++))
+    done
+    
+    echo ""
+    show_section_separator
+    echo ""
+    log_info "Restore with: ${BLUE}./dot restore${NC} ${YELLOW}[BACKUP_ID|latest]${NC}"
+    echo ""
+}
+
+# Restore from a specific backup
+restore_from_backup() {
+    local backup_id="$1"
+    
+    show_command_header "Dotfiles Restore"
+    
+    # Find backup directory
+    local backup_dir=""
+    if [[ "$backup_id" == "latest" ]]; then
+        backup_dir=$(get_backup_dirs | sort -r | head -n 1)
+        if [[ -z "$backup_dir" ]]; then
+            log_error "No backups found"
+            return 1
+        fi
+    else
+        # Try exact directory name match first
+        if [[ -d "$DOTFILES_DIR/backups/$backup_id" ]]; then
+            backup_dir="$DOTFILES_DIR/backups/$backup_id"
+        # Try with dotfiles-backup- prefix
+        elif [[ -d "$DOTFILES_DIR/backups/dotfiles-backup-$backup_id" ]]; then
+            backup_dir="$DOTFILES_DIR/backups/dotfiles-backup-$backup_id"
+        else
+            log_error "Backup not found: $backup_id"
+            log_info "Run ${BLUE}./dot backups${NC} to see available backups"
+            return 1
+        fi
+    fi
+    
+    show_section_separator
+    echo ""
+    log_info "Backup: ${BLUE}$(basename "$backup_dir")${NC}"
+    local created
+    created=$(date -r "$backup_dir" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "unknown")
+    log_info "Created: $created"
+    local size
+    size=$(du -sh "$backup_dir" 2>/dev/null | cut -f1)
+    log_info "Size: $size"
+    echo ""
+    
+    # Show what will be restored
+    log_info "Files to restore:"
+    local file_count=0
+    local max_display=20
+    
+    while IFS= read -r file; do
+        if [[ $file_count -lt $max_display ]]; then
+            local rel_path="${file#"$backup_dir"/}"
+            echo "  ${SYMBOL_INFO} $rel_path"
+        fi
+        ((file_count++))
+    done < <(find "$backup_dir" -type f -o -type l 2>/dev/null)
+    
+    if [[ $file_count -gt $max_display ]]; then
+        echo "  ... and $((file_count - max_display)) more file(s)"
+    fi
+    echo ""
+    
+    # Confirm restoration
+    read -r -p "Restore from this backup? (y/N): " confirm
+    if [[ "$confirm" != "y" ]]; then
+        log_info "Restore cancelled"
+        return 0
+    fi
+    
+    # Create safety backup before restore
+    local safety_backup
+    safety_backup="$DOTFILES_DIR/backups/dotfiles-pre-restore-$(date +%s)"
+    log_info "Creating safety backup..."
+    if ! backup_existing_to "$safety_backup"; then
+        log_warning "Could not create safety backup, but continuing..."
+    else
+        log_success "Safety backup: $(basename "$safety_backup")"
+    fi
+    
+    echo ""
+    
+    # Uninstall current dotfiles
+    log_info "Removing current dotfiles..."
+    cmd_uninstall > /dev/null 2>&1
+    
+    # Restore files
+    log_info "Restoring files from backup..."
+    if cp -r "$backup_dir/"* "$HOME/" 2>/dev/null; then
+        log_success "Files restored successfully"
+    else
+        log_error "Some files failed to restore"
+        log_warning "You may need to restore manually from: $backup_dir"
+        return 1
+    fi
+    
+    echo ""
+    show_section_separator
+    echo ""
+    log_success "Restore complete"
+    echo ""
+    show_tip "Reload shell to pick up restored configurations"
+    
+    if [[ -n "$safety_backup" ]]; then
+        echo ""
+        log_info "Safety backup available at: $(basename "$safety_backup")"
+    fi
+    echo ""
+    
+    return 0
+}
+
+# Backup to a specific directory
+backup_existing_to() {
+    local target_dir="$1"
+    
+    mkdir -p "$target_dir" || return 1
+    
+    for package in "${PACKAGES[@]}"; do
+        local package_files
+        package_files=$(get_package_files "$package")
+        
+        IFS=',' read -ra files <<< "$package_files"
+        
+        for file in "${files[@]}"; do
+            local home_file="$HOME/$file"
+            
+            if [[ -e "$home_file" ]] || [[ -L "$home_file" ]]; then
+                local file_dir
+                file_dir=$(dirname "$file")
+                
+                mkdir -p "$target_dir/$file_dir"
+                
+                if [[ -L "$home_file" ]]; then
+                    cp -P "$home_file" "$target_dir/$file" 2>/dev/null || true
+                elif [[ -d "$home_file" ]]; then
+                    cp -r "$home_file" "$target_dir/$file" 2>/dev/null || true
+                else
+                    cp "$home_file" "$target_dir/$file" 2>/dev/null || true
+                fi
+            fi
+        done
+    done
+    
+    return 0
 }
 
 # Clean up backup directories
@@ -2666,6 +2853,15 @@ cmd_backup() {
     backup_existing
 }
 
+cmd_backups() {
+    list_backups
+}
+
+cmd_restore() {
+    local backup_id="${1:-latest}"
+    restore_from_backup "$backup_id"
+}
+
 cmd_clean() {
     clean_backups
 }
@@ -2686,7 +2882,7 @@ is_flag() {
 # Check if argument is a valid command
 is_valid_command() {
     local cmd="$1"
-    [[ "$cmd" =~ ^(install|health|update|status|backup|clean|uninstall)$ ]]
+    [[ "$cmd" =~ ^(install|health|update|status|backup|backups|restore|clean|uninstall)$ ]]
 }
 
 # Parse verbosity flag and return level increment
@@ -2763,7 +2959,7 @@ parse_arguments() {
                 ;;
 
             # Valid commands
-            install|health|update|status|backup|clean|uninstall)
+            install|health|update|status|backup|backups|restore|clean|uninstall)
                 if [[ -n "$COMMAND" ]]; then
                     die "Multiple commands specified: '$COMMAND' and '$1'"
                 fi
@@ -2833,6 +3029,14 @@ main() {
         backup)
             cmd_backup
             ;;
+        backups)
+            cmd_backups
+            ;;
+        restore)
+            # Pass backup ID argument if provided
+            shift  # Remove command from args
+            cmd_restore "$@"
+            ;;
         clean)
             cmd_clean
             ;;
@@ -2861,6 +3065,8 @@ d() {
         s|status) "$HOME/.dotfiles/dot" status "$@" ;;
         u|update) "$HOME/.dotfiles/dot" update "$@" ;;
         b|backup) "$HOME/.dotfiles/dot" backup "$@" ;;
+        backups)  "$HOME/.dotfiles/dot" backups "$@" ;;
+        r|restore) "$HOME/.dotfiles/dot" restore "$@" ;;
         c|clean)  "$HOME/.dotfiles/dot" clean "$@" ;;
         i|install) "$HOME/.dotfiles/dot" install "$@" ;;
         cd)       builtin cd "$HOME/.dotfiles" || return ;;
@@ -2875,7 +3081,7 @@ _dot_completion() {
 
     # Complete commands
     if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
-        local commands="install status health update backup clean uninstall"
+        local commands="install status health update backup backups restore clean uninstall"
         local flags="-h --help -v --verbose -vv"
         # Bash 3.2 compatible (no mapfile)
         COMPREPLY=()
@@ -2940,6 +3146,8 @@ d() {
         s|status) "$HOME/.dotfiles/dot" status "$@" ;;
         u|update) "$HOME/.dotfiles/dot" update "$@" ;;
         b|backup) "$HOME/.dotfiles/dot" backup "$@" ;;
+        backups)  "$HOME/.dotfiles/dot" backups "$@" ;;
+        r|restore) "$HOME/.dotfiles/dot" restore "$@" ;;
         c|clean)  "$HOME/.dotfiles/dot" clean "$@" ;;
         i|install) "$HOME/.dotfiles/dot" install "$@" ;;
         cd)       builtin cd "$HOME/.dotfiles" || return ;;
@@ -2968,6 +3176,8 @@ _dot_completion() {
                 'health:Run comprehensive diagnostics'
                 'update:Update configurations and reinstall'
                 'backup:Create backup of existing files'
+                'backups:List all available backups with details'
+                'restore:Restore from backup (default: latest)'
                 'clean:Clean up backup directories'
                 'uninstall:Remove dotfiles symlinks'
             )
@@ -2979,6 +3189,18 @@ _dot_completion() {
                     _arguments \
                         '(-v --verbose)'{-v,--verbose}'[Verbose output]' \
                         '-vv[Very verbose output]'
+                    ;;
+                restore)
+                    # Complete with available backup IDs
+                    local -a backups
+                    backups=('latest:Most recent backup')
+                    while IFS= read -r dir; do
+                        local name
+                        name=$(basename "$dir")
+                        local timestamp="${name#dotfiles-backup-}"
+                        backups+=("$timestamp:Backup $timestamp")
+                    done < <(find "$HOME/.dotfiles/backups" -type d -name "dotfiles-backup-*" 2>/dev/null | sort -r)
+                    _describe 'backup' backups
                     ;;
             esac
             ;;
@@ -3010,6 +3232,9 @@ _d_completion() {
                 'update:Update and reinstall'
                 'b:backup - Create backup'
                 'backup:Create backup'
+                'backups:List all available backups'
+                'r:restore - Restore from backup'
+                'restore:Restore from backup'
                 'c:clean - Clean up old backups'
                 'clean:Clean up old backups'
                 'i:install - Install dotfiles'
