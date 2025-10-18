@@ -238,11 +238,12 @@ jobs:
 
     - name: Install dependencies
       run: |
-        brew install stow git tmux zsh
-        # Link packages that may not be auto-linked
+        brew install stow git tmux zsh ncurses
+        # Link packages that may not be auto-linked  
         brew link --overwrite stow || true
         brew link --overwrite tmux || true
         brew link --overwrite zsh || true
+        brew link --overwrite ncurses || true
 
     - name: Make scripts executable
       run: chmod +x dot tests/lib/*.sh
