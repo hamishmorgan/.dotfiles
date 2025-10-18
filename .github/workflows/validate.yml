@@ -21,14 +21,6 @@ jobs:
       with:
         node-version: '20'
 
-    - name: Cache npm global packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-npm-global-${{ hashFiles('.github/workflows/validate.yml') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-global-
-
     - name: Configure apt to skip documentation
       run: |
         sudo mkdir -p /etc/dpkg/dpkg.cfg.d
@@ -43,10 +35,10 @@ jobs:
           sudo apt-get install -y -qq shellcheck
         fi
 
-    - name: Install markdownlint and run linting
+    - name: Run linting
       run: |
-        npm install -g markdownlint-cli
-        markdownlint "**/*.md" --ignore node_modules
+        # Use npx to avoid global install and leverage built-in npm caching
+        npx --yes markdownlint-cli@0.42.0 "**/*.md" --ignore node_modules
         shellcheck dot
 
   smoke-test:
@@ -85,7 +77,7 @@ jobs:
       with:
         # Only cache downloaded packages, not package lists (avoids stale indices and permission issues)
         path: /var/cache/apt/archives
-        key: ${{ runner.os }}-apt-bash32-${{ hashFiles('dot') }}
+        key: ${{ runner.os }}-apt-bash32-build-essential-stow-git-tmux-zsh
         restore-keys: |
           ${{ runner.os }}-apt-bash32-
           ${{ runner.os }}-apt-
@@ -184,7 +176,7 @@ jobs:
       with:
         # Only cache downloaded packages, not package lists (avoids stale indices and permission issues)
         path: /var/cache/apt/archives
-        key: ${{ runner.os }}-apt-ubuntu-${{ hashFiles('dot') }}
+        key: ${{ runner.os }}-apt-ubuntu-stow-git-tmux-zsh
         restore-keys: |
           ${{ runner.os }}-apt-ubuntu-
           ${{ runner.os }}-apt-
