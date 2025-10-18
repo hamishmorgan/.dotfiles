@@ -325,66 +325,16 @@ Verify installation:
 ./dot health
 ```
 
-## Linting
+## Contributing
 
-To ensure code quality, run linters:
+Interested in contributing? See [DEVELOPMENT.md](DEVELOPMENT.md) for comprehensive developer documentation:
 
-### Linting Prerequisites
+- Development environment setup
+- Git workflow and branch strategy
+- Testing and CI/CD
+- Code standards and Bash 3.2 compatibility
+- Linting tools and commands
+- Debugging tips
+- Architecture and design principles
 
-Install linting tools:
-
-**Ubuntu/Debian:**
-
-```bash
-sudo apt-get update
-sudo apt-get install shellcheck
-npm install -g markdownlint-cli
-```
-
-**macOS:**
-
-```bash
-brew install shellcheck
-npm install -g markdownlint-cli
-```
-
-### Linting Commands
-
-Markdown files:
-
-```bash
-markdownlint "**/*.md"
-```
-
-Bash scripts:
-
-```bash
-shellcheck dot
-```
-
-All files:
-
-```bash
-markdownlint "**/*.md" && shellcheck dot
-```
-
-## CI/CD
-
-This repository includes GitHub Actions workflows for automated validation:
-
-- **Linting**: Validates Markdown and Bash scripts before installation tests
-- **Smoke Tests**: Quick validation of basic functionality and structure
-- **Ubuntu Validation**: Tests full installation on Ubuntu with dependency checks
-- **macOS Validation**: Tests full installation on macOS with dependency checks
-- **Bash 3.2 Validation**: Explicit testing with Bash 3.2 for macOS compatibility
-- **Configuration Testing**: Validates git, zsh, and other package configurations
-
-Workflow file: `.github/workflows/validate.yml`
-
-## Development
-
-1. Create feature branch
-2. Make changes
-3. Run linters: `markdownlint "**/*.md" && shellcheck dot`
-4. Test with `./dot health`
-5. Commit changes
+For AI agents, see [AGENTS.md](AGENTS.md) for detailed guidelines.

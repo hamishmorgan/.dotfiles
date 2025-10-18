@@ -45,6 +45,13 @@ This repository contains dotfiles managed with GNU Stow. Files are organized int
 Template-based secrets management separates public templates from private secret configurations.
 The `system` package is stowed first to ensure `.stow-global-ignore` is in place before other packages.
 
+**Documentation Structure:**
+
+- **README.md**: User-facing documentation (installation, usage, features)
+- **DEVELOPMENT.md**: Developer documentation (setup, workflow, testing, CI, architecture)
+- **AGENTS.md**: AI agent instructions (this file - technical implementation guidance)
+- **tests/README.md**: Testing framework documentation
+
 ### Branch Strategy
 
 Branch-based profile management provides configuration flexibility without runtime complexity.
