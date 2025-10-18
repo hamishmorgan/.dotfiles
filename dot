@@ -1831,84 +1831,162 @@ cmd_health() {
     fi
 }
 
-# Verbose health check (original detailed output)
+# Verbose health check (detailed output with unified design)
 cmd_health_verbose() {
-    log_info "Running comprehensive dotfiles health check..."
+    # Track timing
+    local start_time
+    start_time=$(date +%s)
+    
+    local total_errors=0
+    local total_warnings=0
+    
+    # Display same header as regular mode
     echo ""
-
-    local total_issues=0
-
+    echo -e "${BLUE}╭──────────────────────────────────────────────────────────╮${NC}"
+    echo -e "${BLUE}│${NC}  Dotfiles Health Check ${BLUE}(Detailed)${NC}                       ${BLUE}│${NC}"
+    echo -e "${BLUE}╰──────────────────────────────────────────────────────────╯${NC}"
+    echo ""
+    
     # 1. Symlink integrity
-    log_info "=== Symlink Integrity ==="
+    echo -e " ${BLUE}1. Symlink Integrity${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     for package in "${PACKAGES[@]}"; do
-        validate_package "$package" || ((total_issues++))
+        validate_package "$package" || ((total_errors++))
     done
     echo ""
-
+    
     # 2. Configuration syntax
-    log_info "=== Configuration Syntax ==="
-    validate_config_syntax || ((total_issues += $?))
+    echo -e " ${BLUE}2. Configuration Syntax${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-
+    local syntax_result
+    validate_config_syntax && syntax_result=0 || syntax_result=$?
+    ((total_errors += syntax_result))
+    echo ""
+    
     # 3. Submodule health
-    log_info "=== Submodule Health ==="
-    check_submodule_health || ((total_issues += $?))
+    echo -e " ${BLUE}3. Submodule Health${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-
+    local submodule_result
+    check_submodule_health && submodule_result=0 || submodule_result=$?
+    ((total_errors += submodule_result))
+    echo ""
+    
     # 4. Git repository status
-    log_info "=== Git Repository Status ==="
-    check_git_repo_status || ((total_issues += $?))
+    echo -e " ${BLUE}4. Git Repository${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-
+    local git_result
+    check_git_repo_status && git_result=0 || git_result=$?
+    ((total_warnings += git_result))
+    echo ""
+    
     # 5. Template/secret config consistency
-    log_info "=== Template Configuration Consistency ==="
-    check_template_consistency || ((total_issues += $?))
+    echo -e " ${BLUE}5. Template Consistency${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-
+    local template_result
+    check_template_consistency && template_result=0 || template_result=$?
+    ((total_warnings += template_result))
+    echo ""
+    
     # 6. File permissions
-    log_info "=== File Permissions ==="
-    check_file_permissions || ((total_issues += $?))
+    echo -e " ${BLUE}6. File Permissions${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-
+    local perm_result
+    check_file_permissions && perm_result=0 || perm_result=$?
+    ((total_errors += perm_result))
+    echo ""
+    
     # 7. Shell integration
-    log_info "=== Shell Integration ==="
-    check_shell_integration || ((total_issues += $?))
+    echo -e " ${BLUE}7. Shell Integration${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-
+    local shell_result
+    check_shell_integration && shell_result=0 || shell_result=$?
+    ((total_warnings += shell_result))
+    echo ""
+    
     # 8. Stow conflicts
-    log_info "=== Stow Conflicts ==="
-    check_stow_conflicts || ((total_issues += $?))
+    echo -e " ${BLUE}8. Stow Conflicts${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-
+    local stow_result
+    check_stow_conflicts && stow_result=0 || stow_result=$?
+    ((total_errors += stow_result))
+    echo ""
+    
     # 9. Orphaned symlinks
-    log_info "=== Orphaned Symlinks ==="
+    echo -e " ${BLUE}9. Orphaned Symlinks${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     check_orphaned_symlinks
     # Note: Orphaned symlinks are warnings, not errors
     echo ""
-
+    
     # 10. Dependencies
-    log_info "=== Dependencies ==="
+    echo -e " ${BLUE}10. Dependencies${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     if check_dependencies 2>/dev/null; then
         log_success "All dependencies satisfied"
     else
         log_warning "Some dependencies missing (see above)"
-        ((total_issues++))
+        ((total_errors++))
     fi
     echo ""
-
+    
     # 11. Backup health
-    log_info "=== Backup Health ==="
+    echo -e " ${BLUE}11. Backup Health${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     check_backup_health
     echo ""
-
-    # Summary
-    echo "========================================"
-    if [[ $total_issues -eq 0 ]]; then
-        log_success "Health check passed! No issues found."
+    
+    # Calculate duration
+    local end_time
+    end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    
+    # Show summary using same format as regular mode
+    if [[ $total_errors -eq 0 ]]; then
+        show_health_summary "healthy" 0 "$total_warnings" "$duration"
+    else
+        show_health_summary "unhealthy" "$total_errors" "$total_warnings" "$duration"
+    fi
+    
+    # Show maintenance items if any
+    local backup_count=0
+    while IFS= read -r dir; do
+        [[ -z "$dir" ]] && continue
+        ((backup_count++))
+    done < <(get_backup_dirs)
+    
+    local orphaned_count=0
+    orphaned_count=$(find "$HOME" -maxdepth 1 -type l -name ".*" 2>/dev/null | while IFS= read -r link; do
+        [[ -L "$link" ]] && [[ ! -e "$link" ]] && echo 1
+    done | wc -l)
+    
+    if [[ $orphaned_count -gt 0 || $backup_count -gt 10 ]]; then
+        echo ""
+        echo -e "${YELLOW}⚠ Maintenance Items:${NC}"
+        
+        if [[ $orphaned_count -gt 0 ]]; then
+            echo "  • $orphaned_count orphaned symlink(s) (non-critical)"
+        fi
+        
+        if [[ $backup_count -gt 10 ]]; then
+            local backup_size=0
+            while IFS= read -r dir; do
+                [[ -z "$dir" ]] && continue
+                local size
+                size=$(du -sk "$dir" 2>/dev/null | cut -f1)
+                ((backup_size += size))
+            done < <(get_backup_dirs)
+            echo "  • $backup_count backups using $((backup_size / 1024))MB - run './dot clean' to free space"
+        fi
+    fi
+    
+    echo ""
+    echo -e "${BLUE}💡 Tip: Run './dot health' for quick summary view${NC}"
+    echo ""
+    
+    # Return appropriate exit code
+    if [[ $total_errors -eq 0 ]]; then
         return 0
     else
-        log_error "Health check found $total_issues issue(s)"
-        log_info "Run './dot install' to fix installation issues"
         return 1
     fi
 }
