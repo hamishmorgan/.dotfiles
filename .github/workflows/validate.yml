@@ -9,13 +9,13 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         submodules: true
-    
+
     - name: Install linting tools and run linting
       run: |
         sudo apt-get install -y shellcheck
@@ -26,31 +26,31 @@ jobs:
   validate-ubuntu:
     runs-on: ubuntu-latest
     needs: lint
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         submodules: true
-    
+
     - name: Install dependencies
       run: |
         sudo mv /usr/bin/mandb /usr/bin/mandb.bak 2>/dev/null || true
         sudo ln -s /bin/true /usr/bin/mandb
         sudo apt-get install -y stow git tmux zsh
-    
+
     - name: Validate installation
       run: |
         cd ${{ github.workspace }}
         chmod +x dot
         ./dot install
         ./dot validate
-    
+
     - name: Run health check
       run: |
         cd ${{ github.workspace }}
         ./dot health
-    
+
     - name: Test configurations
       run: |
         zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
@@ -62,17 +62,17 @@ jobs:
   validate-macos:
     runs-on: macos-latest
     needs: lint
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         submodules: true
-    
+
     - name: Install dependencies
       run: |
         brew install stow git tmux zsh
-    
+
     - name: Validate installation
       run: |
         cd ${{ github.workspace }}
@@ -80,12 +80,12 @@ jobs:
         # dot script now works with macOS default bash 3.2
         ./dot install
         ./dot validate
-    
+
     - name: Run health check
       run: |
         cd ${{ github.workspace }}
         ./dot health
-    
+
     - name: Test configurations
       run: |
         zsh -c "source ~/.zshrc && echo 'Zsh configuration loaded successfully'"
