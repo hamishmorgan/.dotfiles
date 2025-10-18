@@ -10,18 +10,8 @@ RUN apk add --no-cache \
     bash \
     tmux \
     zsh \
-    curl
-
-# Install stow from source (not in Alpine repos)
-RUN cd /tmp && \
-    wget https://ftp.gnu.org/gnu/stow/stow-2.4.1.tar.gz && \
-    tar -xzf stow-2.4.1.tar.gz && \
-    cd stow-2.4.1 && \
-    ./configure --prefix=/usr/local && \
-    make && \
-    make install && \
-    cd / && \
-    rm -rf /tmp/stow-2.4.1*
+    curl \
+    stow
 
 # Create test user
 RUN adduser -D -s /bin/bash testuser
