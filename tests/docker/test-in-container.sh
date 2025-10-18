@@ -1,80 +1,75 @@
 #!/usr/bin/env bash
 # Test script that runs inside Docker container
 # Performs full installation and validation in clean environment
+# Uses shared test library scripts
 
 set -e
 
-echo "================================"
-echo "Testing dotfiles in container"
+# Source shared test utilities
+source /tests/lib/common.sh
+source /tests/lib/create-secrets.sh
+source /tests/lib/run-installation.sh
+source /tests/lib/verify-health.sh
+
+log_test_section "Testing dotfiles in container"
 echo "OS: $(uname -s)"
-echo "================================"
+echo "Bash: $BASH_VERSION"
 echo ""
 
 # Copy dotfiles to home directory using tar (handles all edge cases)
-echo "Copying dotfiles to test environment..."
+log_test_info "Copying dotfiles to test environment..."
 mkdir -p ~/.dotfiles
 if ! tar -C /dotfiles -cf - --exclude='.git' . 2>/dev/null | tar -C ~/.dotfiles -xf -; then
-    echo "Warning: Some files may not have copied correctly"
+    log_test_warning "Some files may not have copied correctly"
 fi
 
 cd ~/.dotfiles
 
 # Initialize submodules
-echo "Initializing submodules..."
+log_test_info "Initializing submodules..."
 if ! git submodule update --init --recursive 2>&1 | grep -qv "fatal: not a git repository"; then
-    echo "Note: Submodule initialization skipped (expected in container environment)"
+    log_test_info "Submodule initialization skipped (expected in container)"
 fi
 
-# Helper function to create secret files
-create_secret_file() {
-    local file="$1"
-    local content="$2"
-    mkdir -p "$(dirname "$file")"
-    cat > "$file" << EOF
-$content
-EOF
-}
-
-# Create minimal secret files for testing
-echo "Creating test secret files..."
-create_secret_file "git/.gitconfig.secret" "[user]
-	name = Test User
-	email = test@example.com"
-
-create_secret_file "gh/.config/gh/config.yml.secret" "editor: vim"
-
-create_secret_file "gh/.config/gh/hosts.yml.secret" "github.com:
-    user: testuser
-    oauth_token: test_token"
-
-# Run installation
-echo "Testing installation..."
-./dot install
-
-# Run health check (expect some warnings in container environment)
-echo ""
-echo "Testing health check..."
-if ! ./dot health; then
-    echo ""
-    echo "Note: Health check reported issues (expected in container environment)"
-    echo "  - Git repository checks fail when .git is excluded"
-    echo "  - Submodule checks fail in isolated containers"
+# Create test secrets using shared function
+log_test_section "Creating Test Secrets"
+if ! create_test_secrets; then
+    log_test_error "Failed to create test secrets"
+    exit 1
 fi
 
-# Check that symlinks were created
-echo ""
-echo "Verifying symlinks..."
+# Run installation using shared function
+log_test_section "Running Installation"
+if ! run_installation; then
+    log_test_error "Installation failed"
+    exit 1
+fi
+
+# Run health check using shared function
+log_test_section "Running Health Checks"
+if ! verify_health true; then
+    log_test_warning "Health check completed with warnings (expected in containers)"
+fi
+
+# Verify symlinks were created
+log_test_section "Verifying Symlinks"
+symlink_failures=0
 for file in .gitconfig .zshrc .tmux.conf .bashrc; do
     if [[ -L ~/$file ]]; then
-        echo "✓ $file exists (symlink)"
+        log_test_success "$file exists (symlink)"
     elif [[ -d ~/$file ]]; then
-        echo "✓ $file exists (directory)"
+        log_test_success "$file exists (directory)"
     else
-        echo "✗ $file missing or invalid"
-        exit 1
+        log_test_error "$file missing or invalid"
+        ((symlink_failures++))
     fi
 done
 
+if [[ $symlink_failures -gt 0 ]]; then
+    log_test_error "Symlink verification failed: $symlink_failures file(s) missing"
+    exit 1
+fi
+
 echo ""
-echo "✅ All tests passed successfully!"
+log_test_success "All tests passed successfully!"
 
