@@ -62,7 +62,7 @@ for file in .gitconfig .zshrc .tmux.conf .bashrc; do
         log_test_success "$file exists (directory)"
     else
         log_test_error "$file missing or invalid"
-        ((symlink_failures++))
+        symlink_failures=$((symlink_failures + 1))
     fi
 done
 
