@@ -243,7 +243,8 @@ jobs:
         brew link --overwrite stow || true
         brew link --overwrite tmux || true
         brew link --overwrite zsh || true
-        brew link --overwrite ncurses || true
+        # ncurses is keg-only and requires --force
+        brew link --overwrite --force ncurses || true
 
     - name: Make scripts executable
       run: chmod +x dot tests/lib/*.sh
