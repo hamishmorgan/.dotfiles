@@ -16,11 +16,18 @@ jobs:
       uses: actions/checkout@v4
       # No submodules needed - linting only checks dot script and markdown files
 
-    - name: Setup Node.js with caching
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
+
+    - name: Cache npm global packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-global-${{ hashFiles('.github/workflows/validate.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-npm-global-
 
     - name: Configure apt to skip documentation
       run: |
@@ -94,10 +101,10 @@ jobs:
         # Download and build bash 3.2.57
         cd /tmp
         curl -LO https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz
-        
+
         # Verify SHA256 checksum for security
         echo "3252ef0e4c6659a4247d9c5c3c4aa021b1b0e4f4ecd667b84439fb446c0bb1b5  bash-3.2.57.tar.gz" | sha256sum -c -
-        
+
         tar xzf bash-3.2.57.tar.gz
         cd bash-3.2.57
         ./configure --prefix=/tmp/bash-3.2.57-install
