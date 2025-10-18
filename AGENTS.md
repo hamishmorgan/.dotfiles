@@ -229,6 +229,56 @@ When adding new instructions:
 - Tests full installation pipeline including dependency checks
 - Linting job must pass before validation jobs run
 
+### CI Performance Optimization
+
+Key learnings from CI optimization work (Issue #42, PR #58):
+
+**Caching Strategies:**
+
+- **Homebrew**: Don't cache. Bottles install faster than cache save/restore overhead.
+- **apt packages**: Use user-writable cache (`~/.apt-cache`) to avoid permission issues:
+
+  ```yaml
+  - name: Configure apt caching
+    run: |
+      mkdir -p ~/.apt-cache/archives/partial
+      sudo mkdir -p /etc/apt/apt.conf.d
+      echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
+  ```
+
+- **npm tools**: Use `npx` with version pinning instead of global install:
+
+  ```yaml
+  npx --yes markdownlint-cli@0.42.0 "**/*.md"
+  ```
+
+- **Stable cache keys**: Use package names, not file hashes to reduce cache churn.
+- **Clean up lock files**: Remove root-owned locks before cache save:
+
+  ```yaml
+  - name: Clean up apt cache lock files
+    if: always()
+    run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
+  ```
+
+**Performance Insights:**
+
+- `apt-get update` is the main bottleneck (~8-9s per job)
+- Separate into dedicated step for timing visibility
+- Skip installing pre-installed packages (shellcheck on GitHub runners)
+- Parallel job execution reduces wall-clock time
+- Verbose test output (`-vv`) aids debugging without performance cost
+
+**Measured Results:**
+
+Optimizations reduced CI time from 8-12 minutes to ~1 minute (92% improvement):
+
+- Linting: 90s → 15s (83% faster)
+- Smoke: 30s → 6s (80% faster)
+- Ubuntu: 120s → 28s (77% faster)
+- Bash 3.2: 120s → 32s (73% faster, cache miss)
+- macOS: 180s → 26s (86% faster)
+
 ## Common Tasks
 
 - Installation: `./dot install` (add `-v` or `-vv` for more detail)
