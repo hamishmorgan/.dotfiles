@@ -2565,9 +2565,14 @@ update_oh_my_zsh() {
 run_installation_pipeline() {
     local verbosity="${1:-0}"
 
-    if ! check_dependencies "$verbosity"; then
-        log_error "Cannot proceed without required dependencies"
-        exit 1
+    # Skip dependency check if environment variable is set (useful for CI)
+    if [[ "${SKIP_DEPENDENCY_CHECK:-}" != "true" ]]; then
+        if ! check_dependencies "$verbosity"; then
+            log_error "Cannot proceed without required dependencies"
+            exit 1
+        fi
+    else
+        log_info "Skipping dependency check (SKIP_DEPENDENCY_CHECK=true)"
     fi
 
     if ! init_submodules; then

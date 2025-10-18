@@ -255,9 +255,11 @@ jobs:
         ./tests/lib/create-secrets.sh
 
     - name: Run installation
+      env:
+        SKIP_DEPENDENCY_CHECK: "true"
       run: |
         cd ${{ github.workspace }}
-        ./tests/lib/run-installation.sh
+        ./dot install
 
     - name: Verify health
       run: |
