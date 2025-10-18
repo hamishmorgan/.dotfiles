@@ -1391,7 +1391,7 @@ show_health_table_header() {
 show_health_check_spinner() {
     local num="$1"
     local category="$2"
-    
+
     # Show spinner - ⠿ is a wide character (2 cols)
     printf " %3s %-25s ${BLUE}⠿ Checking...${NC}\r" "$num." "$category"  # Right-align number with dot
 }
@@ -1445,12 +1445,12 @@ show_health_summary() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     if [[ "$status" == "healthy" ]]; then
-        # Border = 60 chars total
+        # Border = 60 visual cols total
         # " Result: ✓ HEALTHY" = 1 + 8 + 2 (wide ✓) + 8 = 19 visual cols
         # "Duration: X.Xs" = 14 chars
-        # Padding: 60 - 19 - 14 = 27 spaces
+        # Padding: Use 23 spaces for better visual alignment with table above
         printf " Result: %b✓ HEALTHY%b" "$GREEN" "$NC"
-        printf "%27s" ""
+        printf "%23s" ""
         printf "Duration: %.1fs\n" "$duration"
     else
         local issues_text="$error_count error"
@@ -1459,10 +1459,10 @@ show_health_summary() {
             issues_text="$issues_text, $warn_count warning"
             [[ $warn_count -ne 1 ]] && issues_text="${issues_text}s"
         fi
-        # " Result: ✗ UNHEALTHY (text)" - calculate padding to fit in 60 chars
+        # " Result: ✗ UNHEALTHY (text)" - calculate padding for visual alignment
         # 1 + 8 + 2 (wide ✗) + 10 ("UNHEALTHY ") + 1 ("(") + text + 1 (")") = 23 + text
         local visible_length=$((23 + ${#issues_text}))
-        local padding=$((46 - visible_length))  # 60 - 14 (duration text) = 46 max before duration
+        local padding=$((42 - visible_length))  # Align with healthy case (23 spaces base)
         [[ $padding -lt 1 ]] && padding=1
 
         printf " Result: %b✗ UNHEALTHY%b (%s)" "$RED" "$NC" "$issues_text"
