@@ -161,7 +161,7 @@ jobs:
 
     - name: Clean up apt cache lock files
       if: always()
-      run: rm -f ~/.apt-cache/archives/lock
+      run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
 
   validate-ubuntu:
     name: Ubuntu Latest (System Bash)
@@ -229,7 +229,7 @@ jobs:
 
     - name: Clean up apt cache lock files
       if: always()
-      run: rm -f ~/.apt-cache/archives/lock
+      run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
 
   validate-macos:
     name: macOS Latest (System Bash)
