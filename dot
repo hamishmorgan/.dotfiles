@@ -43,15 +43,15 @@ execute_rollback() {
         log_info "Nothing to rollback"
         return 0
     fi
-    
+
     log_warning "Rolling back installation..."
-    
+
     # Execute in reverse order (LIFO)
     for ((i=${#ROLLBACK_STACK[@]}-1; i>=0; i--)); do
         log_info "Rollback step: ${ROLLBACK_STACK[i]}"
         eval "${ROLLBACK_STACK[i]}" 2>/dev/null || log_warning "Rollback step failed (non-critical)"
     done
-    
+
     log_success "Rollback completed"
     return 0
 }
@@ -59,17 +59,17 @@ execute_rollback() {
 # Cleanup handler
 cleanup_on_exit() {
     local exit_code=$?
-    
+
     # Only run cleanup if installation was in progress and failed
     if [[ $INSTALLATION_IN_PROGRESS == true ]] && [[ $exit_code -ne 0 ]]; then
         echo ""
         log_error "Installation interrupted or failed (exit code: $exit_code)"
-        
+
         if [[ ${#ROLLBACK_STACK[@]} -gt 0 ]]; then
             echo ""
             read -p "Rollback installation? (Y/n): " -n 1 -r
             echo ""
-            
+
             if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
                 execute_rollback
             else
@@ -149,7 +149,7 @@ discover_templates() {
         local package_dir
         package_dir=$(dirname "$template")
         local rel_path="${target#"$package_dir"/}"
-        
+
         echo "$template:$rel_path"
     done | sort
 }
@@ -185,7 +185,7 @@ prefix_output() {
         if [[ "$line" =~ "BUG in find_stowed_path? Absolute/relative mismatch" ]]; then
             continue
         fi
-        
+
         # Pattern matching for line classification
         if [[ "$line" =~ ^[[:space:]]*(ERROR|error|Error|FAIL|fail|failed|Failed|cannot|Cannot|unable|Unable|fatal|Fatal|FATAL) ]] || \
            [[ "$line" =~ (error:|failed:|fatal:) ]]; then
@@ -250,7 +250,7 @@ command_exists() {
 portable_timeout() {
     local duration="$1"
     shift
-    
+
     if command_exists timeout; then
         timeout "$duration" "$@"
     elif command_exists perl; then
@@ -265,17 +265,17 @@ portable_timeout() {
 # Check dependencies
 check_dependencies() {
     log_info "Checking dependencies..."
-    
+
     local missing_deps=()
     local all_deps
     all_deps="$(get_required_deps common) $(get_required_deps optional)"
-    
+
     for dep in $all_deps; do
         if ! command_exists "$dep"; then
             missing_deps+=("$dep")
         fi
     done
-    
+
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
         log_error "Missing dependencies: ${missing_deps[*]}"
         echo ""
@@ -286,7 +286,7 @@ check_dependencies() {
         echo "  Fedora: sudo dnf install ${missing_deps[*]}"
         exit 1
     fi
-    
+
     log_success "All dependencies satisfied"
 }
 
@@ -305,7 +305,7 @@ detect_platform() {
 # Determine merge strategy based on file type
 determine_merge_strategy() {
     local target="$1"
-    
+
     case "$target" in
         */.gitconfig*|*.gitconfig)
             echo "git-merge"
@@ -325,22 +325,22 @@ determine_merge_strategy() {
 # Create backup of existing files
 backup_existing() {
     log_info "Creating backup of existing files..."
-    
+
     # Create backup directory
     if ! mkdir -p "$BACKUP_DIR"; then
         log_error "Failed to create backup directory: $BACKUP_DIR"
         suggest_fixes "backup" "$BACKUP_DIR"
         return 1
     fi
-    
+
     local backed_up=0
-    
+
     # Generate backup list dynamically from package definitions
     for package in "${PACKAGES[@]}"; do
         local files
         files=$(get_package_files "$package")
         IFS=',' read -ra file_array <<< "$files"
-        
+
         for file in "${file_array[@]}"; do
         if [[ -e "$HOME/$file" ]]; then
             log_info "Backing up $file"
@@ -369,37 +369,37 @@ backup_existing() {
         fi
         done
     done
-    
+
     if [[ $backed_up -gt 0 ]]; then
         log_success "Backed up $backed_up files to $BACKUP_DIR"
     else
         log_info "No existing files to backup"
     fi
-    
+
     return 0
 }
 
 # Initialize submodules
 init_submodules() {
     log_info "Initializing git submodules..."
-    
+
     if [[ ! -f "$DOTFILES_DIR/.gitmodules" ]]; then
         log_info "No submodules found"
         return 0
     fi
-    
+
     cd "$DOTFILES_DIR" || {
         log_error "Failed to change to dotfiles directory: $DOTFILES_DIR"
         return 1
     }
-    
+
     # Use portable timeout (60 seconds)
     if ! portable_timeout 60 git submodule update --init --recursive 2>&1 | prefix_output "│ "; then
         log_error "Failed to initialize git submodules (timeout or git error)"
         log_info "Try running: cd $DOTFILES_DIR && git submodule update --init --recursive"
         return 1
     fi
-    
+
     log_success "Submodules initialized"
     return 0
 }
@@ -407,22 +407,22 @@ init_submodules() {
 # Process configuration templates (auto-discovered)
 process_templates() {
     log_info "Processing configuration templates..."
-    
+
     local template_count=0
     local failed_count=0
-    
-    # Process all .template files found in dotfiles directory  
+
+    # Process all .template files found in dotfiles directory
     while IFS= read -r template; do
         [[ -z "$template" ]] && continue
-        
+
         local target="${template%.template}"
-        
+
         if [[ ! -f "$template" ]]; then
             log_warning "Template not found: ${template#"$DOTFILES_DIR"/}"
             ((failed_count++))
             continue
         fi
-        
+
         if cp "$template" "$target" 2>/dev/null; then
             log_info "Created ${target#"$DOTFILES_DIR"/} from template"
             ((template_count++))
@@ -432,18 +432,18 @@ process_templates() {
             ((failed_count++))
         fi
     done < <(find "$DOTFILES_DIR" -type f -name "*.template" 2>/dev/null | sort)
-    
+
     if [[ $template_count -eq 0 ]] && [[ $failed_count -eq 0 ]]; then
         log_info "No template files found"
     elif [[ $template_count -gt 0 ]]; then
         log_success "Processed $template_count template(s)"
     fi
-    
+
     if [[ $failed_count -gt 0 ]]; then
         log_error "Failed to process $failed_count template(s)"
         return 1
     fi
-    
+
     return 0
 }
 
@@ -451,7 +451,7 @@ process_templates() {
 merge_git_config() {
     local source="$1"
     local target="$2"
-    
+
     # Read git config output (avoid process substitution hang)
     local config_output
     config_output=$(git -c "core.filemode=false" config --file "$source" --list 2>&1) || {
@@ -460,64 +460,64 @@ merge_git_config() {
         suggest_fixes "git-config" "$source"
         return 1
     }
-    
+
     # Apply each line to target
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         local key="${line%%=*}"
         local value="${line#*=}"
-        
+
         if ! git -c "core.filemode=false" config --file "$target" "$key" "$value" 2>/dev/null; then
             log_warning "Failed to set $key in ${target#"$DOTFILES_DIR"/}"
         fi
     done <<< "$config_output"
-    
+
     return 0
 }
 
 # Secure permissions on secret config file
 secure_secret_file() {
     local secret="$1"
-    
+
     if [[ ! -f "$secret" ]]; then
         return 0
     fi
-    
+
     if ! chmod 600 "$secret" 2>/dev/null; then
         log_warning "Failed to set secure permissions on ${secret#"$DOTFILES_DIR"/}"
         return 1
     fi
-    
+
     return 0
 }
 
 # Merge secret configurations with templates (auto-discovered)
 merge_secret_configs() {
     log_info "Merging secret configurations..."
-    
+
     local merge_count=0
     local failed_count=0
-    
+
     # Process all .secret files found in dotfiles directory
     while IFS= read -r secret; do
         [[ -z "$secret" ]] && continue
         [[ ! -f "$secret" ]] && continue
-        
+
         # Set secure permissions on secret file unconditionally
         secure_secret_file "$secret"
-        
+
         local target="${secret%.secret}"
-        
+
         if [[ ! -f "$target" ]]; then
             log_warning "Target file not found for ${secret#"$DOTFILES_DIR"/}, skipping"
             continue
         fi
-        
+
         local merge_type
         merge_type=$(determine_merge_strategy "$target")
-        
+
         log_info "Merging ${secret#"$DOTFILES_DIR"/} -> ${target#"$DOTFILES_DIR"/} ($merge_type)"
-        
+
         case "$merge_type" in
             git-merge)
                 if merge_git_config "$secret" "$target"; then
@@ -553,36 +553,36 @@ merge_secret_configs() {
                 ;;
         esac
     done < <(find "$DOTFILES_DIR" -type f -name "*.secret" 2>/dev/null | sort)
-    
+
     if [[ $merge_count -eq 0 ]] && [[ $failed_count -eq 0 ]]; then
         log_info "No secret configuration files found"
     elif [[ $merge_count -gt 0 ]]; then
         log_success "Merged $merge_count secret config(s)"
     fi
-    
+
     if [[ $failed_count -gt 0 ]]; then
         log_error "Failed to merge $failed_count secret config(s)"
         return 1
     fi
-    
+
     return 0
 }
 
 # Install dotfiles using Stow with rollback support
 install_dotfiles() {
     log_info "Installing dotfiles using Stow..."
-    
+
     for package in "${PACKAGES[@]}"; do
         if [[ ! -d "$package" ]]; then
             log_warning "Package directory not found: $package, skipping"
             continue
         fi
-        
+
         log_info "Installing package: $package"
-        
+
         # Add rollback action before installing
         add_rollback "stow --verbose --delete --dir='$DOTFILES_DIR' --target='$HOME' '$package' 2>/dev/null || true"
-        
+
         if stow --verbose --restow --dir="$DOTFILES_DIR" --target="$HOME" "$package" 2>&1 | prefix_output "│ "; then
             INSTALLED_PACKAGES+=("$package")
             log_success "Installed $package"
@@ -592,7 +592,7 @@ install_dotfiles() {
             return 1
         fi
     done
-    
+
     return 0
 }
 
@@ -600,10 +600,10 @@ install_dotfiles() {
 suggest_fixes() {
     local operation="$1"
     local context="$2"
-    
+
     echo ""
     echo "Suggested fixes:"
-    
+
     case $operation in
         stow)
             echo "  1. Check for conflicting files: ./dot status"
@@ -649,7 +649,7 @@ suggest_fixes() {
 check_symlink() {
     local file="$1"
     local expected_target="$2"
-    
+
     if [[ -L "$HOME/$file" ]]; then
         local target
         target=$(readlink "$HOME/$file")
@@ -681,18 +681,18 @@ validate_package() {
     display_name=$(get_package_name "$package")
     local files
     files=$(get_package_files "$package")
-    
+
     log_info "Validating $display_name configuration..."
-    
+
     local errors=0
     IFS=',' read -ra file_array <<< "$files"
-    
+
     for file in "${file_array[@]}"; do
         if ! check_symlink "$file" ".dotfiles/$package"; then
             ((errors++))
         fi
     done
-    
+
     if [[ $errors -eq 0 ]]; then
         log_success "$display_name configuration validated successfully"
         return 0
@@ -717,13 +717,13 @@ get_backup_dirs() {
 show_status() {
     log_info "Dotfiles installation status:"
     echo ""
-    
+
     # Generate file list dynamically from package definitions
     for package in "${PACKAGES[@]}"; do
         local files
         files=$(get_package_files "$package")
         IFS=',' read -ra file_array <<< "$files"
-        
+
         for file in "${file_array[@]}"; do
             if [[ -L "$HOME/$file" ]]; then
                 local target
@@ -736,14 +736,14 @@ show_status() {
             fi
         done
     done
-    
+
     echo ""
     log_info "Backup directories:"
     local backup_dirs=()
     while IFS= read -r dir; do
         backup_dirs+=("$dir")
     done < <(get_backup_dirs)
-    
+
     if [[ ${#backup_dirs[@]} -gt 0 ]]; then
         for dir in "${backup_dirs[@]}"; do
             echo "  $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
@@ -764,60 +764,60 @@ get_backup_age_days() {
 # Clean up backup directories
 clean_backups() {
     log_info "Cleaning up old backup directories..."
-    
+
     local backup_dirs=()
     while IFS= read -r dir; do
         backup_dirs+=("$dir")
     done < <(get_backup_dirs | sort -r)
-    
+
     local total_backups=${#backup_dirs[@]}
-    
+
     if [[ $total_backups -eq 0 ]]; then
         log_info "No backup directories to clean"
         return 0
     fi
-    
+
     log_info "Found $total_backups backup(s)"
-    
+
     # Configuration (can be overridden via environment)
     local keep_count=${BACKUP_KEEP_COUNT:-5}
     local keep_days=${BACKUP_KEEP_DAYS:-30}
-    
+
     log_info "Retention policy: keep $keep_count most recent OR newer than $keep_days days"
     echo ""
-    
+
     # Categorize backups
     local -a to_remove=()
     local -a to_keep=()
-    
+
     for i in "${!backup_dirs[@]}"; do
         local backup="${backup_dirs[$i]}"
         local backup_name
         backup_name=$(basename "$backup")
-        
+
         # Keep first N backups regardless of age (sorted newest first)
         if [[ $i -lt $keep_count ]]; then
             to_keep+=("$backup")
             continue
         fi
-        
+
         # For older backups, check age
         local backup_age_days
         backup_age_days=$(get_backup_age_days "$backup")
-        
+
         if [[ $backup_age_days -gt $keep_days ]]; then
             to_remove+=("$backup")
         else
             to_keep+=("$backup")
         fi
     done
-    
+
     # Show summary
     if [[ ${#to_remove[@]} -eq 0 ]]; then
         log_success "All backups within retention policy. Nothing to clean."
         return 0
     fi
-    
+
     echo "Backups to remove (${#to_remove[@]}):"
     for backup in "${to_remove[@]}"; do
         local backup_name
@@ -828,7 +828,7 @@ clean_backups() {
         age_days=$(get_backup_age_days "$backup")
         echo "  - $backup_name ($size, ${age_days}d old)"
     done
-    
+
     echo ""
     echo "Backups to keep (${#to_keep[@]}):"
     for backup in "${to_keep[@]}"; do
@@ -838,26 +838,26 @@ clean_backups() {
         size=$(du -sh "$backup" 2>/dev/null | cut -f1)
         echo "  - $backup_name ($size)"
     done
-    
+
     echo ""
     read -p "Remove ${#to_remove[@]} old backup(s)? (y/N): " -n 1 -r
     echo
-    
+
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         log_info "Backup cleanup cancelled"
         return 0
     fi
-    
+
     # Remove old backups
     local removed_count=0
     local freed_space=0
-    
+
     for backup in "${to_remove[@]}"; do
         local backup_name
         backup_name=$(basename "$backup")
         local size_kb
         size_kb=$(du -sk "$backup" 2>/dev/null | cut -f1)
-        
+
         if rm -rf "$backup" 2>/dev/null; then
             log_success "Removed $backup_name"
             ((removed_count++))
@@ -866,18 +866,18 @@ clean_backups() {
             log_error "Failed to remove $backup_name"
         fi
     done
-    
+
     echo ""
     log_success "Removed $removed_count backup(s)"
     log_info "Freed $((freed_space / 1024))MiB of disk space"
-    
+
     return 0
 }
 
 # Uninstall dotfiles
 uninstall_dotfiles() {
     log_info "Uninstalling dotfiles..."
-    
+
     for package in "${PACKAGES[@]}"; do
         if [[ -d "$package" ]]; then
             log_info "Uninstalling package: $package"
@@ -885,7 +885,7 @@ uninstall_dotfiles() {
             log_success "Uninstalled $package"
         fi
     done
-    
+
     log_success "Dotfiles uninstalled"
 }
 
@@ -893,7 +893,7 @@ uninstall_dotfiles() {
 cmd_install() {
     log_info "Starting dotfiles installation..."
     INSTALLATION_IN_PROGRESS=true
-    
+
     log_info "Step 1: Backing up existing files..."
     if ! backup_existing; then
         log_error "Backup failed - aborting installation"
@@ -901,7 +901,7 @@ cmd_install() {
         INSTALLATION_IN_PROGRESS=false
         return 1
     fi
-    
+
     log_info "Step 2: Running installation pipeline..."
     if ! run_installation_pipeline; then
         log_error "Installation pipeline failed"
@@ -909,7 +909,7 @@ cmd_install() {
         INSTALLATION_IN_PROGRESS=false
         return 1
     fi
-    
+
     INSTALLATION_IN_PROGRESS=false
     log_success "Installation completed successfully!"
     echo ""
@@ -917,19 +917,19 @@ cmd_install() {
     echo "  1. Restart your terminal or run: source ~/.zshrc"
     echo "  2. Set zsh as default shell: chsh -s \$(which zsh)"
     echo "  3. Validate installation: $0 validate"
-    
+
     return 0
 }
 
 cmd_validate() {
     log_info "Validating dotfiles installation..."
-    
+
     local errors=0
-    
+
     for package in "${PACKAGES[@]}"; do
         validate_package "$package" || ((errors++))
     done
-    
+
     echo ""
     if [[ $errors -eq 0 ]]; then
         log_success "All validations passed!"
@@ -943,9 +943,9 @@ cmd_validate() {
 # Validate configuration syntax
 validate_config_syntax() {
     log_info "Validating configuration syntax..."
-    
+
     local errors=0
-    
+
     # Validate git config
     if [[ -f "$HOME/.gitconfig" ]]; then
         if git config --list >/dev/null 2>&1; then
@@ -955,7 +955,7 @@ validate_config_syntax() {
             ((errors++))
         fi
     fi
-    
+
     # Validate tmux config
     if [[ -f "$HOME/.tmux.conf" ]]; then
         if command_exists tmux; then
@@ -972,7 +972,7 @@ validate_config_syntax() {
             log_info "Tmux not installed, skipping syntax check"
         fi
     fi
-    
+
     # Validate zsh config
     if [[ -f "$HOME/.zshrc" ]]; then
         if command_exists zsh; then
@@ -986,7 +986,7 @@ validate_config_syntax() {
             log_info "Zsh not installed, skipping syntax check"
         fi
     fi
-    
+
     # Validate bash config
     if [[ -f "$HOME/.bashrc" ]]; then
         if bash -n "$HOME/.bashrc" 2>/dev/null; then
@@ -996,16 +996,16 @@ validate_config_syntax() {
             ((errors++))
         fi
     fi
-    
+
     return $errors
 }
 
 # Check for orphaned symlinks
 check_orphaned_symlinks() {
     log_info "Checking for orphaned symlinks..."
-    
+
     local orphaned=0
-    
+
     # Check dotfiles in home directory
     while IFS= read -r link; do
         if [[ -L "$link" ]] && [[ ! -e "$link" ]]; then
@@ -1013,7 +1013,7 @@ check_orphaned_symlinks() {
             ((orphaned++))
         fi
     done < <(find "$HOME" -maxdepth 1 -type l -name ".*" 2>/dev/null)
-    
+
     # Check .config directory
     if [[ -d "$HOME/.config" ]]; then
         while IFS= read -r link; do
@@ -1023,23 +1023,23 @@ check_orphaned_symlinks() {
             fi
         done < <(find "$HOME/.config" -maxdepth 2 -type l 2>/dev/null)
     fi
-    
+
     if [[ $orphaned -eq 0 ]]; then
         log_success "No orphaned symlinks found"
     else
         log_warning "Found $orphaned orphaned symlink(s)"
     fi
-    
+
     return $orphaned
 }
 
 # Check backup directory health
 check_backup_health() {
     log_info "Checking backup directory health..."
-    
+
     local backup_count=0
     local total_size=0
-    
+
     while IFS= read -r dir; do
         [[ -z "$dir" ]] && continue
         ((backup_count++))
@@ -1047,32 +1047,32 @@ check_backup_health() {
         size=$(du -sk "$dir" 2>/dev/null | cut -f1)
         ((total_size += size))
     done < <(find "$DOTFILES_DIR/backups" -maxdepth 1 -type d -name "dotfiles-backup-*" 2>/dev/null)
-    
+
     if [[ $backup_count -eq 0 ]]; then
         log_info "No backup directories found"
     else
         log_info "Found $backup_count backup(s) using $((total_size / 1024))MB"
-        
+
         if [[ $backup_count -gt 10 ]]; then
             log_warning "Consider cleaning old backups: ./dot clean"
         fi
     fi
-    
+
     return 0
 }
 
 # Check submodule health
 check_submodule_health() {
     log_info "Checking submodule health..."
-    
+
     local issues=0
-    
+
     # Check if .gitmodules exists
     if [[ ! -f "$DOTFILES_DIR/.gitmodules" ]]; then
         log_info "No submodules configured"
         return 0
     fi
-    
+
     # Check Oh My Zsh submodule
     local omz_path="$DOTFILES_DIR/zsh/.oh-my-zsh"
     if [[ -d "$omz_path" ]]; then
@@ -1084,7 +1084,7 @@ check_submodule_health() {
             else
                 log_warning "Oh My Zsh submodule has uncommitted changes"
             fi
-            
+
             # Check if submodule is detached
             if git -C "$omz_path" symbolic-ref -q HEAD >/dev/null 2>&1; then
                 log_success "Oh My Zsh submodule on branch"
@@ -1100,22 +1100,22 @@ check_submodule_health() {
         log_error "Oh My Zsh directory missing"
         ((issues++))
     fi
-    
+
     return $issues
 }
 
 # Check git repository status
 check_git_repo_status() {
     log_info "Checking dotfiles repository status..."
-    
+
     local issues=0
-    
+
     # Check if in a git repository
     if ! git -C "$DOTFILES_DIR" rev-parse --git-dir >/dev/null 2>&1; then
         log_error "Not in a git repository"
         return 1
     fi
-    
+
     # Check for uncommitted changes
     if git -C "$DOTFILES_DIR" diff-index --quiet HEAD -- 2>/dev/null; then
         log_success "Working directory clean"
@@ -1125,12 +1125,12 @@ check_git_repo_status() {
         changed_count=$(git -C "$DOTFILES_DIR" status --porcelain | wc -l)
         log_info "  $changed_count file(s) modified"
     fi
-    
+
     # Check current branch
     local current_branch
     current_branch=$(git -C "$DOTFILES_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)
     log_info "Current branch: $current_branch"
-    
+
     # Check if branch has upstream
     if git -C "$DOTFILES_DIR" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1; then
         # Check if up to date with remote
@@ -1139,7 +1139,7 @@ check_git_repo_status() {
         local behind
         ahead=$(git -C "$DOTFILES_DIR" rev-list --count '@{upstream}..HEAD' 2>/dev/null || echo "0")
         behind=$(git -C "$DOTFILES_DIR" rev-list --count 'HEAD..@{upstream}' 2>/dev/null || echo "0")
-        
+
         if [[ $ahead -eq 0 ]] && [[ $behind -eq 0 ]]; then
             log_success "Up to date with origin"
         elif [[ $ahead -gt 0 ]] && [[ $behind -eq 0 ]]; then
@@ -1157,40 +1157,40 @@ check_git_repo_status() {
     else
         log_info "No upstream branch configured"
     fi
-    
+
     return $issues
 }
 
 # Check template and secret config consistency
 check_template_consistency() {
     log_info "Checking template/secret config consistency..."
-    
+
     local issues=0
-    
+
     # Discover templates
     local template_list
     template_list=$(discover_templates)
-    
+
     if [[ -z "$template_list" ]]; then
         log_info "No templates configured"
         return 0
     fi
-    
+
     # Check each template
     while IFS=: read -r template target; do
         [[ -z "$template" ]] && continue
-        
+
         local secret="${template%.template}.secret"
         local package_dir
         package_dir=$(dirname "$template")
         local target_file="$HOME/$target"
-        
+
         # Check if secret config exists
         if [[ ! -f "$secret" ]]; then
             log_warning "Template without secret config: ${template#"$DOTFILES_DIR"/}"
             log_info "  Consider creating: ${secret#"$DOTFILES_DIR"/}"
         fi
-        
+
         # Check if merged file is stale
         if [[ -f "$target_file" ]] && [[ -f "$secret" ]]; then
             if [[ "$template" -nt "$target_file" ]] || [[ "$secret" -nt "$target_file" ]]; then
@@ -1202,35 +1202,35 @@ check_template_consistency() {
             fi
         fi
     done <<< "$template_list"
-    
+
     # Check for orphaned secret configs
     while IFS= read -r secret; do
         [[ -z "$secret" ]] && continue
-        
+
         local template="${secret%.secret}.template"
         if [[ ! -f "$template" ]]; then
             log_warning "Secret config without template: ${secret#"$DOTFILES_DIR"/}"
         fi
     done < <(discover_secret_configs)
-    
+
     return $issues
 }
 
 # Check file permissions
 check_file_permissions() {
     log_info "Checking file permissions..."
-    
+
     local errors=0
     local warnings=0
-    
+
     # Check secret config files (should not be world-readable)
     while IFS= read -r secret; do
         [[ -z "$secret" ]] && continue
         [[ ! -f "$secret" ]] && continue
-        
+
         local perms
         perms=$(stat -c '%a' "$secret" 2>/dev/null || stat -f '%A' "$secret" 2>/dev/null)
-        
+
         # Check if world-readable (last digit > 0)
         if [[ "${perms: -1}" != "0" ]]; then
             log_warning "Secret config is world-readable: ${secret#"$DOTFILES_DIR"/}"
@@ -1240,7 +1240,7 @@ check_file_permissions() {
             log_success "${secret#"$DOTFILES_DIR"/} has secure permissions"
         fi
     done < <(discover_secret_configs)
-    
+
     # Check for accidentally committed secrets (this is an ERROR not a warning)
     if [[ -f "$DOTFILES_DIR/git/.gitconfig.secret" ]]; then
         if git -C "$DOTFILES_DIR" ls-files --error-unmatch "git/.gitconfig.secret" >/dev/null 2>&1; then
@@ -1251,20 +1251,20 @@ check_file_permissions() {
             log_success "Secret configs properly ignored by git"
         fi
     fi
-    
+
     if [[ $warnings -gt 0 ]]; then
         log_info "Found $warnings permission warning(s) - consider fixing for better security"
     fi
-    
+
     return $errors
 }
 
 # Check shell integration
 check_shell_integration() {
     log_info "Checking shell integration..."
-    
+
     local issues=0
-    
+
     # Check if we're actually using our shell configs
     if [[ -n "$ZSH_VERSION" ]]; then
         if [[ -L "$HOME/.zshrc" ]]; then
@@ -1295,7 +1295,7 @@ check_shell_integration() {
             ((issues++))
         fi
     fi
-    
+
     # Check PATH includes our custom directories
     if [[ ":$PATH:" == *":$HOME/bin:"* ]] || [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; then
         log_success "Custom bin directories in PATH"
@@ -1303,35 +1303,35 @@ check_shell_integration() {
         log_warning "Custom bin directories not in PATH"
         log_info "  Expected: ~/bin or ~/.local/bin in PATH"
     fi
-    
+
     # Check if dotfiles repo is in expected location
     if [[ "$DOTFILES_DIR" == "$HOME/.dotfiles" ]]; then
         log_success "Dotfiles in standard location"
     else
         log_info "Dotfiles location: $DOTFILES_DIR (non-standard)"
     fi
-    
+
     return $issues
 }
 
 # Check for stow conflicts
 check_stow_conflicts() {
     log_info "Checking for potential stow conflicts..."
-    
+
     local issues=0
-    
+
     # Check each package for potential conflicts
     for package in "${PACKAGES[@]}"; do
         local package_dir="$DOTFILES_DIR/$package"
         [[ ! -d "$package_dir" ]] && continue
-        
+
         # Find all files in package
         while IFS= read -r file; do
             [[ -z "$file" ]] && continue
-            
+
             local rel_path="${file#"$package_dir"/}"
             local target_path="$HOME/$rel_path"
-            
+
             # Skip if it's already our symlink
             if [[ -L "$target_path" ]]; then
                 local link_target
@@ -1340,7 +1340,7 @@ check_stow_conflicts() {
                     continue
                 fi
             fi
-            
+
             # Check if target exists but is not our symlink
             if [[ -e "$target_path" ]] && [[ ! -L "$target_path" ]]; then
                 log_warning "Unmanaged file would conflict: $rel_path"
@@ -1349,11 +1349,11 @@ check_stow_conflicts() {
             fi
         done < <(find "$package_dir" -type f -not -path "*/.*" 2>/dev/null)
     done
-    
+
     if [[ $issues -eq 0 ]]; then
         log_success "No stow conflicts detected"
     fi
-    
+
     return $issues
 }
 
@@ -1361,57 +1361,57 @@ check_stow_conflicts() {
 cmd_health() {
     log_info "Running comprehensive dotfiles health check..."
     echo ""
-    
+
     local total_issues=0
-    
+
     # 1. Symlink integrity
     log_info "=== Symlink Integrity ==="
     for package in "${PACKAGES[@]}"; do
         validate_package "$package" || ((total_issues++))
     done
     echo ""
-    
+
     # 2. Configuration syntax
     log_info "=== Configuration Syntax ==="
     validate_config_syntax || ((total_issues += $?))
     echo ""
-    
+
     # 3. Submodule health
     log_info "=== Submodule Health ==="
     check_submodule_health || ((total_issues += $?))
     echo ""
-    
+
     # 4. Git repository status
     log_info "=== Git Repository Status ==="
     check_git_repo_status || ((total_issues += $?))
     echo ""
-    
+
     # 5. Template/secret config consistency
     log_info "=== Template Configuration Consistency ==="
     check_template_consistency || ((total_issues += $?))
     echo ""
-    
+
     # 6. File permissions
     log_info "=== File Permissions ==="
     check_file_permissions || ((total_issues += $?))
     echo ""
-    
+
     # 7. Shell integration
     log_info "=== Shell Integration ==="
     check_shell_integration || ((total_issues += $?))
     echo ""
-    
+
     # 8. Stow conflicts
     log_info "=== Stow Conflicts ==="
     check_stow_conflicts || ((total_issues += $?))
     echo ""
-    
+
     # 9. Orphaned symlinks
     log_info "=== Orphaned Symlinks ==="
     check_orphaned_symlinks
     # Note: Orphaned symlinks are warnings, not errors
     echo ""
-    
+
     # 10. Dependencies
     log_info "=== Dependencies ==="
     if check_dependencies 2>/dev/null; then
@@ -1421,12 +1421,12 @@ cmd_health() {
         ((total_issues++))
     fi
     echo ""
-    
+
     # 11. Backup health
     log_info "=== Backup Health ==="
     check_backup_health
     echo ""
-    
+
     # Summary
     echo "========================================"
     if [[ $total_issues -eq 0 ]]; then
@@ -1442,11 +1442,11 @@ cmd_health() {
 # Update gitignore globals from gitignore.io
 update_gitignore() {
     log_info "Updating .gitignore-globals from toptal.com..."
-    
+
     local types="linux,osx,windows"
     local url="https://www.toptal.com/developers/gitignore/api/$types"
     local gitignore_file="$DOTFILES_DIR/git/.gitignore-globals"
-    
+
     # Add timeout to prevent hanging (30 seconds)
     if portable_timeout 30 curl -s "$url" > "$gitignore_file.tmp" 2>&1; then
         if [[ -s "$gitignore_file.tmp" ]]; then
@@ -1469,7 +1469,7 @@ update_gitignore() {
 # Update Oh My Zsh
 update_oh_my_zsh() {
     log_info "Checking for Oh My Zsh updates..."
-    
+
     if command_exists omz; then
         if omz update 2>&1 | prefix_output "│ "; then
             log_success "Oh My Zsh updated successfully"
@@ -1486,28 +1486,28 @@ run_installation_pipeline() {
     if ! check_dependencies; then
         return 1
     fi
-    
+
     if ! init_submodules; then
         log_error "Submodule initialization failed"
         suggest_fixes "submodules" "$DOTFILES_DIR/.gitmodules"
         return 1
     fi
-    
+
     if ! process_templates; then
         log_error "Template processing failed"
         return 1
     fi
-    
+
     if ! merge_secret_configs; then
         log_error "Secret config merging failed"
         return 1
     fi
-    
+
     if ! install_dotfiles; then
         log_error "Stow installation failed"
         return 1
     fi
-    
+
     return 0
 }
 
@@ -1519,16 +1519,16 @@ cmd_update() {
 
 cmd_update_all() {
     log_info "Updating all packages and configurations..."
-    
+
     # Update gitignore globals
     update_gitignore
-    
+
     # Update Oh My Zsh
     update_oh_my_zsh
-    
+
     # Reinstall to pick up any changes
     run_installation_pipeline
-    
+
     log_success "All packages updated successfully!"
 }
 
@@ -1553,7 +1553,7 @@ main() {
     # Parse arguments
     local command=""
     local verbose=false
-    
+
     while [[ $# -gt 0 ]]; do
         case $1 in
             -h|--help)
@@ -1579,18 +1579,18 @@ main() {
                 ;;
         esac
     done
-    
+
     # Default to help if no command specified
     if [[ -z "$command" ]]; then
         show_usage
         exit 0
     fi
-    
+
     # Enable verbose output if requested
     if $verbose; then
         set -x
     fi
-    
+
     # Execute command
     case $command in
         install)
@@ -1638,7 +1638,7 @@ show_bash_completion() {
 d() {
     local cmd="${1:-help}"
     if (($#)); then shift; fi
-    
+
     case "$cmd" in
         h|health)      "$HOME/.dotfiles/dot" health "$@" ;;
         v|validate)    "$HOME/.dotfiles/dot" validate "$@" ;;
@@ -1685,7 +1685,7 @@ show_zsh_completion() {
 d() {
     local cmd="${1:-help}"
     if (($#)); then shift; fi
-    
+
     case "$cmd" in
         h|health)      "$HOME/.dotfiles/dot" health "$@" ;;
         v|validate)    "$HOME/.dotfiles/dot" validate "$@" ;;
