@@ -588,13 +588,13 @@ merge_secret_configs() {
 # Install dotfiles using Stow with rollback support
 install_dotfiles() {
     local verbosity="${1:-0}"
-    
+
     # Set stow flags based on verbosity level
     local stow_flags="--restow --dir=$DOTFILES_DIR --target=$HOME"
     if [[ $verbosity -ge 2 ]]; then
         stow_flags="--verbose $stow_flags"
     fi
-    
+
     # Only show header in verbose mode
     if [[ $verbosity -ge 1 ]]; then
         log_info "Installing dotfiles using Stow..."
@@ -617,7 +617,7 @@ install_dotfiles() {
         # Run stow with appropriate output handling
         local stow_output
         local stow_result
-        
+
         # shellcheck disable=SC2086
         if [[ $verbosity -ge 2 ]]; then
             # Level 2: Show all stow file operations
@@ -1062,7 +1062,7 @@ cmd_install() {
     local verbosity="${1:-0}"
     local start_time
     start_time=$(date +%s)
-    
+
     show_command_header "Dotfiles Installation"
     INSTALLATION_IN_PROGRESS=true
 
@@ -1116,14 +1116,14 @@ cmd_install() {
     fi
 
     INSTALLATION_IN_PROGRESS=false
-    
+
     local end_time
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    
+
     echo ""
     show_command_summary "success" "INSTALLED" "$duration"
-    
+
     echo ""
     echo -e "${BLUE}💡 Next steps:${NC}"
     echo "   1. Restart your terminal or run: source ~/.zshrc"
@@ -2283,7 +2283,7 @@ update_oh_my_zsh() {
 # Common installation pipeline
 run_installation_pipeline() {
     local verbosity="${1:-0}"
-    
+
     if ! check_dependencies; then
         return 1
     fi
@@ -2316,7 +2316,7 @@ cmd_update() {
     local verbosity="${1:-0}"
     local start_time
     start_time=$(date +%s)
-    
+
     show_command_header "Dotfiles Update"
 
     show_numbered_section "1" "Update Global Configurations"
@@ -2368,11 +2368,11 @@ cmd_update() {
         echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Secret configs merged"
         echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Packages installed"
     fi
-    
+
     local end_time
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    
+
     echo ""
     show_command_summary "success" "UPDATED" "$duration"
     echo ""
@@ -2394,69 +2394,152 @@ cmd_uninstall() {
     uninstall_dotfiles
 }
 
-# Main script logic
-main() {
-    # Parse arguments
-    local command=""
-    local verbosity=0  # 0 = quiet, 1 = verbose (-v), 2 = very verbose (-vv)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Argument Parsing Helpers
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+# Check if argument is a flag (starts with -)
+is_flag() {
+    [[ $1 == -* ]]
+}
+
+# Check if argument is a valid command
+is_valid_command() {
+    local cmd="$1"
+    [[ "$cmd" =~ ^(install|health|update|status|backup|clean|uninstall)$ ]]
+}
+
+# Parse verbosity flag and return level
+# Handles: -v (1), -vv (2), -vvv (3), --verbose (1)
+# Returns: verbosity level via echo
+parse_verbosity() {
+    local flag="$1"
+    
+    if [[ $flag =~ ^-v+$ ]]; then
+        # Count v's: -v=1, -vv=2, -vvv=3
+        local v_part="${flag#-}"
+        echo "${#v_part}"
+        return 0
+    elif [[ $flag == "--verbose" ]]; then
+        echo "1"
+        return 0
+    fi
+    
+    return 1
+}
+
+# Exit with error message
+die() {
+    log_error "$1"
+    [[ -n "${2:-}" ]] && show_usage
+    exit 1
+}
+
+# Parse command-line arguments
+# Sets global variables: COMMAND, VERBOSITY
+parse_arguments() {
+    COMMAND=""
+    VERBOSITY=0
+    
     while [[ $# -gt 0 ]]; do
         case $1 in
+            # Help
             -h|--help)
                 show_usage
                 exit 0
                 ;;
-            -vv)
-                verbosity=2
-                shift
-                ;;
-            -v|--verbose)
-                verbosity=1
-                shift
-                ;;
-            install|health|update|status|backup|clean|uninstall)
-                if [[ -n "$command" ]]; then
-                    log_error "Multiple commands specified"
-                    exit 1
+            
+            # Verbosity (-v, -vv, -vvv, --verbose)
+            -v*|--verbose)
+                local level
+                if level=$(parse_verbosity "$1"); then
+                    VERBOSITY=$level
+                    shift
+                else
+                    die "Invalid verbosity flag: $1" show_usage
                 fi
-                command="$1"
-                shift
                 ;;
+            
+            # Completion
+            --completion)
+                if [[ -z "${2:-}" ]]; then
+                    die "Missing argument for --completion" show_usage
+                fi
+                handle_completion "$2"
+                exit 0
+                ;;
+            
+            # Deprecated validate command
             validate)
-                # Deprecated: redirect to health
                 log_warning "'validate' is deprecated, use 'health' instead"
-                command="health"
+                COMMAND="health"
                 shift
                 ;;
+            
+            # Valid commands
+            install|health|update|status|backup|clean|uninstall)
+                if [[ -n "$COMMAND" ]]; then
+                    die "Multiple commands specified: '$COMMAND' and '$1'"
+                fi
+                COMMAND="$1"
+                shift
+                ;;
+            
+            # Unknown flag
+            -*)
+                die "Unknown option: $1" show_usage
+                ;;
+            
+            # Unknown argument
             *)
-                log_error "Unknown option: $1"
-                show_usage
-                exit 1
+                die "Unknown argument: $1" show_usage
                 ;;
         esac
     done
-
-    # Default to help if no command specified
-    if [[ -z "$command" ]]; then
+    
+    # Default to help if no command
+    if [[ -z "$COMMAND" ]]; then
         show_usage
         exit 0
     fi
+}
+
+# Handle shell completion requests
+handle_completion() {
+    local shell="$1"
+    case "$shell" in
+        bash)
+            show_bash_completion
+            ;;
+        zsh)
+            show_zsh_completion
+            ;;
+        *)
+            die "Unknown shell type: $shell. Use 'bash' or 'zsh'"
+            ;;
+    esac
+}
+
+# Main script logic
+main() {
+    # Parse command-line arguments into global COMMAND and VERBOSITY
+    parse_arguments "$@"
 
     # Execute command with verbosity level
-    case $command in
+    case $COMMAND in
         install)
-            cmd_install "$verbosity"
+            cmd_install "$VERBOSITY"
             ;;
         health)
             # Health only has 2 modes: table (0) or detailed (1+)
-            if [[ $verbosity -ge 1 ]]; then
+            if [[ $VERBOSITY -ge 1 ]]; then
                 cmd_health true
             else
                 cmd_health false
             fi
             ;;
         update)
-            cmd_update "$verbosity"
+            cmd_update "$VERBOSITY"
             ;;
         status)
             cmd_status
@@ -2471,9 +2554,7 @@ main() {
             cmd_uninstall
             ;;
         *)
-            log_error "Unknown command: $command"
-            show_usage
-            exit 1
+            die "Unknown command: $COMMAND"
             ;;
     esac
 }
@@ -2586,24 +2667,6 @@ _d_completion() {
 compdef _d_completion d
 EOF
 }
-
-# Handle completion requests
-if [[ "${1:-}" == "--completion" ]]; then
-    case "${2:-}" in
-        bash)
-            show_bash_completion
-            exit 0
-            ;;
-        zsh)
-            show_zsh_completion
-            exit 0
-            ;;
-        *)
-            log_error "Unknown shell type: ${2:-}. Use 'bash' or 'zsh'"
-            exit 1
-            ;;
-    esac
-fi
 
 # Run main function with all arguments
 main "$@"
