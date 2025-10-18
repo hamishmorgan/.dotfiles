@@ -128,15 +128,124 @@ Log out and back in for the change to take effect.
 
 ### Manual Installation
 
+The `dot` script is optional. These dotfiles are standard GNU Stow packages and can be managed manually.
+
+#### 1. Clone Repository
+
 ```bash
 git clone git@github.com:hamishmorgan/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 git submodule update --init --recursive
-stow -v git zsh tmux gh gnuplot bash
 ```
 
-**Note:** Manual installation still requires processing templates and merging secret configs.
-Use `./dot install` for the complete installation process.
+#### 2. Create Secret Files
+
+Create personal configuration files (git-ignored):
+
+**Git configuration:**
+
+```bash
+cp git/.gitconfig.secret.example git/.gitconfig.secret
+# Edit with your information:
+# - name, email, GitHub username
+nano git/.gitconfig.secret
+```
+
+**GitHub CLI configuration:**
+
+```bash
+cp gh/.config/gh/config.yml.secret.example gh/.config/gh/config.yml.secret
+# Edit with your preferences
+nano gh/.config/gh/config.yml.secret
+```
+
+#### 3. Process Templates
+
+Merge templates with secret configs:
+
+```bash
+# Git configuration
+cat git/.gitconfig.template git/.gitconfig.secret > git/.gitconfig
+
+# GitHub CLI configuration (if using gh)
+cat gh/.config/gh/config.yml.template gh/.config/gh/config.yml.secret > gh/.config/gh/config.yml
+```
+
+#### 4. Install Packages with Stow
+
+```bash
+# Install system package first (provides .stow-global-ignore)
+stow --verbose --restow --dir=. --target=$HOME system
+
+# Install other packages
+stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash
+
+# Or install selectively
+stow --verbose --restow --dir=. --target=$HOME git zsh
+```
+
+**What Stow does:**
+
+- Creates symlinks from `~/.dotfiles/PACKAGE/FILE` to `~/FILE`
+- Example: `~/.dotfiles/git/.gitconfig` → `~/.gitconfig`
+- Handles nested directory structures automatically
+
+#### 5. Verify Installation
+
+```bash
+# Check symlinks were created
+ls -la ~ | grep "^l"
+
+# Should show:
+# lrwxr-xr-x .gitconfig -> .dotfiles/git/.gitconfig
+# lrwxr-xr-x .zshrc -> .dotfiles/zsh/.zshrc
+
+# Test configurations
+git config --get user.name
+git config --get user.email
+```
+
+#### Manual Update
+
+```bash
+cd ~/.dotfiles
+
+# Pull latest changes
+git pull origin main
+
+# Update submodules
+git submodule update --remote --merge
+
+# Reinstall packages (picks up changes)
+stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash
+```
+
+#### Manual Uninstall
+
+```bash
+cd ~/.dotfiles
+
+# Remove all symlinks
+stow --verbose --delete --dir=. --target=$HOME system git zsh tmux gh gnuplot bash
+
+# Or remove specific packages
+stow --verbose --delete --dir=. --target=$HOME git
+```
+
+**When to use manual installation:**
+
+- You want full control over each step
+- You're learning how Stow works
+- You're debugging installation issues
+- You only need specific packages
+- The `dot` script doesn't work for your setup
+
+**When to use the script:**
+
+- You want automated setup with backups
+- You need template processing and secret merging
+- You want health checks and validation
+- You prefer a guided installation experience
 
 ## Verification
 
