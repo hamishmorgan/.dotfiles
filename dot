@@ -227,23 +227,29 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  -h, --help           Show this help message"
-    echo "  -v, --verbose        Enable verbose output"
+    echo "  -v, --verbose        Enable verbose output (level 1)"
+    echo "  -vv                  Enable very verbose output (level 2)"
     echo "  --completion SHELL   Output shell completion script (bash or zsh)"
     echo ""
+    echo "Verbosity Levels:"
+    echo "  (none)   Summary only - task completion + errors/warnings"
+    echo "  -v       Add package names and progress details"
+    echo "  -vv      Show every file touched/checked (full detail)"
+    echo ""
     echo "Examples:"
-    echo "  $0 install           # Install dotfiles (clean output)"
-    echo "  $0 install -v        # Install with detailed stow output"
-    echo "  $0 status            # Quick status check"
-    echo "  $0 health            # Full diagnostics (table format)"
-    echo "  $0 health -v         # Detailed diagnostics output"
-    echo "  $0 update            # Update and reinstall (clean output)"
-    echo "  $0 update -v         # Update with detailed output"
+    echo "  $0 install           # Install with summary only"
+    echo "  $0 install -v        # Install showing packages"
+    echo "  $0 install -vv       # Install showing every file link"
+    echo "  $0 health            # Diagnostics table"
+    echo "  $0 health -v         # Detailed diagnostics"
+    echo "  $0 update            # Update with summary"
+    echo "  $0 update -vv        # Update with all details"
     echo ""
     echo "Quick reference:"
     echo "  status   = Quick overview (symlinks + backups)"
-    echo "  health   = Comprehensive diagnostics (table format)"
-    echo "  install  = Install with summary (use -v for details)"
-    echo "  update   = Update with summary (use -v for details)"
+    echo "  health   = Table format (use -v for detailed output)"
+    echo "  install  = Clean summary (use -v/-vv for more detail)"
+    echo "  update   = Clean summary (use -v/-vv for more detail)"
     echo ""
     echo "Shell Integration:"
     echo "  # In .bashrc or .zshrc:"
@@ -581,9 +587,18 @@ merge_secret_configs() {
 
 # Install dotfiles using Stow with rollback support
 install_dotfiles() {
-    local verbose="${1:-false}"
+    local verbosity="${1:-0}"
     
-    log_info "Installing dotfiles using Stow..."
+    # Set stow flags based on verbosity level
+    local stow_flags="--restow --dir=$DOTFILES_DIR --target=$HOME"
+    if [[ $verbosity -ge 2 ]]; then
+        stow_flags="--verbose $stow_flags"
+    fi
+    
+    # Only show header in verbose mode
+    if [[ $verbosity -ge 1 ]]; then
+        log_info "Installing dotfiles using Stow..."
+    fi
 
     for package in "${PACKAGES[@]}"; do
         if [[ ! -d "$package" ]]; then
@@ -591,26 +606,48 @@ install_dotfiles() {
             continue
         fi
 
-        log_info "Installing package: $package"
+        # Show package name at verbosity 1+
+        if [[ $verbosity -ge 1 ]]; then
+            log_info "Installing package: $package"
+        fi
 
         # Add rollback action before installing
         add_rollback "stow --verbose --delete --dir='$DOTFILES_DIR' --target='$HOME' '$package' 2>/dev/null || true"
 
-        if [[ "$verbose" == "true" ]]; then
-            # Verbose mode: show all stow actions
-            if stow --verbose --restow --dir="$DOTFILES_DIR" --target="$HOME" "$package" 2>&1 | prefix_output "│ "; then
+        # Run stow with appropriate output handling
+        local stow_output
+        local stow_result
+        
+        # shellcheck disable=SC2086
+        if [[ $verbosity -ge 2 ]]; then
+            # Level 2: Show all stow file operations
+            if stow_output=$(stow $stow_flags "$package" 2>&1); then
+                echo "$stow_output" | prefix_output "│ "
                 INSTALLED_PACKAGES+=("$package")
                 log_success "Installed $package"
+                stow_result=0
+            else
+                echo "$stow_output" | prefix_output "│ "
+                log_error "Failed to install package: $package"
+                suggest_fixes "stow" "$package"
+                return 1
+            fi
+        elif [[ $verbosity -eq 1 ]]; then
+            # Level 1: Just show success per package
+            if stow $stow_flags "$package" >/dev/null 2>&1; then
+                INSTALLED_PACKAGES+=("$package")
+                log_success "Installed $package"
+                stow_result=0
             else
                 log_error "Failed to install package: $package"
                 suggest_fixes "stow" "$package"
                 return 1
             fi
         else
-            # Quiet mode: suppress stow details
-            if stow --restow --dir="$DOTFILES_DIR" --target="$HOME" "$package" >/dev/null 2>&1; then
+            # Level 0: Silent, no package messages
+            if stow $stow_flags "$package" >/dev/null 2>&1; then
                 INSTALLED_PACKAGES+=("$package")
-                log_success "Installed $package"
+                stow_result=0
             else
                 log_error "Failed to install package: $package"
                 suggest_fixes "stow" "$package"
@@ -1022,7 +1059,7 @@ uninstall_dotfiles() {
 
 # Main command handlers
 cmd_install() {
-    local verbose="${1:-false}"
+    local verbosity="${1:-0}"
     local start_time
     start_time=$(date +%s)
     
@@ -1030,7 +1067,8 @@ cmd_install() {
     INSTALLATION_IN_PROGRESS=true
 
     show_numbered_section "1" "Backup Existing Files"
-    if [[ "$verbose" == "true" ]]; then
+    if [[ $verbosity -ge 2 ]]; then
+        # Level 2: Show all backup details
         if ! backup_existing 2>&1 | indent_section_output; then
             echo ""
             log_error "Backup failed - aborting installation"
@@ -1039,6 +1077,7 @@ cmd_install() {
             return 1
         fi
     else
+        # Level 0-1: Just show summary
         if ! backup_existing >/dev/null 2>&1; then
             echo ""
             log_error "Backup failed - aborting installation"
@@ -1051,8 +1090,9 @@ cmd_install() {
     echo ""
 
     show_numbered_section "2" "Installation Pipeline"
-    if [[ "$verbose" == "true" ]]; then
-        if ! run_installation_pipeline "$verbose" 2>&1 | indent_section_output; then
+    if [[ $verbosity -ge 1 ]]; then
+        # Level 1-2: Show detailed pipeline output
+        if ! run_installation_pipeline "$verbosity" 2>&1 | indent_section_output; then
             echo ""
             log_error "Installation pipeline failed"
             log_info "Run './dot health' to check installation state"
@@ -1060,7 +1100,8 @@ cmd_install() {
             return 1
         fi
     else
-        if ! run_installation_pipeline "$verbose" >/dev/null 2>&1; then
+        # Level 0: Just show summary
+        if ! run_installation_pipeline "$verbosity" >/dev/null 2>&1; then
             echo ""
             log_error "Installation pipeline failed"
             log_info "Run './dot health' to check installation state"
@@ -2241,7 +2282,7 @@ update_oh_my_zsh() {
 
 # Common installation pipeline
 run_installation_pipeline() {
-    local verbose="${1:-false}"
+    local verbosity="${1:-0}"
     
     if ! check_dependencies; then
         return 1
@@ -2263,7 +2304,7 @@ run_installation_pipeline() {
         return 1
     fi
 
-    if ! install_dotfiles "$verbose"; then
+    if ! install_dotfiles "$verbosity"; then
         log_error "Stow installation failed"
         return 1
     fi
@@ -2272,16 +2313,18 @@ run_installation_pipeline() {
 }
 
 cmd_update() {
-    local verbose="${1:-false}"
+    local verbosity="${1:-0}"
     local start_time
     start_time=$(date +%s)
     
     show_command_header "Dotfiles Update"
 
     show_numbered_section "1" "Update Global Configurations"
-    if [[ "$verbose" == "true" ]]; then
+    if [[ $verbosity -ge 2 ]]; then
+        # Level 2: Show all update details
         update_gitignore 2>&1 | indent_section_output
     else
+        # Level 0-1: Just show result
         if update_gitignore >/dev/null 2>&1; then
             echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Global gitignore updated"
         else
@@ -2291,9 +2334,11 @@ cmd_update() {
     echo ""
 
     show_numbered_section "2" "Update Oh My Zsh"
-    if [[ "$verbose" == "true" ]]; then
+    if [[ $verbosity -ge 2 ]]; then
+        # Level 2: Show all update details
         update_oh_my_zsh 2>&1 | indent_section_output
     else
+        # Level 0-1: Just show result
         if update_oh_my_zsh >/dev/null 2>&1; then
             echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Oh My Zsh updated"
         else
@@ -2303,10 +2348,16 @@ cmd_update() {
     echo ""
 
     show_numbered_section "3" "Reinstall Dotfiles"
-    if [[ "$verbose" == "true" ]]; then
-        run_installation_pipeline "$verbose" 2>&1 | indent_section_output
+    if [[ $verbosity -ge 1 ]]; then
+        # Level 1-2: Show pipeline details
+        if ! run_installation_pipeline "$verbosity" 2>&1 | indent_section_output; then
+            echo ""
+            log_error "Installation pipeline failed"
+            return 1
+        fi
     else
-        if ! run_installation_pipeline "$verbose" >/dev/null 2>&1; then
+        # Level 0: Just show summary
+        if ! run_installation_pipeline "$verbosity" >/dev/null 2>&1; then
             echo ""
             log_error "Installation pipeline failed"
             return 1
@@ -2347,7 +2398,7 @@ cmd_uninstall() {
 main() {
     # Parse arguments
     local command=""
-    local verbose=false
+    local verbosity=0  # 0 = quiet, 1 = verbose (-v), 2 = very verbose (-vv)
 
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -2355,8 +2406,12 @@ main() {
                 show_usage
                 exit 0
                 ;;
+            -vv)
+                verbosity=2
+                shift
+                ;;
             -v|--verbose)
-                verbose=true
+                verbosity=1
                 shift
                 ;;
             install|health|update|status|backup|clean|uninstall)
@@ -2387,31 +2442,21 @@ main() {
         exit 0
     fi
 
-    # Execute command
+    # Execute command with verbosity level
     case $command in
         install)
-            # Pass verbose flag to install command
-            if $verbose; then
-                cmd_install true
-            else
-                cmd_install false
-            fi
+            cmd_install "$verbosity"
             ;;
         health)
-            # Pass verbose flag to health command
-            if $verbose; then
+            # Health only has 2 modes: table (0) or detailed (1+)
+            if [[ $verbosity -ge 1 ]]; then
                 cmd_health true
             else
                 cmd_health false
             fi
             ;;
         update)
-            # Pass verbose flag to update command
-            if $verbose; then
-                cmd_update true
-            else
-                cmd_update false
-            fi
+            cmd_update "$verbosity"
             ;;
         status)
             cmd_status
