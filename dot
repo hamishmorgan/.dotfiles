@@ -256,6 +256,7 @@ show_usage() {
     echo "  status        Show installation status and recent backups"
     echo "  health        Run comprehensive diagnostics"
     echo "  update        Update configurations and reinstall"
+    echo "  diff          Preview changes before applying"
     echo "  uninstall     Remove dotfiles symlinks"
     echo "  backup        Create backup of existing files"
     echo "  backups       List all available backups with details"
@@ -1245,6 +1246,109 @@ show_status() {
         echo ""
         show_tip "Run './dot clean' to remove old backups"
     fi
+    echo ""
+}
+
+# Show diff preview of what would change
+show_diff_preview() {
+    show_command_header "Dotfiles Diff Preview"
+    
+    log_info "Comparing current state with dotfiles repository..."
+    echo ""
+    
+    local changes_found=false
+    local new_files=0
+    local modified_files=0
+    local wrong_target_files=0
+    
+    show_section_separator "File Changes"
+    echo ""
+    
+    for package in "${PACKAGES[@]}"; do
+        local package_files
+        package_files=$(get_package_files "$package")
+        
+        IFS=',' read -ra files <<< "$package_files"
+        
+        for file in "${files[@]}"; do
+            local dotfile_path="$DOTFILES_DIR/$package/$file"
+            local home_path="$HOME/$file"
+            
+            # Skip if dotfile doesn't exist (shouldn't happen)
+            [[ ! -e "$dotfile_path" ]] && continue
+            
+            if [[ -L "$home_path" ]]; then
+                # It's a symlink - check target
+                local target
+                target=$(readlink "$home_path")
+                local expected_target="$DOTFILES_DIR/$package/$file"
+                
+                if [[ "$target" != "$expected_target" ]] && [[ "$target" != *".dotfiles/$package/$file"* ]]; then
+                    echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $file"
+                    echo "      Current: symlink → $target"
+                    echo "      Expected: symlink → $expected_target"
+                    changes_found=true
+                    ((wrong_target_files++))
+                fi
+                # Symlink points to correct location - no diff needed
+            elif [[ -f "$home_path" ]]; then
+                # Regular file - compare content
+                if [[ -f "$dotfile_path" ]]; then
+                    if ! diff -q "$home_path" "$dotfile_path" > /dev/null 2>&1; then
+                        echo -e "   ${BLUE}${SYMBOL_INFO}${NC} $file ${YELLOW}(content differs)${NC}"
+                        
+                        # Show diff preview (first 20 lines)
+                        local diff_output
+                        diff_output=$(diff -u "$home_path" "$dotfile_path" 2>/dev/null || true)
+                        
+                        echo "$diff_output" | head -25 | while IFS= read -r line; do
+                            if [[ "$line" == -* ]]; then
+                                echo -e "      ${RED}$line${NC}"
+                            elif [[ "$line" == +* ]]; then
+                                echo -e "      ${GREEN}$line${NC}"
+                            else
+                                echo "      $line"
+                            fi
+                        done
+                        
+                        local diff_lines
+                        diff_lines=$(echo "$diff_output" | wc -l)
+                        if [[ $diff_lines -gt 25 ]]; then
+                            echo "      ... ($(( diff_lines - 25 )) more lines)"
+                        fi
+                        
+                        echo ""
+                        changes_found=true
+                        ((modified_files++))
+                    fi
+                fi
+            elif [[ ! -e "$home_path" ]]; then
+                # File doesn't exist - would be created
+                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${GREEN}(would create new symlink)${NC}"
+                changes_found=true
+                ((new_files++))
+            fi
+        done
+    done
+    
+    if ! $changes_found; then
+        echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} No changes detected - system matches repository"
+    fi
+    
+    echo ""
+    show_section_separator "Summary"
+    echo ""
+    
+    if $changes_found; then
+        [[ $new_files -gt 0 ]] && echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} New files: $new_files"
+        [[ $modified_files -gt 0 ]] && echo "   ${BLUE}${SYMBOL_INFO}${NC} Modified files: $modified_files"
+        [[ $wrong_target_files -gt 0 ]] && echo "   ${YELLOW}${SYMBOL_WARNING}${NC} Wrong targets: $wrong_target_files"
+        echo ""
+        show_tip "Run ${BLUE}./dot install${NC} to apply these changes"
+    else
+        log_success "System is up to date with repository"
+    fi
+    
     echo ""
 }
 
@@ -3005,6 +3109,10 @@ cmd_status() {
     show_status
 }
 
+cmd_diff() {
+    show_diff_preview
+}
+
 cmd_backup() {
     backup_existing
 }
@@ -3217,7 +3325,7 @@ is_flag() {
 # Check if argument is a valid command
 is_valid_command() {
     local cmd="$1"
-    [[ "$cmd" =~ ^(install|health|update|status|backup|backups|restore|clean|uninstall|enable|disable|packages)$ ]]
+    [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages)$ ]]
 }
 
 # Parse verbosity flag and return level increment
@@ -3294,7 +3402,7 @@ parse_arguments() {
                 ;;
 
             # Valid commands
-            install|health|update|status|backup|backups|restore|clean|uninstall|enable|disable|packages)
+            install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages)
                 if [[ -n "$COMMAND" ]]; then
                     die "Multiple commands specified: '$COMMAND' and '$1'"
                 fi
@@ -3364,6 +3472,9 @@ main() {
         status)
             cmd_status
             ;;
+        diff)
+            cmd_diff
+            ;;
         backup)
             cmd_backup
             ;;
@@ -3415,6 +3526,7 @@ d() {
         h|health) "$HOME/.dotfiles/dot" health "$@" ;;
         s|status) "$HOME/.dotfiles/dot" status "$@" ;;
         u|update) "$HOME/.dotfiles/dot" update "$@" ;;
+        d|diff)   "$HOME/.dotfiles/dot" diff "$@" ;;
         b|backup) "$HOME/.dotfiles/dot" backup "$@" ;;
         backups)  "$HOME/.dotfiles/dot" backups "$@" ;;
         r|restore) "$HOME/.dotfiles/dot" restore "$@" ;;
@@ -3432,7 +3544,7 @@ _dot_completion() {
 
     # Complete commands
     if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
-        local commands="install status health update backup backups restore clean uninstall enable disable packages"
+        local commands="install status health update diff backup backups restore clean uninstall enable disable packages"
         local flags="-h --help -v --verbose -vv"
         # Bash 3.2 compatible (no mapfile)
         COMPREPLY=()
@@ -3503,6 +3615,7 @@ d() {
         h|health) "$HOME/.dotfiles/dot" health "$@" ;;
         s|status) "$HOME/.dotfiles/dot" status "$@" ;;
         u|update) "$HOME/.dotfiles/dot" update "$@" ;;
+        d|diff)   "$HOME/.dotfiles/dot" diff "$@" ;;
         b|backup) "$HOME/.dotfiles/dot" backup "$@" ;;
         backups)  "$HOME/.dotfiles/dot" backups "$@" ;;
         r|restore) "$HOME/.dotfiles/dot" restore "$@" ;;
@@ -3533,6 +3646,7 @@ _dot_completion() {
                 'status:Show installation status and recent backups'
                 'health:Run comprehensive diagnostics'
                 'update:Update configurations and reinstall'
+                'diff:Preview changes before applying'
                 'backup:Create backup of existing files'
                 'backups:List all available backups with details'
                 'restore:Restore from backup (default: latest)'
@@ -3605,6 +3719,8 @@ _d_completion() {
                 'status:Quick status check'
                 'u:update - Update and reinstall'
                 'update:Update and reinstall'
+                'd:diff - Preview changes'
+                'diff:Preview changes'
                 'b:backup - Create backup'
                 'backup:Create backup'
                 'backups:List all available backups'
