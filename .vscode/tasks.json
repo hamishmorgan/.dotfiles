@@ -1,5 +1,4 @@
 {
-  // Task runner configuration for common dotfiles operations
   "version": "2.0.0",
   "tasks": [
     {
@@ -62,7 +61,10 @@
     },
     {
       "label": "Lint All",
-      "dependsOn": ["Lint Markdown", "Lint Shell Scripts"],
+      "dependsOn": [
+        "Lint Markdown",
+        "Lint Shell Scripts"
+      ],
       "problemMatcher": [],
       "group": "build",
       "presentation": {
@@ -102,5 +104,3 @@
     }
   ]
 }
-
-

@@ -1,16 +1,13 @@
 {
-  // Hide oh-my-zsh submodule .github folder to prevent validation warnings
   "files.exclude": {
     "**/zsh/.oh-my-zsh/.github": true
   },
-  // Only validate workflows in our own .github folder, not submodules
   "yaml.schemas": {
     "https://json.schemastore.org/github-workflow.json": [
       ".github/workflows/*.yml",
       "!**/zsh/.oh-my-zsh/**"
     ]
   },
-  // File associations
   "files.associations": {
     "*.bats": "shellscript",
     "dot": "shellscript",
@@ -32,7 +29,6 @@
     ".stow-*-ignore": "ignore",
     ".stowrc": "properties"
   },
-  // Editor settings (complementing .editorconfig)
   "editor.formatOnSave": true,
   "editor.insertSpaces": true,
   "editor.tabSize": 2,
@@ -43,7 +39,6 @@
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
   "files.eol": "\n",
-  // Markdown settings
   "[markdown]": {
     "editor.wordWrap": "on",
     "editor.quickSuggestions": {
@@ -53,22 +48,17 @@
     },
     "files.trimTrailingWhitespace": false
   },
-  // YAML settings
   "[yaml]": {
     "editor.defaultFormatter": "redhat.vscode-yaml"
   },
-  // Shellscript settings
   "[shellscript]": {
     "editor.defaultFormatter": null
   },
-  // Terminal integration
   "terminal.integrated.cwd": "${workspaceFolder}",
   "terminal.integrated.scrollback": 10000,
-  // Git integration
   "git.ignoreLimitWarning": true,
   "git.decorations.enabled": true,
   "git.autofetch": true,
-  // Search performance
   "search.useIgnoreFiles": true,
   "search.followSymlinks": false,
   "search.exclude": {
@@ -76,7 +66,6 @@
     "**/zsh/.oh-my-zsh/**": true,
     "**/node_modules/**": true
   },
-  // File explorer
   "explorer.sortOrder": "type",
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.patterns": {
@@ -87,31 +76,22 @@
     "*.yml.template": "*.yml.secret, *.yml.example",
     "dot": "AGENTS.md, DEVELOPMENT.md"
   },
-  // Diff editor
   "diffEditor.ignoreTrimWhitespace": false,
   "diffEditor.renderSideBySide": true,
-  // Breadcrumbs
   "breadcrumbs.enabled": true,
   "breadcrumbs.filePath": "on",
-  // Problems panel
   "problems.showCurrentInStatus": true,
-  // Extension-specific settings
   "shellcheck.enable": true,
   "shellcheck.run": "onType",
   "shellcheck.useWorkspaceRootAsCwd": true,
-  "shellcheck.customArgs": [
-    "-x"
-  ],
+  "shellcheck.customArgs": ["-x"],
   "markdownlint.config": {
     "extends": ".markdownlint.yml"
   },
-  // GitHub Actions
   "github-actions.workflows.pinned.workflows": [
     ".github/workflows/validate.yml"
   ],
-  // Suggest related config files
   "workbench.editor.languageDetection": true,
-  // Git
   "scm.defaultViewMode": "tree",
   "git.confirmSync": false,
   "git.enableSmartCommit": true,

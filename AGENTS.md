@@ -163,6 +163,44 @@ apk add stow git bash
 - Use explicit error handling instead of `set -e` (controlled failure handling)
 - Enable bash safety features: `shopt -s nullglob extglob`
 
+### Comments
+
+**Only add comments when they provide non-obvious information.**
+
+Good comments explain:
+- **Why** something is done a certain way
+- **Context** that isn't clear from the code
+- **Workarounds** for bugs or limitations
+- **Performance** considerations
+- **Security** implications
+
+Bad comments restate what the code does:
+```bash
+# BAD: Redundant
+# Set variable to value
+my_var="value"
+
+# GOOD: Provides context
+# Use bash-compatible syntax for macOS default shell (3.2)
+my_var="value"
+```
+
+**Prefer self-documenting code over comments:**
+```bash
+# BAD: Needs comment to explain
+files=("$@")  # Get all arguments as array
+
+# GOOD: Clear without comment
+input_files=("$@")
+```
+
+**Remove redundant comments:**
+- Section headers that just label code blocks
+- Comments that repeat function/variable names
+- Obvious operations that need no explanation
+
+**When restructuring removes comment need, restructure.**
+
 ### Error Handling Patterns
 
 **Check command success:**

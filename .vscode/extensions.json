@@ -1,33 +1,22 @@
 {
-  // Recommended extensions for this dotfiles project
   "recommendations": [
-    // Shell scripting
     "timonwong.shellcheck",
     "rogalmic.bash-debug",
     "bmalehorn.vscode-fish",
-    // Markdown
     "davidanson.vscode-markdownlint",
     "yzhang.markdown-all-in-one",
-    // YAML/GitHub Actions
     "redhat.vscode-yaml",
     "github.vscode-github-actions",
-    // EditorConfig support
     "editorconfig.editorconfig",
-    // Git integration
     "eamodio.gitlens",
     "github.vscode-pull-request-github",
     "mhutchie.git-graph",
-    // Docker/Containers (for local CI testing)
     "ms-vscode-remote.remote-containers",
-    // Code navigation
     "christian-kohler.path-intellisense",
-    // Visual helpers
     "oderwat.indent-rainbow",
     "aaron-bond.better-comments",
-    // Productivity
     "gruntfuggly.todo-tree",
     "streetsidesoftware.code-spell-checker"
   ],
-  // Extensions to avoid (conflicts or issues)
   "unwantedRecommendations": []
 }
