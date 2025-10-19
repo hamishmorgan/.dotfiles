@@ -450,15 +450,25 @@ check_dependencies() {
     log_info "Checking dependencies..."
 
     local missing_deps=()
+    local missing_optional=()
     local outdated_deps=()
     local satisfied_deps=()
-    local all_deps
-    all_deps="$(get_required_deps common) $(get_required_deps optional)"
+    local common_deps
+    local optional_deps
+    common_deps="$(get_required_deps common)"
+    optional_deps="$(get_required_deps optional)"
+    local all_deps="$common_deps $optional_deps"
 
     for dep in $all_deps; do
         if ! command_exists "$dep"; then
-            missing_deps+=("$dep")
-            [[ $verbosity -ge 1 ]] && log_warning "Checking $dep... not found"
+            # Check if this is a required (common) or optional dependency
+            if [[ " $common_deps " =~ " $dep " ]]; then
+                missing_deps+=("$dep")
+                [[ $verbosity -ge 1 ]] && log_error "Checking $dep... not found"
+            else
+                missing_optional+=("$dep")
+                [[ $verbosity -ge 1 ]] && log_warning "Checking $dep... not found"
+            fi
         else
             # Check version if minimum is specified
             local min_version
@@ -507,13 +517,19 @@ check_dependencies() {
 
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
         has_errors=true
-        log_error "Missing dependencies: ${missing_deps[*]}"
+        log_error "Missing required dependencies: ${missing_deps[*]}"
         echo ""
         echo "Install missing dependencies:"
         echo "  Ubuntu/Debian: sudo apt-get install ${missing_deps[*]}"
         echo "  macOS: brew install ${missing_deps[*]}"
         echo "  CentOS/RHEL: sudo yum install ${missing_deps[*]}"
         echo "  Fedora: sudo dnf install ${missing_deps[*]}"
+        echo ""
+    fi
+
+    if [[ ${#missing_optional[@]} -gt 0 ]]; then
+        log_warning "Missing optional dependencies: ${missing_optional[*]}"
+        echo "  Installation will continue, but some features may be unavailable"
         echo ""
     fi
 
