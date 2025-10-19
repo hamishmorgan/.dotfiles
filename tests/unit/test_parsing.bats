@@ -14,37 +14,37 @@ teardown() {
 }
 
 @test "parse_verbosity returns 0 for no flags" {
-    result="$(parse_verbosity)"
-    [ "$result" = "0" ]
+    run parse_verbosity
+    assert_output "0"
 }
 
 @test "parse_verbosity returns 1 for single -v" {
-    result="$(parse_verbosity "-v")"
-    [ "$result" = "1" ]
+    run parse_verbosity "-v"
+    assert_output "1"
 }
 
 @test "parse_verbosity returns 1 for --verbose" {
-    result="$(parse_verbosity "--verbose")"
-    [ "$result" = "1" ]
+    run parse_verbosity "--verbose"
+    assert_output "1"
 }
 
 @test "parse_verbosity returns 2 for -vv" {
-    result="$(parse_verbosity "-vv")"
-    [ "$result" = "2" ]
+    run parse_verbosity "-vv"
+    assert_output "2"
 }
 
 @test "parse_verbosity returns 2 for -v -v" {
-    result="$(parse_verbosity "-v" "-v")"
-    [ "$result" = "2" ]
+    run parse_verbosity "-v" "-v"
+    assert_output "2"
 }
 
 @test "parse_verbosity returns 2 for --verbose --verbose" {
-    result="$(parse_verbosity "--verbose" "--verbose")"
-    [ "$result" = "2" ]
+    run parse_verbosity "--verbose" "--verbose"
+    assert_output "2"
 }
 
 @test "parse_verbosity caps at 2" {
-    result="$(parse_verbosity "-v" "-v" "-v")"
-    [ "$result" = "2" ]
+    run parse_verbosity "-v" "-v" "-v"
+    assert_output "2"
 }
 

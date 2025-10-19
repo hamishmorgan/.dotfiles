@@ -14,58 +14,65 @@ teardown() {
 }
 
 @test "get_package_files returns correct files for system" {
-    result="$(get_package_files "system")"
+    run get_package_files "system"
 
-    [[ "$result" =~ \.stow-global-ignore ]]
-    [[ "$result" =~ \.stowrc ]]
-    [[ "$result" =~ \.editorconfig ]]
-    [[ "$result" =~ \.inputrc ]]
+    assert_output --partial ".stow-global-ignore"
+    assert_output --partial ".stowrc"
+    assert_output --partial ".editorconfig"
+    assert_output --partial ".inputrc"
 }
 
 @test "get_package_files returns correct files for git" {
-    result="$(get_package_files "git")"
+    run get_package_files "git"
 
-    [[ "$result" =~ \.gitconfig ]]
-    [[ "$result" =~ \.gitattributes ]]
-    [[ "$result" =~ \.gitignore-globals ]]
+    assert_output --partial ".gitconfig"
+    assert_output --partial ".gitattributes"
+    assert_output --partial ".gitignore-globals"
 }
 
 @test "get_package_files returns correct files for fish" {
-    result="$(get_package_files "fish")"
+    run get_package_files "fish"
 
-    [[ "$result" =~ \.config/fish ]]
+    assert_output --partial ".config/fish"
 }
 
 @test "get_package_files returns empty for unknown package" {
-    result="$(get_package_files "nonexistent")"
+    run get_package_files "nonexistent"
 
-    [ "$result" = "" ]
+    assert_output ""
 }
 
 @test "get_package_name returns correct display name" {
-    [ "$(get_package_name "system")" = "System" ]
-    [ "$(get_package_name "git")" = "Git" ]
-    [ "$(get_package_name "zsh")" = "Zsh" ]
-    [ "$(get_package_name "fish")" = "Fish" ]
+    run get_package_name "system"
+    assert_output "System"
+
+    run get_package_name "git"
+    assert_output "Git"
+
+    run get_package_name "zsh"
+    assert_output "Zsh"
+
+    run get_package_name "fish"
+    assert_output "Fish"
 }
 
 @test "get_package_name returns package name for unknown package" {
-    result="$(get_package_name "unknown")"
-    [ "$result" = "unknown" ]
+    run get_package_name "unknown"
+    assert_output "unknown"
 }
 
 @test "get_required_deps returns common dependencies" {
-    result="$(get_required_deps "common")"
+    run get_required_deps "common"
 
-    [[ "$result" =~ stow ]]
-    [[ "$result" =~ git ]]
+    assert_output --partial "stow"
+    assert_output --partial "git"
 }
 
 @test "get_required_deps returns optional dependencies" {
-    result="$(get_required_deps "optional")"
+    run get_required_deps "optional"
 
-    [[ "$result" =~ tmux ]]
-    [[ "$result" =~ zsh ]]
-    [[ "$result" =~ fish ]]
+    assert_output --partial "tmux"
+    assert_output --partial "zsh"
+    assert_output --partial "fish"
 }
 

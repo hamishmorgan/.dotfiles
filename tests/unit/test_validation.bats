@@ -15,17 +15,17 @@ teardown() {
 
 @test "command_exists returns success for existing command" {
     run command_exists "bash"
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 @test "command_exists returns failure for non-existing command" {
     run command_exists "this-command-does-not-exist-12345"
-    [ "$status" -ne 0 ]
+    assert_failure
 }
 
 @test "count_orphaned_symlinks returns 0 for no symlinks" {
-    result="$(count_orphaned_symlinks)"
-    [ "$result" = "0" ]
+    run count_orphaned_symlinks
+    assert_output "0"
 }
 
 @test "count_orphaned_symlinks counts broken symlinks" {
@@ -35,6 +35,6 @@ teardown() {
     # Note: This function checks $HOME, so we'd need to mock that
     # For now, just test it runs without error
     run count_orphaned_symlinks
-    [ "$status" -eq 0 ]
+    assert_success
 }
 

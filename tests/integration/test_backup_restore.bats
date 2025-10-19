@@ -19,7 +19,7 @@ teardown() {
     echo "test" > "$HOME/.testfile"
 
     run ./dot backup
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 @test "backup command creates backup directory" {
@@ -36,15 +36,15 @@ teardown() {
     create_mock_backups 3 1
 
     run ./dot backups
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 @test "backups command shows backup count" {
     create_mock_backups 5 1
 
     run ./dot backups
-    [ "$status" -eq 0 ]
+    assert_success
     # Should mention we have backups
-    assert_output_contains "backup"
+    assert_output --partial "backup"
 }
 

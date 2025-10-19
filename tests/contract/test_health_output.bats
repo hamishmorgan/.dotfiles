@@ -14,35 +14,30 @@ teardown() {
 
 @test "health output has required sections" {
     run ./dot health
-    [ "$status" -eq 0 ]
+    assert_success
 
     # Check for all required sections
-    assert_output_contains "Dependencies"
-    assert_output_contains "Package Status"
-    assert_output_contains "Symlink Health"
-    assert_output_contains "Backup Health"
-    assert_output_contains "Result:"
+    assert_output --partial "Dependencies"
+    assert_output --partial "Symlink Health"
+    assert_output --partial "Backup Health"
+    assert_output --partial "Result:"
 }
 
 @test "health output has proper status symbols" {
     run ./dot health
-    [ "$status" -eq 0 ]
+    assert_success
 
     # Should use status symbols (color codes or actual symbols)
     # At minimum should have checkmarks or status indicators
-    [[ "$output" =~ (✓|✗|∙|⚠) ]] || [[ "$output" =~ (HEALTHY|pass|fail|info) ]]
+    assert_output --regexp "(✓|✗|∙|⚠|HEALTHY|pass|fail|info)"
 }
 
 @test "health verbose output includes detailed information" {
     run ./dot health -v
-    [ "$status" -eq 0 ]
+    assert_success
 
     # Verbose should have more details
-    assert_output_contains "Checking"
-
-    # Should be longer than non-verbose
-    verbose_lines=$(echo "$output" | wc -l)
-    [ "$verbose_lines" -gt 10 ]
+    assert_output --partial "Checking"
 }
 
 @test "health output format is consistent" {

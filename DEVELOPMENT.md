@@ -33,6 +33,9 @@ Developer documentation for the .dotfiles repository.
 **Required (for development):**
 
 - bats (automated testing framework)
+- bats-assert (assertion library)
+- bats-support (helper library)
+- bats-file (file assertion library)
 - shellcheck (bash linting)
 
 **Optional (for development):**
@@ -69,6 +72,8 @@ git submodule update --init --recursive
 ```bash
 sudo apt-get update
 sudo apt-get install git stow bats shellcheck nodejs npm
+# BATS helper libraries
+sudo apt-get install bats-assert bats-support bats-file
 # Use npx for markdownlint (no global install needed)
 npx --yes markdownlint-cli@0.42.0 "**/*.md"
 ```
@@ -77,6 +82,9 @@ npx --yes markdownlint-cli@0.42.0 "**/*.md"
 
 ```bash
 brew install git stow bats-core shellcheck markdownlint-cli gh jq
+# BATS helper libraries (included with bats-core on Homebrew)
+# Or install separately if needed:
+# brew install bats-assert bats-support bats-file
 ```
 
 ### Editor Setup

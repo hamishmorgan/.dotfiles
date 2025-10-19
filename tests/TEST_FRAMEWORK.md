@@ -79,13 +79,15 @@ bats --jobs 4 tests/
 
 ```bash
 brew install bats-core
+# Helper libraries (may be included with bats-core)
+# brew install bats-assert bats-support bats-file
 ```
 
 ### Ubuntu/Debian
 
 ```bash
 sudo apt-get update
-sudo apt-get install bats
+sudo apt-get install bats bats-assert bats-support bats-file
 ```
 
 ### Verify Installation
@@ -93,6 +95,9 @@ sudo apt-get install bats
 ```bash
 bats --version
 # Should show: Bats 1.x.x
+
+# Verify helper libraries
+ls /usr/lib/bats/bats-{assert,support,file}/load.bash
 ```
 
 ## Test Categories
@@ -186,19 +191,34 @@ teardown() {
 
 ### Available Assertions
 
-From **BATS built-in**:
+From **bats-assert**:
 
-- `[ "$status" -eq 0 ]` - Exit code is 0
-- `[ "$status" -ne 0 ]` - Exit code is non-zero
-- `[ "$output" = "expected" ]` - Exact match
-- `[[ "$output" =~ pattern ]]` - Regex match
+- `assert_success` - Exit code is 0
+- `assert_failure` - Exit code is non-zero
+- `assert_equal "expected" "actual"` - Exact match
+- `assert_output "expected"` - Exact output match
+- `assert_output --partial "substring"` - Substring match
+- `assert_output --regexp "pattern"` - Regex match
+- `refute_output --partial "substring"` - Output does not contain
+
+From **bats-support**:
+
+- Enhances failure messages with context
+- Provides better error reporting
+
+From **bats-file**:
+
+- `assert_file_exist "path"` - File exists
+- `assert_dir_exist "path"` - Directory exists
+- `assert_link_exist "path"` - Symlink exists
+- `assert_file_not_empty "path"` - File has content
 
 From **common.bash** (custom helpers):
 
-- `assert_output_contains "pattern"`
-- `assert_output_not_contains "pattern"`
-- `assert_in_range VALUE MIN MAX`
-- `assert_numeric "string"`
+- `setup_test_dotfiles` - Create isolated test environment
+- `create_mock_backups COUNT SIZE_MB` - Generate test backups
+- `assert_in_range VALUE MIN MAX` - Numeric range validation
+- `assert_numeric "string"` - Verify numeric value
 
 ### Helper Functions
 

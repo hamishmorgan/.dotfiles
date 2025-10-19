@@ -14,29 +14,29 @@ teardown() {
 
 @test "status output has location information" {
     run ./dot status
-    [ "$status" -eq 0 ]
+    assert_success
 
-    assert_output_contains "Location:"
+    assert_output --partial "Location:"
 }
 
 @test "status output has dependencies section" {
     run ./dot status
-    [ "$status" -eq 0 ]
+    assert_success
 
-    assert_output_contains "Dependencies"
+    assert_output --partial "Dependencies"
 }
 
 @test "status output has backup information" {
     run ./dot status
-    [ "$status" -eq 0 ]
+    assert_success
 
     # Should show either "No backups" or backup count
-    [[ "$output" =~ (backup|Backup) ]]
+    assert_output --regexp "(backup|Backup)"
 }
 
 @test "status output is concise" {
     run ./dot status
-    [ "$status" -eq 0 ]
+    assert_success
 
     # Status should be brief (< 50 lines typically)
     line_count=$(echo "$output" | wc -l)

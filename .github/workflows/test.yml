@@ -13,13 +13,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Install BATS
-        run: sudo apt-get update && sudo apt-get install -y bats
-      
+        run: sudo apt-get update && sudo apt-get install -y bats bats-assert bats-support bats-file
+
       - name: Run unit tests
         run: bats tests/unit/
-      
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -33,16 +33,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Install BATS
-        run: sudo apt-get update && sudo apt-get install -y bats
-      
+        run: sudo apt-get update && sudo apt-get install -y bats bats-assert bats-support bats-file
+
       - name: Install dependencies
         run: sudo apt-get install -y stow git
-      
+
       - name: Run integration tests
         run: bats tests/integration/
-      
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -56,13 +56,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Install BATS
-        run: sudo apt-get update && sudo apt-get install -y bats
-      
+        run: sudo apt-get update && sudo apt-get install -y bats bats-assert bats-support bats-file
+
       - name: Run regression tests
         run: bats tests/regression/
-      
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -76,13 +76,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Install BATS
-        run: sudo apt-get update && sudo apt-get install -y bats
-      
+        run: sudo apt-get update && sudo apt-get install -y bats bats-assert bats-support bats-file
+
       - name: Run contract tests
         run: bats tests/contract/
-      
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

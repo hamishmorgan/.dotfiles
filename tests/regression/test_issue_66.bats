@@ -23,17 +23,17 @@ teardown() {
     run ./dot health
 
     # Should succeed
-    [ "$status" -eq 0 ]
+    assert_success
 
     # Should show backup count
-    assert_output_contains "15 backups"
+    assert_output --partial "15 backups"
 
     # The bug: showed "using 0MB"
     # After fix: shows actual size like "using 15MB"
-    assert_output_not_contains "using 0MB"
+    refute_output --partial "using 0MB"
 
     # Should show reasonable size (at least 10MB for 15x1MB)
-    [[ "$output" =~ using[[:space:]][1-9][0-9]?MB ]]
+    assert_output --regexp "using [1-9][0-9]?MB"
 }
 
 @test "Issue #66: get_backup_stats returns both count and size" {
@@ -74,16 +74,16 @@ teardown() {
     cd "$TEST_DOTFILES_DIR"
     run ./dot health
 
-    [ "$status" -eq 0 ]
+    assert_success
 
     # Should show maintenance items section
-    assert_output_contains "Maintenance Items"
+    assert_output --partial "Maintenance Items"
 
     # Should show backup warning with non-zero size
-    [[ "$output" =~ 20[[:space:]]backups[[:space:]]using[[:space:]][1-9][0-9]?MB ]]
+    assert_output --regexp "20 backups using [1-9][0-9]?MB"
 
     # Should not show 0MB (the bug)
-    assert_output_not_contains "using 0MB"
+    refute_output --partial "using 0MB"
 }
 
 @test "Issue #66: verbose health also shows correct backup size" {
@@ -92,10 +92,10 @@ teardown() {
     cd "$TEST_DOTFILES_DIR"
     run ./dot health -v
 
-    [ "$status" -eq 0 ]
+    assert_success
 
     # Verbose mode should also show backups correctly
-    assert_output_contains "12 backups"
-    [[ "$output" =~ using[[:space:]][1-9][0-9]?MB ]]
+    assert_output --partial "12 backups"
+    assert_output --regexp "using [1-9][0-9]?MB"
 }
 

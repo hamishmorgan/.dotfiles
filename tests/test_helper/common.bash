@@ -1,15 +1,29 @@
 # Common test helper functions
 # Load this in your test files with: load test_helper/common
 
-# Note: bats-support and bats-assert should be installed system-wide
-# macOS: brew install bats-core (includes helpers)
-# Ubuntu: sudo apt-get install bats
-#
-# If you need the helper libraries, install them:
-# git clone https://github.com/bats-core/bats-support /usr/local/lib/bats-support
-# git clone https://github.com/bats-core/bats-assert /usr/local/lib/bats-assert
-#
-# For now, we'll use basic assertions and avoid the helper libraries for simplicity
+# Load BATS helper libraries
+# These should be installed system-wide:
+# macOS: brew install bats-core (includes all helpers)
+# Ubuntu: sudo apt-get install bats-assert bats-support bats-file
+
+# Try to load from common locations
+if [[ -f "/usr/lib/bats/bats-support/load.bash" ]]; then
+    load "/usr/lib/bats/bats-support/load"
+elif [[ -f "/usr/local/lib/bats-support/load.bash" ]]; then
+    load "/usr/local/lib/bats-support/load"
+fi
+
+if [[ -f "/usr/lib/bats/bats-assert/load.bash" ]]; then
+    load "/usr/lib/bats/bats-assert/load"
+elif [[ -f "/usr/local/lib/bats-assert/load.bash" ]]; then
+    load "/usr/local/lib/bats-assert/load"
+fi
+
+if [[ -f "/usr/lib/bats/bats-file/load.bash" ]]; then
+    load "/usr/lib/bats/bats-file/load"
+elif [[ -f "/usr/local/lib/bats-file/load.bash" ]]; then
+    load "/usr/local/lib/bats-file/load"
+fi
 
 # Create a temporary dotfiles directory for testing
 # Usage: setup_test_dotfiles

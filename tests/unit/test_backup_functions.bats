@@ -18,8 +18,8 @@ teardown() {
     count=$(echo "$result" | cut -d' ' -f1)
     size=$(echo "$result" | cut -d' ' -f2)
 
-    [ "$count" = "0" ]
-    [ "$size" = "0" ]
+    assert_equal "$count" "0"
+    assert_equal "$size" "0"
 }
 
 @test "get_backup_stats counts backups correctly" {
@@ -28,7 +28,7 @@ teardown() {
     result="$(get_backup_stats)"
     count=$(echo "$result" | cut -d' ' -f1)
 
-    [ "$count" = "5" ]
+    assert_equal "$count" "5"
 }
 
 @test "get_backup_stats calculates size correctly" {
@@ -40,7 +40,7 @@ teardown() {
     count=$(echo "$result" | cut -d' ' -f1)
     size=$(echo "$result" | cut -d' ' -f2)
 
-    [ "$count" = "1" ]
+    assert_equal "$count" "1"
     # Size should be approximately 1024KB (allowing for filesystem overhead)
     assert_in_range "$size" 1000 1100
 }
@@ -66,7 +66,7 @@ teardown() {
     count=$(echo "$result" | cut -d' ' -f1)
 
     # Should only count the 3 actual backups
-    [ "$count" = "3" ]
+    assert_equal "$count" "3"
 }
 
 @test "get_backup_dirs lists backup directories" {
@@ -82,6 +82,6 @@ teardown() {
     result="$(get_backup_dirs)"
 
     # Should be empty (or just whitespace)
-    [ -z "$(echo "$result" | tr -d '[:space:]')" ]
+    assert_equal "$(echo "$result" | tr -d '[:space:]')" ""
 }
 
