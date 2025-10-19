@@ -46,8 +46,8 @@ fi
 
 # Test 4: Template files exist
 echo -n "Test 4: Template files exist... "
-if [[ -f "$DOTFILES_DIR/git/.gitconfig.template" ]] && \
-   [[ -f "$DOTFILES_DIR/gh/.config/gh/config.yml.template" ]]; then
+if [[ -f "$DOTFILES_DIR/packages/git/.gitconfig.template" ]] && \
+   [[ -f "$DOTFILES_DIR/packages/gh/.config/gh/config.yml.template" ]]; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
@@ -56,9 +56,9 @@ fi
 
 # Test 5: Stow ignore files exist
 echo -n "Test 5: Stow ignore files exist... "
-if [[ -f "$DOTFILES_DIR/system/.stow-global-ignore" ]] && \
-   [[ -f "$DOTFILES_DIR/git/.stow-local-ignore" ]] && \
-   [[ -f "$DOTFILES_DIR/gh/.stow-local-ignore" ]]; then
+if [[ -f "$DOTFILES_DIR/packages/system/.stow-global-ignore" ]] && \
+   [[ -f "$DOTFILES_DIR/packages/git/.stow-local-ignore" ]] && \
+   [[ -f "$DOTFILES_DIR/packages/gh/.stow-local-ignore" ]]; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
@@ -67,10 +67,10 @@ fi
 
 # Test 6: System package files exist
 echo -n "Test 6: System package complete... "
-if [[ -f "$DOTFILES_DIR/system/.stow-global-ignore" ]] && \
-   [[ -f "$DOTFILES_DIR/system/.stowrc" ]] && \
-   [[ -f "$DOTFILES_DIR/system/.editorconfig" ]] && \
-   [[ -f "$DOTFILES_DIR/system/.inputrc" ]]; then
+if [[ -f "$DOTFILES_DIR/packages/system/.stow-global-ignore" ]] && \
+   [[ -f "$DOTFILES_DIR/packages/system/.stowrc" ]] && \
+   [[ -f "$DOTFILES_DIR/packages/system/.editorconfig" ]] && \
+   [[ -f "$DOTFILES_DIR/packages/system/.inputrc" ]]; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
@@ -90,10 +90,10 @@ fi
 echo -n "Test 8: Shellcheck passes... "
 if command -v shellcheck >/dev/null 2>&1; then
     if shellcheck "$DOTFILES_DIR/dot" \
-        "$DOTFILES_DIR"/bash/.bashrc* \
-        "$DOTFILES_DIR"/bash/.bash_profile \
-        "$DOTFILES_DIR"/zsh/.zshrc* \
-        "$DOTFILES_DIR"/zsh/.zprofile >/dev/null 2>&1; then
+        "$DOTFILES_DIR"/packages/bash/.bashrc* \
+        "$DOTFILES_DIR"/packages/bash/.bash_profile \
+        "$DOTFILES_DIR"/packages/zsh/.zshrc* \
+        "$DOTFILES_DIR"/packages/zsh/.zprofile >/dev/null 2>&1; then
         echo -e "${GREEN}✓${NC}"
     else
         echo -e "${RED}✗${NC}"

@@ -1,11 +1,11 @@
 {
   "files.exclude": {
-    "**/zsh/.oh-my-zsh/.github": true
+    "**/packages/zsh/.oh-my-zsh/.github": true
   },
   "yaml.schemas": {
     "https://json.schemastore.org/github-workflow.json": [
       ".github/workflows/*.yml",
-      "!**/zsh/.oh-my-zsh/**"
+      "!**/packages/zsh/.oh-my-zsh/**"
     ]
   },
   "files.associations": {
@@ -63,7 +63,7 @@
   "search.followSymlinks": false,
   "search.exclude": {
     "**/backups/**": true,
-    "**/zsh/.oh-my-zsh/**": true,
+    "**/packages/zsh/.oh-my-zsh/**": true,
     "**/node_modules/**": true
   },
   "explorer.sortOrder": "type",

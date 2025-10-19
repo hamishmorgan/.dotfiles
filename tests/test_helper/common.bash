@@ -48,7 +48,8 @@ setup_test_dotfiles() {
     export DOTFILES_DIR="$TEST_DOTFILES_DIR"
 
     # Create basic structure
-    mkdir -p "$TEST_DOTFILES_DIR"/{backups,system,git,zsh,tmux,gh,gnuplot,bash,fish}
+    mkdir -p "$TEST_DOTFILES_DIR"/backups
+    mkdir -p "$TEST_DOTFILES_DIR"/packages/{system,git,zsh,tmux,gh,gnuplot,bash,fish}
     mkdir -p "$TEST_DOTFILES_DIR/tests"
 
     # Copy dot script (from repository root)

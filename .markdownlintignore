@@ -1,6 +1,6 @@
 # Markdownlint ignore patterns
 # Submodules and external dependencies
-zsh/.oh-my-zsh/
+packages/zsh/.oh-my-zsh/
 
 # Node modules
 node_modules/

@@ -3,7 +3,7 @@
 
 ignore:
   # Ignore all workflows in oh-my-zsh submodule
-  - 'zsh/.oh-my-zsh/.github/workflows/.*'
+  - 'packages/zsh/.oh-my-zsh/.github/workflows/.*'
 
 
 
