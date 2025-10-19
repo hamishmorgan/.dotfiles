@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Script to run all BATS tests locally
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}Running BATS test suite...${NC}"
+echo ""
+
+# Check if BATS is available
+if ! command -v bats >/dev/null 2>&1; then
+    echo -e "${RED}Error: BATS not installed${NC}"
+    echo ""
+    echo "Install BATS:"
+    echo "  macOS:  brew install bats-core"
+    echo "  Ubuntu: sudo apt-get install bats"
+    echo ""
+    exit 1
+fi
+
+# Run each test suite
+test_suites=(
+    "regression:Regression Tests"
+    "unit:Unit Tests"
+    "integration:Integration Tests"
+    "contract:Contract Tests"
+)
+
+total_pass=0
+total_fail=0
+
+for suite in "${test_suites[@]}"; do
+    IFS=':' read -r dir name <<< "$suite"
+
+    if [[ ! -d "$SCRIPT_DIR/$dir" ]]; then
+        echo -e "${BLUE}Skipping $name (directory not found)${NC}"
+        continue
+    fi
+
+    echo -e "${BLUE}Running $name...${NC}"
+    
+    if bats "$SCRIPT_DIR/$dir/"; then
+        echo -e "${GREEN}✓ $name passed${NC}"
+        ((total_pass++))
+    else
+        echo -e "${RED}✗ $name failed${NC}"
+        ((total_fail++))
+    fi
+
+    echo ""
+done
+
+# Summary
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "${BLUE}Test Summary:${NC}"
+echo -e "  ${GREEN}Passed: $total_pass${NC}"
+if [[ $total_fail -gt 0 ]]; then
+    echo -e "  ${RED}Failed: $total_fail${NC}"
+    exit 1
+else
+    echo -e "  ${GREEN}All tests passed!${NC}"
+    exit 0
+fi
+

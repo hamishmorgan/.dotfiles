@@ -538,13 +538,90 @@ Optimizations reduced CI time from 8-12 minutes to ~1 minute (92% improvement):
 
 ## Testing
 
-### Local Testing
+### When to Write Tests
+
+**Always write tests for:**
+
+1. **Bug Fixes (Regression Tests)** - Write failing test BEFORE implementing fix
+   - Create test that reproduces the bug
+   - Verify test fails
+   - Implement fix
+   - Verify test passes
+   - Prevents bug from returning
+   - Example: `tests/regression/test_issue_66.bats`
+
+2. **New Functions (Unit Tests)** - Write tests for critical helper functions
+   - Test edge cases and error conditions
+   - Verify return values and side effects
+   - Example: `tests/unit/test_backup_functions.bats`
+
+3. **New Commands (Integration Tests)** - Test full command workflows
+   - Verify exit codes
+   - Validate output format
+   - Example: `tests/integration/test_health.bats`
+
+4. **Output Changes (Contract Tests)** - Update when changing user-facing output
+   - Ensure output format stability
+   - Verify required sections present
+   - Example: `tests/contract/test_health_output.bats`
+
+### Test-Driven Bug Fixing Pattern
+
+**Critical:** Write failing regression test before fixing bugs.
+
+```bash
+# 1. Create regression test that demonstrates the bug
+cat > tests/regression/test_issue_XX.bats << 'EOF'
+@test "Issue #XX: describe the bug" {
+    # Setup to reproduce bug
+    create_mock_backups 15 1
+    
+    run ./dot health
+    
+    # This FAILS on the bug (what we want)
+    assert_output_not_contains "using 0MB"
+}
+EOF
+
+# 2. Run test - should FAIL
+bats tests/regression/test_issue_XX.bats
+# Expected: FAIL (bug present)
+
+# 3. Fix the bug in code
+# (make your changes)
+
+# 4. Run test again - should PASS
+bats tests/regression/test_issue_XX.bats
+# Expected: PASS (bug fixed)
+
+# 5. Commit both test and fix together
+git add tests/regression/test_issue_XX.bats
+git add dot  # or whatever file was fixed
+git commit -m "Fix Issue #XX with regression test"
+```
+
+### Running Tests
 
 **Before committing:**
 
 ```bash
-# Quick smoke tests (30 seconds)
+# Regression tests (fast, critical)
+bats tests/regression/
+
+# Smoke tests (30 seconds)
 ./tests/smoke-test.sh
+```
+
+**During development:**
+
+```bash
+# Run all BATS tests
+./tests/run-bats.sh
+
+# Or specific suites
+bats tests/unit/          # Function-level tests
+bats tests/integration/   # Command-level tests
+bats tests/contract/      # Output validation
 ```
 
 **Before pushing:**
@@ -554,24 +631,103 @@ Optimizations reduced CI time from 8-12 minutes to ~1 minute (92% improvement):
 ./tests/run-local-ci.sh
 ```
 
+### Test Categories
+
+1. **Regression Tests** - One per bug, written BEFORE fix
+2. **Unit Tests** - Test functions in isolation
+3. **Integration Tests** - Test complete commands
+4. **Contract Tests** - Validate output format
+5. **Smoke Tests** - Fast structural validation
+
 ### Testing Strategy
 
+- **BATS tests**: Automated unit, integration, and regression testing
+- **Regression tests**: Write BEFORE fixing bug (TDD pattern)
 - **Smoke tests**: Fast validation of basic functionality and structure
 - **Container tests**: Full installation on Ubuntu and Alpine (BSD-like)
 - **GitHub Actions**: Final validation on real Ubuntu and macOS runners
 
 ### Why This Matters
 
-Cross-platform compatibility issues (BSD vs GNU commands) are caught by:
+**BATS tests catch logic bugs:**
+
+- Variable name typos (Issue #66: `$backup_size` vs `$backup_size_kb`)
+- Calculation errors
+- Output format changes
+- Function contract violations
+
+**Cross-platform tests catch compatibility issues:**
 
 1. Alpine tests (BusyBox = BSD-like coreutils)
 2. GitHub Actions macOS runner (actual macOS)
 
-Always run container tests before pushing to catch platform-specific issues early.
+Always run tests before committing. Regression tests are mandatory for bug fixes.
 
 ### Test Documentation
 
-See `tests/README.md` for detailed testing framework documentation.
+See DEVELOPMENT.md Testing section for comprehensive testing framework documentation.
+
+### Critical Testing Principles
+
+**DO NOT create "acceptable failure" tests:**
+
+```bash
+# ❌ BAD: Allowing either success or failure
+run ./dot health
+[[ "$status" -eq 0 || "$status" -eq 1 ]]  # This is an anti-pattern!
+
+# ✅ GOOD: Test specific behavior
+# If testing backup display, test the function directly
+source_dot_script
+run get_backup_stats
+assert_success
+assert_output --regexp "[0-9]+ [0-9]+"
+
+# ✅ GOOD: Or ensure proper test environment
+./dot install > /dev/null 2>&1  # Set up environment
+run ./dot health
+# Now health should have deterministic result
+```
+
+**Tests must have clear expectations:**
+
+- If a command should succeed, assert `assert_success`
+- If a command should fail, assert `assert_failure` (exit code 1)  
+- Never use `[[ "$status" -eq 0 || "$status" -eq 1 ]]` as a cop-out
+- If environment affects results, mock/set up the environment properly
+
+**Test functions in isolation when possible:**
+
+- Integration tests test full commands (slower, environmental dependencies)
+
+- Unit tests test functions directly (faster, more reliable)
+- Prefer unit tests for specific functionality
+- Use integration tests for end-to-end workflows
+Before (anti-pattern):
+
+```bash
+@test "health shows backups" {
+
+    run ./dot health
+    # May fail in test env - BAD!
+    [[ "$status" -eq 0 || "$status" -eq 1 ]]
+
+    assert_output --partial "15 backups"
+}
+```
+
+After (correct):
+
+```bash
+@test "get_backup_stats returns correct values" {
+    create_mock_backups 15 1
+    source_dot_script
+    run get_backup_stats
+    assert_success  # Function must succeed
+    count=$(echo "$output" | awk '{print $1}')
+    assert_equal "15" "$count"
+}
+```
 
 ## Troubleshooting
 

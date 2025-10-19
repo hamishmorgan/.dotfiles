@@ -30,10 +30,17 @@ Developer documentation for the .dotfiles repository.
 - Bash 3.2+ (macOS compatible)
 - GNU Stow 2.3+
 
+**Required (for development):**
+
+- bats (automated testing framework)
+- bats-assert (assertion library)
+- bats-support (helper library)
+- bats-file (file assertion library)
+- shellcheck (bash linting)
+
 **Optional (for development):**
 
 - Docker or Podman (for local CI)
-- shellcheck (bash linting)
 - markdownlint-cli (markdown linting)
 - gh (GitHub CLI for PR management)
 - jq (JSON processing for CI status)
@@ -64,7 +71,9 @@ git submodule update --init --recursive
 
 ```bash
 sudo apt-get update
-sudo apt-get install git stow shellcheck nodejs npm
+sudo apt-get install git stow bats shellcheck nodejs npm
+# BATS helper libraries
+sudo apt-get install bats-assert bats-support bats-file
 # Use npx for markdownlint (no global install needed)
 npx --yes markdownlint-cli@0.42.0 "**/*.md"
 ```
@@ -72,7 +81,10 @@ npx --yes markdownlint-cli@0.42.0 "**/*.md"
 **macOS:**
 
 ```bash
-brew install git stow shellcheck markdownlint-cli gh jq
+brew install git stow bats-core shellcheck markdownlint-cli gh jq
+# BATS helper libraries (included with bats-core on Homebrew)
+# Or install separately if needed:
+# brew install bats-assert bats-support bats-file
 ```
 
 ### Editor Setup
@@ -310,6 +322,21 @@ function_name() {
 ```bash
 # Quick smoke tests (30 seconds)
 ./tests/smoke-test.sh
+
+# BATS regression tests (fast, catches bug regressions)
+bats tests/regression/
+```
+
+**During development:**
+
+```bash
+# Run all BATS tests
+./tests/run-bats.sh
+
+# Or run specific test suites
+bats tests/unit/          # Unit tests
+bats tests/integration/   # Integration tests
+bats tests/contract/      # Output validation
 ```
 
 **Before pushing:**
@@ -327,24 +354,166 @@ function_name() {
 ./tests/run-local-ci.sh bash32     # Bash 3.2 compatibility test
 ```
 
+### Test Framework Organization
+
+The testing framework uses **BATS** (Bash Automated Testing System) with four test categories:
+
+```text
+tests/
+├── regression/        # Bug prevention (one test per bug)
+├── unit/             # Function-level tests (isolated)
+├── integration/      # Command-level tests (end-to-end)
+├── contract/         # Output format validation
+├── test_helper/      # Shared helper functions
+└── TEST_FRAMEWORK.md # Detailed documentation
+```
+
+**Test Distribution:**
+
+- Regression: One test per fixed bug
+- Unit: 70% of tests (function-level)
+- Integration: 25% of tests (command-level)
+- Contract: 5% of tests (output validation)
+
+### Writing Tests
+
+**Regression tests (most important):**
+
+Create a failing test BEFORE fixing a bug:
+
+```bash
+# tests/regression/test_issue_XX.bats
+@test "Issue #XX: describe the bug" {
+    # Setup that reproduces bug
+    create_mock_backups 15 1
+    
+    run ./dot health
+    
+    # Assertion that fails on the bug
+    assert_output_not_contains "using 0MB"
+}
+```
+
+Pattern:
+
+1. Write test that reproduces bug (test fails)
+2. Fix the bug in code
+3. Run test again (test passes)
+4. Commit test + fix together
+
+**Unit tests:**
+
+Test individual functions with various inputs:
+
+```bash
+# tests/unit/test_backup_functions.bats
+@test "get_backup_stats counts backups correctly" {
+    create_mock_backups 5 1
+    result="$(get_backup_stats)"
+    count=$(echo "$result" | cut -d' ' -f1)
+    [ "$count" = "5" ]
+}
+```
+
+**Integration tests:**
+
+Test complete command workflows:
+
+```bash
+# tests/integration/test_health.bats
+@test "health command exits successfully" {
+    run ./dot health
+    [ "$status" -eq 0 ]
+}
+```
+
+### Test Helper Functions
+
+Available in `tests/test_helper/common.bash`:
+
+- `setup_test_dotfiles` - Create isolated test environment
+- `create_mock_backups COUNT SIZE_MB` - Generate test data
+- `assert_output_contains "pattern"` - Verify output
+- `assert_output_not_contains "pattern"` - Verify exclusion
+
 ### Testing Strategy
 
-- **Smoke tests**: Fast validation of basic functionality and structure
-- **Container tests**: Full installation on Ubuntu and Alpine (BusyBox-based, non-GNU)
-- **GitHub Actions**: Final validation on real Ubuntu and macOS runners
+- **BATS tests**: Automated regression, unit, integration testing
+- **TDD for bugs**: Write failing test before fix (mandatory)
+- **Smoke tests**: Fast structural validation
+- **Container tests**: Cross-platform compatibility (BSD vs GNU)
+- **GitHub Actions**: Final validation on Ubuntu and macOS
 
 ### Why This Matters
 
-Cross-platform compatibility issues (BSD vs GNU commands) are caught by:
+**BATS tests catch logic bugs:**
 
-1. Alpine tests (BusyBox-based coreutils, non-GNU)
-2. GitHub Actions macOS runner (actual macOS)
+- Variable name typos (Issue #66: `$backup_size` vs `$backup_size_kb`)
+- Calculation errors
+- Output format changes
+- Unintended behavior changes
 
-Always run container tests before pushing to catch platform-specific issues early.
+**Cross-platform tests catch compatibility:**
 
-### Test Documentation
+- BSD vs GNU command differences (Alpine tests)
+- macOS-specific issues (GitHub Actions)
 
-See `tests/README.md` for detailed testing framework documentation.
+**Required:** Write regression test for every bug fix.
+
+### Test Implementation
+
+**Basic test structure:**
+
+```bash
+#!/usr/bin/env bats
+
+load ../test_helper/common
+
+setup() {
+    setup_test_dotfiles
+    cd "$TEST_DOTFILES_DIR"
+}
+
+teardown() {
+    teardown_test_dotfiles
+}
+
+@test "descriptive test name" {
+    # Arrange: Set up test conditions
+    create_mock_backups 5 1
+    
+    # Act: Run the code being tested  
+    run ./dot health
+    
+    # Assert: Verify results
+    assert_success
+    assert_output --partial "5 backups"
+}
+```
+
+**Available assertions** (from bats-assert, bats-support, bats-file):
+
+- `assert_success` / `assert_failure` - Exit codes
+- `assert_equal "expected" "actual"` - Exact match
+- `assert_output --partial "text"` - Substring match
+- `assert_output --regexp "pattern"` - Regex match
+- `refute_output --partial "text"` - Does not contain
+- `assert_file_exist "path"` - File checks
+- `assert_dir_exist "path"` - Directory checks
+
+**Custom helpers** (from `tests/test_helper/common.bash`):
+
+- `setup_test_dotfiles` - Create isolated test environment
+- `create_mock_backups COUNT SIZE_MB` - Generate test backups
+- `source_dot_script` - Load dot script functions
+- `assert_in_range VALUE MIN MAX` - Numeric validation
+
+**Test isolation principles:**
+
+- Each test must be independent  
+- Use `setup()` / `teardown()` hooks
+- Don't rely on test execution order
+- Tests should pass when run individually or in suite
 
 ---
 
