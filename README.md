@@ -126,6 +126,40 @@ Verbosity flags can be stacked:
 - **Level 1** (`-v`): Add package names and key progress steps
 - **Level 2** (`-vv`): Show every file operation (symlinks, checks, etc.)
 
+## Configuration
+
+Customize behavior via environment variables:
+
+### Display & Retention
+
+- `DOTFILES_MAX_BACKUPS_TO_DISPLAY` - Backups shown in status output (default: 5)
+- `DOTFILES_MAX_BACKUPS_TO_KEEP` - Maximum backups retained (default: 10)
+- `DOTFILES_RESTORE_DISPLAY_LIMIT` - Files shown in restore preview (default: 20)
+
+### Timeout Values (seconds)
+
+- `DOTFILES_GIT_TIMEOUT` - Git operations timeout (default: 60)
+- `DOTFILES_CURL_TIMEOUT` - Curl operations timeout (default: 30)
+
+### Examples
+
+```bash
+# Show more backups in status
+DOTFILES_MAX_BACKUPS_TO_DISPLAY=15 ./dot status
+
+# Keep more backups
+DOTFILES_MAX_BACKUPS_TO_KEEP=20 ./dot install
+
+# Longer timeout for slow networks
+DOTFILES_GIT_TIMEOUT=120 ./dot install
+
+# Fast timeouts for CI
+DOTFILES_GIT_TIMEOUT=30 DOTFILES_CURL_TIMEOUT=15 ./dot install
+
+# Preview more files during restore
+DOTFILES_RESTORE_DISPLAY_LIMIT=50 ./dot restore
+```
+
 ## Optional: Set zsh as default shell
 
 ```bash

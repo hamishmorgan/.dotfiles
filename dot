@@ -38,8 +38,21 @@ SYMBOL_INFO='∙'
 # Configuration
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$DOTFILES_DIR/backups/dotfiles-backup-$(date +%s)"
-readonly MAX_BACKUPS_TO_DISPLAY=5
-readonly MAX_BACKUPS_TO_KEEP="${MAX_BACKUPS_TO_KEEP:-10}"
+
+# Backup retention policy (configurable via environment variables)
+readonly MAX_BACKUPS_TO_DISPLAY="${DOTFILES_MAX_BACKUPS_TO_DISPLAY:-5}"     # Status output
+readonly MAX_BACKUPS_TO_KEEP="${DOTFILES_MAX_BACKUPS_TO_KEEP:-10}"          # Auto cleanup threshold
+
+# Display limits
+readonly RESTORE_DISPLAY_LIMIT="${DOTFILES_RESTORE_DISPLAY_LIMIT:-20}"      # Restore preview
+
+# Timeout values in seconds
+readonly GIT_TIMEOUT="${DOTFILES_GIT_TIMEOUT:-60}"                           # Git operations
+readonly CURL_TIMEOUT="${DOTFILES_CURL_TIMEOUT:-30}"                         # Curl downloads
+
+# Unit conversion constants
+readonly SECONDS_PER_DAY=86400
+readonly KB_TO_MB=1024
 
 # Track installation state for rollback
 INSTALLED_PACKAGES=()
@@ -626,8 +639,8 @@ init_submodules() {
         return 1
     }
 
-    # Use portable timeout (60 seconds)
-    if ! portable_timeout 60 git submodule update --init --recursive 2>&1 | prefix_output "│ "; then
+    # Use portable timeout
+    if ! portable_timeout "$GIT_TIMEOUT" git submodule update --init --recursive 2>&1 | prefix_output "│ "; then
         log_error "Failed to initialize git submodules (timeout or git error)"
         log_info "Try running: cd $DOTFILES_DIR && git submodule update --init --recursive"
         return 1
@@ -1014,30 +1027,30 @@ get_backup_stats() {
 auto_cleanup_backups() {
     local backup_count
     backup_count=$(get_backup_dirs | wc -l | tr -d ' ')
-    
+
     if [[ $backup_count -le $MAX_BACKUPS_TO_KEEP ]]; then
         return 0
     fi
-    
+
     local backups_to_remove=$((backup_count - MAX_BACKUPS_TO_KEEP))
     log_info "Auto cleanup: $backup_count backups found, keeping $MAX_BACKUPS_TO_KEEP most recent, removing $backups_to_remove old backup(s)"
-    
+
     clean_backups_silent "$MAX_BACKUPS_TO_KEEP"
-    
+
     return 0
 }
 
 # Silent version of clean_backups for auto-cleanup
 clean_backups_silent() {
     local keep_count="${1:-$MAX_BACKUPS_TO_KEEP}"
-    
+
     local backup_dirs=()
     while IFS= read -r dir; do
         backup_dirs+=("$dir")
     done < <(get_backup_dirs | sort -r)
 
     local total_backups=${#backup_dirs[@]}
-    
+
     if [[ $total_backups -eq 0 ]]; then
         return 0
     fi
@@ -1190,7 +1203,7 @@ show_status() {
         fi
 
         echo ""
-        echo "   Total: $backup_count backup(s) using $((backup_size_kb / 1024))MB"
+        echo "   Total: $backup_count backup(s) using $((backup_size_kb / KB_TO_MB))MB"
     fi
 
     echo ""
@@ -1200,8 +1213,8 @@ show_status() {
     if [[ $missing_files -gt 0 || $warning_files -gt 0 ]]; then
         echo ""
         [[ $missing_files -gt 0 ]] && show_tip "Run './dot install' to create missing symlinks"
-        [[ $backup_count -gt 10 ]] && show_tip "Run './dot clean' to remove old backups"
-    elif [[ $backup_count -gt 10 ]]; then
+        [[ $backup_count -gt $MAX_BACKUPS_TO_KEEP ]] && show_tip "Run './dot clean' to remove old backups"
+    elif [[ $backup_count -gt $MAX_BACKUPS_TO_KEEP ]]; then
         echo ""
         show_tip "Run './dot clean' to remove old backups"
     fi
@@ -1213,7 +1226,7 @@ get_backup_age_days() {
     local backup="$1"
     local backup_mtime
     backup_mtime=$(stat -c %Y "$backup" 2>/dev/null || stat -f %m "$backup" 2>/dev/null)
-    echo $(( ($(date +%s) - backup_mtime) / 86400 ))
+    echo $(( ($(date +%s) - backup_mtime) / SECONDS_PER_DAY ))
 }
 
 # List all available backups with details
@@ -1302,7 +1315,7 @@ restore_from_backup() {
     # Show what will be restored
     log_info "Files to restore:"
     local file_count=0
-    local max_display=20
+    local max_display="$RESTORE_DISPLAY_LIMIT"
 
     while IFS= read -r file; do
         if [[ $file_count -lt $max_display ]]; then
@@ -1474,7 +1487,7 @@ clean_backups() {
         ((remove_size += size_kb))
     done
 
-    show_section_separator "To Remove (${#to_remove[@]} backups, $((remove_size / 1024))MB)"
+    show_section_separator "To Remove (${#to_remove[@]} backups, $((remove_size / KB_TO_MB))MB)"
     echo ""
     for backup in "${to_remove[@]}"; do
         local backup_name
@@ -1495,7 +1508,7 @@ clean_backups() {
     done
 
     echo ""
-    show_section_separator "To Keep (${#to_keep[@]} backups, $((keep_size / 1024))MB)"
+    show_section_separator "To Keep (${#to_keep[@]} backups, $((keep_size / KB_TO_MB))MB)"
     echo ""
     for backup in "${to_keep[@]}"; do
         local backup_name
@@ -1538,7 +1551,7 @@ clean_backups() {
     done
 
     echo ""
-    show_command_summary "success" "Removed $removed_count backup(s), freed $((freed_space / 1024))MB"
+    show_command_summary "success" "Removed $removed_count backup(s), freed $((freed_space / KB_TO_MB))MB"
     echo ""
 
     return 0
@@ -1731,9 +1744,9 @@ check_backup_health() {
     if [[ $backup_count -eq 0 ]]; then
         log_info "No backup directories found"
     else
-        log_info "Found $backup_count backup(s) using $((total_size / 1024))MB"
+        log_info "Found $backup_count backup(s) using $((total_size / KB_TO_MB))MB"
 
-        if [[ $backup_count -gt 10 ]]; then
+        if [[ $backup_count -gt $MAX_BACKUPS_TO_KEEP ]]; then
             log_warning "Consider cleaning old backups: ./dot clean"
         fi
     fi
@@ -2437,9 +2450,9 @@ cmd_health() {
         show_health_table_row "11" "Backup Health" "pass" "No backups"
     else
         check_statuses+=("info")
-        check_details+=("$backup_count backups ($((backup_size_kb / 1024))MB)")
+        check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / 1024))MB)"
+        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)"
     fi
 
     # Calculate duration
@@ -2526,8 +2539,8 @@ cmd_health() {
                 echo "  • ${check_details[8]} orphaned symlinks (non-critical)"
             fi
 
-            if [[ "${check_statuses[10]}" == "info" && $backup_count -gt 10 ]]; then
-                echo "  • $backup_count backups using $((backup_size_kb / 1024))MB - run './dot clean' to free space"
+            if [[ "${check_statuses[10]}" == "info" && $backup_count -gt $MAX_BACKUPS_TO_KEEP ]]; then
+                echo "  • $backup_count backups using $((backup_size_kb / KB_TO_MB))MB - run './dot clean' to free space"
             fi
         fi
 
@@ -2749,7 +2762,7 @@ cmd_health_verbose() {
                 size=$(du -sk "$dir" 2>/dev/null | cut -f1)
                 ((backup_size += size))
             done < <(get_backup_dirs)
-            echo "  • $backup_count backups using $((backup_size / 1024))MB - run './dot clean' to free space"
+            echo "  • $backup_count backups using $((backup_size / KB_TO_MB))MB - run './dot clean' to free space"
         fi
     fi
 
@@ -2773,8 +2786,8 @@ update_gitignore() {
     local url="https://www.toptal.com/developers/gitignore/api/$types"
     local gitignore_file="$DOTFILES_DIR/git/.gitignore-globals"
 
-    # Add timeout to prevent hanging (30 seconds)
-    if portable_timeout 30 curl -s "$url" > "$gitignore_file.tmp" 2>&1; then
+    # Add timeout to prevent hanging
+    if portable_timeout "$CURL_TIMEOUT" curl -s "$url" > "$gitignore_file.tmp" 2>&1; then
         if [[ -s "$gitignore_file.tmp" ]]; then
             mv "$gitignore_file.tmp" "$gitignore_file"
             log_success "Updated .gitignore-globals with latest patterns"

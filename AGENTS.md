@@ -202,6 +202,64 @@ apk add stow git bash
 - Use explicit error handling instead of `set -e` (controlled failure handling)
 - Enable bash safety features: `shopt -s nullglob extglob`
 
+### Environment Variables
+
+**Naming Convention:**
+
+- External (environment): `DOTFILES_<INTERNAL_NAME>`
+- Internal (readonly): `<DESCRIPTIVE_NAME>`
+- Pattern: External = `DOTFILES_` + Internal (exact match, no transformation)
+
+**Examples:**
+
+```bash
+# External → Internal (just add/remove DOTFILES_ prefix)
+DOTFILES_GIT_TIMEOUT → GIT_TIMEOUT
+DOTFILES_MAX_BACKUPS_TO_KEEP → MAX_BACKUPS_TO_KEEP
+DOTFILES_SECRET_FILE_MODE → SECRET_FILE_MODE
+```
+
+**Implementation Pattern:**
+
+```bash
+# Configuration section with inline comments
+readonly INTERNAL_NAME="${DOTFILES_INTERNAL_NAME:-default_value}"    # Purpose
+
+# Usage in code
+if portable_timeout "$GIT_TIMEOUT" git submodule update; then
+    log_success "Submodules updated"
+fi
+```
+
+**When to Add Environment Variables:**
+
+- User-configurable values (timeouts, limits, display counts)
+- Security settings (file permissions)
+- Path customization (backup locations)
+
+**When NOT to Add:**
+
+- Universal constants (86400 seconds/day, 1024 KB/MB)
+  - Use `readonly CONSTANT=value` instead
+- Internal-only values not useful to users
+- Values that should never change
+
+**Documentation Required:**
+
+When adding environment variables:
+
+1. **README.md**: Add to Configuration section with examples
+2. **AGENTS.md**: Update this section if adding new patterns
+3. **Inline comments**: Document purpose in configuration section
+
+**Current Environment Variables:**
+
+- `DOTFILES_MAX_BACKUPS_TO_DISPLAY` (5) - Status output
+- `DOTFILES_MAX_BACKUPS_TO_KEEP` (10) - Retention policy
+- `DOTFILES_RESTORE_DISPLAY_LIMIT` (20) - Restore preview
+- `DOTFILES_GIT_TIMEOUT` (60) - Git operations
+- `DOTFILES_CURL_TIMEOUT` (30) - Curl downloads
+
 ### Shell Script Style
 
 Follow these style guidelines based on the [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html):
