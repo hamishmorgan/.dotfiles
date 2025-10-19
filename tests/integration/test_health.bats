@@ -61,7 +61,8 @@ teardown() {
     # Should complete (even if unhealthy due to backups)
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
     
-    assert_output --partial "backups using"
+    # Non-verbose format uses parentheses: "10 backups (10MB)"
+    assert_output --partial "backups ("
 }
 
 @test "health command verbose mode works" {
