@@ -17,7 +17,7 @@ teardown() {
 @test "backup command exits successfully" {
     # Create a file to backup
     echo "test" > "$HOME/.testfile"
-    
+
     run ./dot backup
     [ "$status" -eq 0 ]
 }
@@ -34,14 +34,14 @@ teardown() {
 
 @test "backups command lists backups" {
     create_mock_backups 3 1
-    
+
     run ./dot backups
     [ "$status" -eq 0 ]
 }
 
 @test "backups command shows backup count" {
     create_mock_backups 5 1
-    
+
     run ./dot backups
     [ "$status" -eq 0 ]
     # Should mention we have backups

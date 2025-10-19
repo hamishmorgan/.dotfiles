@@ -6,7 +6,7 @@ Comprehensive BATS-based testing framework for the dotfiles repository.
 
 ## Test Structure
 
-```
+```text
 tests/
 ├── test_helper/
 │   └── common.bash           # Custom helpers and assertions
@@ -98,9 +98,11 @@ bats --version
 ## Test Categories
 
 ### Unit Tests (70%)
+
 Test individual functions in isolation.
 
 **Example:**
+
 ```bash
 @test "get_backup_stats returns correct count" {
     create_mock_backups 5 1
@@ -111,9 +113,11 @@ Test individual functions in isolation.
 ```
 
 ### Integration Tests (25%)
+
 Test complete commands end-to-end.
 
 **Example:**
+
 ```bash
 @test "health command exits successfully" {
     run ./dot health
@@ -122,9 +126,11 @@ Test complete commands end-to-end.
 ```
 
 ### Regression Tests
+
 One test per fixed bug to prevent recurrence.
 
 **Example:**
+
 ```bash
 @test "Issue #66: backup size not 0MB" {
     create_mock_backups 15 1
@@ -134,9 +140,11 @@ One test per fixed bug to prevent recurrence.
 ```
 
 ### Contract Tests
+
 Ensure output format stability.
 
 **Example:**
+
 ```bash
 @test "health output has required sections" {
     run ./dot health
@@ -179,12 +187,14 @@ teardown() {
 ### Available Assertions
 
 From **BATS built-in**:
+
 - `[ "$status" -eq 0 ]` - Exit code is 0
 - `[ "$status" -ne 0 ]` - Exit code is non-zero
 - `[ "$output" = "expected" ]` - Exact match
 - `[[ "$output" =~ pattern ]]` - Regex match
 
 From **common.bash** (custom helpers):
+
 - `assert_output_contains "pattern"`
 - `assert_output_not_contains "pattern"`
 - `assert_in_range VALUE MIN MAX`
@@ -193,6 +203,7 @@ From **common.bash** (custom helpers):
 ### Helper Functions
 
 From **common.bash**:
+
 - `setup_test_dotfiles` - Create temporary test environment
 - `teardown_test_dotfiles` - Clean up test environment
 - `create_mock_backups COUNT SIZE_MB` - Create test backups
@@ -203,6 +214,7 @@ From **common.bash**:
 ## CI Integration
 
 Tests run automatically in GitHub Actions:
+
 - On every push to main or feature branches
 - On every pull request
 
@@ -211,12 +223,13 @@ See `.github/workflows/test.yml` for configuration.
 ## Test Coverage
 
 **Current Status:**
+
 - Unit tests: 20+ tests
 - Integration tests: 10+ tests
 - Regression tests: 4+ tests
 - Contract tests: 6+ tests
 
-**Total: 40+ tests**
+Total: 40+ tests
 
 ## Guidelines
 
@@ -274,9 +287,9 @@ bats --timing tests/
 
 ## References
 
-- **BATS Documentation:** https://bats-core.readthedocs.io/
-- **bats-support:** https://github.com/bats-core/bats-support
-- **bats-assert:** https://github.com/bats-core/bats-assert
+- **BATS Documentation:** <https://bats-core.readthedocs.io/>
+- **bats-support:** <https://github.com/bats-core/bats-support>
+- **bats-assert:** <https://github.com/bats-core/bats-assert>
 - **Issue #24:** Testing framework tracking issue
 - **Issue #66:** First bug caught by testing strategy
 
@@ -286,4 +299,3 @@ bats --timing tests/
 2. ✅ Maintain 80%+ test coverage
 3. ✅ Keep tests fast and reliable
 4. ✅ Update tests when changing functionality
-

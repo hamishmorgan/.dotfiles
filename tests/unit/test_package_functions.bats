@@ -15,7 +15,7 @@ teardown() {
 
 @test "get_package_files returns correct files for system" {
     result="$(get_package_files "system")"
-    
+
     [[ "$result" =~ \.stow-global-ignore ]]
     [[ "$result" =~ \.stowrc ]]
     [[ "$result" =~ \.editorconfig ]]
@@ -24,7 +24,7 @@ teardown() {
 
 @test "get_package_files returns correct files for git" {
     result="$(get_package_files "git")"
-    
+
     [[ "$result" =~ \.gitconfig ]]
     [[ "$result" =~ \.gitattributes ]]
     [[ "$result" =~ \.gitignore-globals ]]
@@ -32,13 +32,13 @@ teardown() {
 
 @test "get_package_files returns correct files for fish" {
     result="$(get_package_files "fish")"
-    
+
     [[ "$result" =~ \.config/fish ]]
 }
 
 @test "get_package_files returns empty for unknown package" {
     result="$(get_package_files "nonexistent")"
-    
+
     [ "$result" = "" ]
 }
 
@@ -56,14 +56,14 @@ teardown() {
 
 @test "get_required_deps returns common dependencies" {
     result="$(get_required_deps "common")"
-    
+
     [[ "$result" =~ stow ]]
     [[ "$result" =~ git ]]
 }
 
 @test "get_required_deps returns optional dependencies" {
     result="$(get_required_deps "optional")"
-    
+
     [[ "$result" =~ tmux ]]
     [[ "$result" =~ zsh ]]
     [[ "$result" =~ fish ]]

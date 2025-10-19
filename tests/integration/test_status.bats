@@ -32,7 +32,7 @@ teardown() {
 @test "status command shows backup information" {
     # Create some backups
     create_mock_backups 5 1
-    
+
     run ./dot status
     [ "$status" -eq 0 ]
     assert_output_contains "backups"
@@ -44,7 +44,7 @@ teardown() {
     run ./dot status
     end=$(date +%s)
     duration=$((end - start))
-    
+
     [ "$status" -eq 0 ]
     [ "$duration" -lt 3 ]
 }

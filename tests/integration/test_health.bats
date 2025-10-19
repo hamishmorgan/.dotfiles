@@ -29,13 +29,13 @@ teardown() {
 
     run ./dot health
     [ "$status" -eq 0 ]
-    
+
     # Should show backup count
     assert_output_contains "15 backups"
-    
+
     # Should NOT show 0MB (Issue #66)
     assert_output_not_contains "0MB"
-    
+
     # Should show reasonable size
     [[ "$output" =~ [1-9][0-9]?MB ]]
 }
@@ -43,10 +43,10 @@ teardown() {
 @test "health command shows maintenance items with many backups" {
     # Create more than 10 backups to trigger maintenance warning
     create_mock_backups 12 1
-    
+
     run ./dot health
     [ "$status" -eq 0 ]
-    
+
     assert_output_contains "Maintenance Items"
     assert_output_contains "backups using"
 }
@@ -54,7 +54,7 @@ teardown() {
 @test "health command verbose mode provides detailed output" {
     run ./dot health -v
     [ "$status" -eq 0 ]
-    
+
     # Should have more detailed information
     assert_output_contains "Dependencies"
     assert_output_contains "Package Status"

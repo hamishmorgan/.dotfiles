@@ -21,17 +21,17 @@ teardown() {
     # Run health command
     cd "$TEST_DOTFILES_DIR"
     run ./dot health
-    
+
     # Should succeed
     [ "$status" -eq 0 ]
-    
+
     # Should show backup count
     assert_output_contains "15 backups"
-    
-    # The bug: showed "using 0MB" 
+
+    # The bug: showed "using 0MB"
     # After fix: shows actual size like "using 15MB"
     assert_output_not_contains "using 0MB"
-    
+
     # Should show reasonable size (at least 10MB for 15x1MB)
     [[ "$output" =~ using[[:space:]][1-9][0-9]?MB ]]
 }
@@ -73,27 +73,27 @@ teardown() {
 
     cd "$TEST_DOTFILES_DIR"
     run ./dot health
-    
+
     [ "$status" -eq 0 ]
-    
+
     # Should show maintenance items section
     assert_output_contains "Maintenance Items"
-    
+
     # Should show backup warning with non-zero size
     [[ "$output" =~ 20[[:space:]]backups[[:space:]]using[[:space:]][1-9][0-9]?MB ]]
-    
+
     # Should not show 0MB (the bug)
     assert_output_not_contains "using 0MB"
 }
 
 @test "Issue #66: verbose health also shows correct backup size" {
     create_mock_backups 12 1
-    
+
     cd "$TEST_DOTFILES_DIR"
     run ./dot health -v
-    
+
     [ "$status" -eq 0 ]
-    
+
     # Verbose mode should also show backups correctly
     assert_output_contains "12 backups"
     [[ "$output" =~ using[[:space:]][1-9][0-9]?MB ]]
