@@ -5,7 +5,7 @@ load ../test_helper/common
 
 setup() {
     setup_test_dotfiles
-    cd "$TEST_DOTFILES_DIR"
+    cd "$TEST_DOTFILES_DIR" || return 1
     source_dot_script
 }
 
@@ -17,17 +17,17 @@ teardown() {
     result="$(get_backup_stats)"
     count=$(echo "$result" | cut -d' ' -f1)
     size=$(echo "$result" | cut -d' ' -f2)
-    
+
     [ "$count" = "0" ]
     [ "$size" = "0" ]
 }
 
 @test "get_backup_stats counts backups correctly" {
     create_mock_backups 5 1
-    
+
     result="$(get_backup_stats)"
     count=$(echo "$result" | cut -d' ' -f1)
-    
+
     [ "$count" = "5" ]
 }
 

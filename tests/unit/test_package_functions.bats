@@ -5,7 +5,7 @@ load ../test_helper/common
 
 setup() {
     setup_test_dotfiles
-    cd "$TEST_DOTFILES_DIR"
+    cd "$TEST_DOTFILES_DIR" || return 1
     source_dot_script
 }
 

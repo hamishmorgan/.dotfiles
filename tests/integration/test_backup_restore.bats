@@ -7,7 +7,7 @@ setup() {
     setup_test_dotfiles
     export HOME="$TEST_DOTFILES_DIR/home"
     mkdir -p "$HOME"
-    cd "$TEST_DOTFILES_DIR"
+    cd "$TEST_DOTFILES_DIR" || return 1
 }
 
 teardown() {
