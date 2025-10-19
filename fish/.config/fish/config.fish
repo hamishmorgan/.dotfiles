@@ -22,7 +22,7 @@ alias l='ls -CF'
 alias grep='grep --color=auto'
 
 # Detect OS for conditional configuration loading
-set -gx FISH_HOST_OS (uname | awk '{print tolower($0)}')
+set -gx FISH_HOST_OS (string lower (uname))
 
 # Load platform-specific configuration
 switch $FISH_HOST_OS
@@ -39,6 +39,6 @@ end
 # Load dotfiles completions from dot script
 # Note: The 'd' function is auto-loaded from ~/.config/fish/functions/d.fish
 if test -f ~/.dotfiles/dot
-    ~/.dotfiles/dot --completion fish | source
+    source (~/.dotfiles/dot --completion fish)
 end
 

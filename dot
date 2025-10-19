@@ -274,7 +274,7 @@ show_usage() {
     echo "  # In .bashrc or .zshrc:"
     echo "  source <($0 --completion bash)  # for bash"
     echo "  source <($0 --completion zsh)   # for zsh"
-    echo "  source ($0 --completion fish | psub)  # for fish"
+    echo "  source (\$0 --completion fish)  # for fish"
 }
 
 # Check if command exists
