@@ -1,6 +1,5 @@
 # Backup directories
-backups/*
-!backups/.gitkeep
+backups/
 
 # Secret configuration files (contain sensitive information)
 *.secret

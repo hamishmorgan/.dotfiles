@@ -77,9 +77,9 @@ else
     exit 1
 fi
 
-# Test 7: Backup directory exists
-echo -n "Test 7: Backup directory exists... "
-if [[ -d "$DOTFILES_DIR/backups" ]] && [[ -f "$DOTFILES_DIR/backups/.gitkeep" ]]; then
+# Test 7: Backup directory can be created
+echo -n "Test 7: Backup directory can be created... "
+if mkdir -p "$DOTFILES_DIR/backups/test-$$" && rm -rf "$DOTFILES_DIR/backups/test-$$" 2>/dev/null; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
