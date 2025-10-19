@@ -1283,7 +1283,7 @@ show_diff_preview() {
                 target=$(readlink "$home_path")
                 local expected_target="$DOTFILES_DIR/$package/$file"
                 
-                if [[ "$target" != "$expected_target" ]] && [[ "$target" != *".dotfiles/$package/$file"* ]]; then
+                if [[ "$target" != "$expected_target" ]] && [[ "$target" != *"${DOTFILES_DIR}/${package}/${file}"* ]]; then
                     echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $file"
                     echo "      Current: symlink → $target"
                     echo "      Expected: symlink → $expected_target"
@@ -1299,9 +1299,9 @@ show_diff_preview() {
                         
                         # Show diff preview (first 20 lines)
                         local diff_output
-                        diff_output=$(diff -u "$home_path" "$dotfile_path" 2>/dev/null || true)
+                        diff_output=$(diff -u "$dotfile_path" "$home_path" 2>/dev/null || true)
                         
-                        echo "$diff_output" | head -25 | while IFS= read -r line; do
+                        while IFS= read -r line; do
                             if [[ "$line" == -* ]]; then
                                 echo -e "      ${RED}$line${NC}"
                             elif [[ "$line" == +* ]]; then
@@ -1309,7 +1309,7 @@ show_diff_preview() {
                             else
                                 echo "      $line"
                             fi
-                        done
+                        done < <(echo "$diff_output" | head -25)
                         
                         local diff_lines
                         diff_lines=$(echo "$diff_output" | wc -l)
