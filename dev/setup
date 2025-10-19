@@ -50,6 +50,15 @@ main() {
   # Required tools
   check_command "shellcheck" "brew install shellcheck / apt-get install shellcheck" || ((missing++))
   check_command "bats" "npm install -g bats (auto-installed by run-bats.sh)" || ((missing++))
+  
+  # Node.js/npm for markdownlint
+  if ! check_command "node" "brew install node / apt-get install nodejs"; then
+    ((missing++))
+    log_warning "npm/npx also unavailable (comes with Node.js)"
+  else
+    check_command "npm" "Installed with Node.js" || ((missing++))
+    check_command "npx" "Installed with npm (comes with Node.js)" || ((missing++))
+  fi
 
   # Optional but recommended
   check_command "docker" "https://docs.docker.com/get-docker/" || check_command "podman" "brew install podman / apt-get install podman" || ((missing++))
