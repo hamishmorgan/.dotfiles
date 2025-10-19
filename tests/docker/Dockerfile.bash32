@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     zsh \
     curl \
     build-essential \
+    bison \
     && rm -rf /var/lib/apt/lists/*
 
 # Build and install Bash 3.2
