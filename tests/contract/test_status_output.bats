@@ -15,14 +15,14 @@ teardown() {
 @test "status output has installed files section" {
     run ./dot status
     assert_success
-    
+
     assert_output --partial "Installed Files"
 }
 
 @test "status output has dotfiles title" {
     run ./dot status
     assert_success
-    
+
     assert_output --partial "Installation Status"
 }
 

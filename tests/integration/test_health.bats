@@ -31,13 +31,13 @@ teardown() {
 
     run ./dot health
     # May fail overall, but should show backup info correctly
-    
+
     # Should show backup count
     assert_output --partial "15 backups"
-    
+
     # Should NOT show 0MB (Issue #66)
     refute_output --partial "0MB"
-    
+
     # Should show reasonable size
     assert_output --regexp "[1-9][0-9]?MB"
 }
@@ -48,14 +48,14 @@ teardown() {
 
     run ./dot health
     # Should show maintenance warning regardless of overall health
-    
+
     assert_output --partial "backups using"
 }
 
 @test "health command verbose mode provides detailed output" {
     run ./dot health -v
     # May fail overall in test env
-    
+
     # Should have more detailed information
     assert_output --partial "Dependencies"
 }

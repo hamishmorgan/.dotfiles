@@ -15,7 +15,7 @@ teardown() {
 @test "health output has required sections" {
     run ./dot health
     # May fail in test env, but should have proper structure
-    
+
     # Check for all required sections (actual output format)
     assert_output --partial "Symlink Integrity"
     assert_output --partial "Dependencies"

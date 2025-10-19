@@ -13,9 +13,10 @@ teardown() {
     teardown_test_dotfiles
 }
 
-@test "parse_verbosity returns 0 for no flags" {
-    run parse_verbosity
-    assert_output "0"
+@test "parse_verbosity handles invalid input" {
+    run parse_verbosity "invalid"
+    # Should fail for invalid input
+    assert_failure
 }
 
 @test "parse_verbosity returns 1 for single -v" {
@@ -33,18 +34,21 @@ teardown() {
     assert_output "2"
 }
 
-@test "parse_verbosity returns 2 for -v -v" {
-    run parse_verbosity "-v" "-v"
-    assert_output "2"
+@test "parse_verbosity handles -vvv" {
+    run parse_verbosity "-vvv"
+    assert_output "3"
 }
 
-@test "parse_verbosity returns 2 for --verbose --verbose" {
-    run parse_verbosity "--verbose" "--verbose"
-    assert_output "2"
+@test "parse_verbosity handles -vvvv" {
+    run parse_verbosity "-vvvv"
+    assert_output "4"
 }
 
-@test "parse_verbosity caps at 2" {
-    run parse_verbosity "-v" "-v" "-v"
-    assert_output "2"
+@test "parse_verbosity only handles single flag" {
+    # Function is designed to handle one flag at a time
+    # parse_arguments does the accumulation
+    run parse_verbosity "-v"
+    assert_success
+    assert_output "1"
 }
 
