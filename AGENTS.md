@@ -11,6 +11,7 @@ Instructions for AI agents working with this dotfiles repository.
 - [Code Standards](#code-standards)
   - [Error Handling Patterns](#error-handling-patterns)
   - [Bash 3.2 Compatibility](#bash-32-compatibility)
+- [Git Commit Attribution](#git-commit-attribution)
 - [File Organization](#file-organization)
   - [Stow Ignore Files](#stow-ignore-files)
   - [Templates and Secrets](#templates-and-secrets)
@@ -281,6 +282,66 @@ command > file 2>&1
 
 # Manual test with bash 3.2
 docker run -it dotfiles-test-bash32 bash
+```
+
+## Git Commit Attribution
+
+**All commits made by AI agents must use the `--author` flag to distinguish them from user commits.**
+
+When making commits on behalf of the user, AI agents should attribute commits to "Cursor" rather
+than the user's personal identity. This provides clear distinction between manual user contributions
+and AI-generated changes in the git history.
+
+**Required pattern for all AI agent commits:**
+
+```bash
+git commit --author="Cursor <cursor@noreply.local>" -m "Commit message"
+```
+
+**Example workflow:**
+
+```bash
+# Make changes to files
+echo "new content" > file.txt
+git add file.txt
+
+# Commit with AI agent attribution
+git commit --author="Cursor <cursor@noreply.local>" -m "Add new feature
+
+Detailed description of changes made by the AI agent.
+"
+
+# Push changes
+git push
+```
+
+**Important notes:**
+
+- **Always use the `--author` flag** when committing as an AI agent
+- **Email address**: Use `cursor@noreply.local` (not linked to any GitHub account)
+- **User commits**: Do not override author for user's manual commits
+- **GitHub operations**: PRs and comments will still show the authenticated GitHub account (this is a platform limitation)
+- **Commit message quality**: Follow conventional commit format and provide clear descriptions
+
+**Why this matters:**
+
+- Maintains transparency about AI contributions
+- Allows filtering commits by author in git history
+- Distinguishes automated changes from manual user work
+- Provides accountability and traceability
+
+**Verification:**
+
+Check commit attribution in git log:
+
+```bash
+git log --format="%an <%ae> - %s" -5
+```
+
+AI-made commits should show:
+
+```text
+Cursor <cursor@noreply.local> - Commit message
 ```
 
 ## File Organization
