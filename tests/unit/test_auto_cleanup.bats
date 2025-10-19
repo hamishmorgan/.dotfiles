@@ -21,7 +21,7 @@ teardown() {
     
     # Verify no backups were removed
     local backup_count
-    backup_count=$(get_backup_dirs | wc -l)
+    backup_count=$(get_backup_dirs | wc -l | tr -d ' ')
     assert_equal "5" "$backup_count"
 }
 
@@ -36,25 +36,25 @@ teardown() {
     
     # Verify correct number remain
     local backup_count
-    backup_count=$(get_backup_dirs | wc -l)
+    backup_count=$(get_backup_dirs | wc -l | tr -d ' ')
     assert_equal "10" "$backup_count"
 }
 
 @test "auto_cleanup_backups keeps most recent backups" {
     create_mock_backups 12 1
-    
+
     # Get oldest backup before cleanup
     local oldest_before
     oldest_before=$(get_backup_dirs | sort | head -1)
-    
+
     run auto_cleanup_backups
     assert_success
-    
+
     # Verify oldest was removed
     if [[ -d "$oldest_before" ]]; then
         fail "Oldest backup should have been removed: $oldest_before"
     fi
-    
+
     # Verify newest still exists
     local newest
     newest=$(get_backup_dirs | sort -r | head -1)
@@ -74,27 +74,20 @@ teardown() {
     
     # Verify correct count
     local backup_count
-    backup_count=$(get_backup_dirs | wc -l)
+    backup_count=$(get_backup_dirs | wc -l | tr -d ' ')
     assert_equal "5" "$backup_count"
 }
 
 @test "auto_cleanup_backups integrates with install command" {
-    # Create excess backups
     create_mock_backups 15 1
     
-    # Run full install (which should trigger auto cleanup)
-    run_installation_test() {
-        # This would normally run full install
-        # For testing, just call auto_cleanup directly
-        auto_cleanup_backups
-    }
-    
-    run run_installation_test
+    # Run auto cleanup directly (simulates install/update integration)
+    run auto_cleanup_backups
     assert_success
     
     # Verify cleanup occurred
     local backup_count
-    backup_count=$(get_backup_dirs | wc -l)
-    [[ $backup_count -le 10 ]]
+    backup_count=$(get_backup_dirs | wc -l | tr -d ' ')
+    [ "$backup_count" -le 10 ]
 }
 
