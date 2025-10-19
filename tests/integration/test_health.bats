@@ -18,13 +18,13 @@ teardown() {
 @test "health command completes successfully" {
     # Test in isolation by installing dotfiles first
     ./dot install > /dev/null 2>&1 || true
-    
+
     run ./dot health
     # Health command must either pass or fail cleanly (not crash)
     # Acceptable exit codes: 0 (healthy) or 1 (unhealthy)
     # Any other code indicates a crash/error
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
-    
+
     # Must always show result section
     assert_output --partial "Result:"
 }
@@ -32,7 +32,7 @@ teardown() {
 @test "health command shows backup information correctly" {
     # Create test backups
     create_mock_backups 15 1
-    
+
     # Install dotfiles for complete environment
     ./dot install > /dev/null 2>&1 || true
 
@@ -40,13 +40,13 @@ teardown() {
     # With installation, health should now pass or be unhealthy
     # (unhealthy is OK if backups > 10 or other warnings)
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
-    
+
     # Should show backup information (count may vary due to installation backup)
     assert_output --regexp "[0-9]+ backups"
-    
+
     # Should NOT show 0MB (Issue #66 - the key regression test)
     refute_output --partial "0MB)"
-    
+
     # Should show reasonable non-zero size
     assert_output --regexp "[1-9][0-9]?MB"
 }
@@ -54,24 +54,24 @@ teardown() {
 @test "health command shows maintenance warnings" {
     # Create more than 10 backups to trigger maintenance warning
     create_mock_backups 12 1
-    
+
     ./dot install > /dev/null 2>&1 || true
 
     run ./dot health
     # Should complete (even if unhealthy due to backups)
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
-    
+
     # Non-verbose format uses parentheses: "10 backups (10MB)"
     assert_output --partial "backups ("
 }
 
 @test "health command verbose mode works" {
     ./dot install > /dev/null 2>&1 || true
-    
+
     run ./dot health -v
     # Verbose mode must complete
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
-    
+
     # Should have detailed information
     assert_output --partial "Checking"
 }

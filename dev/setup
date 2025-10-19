@@ -50,7 +50,7 @@ main() {
   # Required tools
   check_command "shellcheck" "brew install shellcheck / apt-get install shellcheck" || ((missing++))
   check_command "bats" "npm install -g bats (auto-installed by run-bats.sh)" || ((missing++))
-  
+
   # Node.js/npm for markdownlint
   if ! check_command "node" "brew install node / apt-get install nodejs"; then
     ((missing++))
