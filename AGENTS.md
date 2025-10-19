@@ -455,7 +455,7 @@ Before committing changes, verify:
 
 ```bash
 markdownlint "**/*.md"
-shellcheck dot tests/**/*.sh
+shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh
 ```
 
 **2. Smoke tests pass (30 seconds):**
@@ -620,7 +620,7 @@ Phase 2 optimizations (Issue #22) consolidated BATS tests:
 | Smoke test | `./tests/smoke-test.sh` | 30s |
 | Full local CI | `./tests/run-local-ci.sh` | 2-3m |
 | Lint Markdown | `markdownlint "**/*.md"` | 5s |
-| Lint Bash | `shellcheck dot tests/**/*.sh` | 5s |
+| Lint Bash | `shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh` | 5s |
 | Monitor CI | `gh pr checks <PR>` | instant |
 | View CI logs | `gh run view --log-failed` | instant |
 
@@ -630,7 +630,7 @@ Phase 2 optimizations (Issue #22) consolidated BATS tests:
 - Update: `./dot update` (add `-v` or `-vv` for more detail)
 - Status check: `./dot status`
 - Health check: `./dot health` (add `-v` for detailed output)
-- Linting: `markdownlint "**/*.md"` and `shellcheck dot`
+- Linting: `markdownlint "**/*.md"` and `shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile`
 - Package management: `stow --verbose --restow --dir=. --target=$HOME package_name`
 - Backup location: `backups/dotfiles-backup-*` (timestamped directories)
 - CI validation: `.github/workflows/validate.yml`

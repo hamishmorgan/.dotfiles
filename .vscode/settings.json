@@ -1,0 +1,33 @@
+{
+  // Hide oh-my-zsh submodule .github folder to prevent validation warnings
+  "files.exclude": {
+    "**/zsh/.oh-my-zsh/.github": true
+  },
+
+  // Only validate workflows in our own .github folder, not submodules
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": [
+      ".github/workflows/*.yml",
+      "!**/zsh/.oh-my-zsh/**"
+    ]
+  },
+
+  // File associations
+  "files.associations": {
+    "*.bats": "shellscript",
+    "dot": "shellscript",
+    ".bashrc.linux": "shellscript",
+    ".bashrc.osx": "shellscript",
+    ".zshrc.linux": "shellscript",
+    ".zshrc.osx": "shellscript",
+    ".gitconfig.template": "properties",
+    ".gitconfig.secret": "properties",
+    ".gitconfig*.example": "properties",
+    "*.yml.template": "yaml",
+    "*.yml.secret": "yaml",
+    "*.yml.example": "yaml",
+    ".stow-*-ignore": "ignore",
+    ".stowrc": "properties"
+  }
+}
+

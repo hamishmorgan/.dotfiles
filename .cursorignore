@@ -1,0 +1,10 @@
+# Cursor IDE ignore patterns
+# Exclude external dependencies from IDE analysis and warnings
+
+# Submodules
+zsh/.oh-my-zsh/
+
+# Node modules
+node_modules/
+
+

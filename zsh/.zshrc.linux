@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Linux-specific zsh configuration
 case $ZSH_HOST_OS in
   linux*)

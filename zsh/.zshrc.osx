@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 case $ZSH_HOST_OS in
 	darwin*)
 	# macOS-specific aliases
@@ -10,7 +11,7 @@ case $ZSH_HOST_OS in
   	# Show hidden files in finder. I want to see everything.
 	defaults write com.apple.finder AppleShowAllFiles YES
 
-	[[ -x /opt/homebrew/bin/brew ]] && eval $(/opt/homebrew/bin/brew shellenv)
+	[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
 
 ;;
 esac

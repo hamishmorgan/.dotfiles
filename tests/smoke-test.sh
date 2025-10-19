@@ -89,7 +89,11 @@ fi
 # Test 8: Shellcheck passes
 echo -n "Test 8: Shellcheck passes... "
 if command -v shellcheck >/dev/null 2>&1; then
-    if shellcheck "$DOTFILES_DIR/dot" >/dev/null 2>&1; then
+    if shellcheck "$DOTFILES_DIR/dot" \
+        "$DOTFILES_DIR"/bash/.bashrc* \
+        "$DOTFILES_DIR"/bash/.bash_profile \
+        "$DOTFILES_DIR"/zsh/.zshrc* \
+        "$DOTFILES_DIR"/zsh/.zprofile >/dev/null 2>&1; then
         echo -e "${GREEN}✓${NC}"
     else
         echo -e "${RED}✗${NC}"

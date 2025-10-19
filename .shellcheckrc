@@ -1,4 +1,8 @@
 # Shellcheck configuration
 # https://github.com/koalaman/shellcheck/wiki
 
-# No disabled rules - dot script doesn't source external files
+# Disable checks for sourced config files (not executable scripts)
+disable=SC1090  # Can't follow non-constant source (acceptable in dotfiles)
+disable=SC1091  # Not following external files (acceptable in dotfiles)
+disable=SC2034  # Variables unused in this file but used by sourced frameworks (oh-my-zsh)
+disable=SC2155  # Declare and assign separately (common pattern in shell configs)

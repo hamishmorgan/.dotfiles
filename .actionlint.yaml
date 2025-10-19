@@ -1,0 +1,11 @@
+# actionlint configuration
+# Suppress warnings from external dependencies (submodules)
+
+ignore:
+  # Ignore all workflows in oh-my-zsh submodule
+  - 'zsh/.oh-my-zsh/.github/workflows/.*'
+
+
+
+
+
