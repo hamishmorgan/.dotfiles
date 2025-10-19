@@ -7,13 +7,13 @@ set -g fish_greeting
 # Set up history
 set -g fish_history_max 10000
 
-# Enable color support
-set -g fish_color_command blue --bold
-set -g fish_color_error red --bold
-set -g fish_color_param normal
-set -g fish_color_comment brblack
-set -g fish_color_operator bryellow
-set -g fish_color_quote green
+# # Enable color support
+# set -g fish_color_command blue --bold
+# set -g fish_color_error red --bold
+# set -g fish_color_param normal
+# set -g fish_color_comment brblack
+# set -g fish_color_operator bryellow
+# set -g fish_color_quote green
 
 # Useful aliases
 alias ll='ls -alF'
@@ -27,17 +27,18 @@ set -gx FISH_HOST_OS (uname | awk '{print tolower($0)}')
 # Load platform-specific configuration
 switch $FISH_HOST_OS
     case darwin
-        if test -f ~/.config/fish/config.fish.osx
-            source ~/.config/fish/config.fish.osx
+        if test -f ~/.config/fish/config.osx.fish
+            source ~/.config/fish/config.osx.fish
         end
     case linux
-        if test -f ~/.config/fish/config.fish.linux
-            source ~/.config/fish/config.fish.linux
+        if test -f ~/.config/fish/config.linux.fish
+            source ~/.config/fish/config.linux.fish
         end
 end
 
-# Load dotfiles management function and completions from dot script
+# Load dotfiles completions from dot script
+# Note: The 'd' function is auto-loaded from ~/.config/fish/functions/d.fish
 if test -f ~/.dotfiles/dot
-    source (~/.dotfiles/dot --completion fish | psub)
+    ~/.dotfiles/dot --completion fish | source
 end
 

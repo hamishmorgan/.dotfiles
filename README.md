@@ -57,8 +57,11 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 ├── fish/          # Fish shell configuration
 │   └── .config/fish/
 │       ├── config.fish
-│       ├── config.fish.linux
-│       └── config.fish.osx
+│       ├── config.linux.fish
+│       ├── config.osx.fish
+│       └── functions/
+│           ├── d.fish           # Dotfiles wrapper function
+│           └── fish_prompt.fish # Custom prompt
 ├── dot            # Main dotfiles management script
 └── README.md      # This file
 ```
