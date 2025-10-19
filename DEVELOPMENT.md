@@ -346,35 +346,115 @@ bats tests/contract/      # Output validation
 ./tests/run-local-ci.sh bash32     # Bash 3.2 compatibility test
 ```
 
+### Test Framework Organization
+
+The testing framework uses **BATS** (Bash Automated Testing System) with four test categories:
+
+```text
+tests/
+├── regression/        # Bug prevention (one test per bug)
+├── unit/             # Function-level tests (isolated)
+├── integration/      # Command-level tests (end-to-end)
+├── contract/         # Output format validation
+├── test_helper/      # Shared helper functions
+└── TEST_FRAMEWORK.md # Detailed documentation
+```
+
+**Test Distribution:**
+
+- Regression: One test per fixed bug
+- Unit: 70% of tests (function-level)
+- Integration: 25% of tests (command-level)
+- Contract: 5% of tests (output validation)
+
+### Writing Tests
+
+**Regression tests (most important):**
+
+Create a failing test BEFORE fixing a bug:
+
+```bash
+# tests/regression/test_issue_XX.bats
+@test "Issue #XX: describe the bug" {
+    # Setup that reproduces bug
+    create_mock_backups 15 1
+    
+    run ./dot health
+    
+    # Assertion that fails on the bug
+    assert_output_not_contains "using 0MB"
+}
+```
+
+Pattern:
+
+1. Write test that reproduces bug (test fails)
+2. Fix the bug in code
+3. Run test again (test passes)
+4. Commit test + fix together
+
+**Unit tests:**
+
+Test individual functions with various inputs:
+
+```bash
+# tests/unit/test_backup_functions.bats
+@test "get_backup_stats counts backups correctly" {
+    create_mock_backups 5 1
+    result="$(get_backup_stats)"
+    count=$(echo "$result" | cut -d' ' -f1)
+    [ "$count" = "5" ]
+}
+```
+
+**Integration tests:**
+
+Test complete command workflows:
+
+```bash
+# tests/integration/test_health.bats
+@test "health command exits successfully" {
+    run ./dot health
+    [ "$status" -eq 0 ]
+}
+```
+
+### Test Helper Functions
+
+Available in `tests/test_helper/common.bash`:
+
+- `setup_test_dotfiles` - Create isolated test environment
+- `create_mock_backups COUNT SIZE_MB` - Generate test data
+- `assert_output_contains "pattern"` - Verify output
+- `assert_output_not_contains "pattern"` - Verify exclusion
+
 ### Testing Strategy
 
-- **BATS tests**: Automated unit, integration, and regression testing (40+ tests)
-- **Regression tests**: One test per bug fix to prevent recurrence
-- **Smoke tests**: Fast validation of basic functionality and structure
-- **Container tests**: Full installation on Ubuntu and Alpine (BusyBox-based, non-GNU)
-- **GitHub Actions**: Final validation on real Ubuntu and macOS runners
-
-### Test Categories
-
-1. **Unit Tests** (70%) - Test functions in isolation
-2. **Integration Tests** (25%) - Test complete commands
-3. **Regression Tests** - Prevent bugs from returning (e.g., Issue #66)
-4. **Contract Tests** - Validate output format stability
+- **BATS tests**: Automated regression, unit, integration testing
+- **TDD for bugs**: Write failing test before fix (mandatory)
+- **Smoke tests**: Fast structural validation
+- **Container tests**: Cross-platform compatibility (BSD vs GNU)
+- **GitHub Actions**: Final validation on Ubuntu and macOS
 
 ### Why This Matters
 
-Cross-platform compatibility issues (BSD vs GNU commands) are caught by:
+**BATS tests catch logic bugs:**
 
-1. Alpine tests (BusyBox-based coreutils, non-GNU)
-2. GitHub Actions macOS runner (actual macOS)
+- Variable name typos (Issue #66: `$backup_size` vs `$backup_size_kb`)
+- Calculation errors
+- Output format changes
+- Unintended behavior changes
 
-BATS tests catch logic bugs and regressions (like Issue #66 - backup size showing 0MB).
+**Cross-platform tests catch compatibility:**
 
-Always run tests before pushing to catch issues early.
+- BSD vs GNU command differences (Alpine tests)
+- macOS-specific issues (GitHub Actions)
+
+**Required:** Write regression test for every bug fix.
 
 ### Test Documentation
 
-See `tests/TEST_FRAMEWORK.md` for comprehensive testing framework documentation.
+Complete guide: `tests/TEST_FRAMEWORK.md`
 
 ---
 
