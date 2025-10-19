@@ -3344,28 +3344,29 @@ security_audit() {
         'BEGIN\s+(RSA\s+)?PRIVATE\s+KEY'        # Actual private key blocks
     )
     
-    local secrets_found=false
+    # Build grep args array for single git grep command (performance optimization)
+    local grep_args=()
     for pattern in "${patterns[@]}"; do
-        local matches
-        # Exclude docs (may reference patterns) and this function itself
-        matches=$(git grep -E -n -i "$pattern" 2>/dev/null | \
-                  grep -v -E '^(README\.md|AGENTS\.md|DEVELOPMENT\.md|tests/|dot:3[3-9][0-9][0-9]:)' || true)
-        
-        if [[ -n "$matches" ]]; then
-            if ! $secrets_found; then
-                echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Potential secret patterns found:"
-                secrets_found=true
-            fi
-            echo "   Pattern: $pattern"
-            while IFS= read -r line; do
-                echo "     $line"
-            done <<< "$matches"
-            echo ""
-            ((issues_found++))
-        fi
+        grep_args+=("-e" "$pattern")
     done
     
-    if ! $secrets_found; then
+    local secrets_found="false"
+    local matches
+    # Exclude docs (may reference patterns) and this function itself
+    matches=$(git -C "$DOTFILES_DIR" grep -E -n -i "${grep_args[@]}" 2>/dev/null | \
+              grep -v -E '^(README\\.md|AGENTS\\.md|DEVELOPMENT\\.md|tests/|dot:3[3-9][0-9][0-9]:)' || true)
+    
+    if [[ -n "$matches" ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Potential secret patterns found:"
+        while IFS= read -r line; do
+            echo "     $line"
+        done <<< "$matches"
+        echo ""
+        secrets_found="true"
+        ((issues_found++))
+    fi
+    
+    if [[ "$secrets_found" == "false" ]]; then
         echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} No secret patterns in tracked files"
     fi
     echo ""
@@ -3404,14 +3405,15 @@ security_audit() {
     
     local unignored_secrets=()
     local untracked_unignored=()
-    
     while IFS= read -r secret_file; do
         [[ -z "$secret_file" ]] && continue
-        if git check-ignore -q "$secret_file" 2>/dev/null; then
+        # Compute relative path for git commands
+        local rel_path="${secret_file#"$DOTFILES_DIR"/}"
+        if git -C "$DOTFILES_DIR" check-ignore -q -- "$rel_path" 2>/dev/null; then
             : # properly ignored
         else
             # Check if file is tracked
-            if git ls-files --error-unmatch "$secret_file" >/dev/null 2>&1; then
+            if git -C "$DOTFILES_DIR" ls-files --error-unmatch -- "$rel_path" >/dev/null 2>&1; then
                 unignored_secrets+=("$secret_file")
                 ((issues_found++))
             else
@@ -3596,6 +3598,7 @@ parse_arguments() {
             # Unknown argument
             *)
                 die "Unknown argument: $1" show_usage
+                ;;
         esac
     done
 
