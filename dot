@@ -1283,6 +1283,8 @@ show_diff_preview() {
                 target=$(readlink "$home_path")
                 local expected_target="$DOTFILES_DIR/$package/$file"
                 
+                # Allow symlinks with alternative path formats (relative paths or different directory structures)
+                # Only warn if target matches neither the expected absolute path nor contains the dotfiles pattern
                 if [[ "$target" != "$expected_target" ]] && [[ "$target" != *"${DOTFILES_DIR}/${package}/${file}"* ]]; then
                     echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $file"
                     echo "      Current: symlink → $target"
@@ -1297,7 +1299,7 @@ show_diff_preview() {
                     if ! diff -q "$home_path" "$dotfile_path" > /dev/null 2>&1; then
                         echo -e "   ${BLUE}${SYMBOL_INFO}${NC} $file ${YELLOW}(content differs)${NC}"
                         
-                        # Show diff preview (first 20 lines)
+                        # Show diff preview (first 25 lines)
                         local diff_output
                         diff_output=$(diff -u "$dotfile_path" "$home_path" 2>/dev/null || true)
                         
