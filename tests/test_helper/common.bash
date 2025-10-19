@@ -1,9 +1,15 @@
 # Common test helper functions
 # Load this in your test files with: load test_helper/common
 
-# Load bats support libraries
-load bats-support/load
-load bats-assert/load
+# Note: bats-support and bats-assert should be installed system-wide
+# macOS: brew install bats-core (includes helpers)
+# Ubuntu: sudo apt-get install bats
+# 
+# If you need the helper libraries, install them:
+# git clone https://github.com/bats-core/bats-support /usr/local/lib/bats-support
+# git clone https://github.com/bats-core/bats-assert /usr/local/lib/bats-assert
+#
+# For now, we'll use basic assertions and avoid the helper libraries for simplicity
 
 # Create a temporary dotfiles directory for testing
 # Usage: setup_test_dotfiles
@@ -11,11 +17,11 @@ load bats-assert/load
 setup_test_dotfiles() {
     export TEST_DOTFILES_DIR="$(mktemp -d)"
     export DOTFILES_DIR="$TEST_DOTFILES_DIR"
-    
+
     # Create basic structure
     mkdir -p "$TEST_DOTFILES_DIR"/{backups,system,git,zsh,tmux,gh,gnuplot,bash,fish}
     mkdir -p "$TEST_DOTFILES_DIR/tests"
-    
+
     # Copy dot script
     cp "$BATS_TEST_DIRNAME/../dot" "$TEST_DOTFILES_DIR/"
 }
@@ -35,9 +41,9 @@ create_mock_backups() {
     local count="$1"
     local size_mb="${2:-1}"
     local backup_dir="${DOTFILES_DIR:-$TEST_DOTFILES_DIR}/backups"
-    
+
     mkdir -p "$backup_dir"
-    
+
     for i in $(seq 1 "$count"); do
         local backup="$backup_dir/dotfiles-backup-$i"
         mkdir -p "$backup"
@@ -49,11 +55,11 @@ create_mock_backups() {
 # Usage: source_dot_script
 source_dot_script() {
     local dot_script="${DOTFILES_DIR:-$TEST_DOTFILES_DIR}/dot"
-    
+
     if [[ ! -f "$dot_script" ]]; then
         dot_script="$BATS_TEST_DIRNAME/../dot"
     fi
-    
+
     # Source the script to get access to functions
     # Suppress main execution
     export BATS_TESTING=1
@@ -71,7 +77,7 @@ assert_output_contains() {
     fi
 }
 
-# Assert output does not contain a pattern  
+# Assert output does not contain a pattern
 # Usage: assert_output_not_contains "pattern"
 assert_output_not_contains() {
     local pattern="$1"
@@ -88,12 +94,12 @@ assert_in_range() {
     local value="$1"
     local min="$2"
     local max="$3"
-    
+
     if ! [[ "$value" =~ ^[0-9]+$ ]]; then
         echo "Value is not numeric: $value"
         return 1
     fi
-    
+
     if [ "$value" -lt "$min" ] || [ "$value" -gt "$max" ]; then
         echo "Expected $value to be between $min and $max"
         return 1
@@ -122,14 +128,14 @@ get_actual_backup_count() {
 get_actual_backup_size() {
     local backup_dir="${DOTFILES_DIR:-$TEST_DOTFILES_DIR}/backups"
     local total=0
-    
+
     while IFS= read -r dir; do
         [[ -z "$dir" ]] && continue
         local size
         size=$(du -sk "$dir" 2>/dev/null | cut -f1)
         ((total += size))
     done < <(find "$backup_dir" -maxdepth 1 -type d -name "dotfiles-backup-*" 2>/dev/null)
-    
+
     echo "$total"
 }
 

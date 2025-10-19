@@ -14,19 +14,19 @@ teardown() {
 
 @test "status command exits successfully" {
     run ./dot status
-    assert_success
+    [ "$status" -eq 0 ]
 }
 
 @test "status command shows dotfiles location" {
     run ./dot status
-    assert_success
-    assert_output --partial "Location:"
+    [ "$status" -eq 0 ]
+    assert_output_contains "Location:"
 }
 
 @test "status command shows dependency status" {
     run ./dot status
-    assert_success
-    assert_output --partial "Dependencies"
+    [ "$status" -eq 0 ]
+    assert_output_contains "Dependencies"
 }
 
 @test "status command shows backup information" {
@@ -34,7 +34,7 @@ teardown() {
     create_mock_backups 5 1
     
     run ./dot status
-    assert_success
+    [ "$status" -eq 0 ]
     assert_output_contains "backups"
 }
 
@@ -45,7 +45,7 @@ teardown() {
     end=$(date +%s)
     duration=$((end - start))
     
-    assert_success
+    [ "$status" -eq 0 ]
     [ "$duration" -lt 3 ]
 }
 

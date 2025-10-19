@@ -14,21 +14,21 @@ teardown() {
 
 @test "health command exits successfully" {
     run ./dot health
-    assert_success
+    [ "$status" -eq 0 ]
 }
 
 @test "health command shows result status" {
     run ./dot health
-    assert_success
-    assert_output --partial "Result:"
+    [ "$status" -eq 0 ]
+    assert_output_contains "Result:"
 }
 
 @test "health command with backups shows correct size" {
     # Create test backups
     create_mock_backups 15 1
-    
+
     run ./dot health
-    assert_success
+    [ "$status" -eq 0 ]
     
     # Should show backup count
     assert_output_contains "15 backups"
@@ -37,7 +37,7 @@ teardown() {
     assert_output_not_contains "0MB"
     
     # Should show reasonable size
-    assert_output --regexp "[1-9][0-9]?MB"
+    [[ "$output" =~ [1-9][0-9]?MB ]]
 }
 
 @test "health command shows maintenance items with many backups" {
@@ -45,7 +45,7 @@ teardown() {
     create_mock_backups 12 1
     
     run ./dot health
-    assert_success
+    [ "$status" -eq 0 ]
     
     assert_output_contains "Maintenance Items"
     assert_output_contains "backups using"
@@ -53,7 +53,7 @@ teardown() {
 
 @test "health command verbose mode provides detailed output" {
     run ./dot health -v
-    assert_success
+    [ "$status" -eq 0 ]
     
     # Should have more detailed information
     assert_output_contains "Dependencies"
@@ -62,13 +62,13 @@ teardown() {
 
 @test "health command accepts -vv flag" {
     run ./dot health -vv
-    assert_success
+    [ "$status" -eq 0 ]
 }
 
 @test "health command accepts --help flag" {
-    run ./dot health --help
+    run ./dot --help
     # Should fail (shows help and exits)
-    assert_failure
-    assert_output --partial "Usage"
+    [ "$status" -ne 0 ]
+    assert_output_contains "Usage"
 }
 

@@ -13,30 +13,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          submodules: recursive
       
       - name: Install BATS
         run: sudo apt-get update && sudo apt-get install -y bats
       
       - name: Run unit tests
-        run: tests/bats/bin/bats tests/unit/
+        run: bats tests/unit/
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: unit-test-results
           path: tests/unit/
-  
+
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          submodules: recursive
       
       - name: Install BATS
         run: sudo apt-get update && sudo apt-get install -y bats
@@ -45,59 +41,55 @@ jobs:
         run: sudo apt-get install -y stow git
       
       - name: Run integration tests
-        run: tests/bats/bin/bats tests/integration/
+        run: bats tests/integration/
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration-test-results
           path: tests/integration/
-  
+
   regression-tests:
     name: Regression Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          submodules: recursive
       
       - name: Install BATS
         run: sudo apt-get update && sudo apt-get install -y bats
       
       - name: Run regression tests
-        run: tests/bats/bin/bats tests/regression/
+        run: bats tests/regression/
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: regression-test-results
           path: tests/regression/
-  
+
   contract-tests:
     name: Contract Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          submodules: recursive
       
       - name: Install BATS
         run: sudo apt-get update && sudo apt-get install -y bats
       
       - name: Run contract tests
-        run: tests/bats/bin/bats tests/contract/
+        run: bats tests/contract/
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: contract-test-results
           path: tests/contract/
-  
+
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
@@ -108,7 +100,7 @@ jobs:
         run: |
           echo "All test suites completed"
           echo "✓ Unit tests"
-          echo "✓ Integration tests"  
+          echo "✓ Integration tests"
           echo "✓ Regression tests"
           echo "✓ Contract tests"
 

@@ -63,15 +63,15 @@ Add to CI (`.github/workflows/validate.yml`):
 ### 1. Install BATS
 
 ```bash
-# Ubuntu
-sudo apt-get install bats
-
 # macOS
 brew install bats-core
 
-# Or from source
-git clone https://github.com/bats-core/bats-core.git
-cd bats-core && sudo ./install.sh /usr/local
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install bats
+
+# Verify
+bats --version
 ```
 
 ### 2. Create Regression Test

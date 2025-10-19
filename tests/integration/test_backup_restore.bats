@@ -19,14 +19,14 @@ teardown() {
     echo "test" > "$HOME/.testfile"
     
     run ./dot backup
-    assert_success
+    [ "$status" -eq 0 ]
 }
 
 @test "backup command creates backup directory" {
     echo "test" > "$HOME/.testfile"
-    
+
     ./dot backup >/dev/null 2>&1
-    
+
     # Should have created a backup
     backup_count=$(find "$TEST_DOTFILES_DIR/backups" -type d -name "dotfiles-backup-*" | wc -l)
     [ "$backup_count" -gt 0 ]
@@ -36,15 +36,15 @@ teardown() {
     create_mock_backups 3 1
     
     run ./dot backups
-    assert_success
+    [ "$status" -eq 0 ]
 }
 
 @test "backups command shows backup count" {
     create_mock_backups 5 1
     
     run ./dot backups
-    assert_success
+    [ "$status" -eq 0 ]
     # Should mention we have backups
-    assert_output --partial "backup"
+    assert_output_contains "backup"
 }
 

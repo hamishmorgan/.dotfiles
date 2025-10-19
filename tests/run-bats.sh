@@ -4,7 +4,6 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BATS="$SCRIPT_DIR/bats/bin/bats"
 
 # Colors
 RED='\033[0;31m'
@@ -16,9 +15,13 @@ echo -e "${BLUE}Running BATS test suite...${NC}"
 echo ""
 
 # Check if BATS is available
-if [[ ! -x "$BATS" ]]; then
-    echo -e "${RED}Error: BATS not found${NC}"
-    echo "Run: git submodule update --init --recursive"
+if ! command -v bats >/dev/null 2>&1; then
+    echo -e "${RED}Error: BATS not installed${NC}"
+    echo ""
+    echo "Install BATS:"
+    echo "  macOS:  brew install bats-core"
+    echo "  Ubuntu: sudo apt-get install bats"
+    echo ""
     exit 1
 fi
 
@@ -35,22 +38,22 @@ total_fail=0
 
 for suite in "${test_suites[@]}"; do
     IFS=':' read -r dir name <<< "$suite"
-    
+
     if [[ ! -d "$SCRIPT_DIR/$dir" ]]; then
         echo -e "${BLUE}Skipping $name (directory not found)${NC}"
         continue
     fi
-    
+
     echo -e "${BLUE}Running $name...${NC}"
     
-    if "$BATS" "$SCRIPT_DIR/$dir/"; then
+    if bats "$SCRIPT_DIR/$dir/"; then
         echo -e "${GREEN}✓ $name passed${NC}"
         ((total_pass++))
     else
         echo -e "${RED}✗ $name failed${NC}"
         ((total_fail++))
     fi
-    
+
     echo ""
 done
 

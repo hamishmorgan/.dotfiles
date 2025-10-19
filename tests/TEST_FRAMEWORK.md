@@ -8,11 +8,8 @@ Comprehensive BATS-based testing framework for the dotfiles repository.
 
 ```
 tests/
-├── bats/                     # BATS core (submodule)
 ├── test_helper/
-│   ├── bats-support/         # Helper library (submodule)
-│   ├── bats-assert/          # Assertion library (submodule)
-│   └── common.bash           # Custom helpers
+│   └── common.bash           # Custom helpers and assertions
 ├── unit/                     # Unit tests (70% of tests)
 │   ├── test_backup_functions.bats
 │   ├── test_package_functions.bats
@@ -35,45 +32,67 @@ tests/
 ### All Tests
 
 ```bash
-# Using the script
+# Using the script (recommended)
 ./tests/run-bats.sh
 
 # Or directly with BATS
-tests/bats/bin/bats tests/
+bats tests/
 ```
 
 ### Specific Test Suite
 
 ```bash
 # Unit tests
-tests/bats/bin/bats tests/unit/
+bats tests/unit/
 
 # Integration tests
-tests/bats/bin/bats tests/integration/
+bats tests/integration/
 
 # Regression tests
-tests/bats/bin/bats tests/regression/
+bats tests/regression/
 
 # Contract tests
-tests/bats/bin/bats tests/contract/
+bats tests/contract/
 ```
 
 ### Single Test File
 
 ```bash
-tests/bats/bin/bats tests/regression/test_issue_66.bats
+bats tests/regression/test_issue_66.bats
 ```
 
 ### With Timing
 
 ```bash
-tests/bats/bin/bats --timing tests/
+bats --timing tests/
 ```
 
 ### Parallel Execution
 
 ```bash
-tests/bats/bin/bats --jobs 4 tests/
+bats --jobs 4 tests/
+```
+
+## Installation
+
+### macOS
+
+```bash
+brew install bats-core
+```
+
+### Ubuntu/Debian
+
+```bash
+sudo apt-get update
+sudo apt-get install bats
+```
+
+### Verify Installation
+
+```bash
+bats --version
+# Should show: Bats 1.x.x
 ```
 
 ## Test Categories
@@ -159,15 +178,13 @@ teardown() {
 
 ### Available Assertions
 
-From **bats-assert**:
-- `assert_success` - Exit code is 0
-- `assert_failure` - Exit code is non-zero
-- `assert_equal "expected" "actual"`
-- `assert_output "expected"` - Exact match
-- `assert_output --partial "substring"` - Substring match
-- `assert_output --regexp "pattern"` - Regex match
+From **BATS built-in**:
+- `[ "$status" -eq 0 ]` - Exit code is 0
+- `[ "$status" -ne 0 ]` - Exit code is non-zero
+- `[ "$output" = "expected" ]` - Exact match
+- `[[ "$output" =~ pattern ]]` - Regex match
 
-From **common.bash**:
+From **common.bash** (custom helpers):
 - `assert_output_contains "pattern"`
 - `assert_output_not_contains "pattern"`
 - `assert_in_range VALUE MIN MAX`
@@ -234,11 +251,12 @@ See `.github/workflows/test.yml` for configuration.
 ### Tests Failing Locally
 
 ```bash
-# Initialize submodules
-git submodule update --init --recursive
+# Check BATS is installed
+bats --version
 
-# Check BATS is available
-tests/bats/bin/bats --version
+# If not installed:
+# macOS: brew install bats-core
+# Ubuntu: sudo apt-get install bats
 ```
 
 ### Tests Pass Locally But Fail in CI
@@ -251,7 +269,7 @@ tests/bats/bin/bats --version
 
 ```bash
 # Run with timing to identify slow tests
-tests/bats/bin/bats --timing tests/
+bats --timing tests/
 ```
 
 ## References

@@ -14,7 +14,7 @@ teardown() {
 
 @test "health output has required sections" {
     run ./dot health
-    assert_success
+    [ "$status" -eq 0 ]
     
     # Check for all required sections
     assert_output_contains "Dependencies"
@@ -26,7 +26,7 @@ teardown() {
 
 @test "health output has proper status symbols" {
     run ./dot health
-    assert_success
+    [ "$status" -eq 0 ]
     
     # Should use status symbols (color codes or actual symbols)
     # At minimum should have checkmarks or status indicators
@@ -35,7 +35,7 @@ teardown() {
 
 @test "health verbose output includes detailed information" {
     run ./dot health -v
-    assert_success
+    [ "$status" -eq 0 ]
     
     # Verbose should have more details
     assert_output_contains "Checking"
@@ -49,10 +49,10 @@ teardown() {
     # Run twice, output format should be consistent
     run ./dot health
     output1="$output"
-    
+
     run ./dot health
     output2="$output"
-    
+
     # Both should have same structure (section headers)
     [[ "$output1" =~ "Dependencies" ]] && [[ "$output2" =~ "Dependencies" ]]
     [[ "$output1" =~ "Result:" ]] && [[ "$output2" =~ "Result:" ]]
