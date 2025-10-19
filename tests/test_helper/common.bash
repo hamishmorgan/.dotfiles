@@ -1,5 +1,5 @@
 # Common test helper functions
-# Load this in your test files with: load test_helper/common
+# Load this in your test files with: load ../test_helper/common
 
 # Load BATS helper libraries
 # These should be installed system-wide:
@@ -65,7 +65,8 @@ create_mock_backups() {
 
     mkdir -p "$backup_dir"
 
-    for i in $(seq 1 "$count"); do
+    # Use bash arithmetic loop for portability (seq not available on all systems)
+    for ((i=1; i<=count; i++)); do
         local backup="$backup_dir/dotfiles-backup-$i"
         mkdir -p "$backup"
         dd if=/dev/zero of="$backup/file" bs=1M count="$size_mb" 2>/dev/null

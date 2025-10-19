@@ -5,6 +5,9 @@ load ../test_helper/common
 
 setup() {
     setup_test_dotfiles
+    # Isolate HOME to prevent modifying actual user directory
+    export HOME="$TEST_DOTFILES_DIR/home"
+    mkdir -p "$HOME"
     cd "$TEST_DOTFILES_DIR" || return 1
 }
 
