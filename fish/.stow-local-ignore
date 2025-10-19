@@ -1,0 +1,6 @@
+# Fish package-specific stow ignore patterns
+# Template, secret, and example files are not stowed
+\.template$
+\.secret$
+\.example$
+

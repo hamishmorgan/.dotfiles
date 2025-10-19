@@ -109,7 +109,7 @@ trap handle_interrupt INT TERM
 
 # Package definitions
 # Note: system package is stowed first to ensure .stow-global-ignore is in place
-PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash")
+PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish")
 
 # Get package files (bash 3.2 compatible - no associative arrays)
 get_package_files() {
@@ -122,6 +122,7 @@ get_package_files() {
         gh)      echo ".config/gh" ;;
         gnuplot) echo ".gnuplot" ;;
         bash)    echo ".bashrc,.bash_profile" ;;
+        fish)    echo ".config/fish" ;;
         *)       echo "" ;;
     esac
 }
@@ -137,6 +138,7 @@ get_package_name() {
         gh)      echo "GitHub CLI" ;;
         gnuplot) echo "GNU Plot" ;;
         bash)    echo "Bash" ;;
+        fish)    echo "Fish" ;;
         *)       echo "$package" ;;
     esac
 }
@@ -146,7 +148,7 @@ get_required_deps() {
     local type="$1"
     case "$type" in
         common)   echo "stow git" ;;
-        optional) echo "tmux zsh" ;;
+        optional) echo "tmux zsh fish" ;;
         *)        echo "" ;;
     esac
 }
