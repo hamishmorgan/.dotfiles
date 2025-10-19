@@ -2847,6 +2847,50 @@ update_oh_my_zsh() {
     fi
 }
 
+# Remove broken or mispointed dotfile symlinks
+# This handles cases where packages were moved (e.g., bash/ -> packages/bash/)
+remove_mispointed_symlinks() {
+    local verbosity="${1:-0}"
+    local removed_count=0
+    
+    # Find all symlinks in $HOME that point to $DOTFILES_DIR
+    while IFS= read -r symlink; do
+        local target
+        target="$(readlink "$symlink")"
+        
+        # Check if symlink is broken OR points to wrong location
+        if [[ ! -e "$symlink" ]] || [[ "$target" == "$DOTFILES_DIR/"* && "$target" != "$PACKAGES_DIR/"* ]]; then
+            if [[ $verbosity -ge 2 ]]; then
+                log_info "Removing outdated symlink: ${symlink#"$HOME"/}"
+            fi
+            rm -f "$symlink"
+            ((removed_count++))
+        fi
+    done < <(find "$HOME" -maxdepth 1 -type l 2>/dev/null)
+    
+    # Also check .config directory
+    if [[ -d "$HOME/.config" ]]; then
+        while IFS= read -r symlink; do
+            local target
+            target="$(readlink "$symlink")"
+            
+            if [[ ! -e "$symlink" ]] || [[ "$target" == *"$DOTFILES_DIR/"* && "$target" != *"$PACKAGES_DIR/"* ]]; then
+                if [[ $verbosity -ge 2 ]]; then
+                    log_info "Removing outdated symlink: ${symlink#"$HOME"/}"
+                fi
+                rm -f "$symlink"
+                ((removed_count++))
+            fi
+        done < <(find "$HOME/.config" -maxdepth 3 -type l 2>/dev/null)
+    fi
+    
+    if [[ $removed_count -gt 0 && $verbosity -ge 1 ]]; then
+        log_info "Removed $removed_count outdated symlink(s)"
+    fi
+    
+    return 0
+}
+
 # Common installation pipeline
 run_installation_pipeline() {
     local verbosity="${1:-0}"
@@ -2922,8 +2966,17 @@ cmd_update() {
     fi
     echo ""
 
-    # Step 3: Reinstall
-    show_numbered_section "3" "Reinstall Dotfiles"
+    # Step 3: Clean up outdated symlinks
+    if [[ $verbosity -ge 1 ]]; then
+        show_numbered_section "3" "Clean Up Outdated Symlinks"
+        remove_mispointed_symlinks "$verbosity"
+        echo ""
+    else
+        remove_mispointed_symlinks 0
+    fi
+    
+    # Step 4: Reinstall
+    show_numbered_section "4" "Reinstall Dotfiles"
     if ! run_with_verbosity "$verbosity" 1 "" run_installation_pipeline "$verbosity"; then
         echo ""
         log_error "Installation pipeline failed"
