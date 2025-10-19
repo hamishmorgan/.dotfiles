@@ -4,32 +4,61 @@ Instructions for AI agents working with this dotfiles repository.
 
 ## Table of Contents
 
-- [Project Context](#project-context)
-  - [Branch Strategy](#branch-strategy)
-- [Dependencies](#dependencies)
-- [Documentation Standards](#documentation-standards)
-- [Code Standards](#code-standards)
-  - [Error Handling Patterns](#error-handling-patterns)
-  - [Bash 3.2 Compatibility](#bash-32-compatibility)
-- [Git Commit Attribution](#git-commit-attribution)
-- [File Organization](#file-organization)
-  - [Stow Ignore Files](#stow-ignore-files)
-  - [Templates and Secrets](#templates-and-secrets)
-  - [Platform-Specific Configs](#platform-specific-configs)
-- [Logging System](#logging-system)
-- [Verbosity System](#verbosity-system)
-- [Helper Functions](#helper-functions)
-- [Validation](#validation)
-- [Update Instructions](#update-instructions)
-- [Code Quality](#code-quality)
-- [CI/CD](#cicd)
-  - [CI Performance Optimization](#ci-performance-optimization)
-- [Quick Reference](#quick-reference)
-- [Common Tasks](#common-tasks)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
-- [Pull Request Workflow](#pull-request-workflow)
-- [GitHub Integration](#github-integration)
+- [Agent Instructions](#agent-instructions)
+  - [Table of Contents](#table-of-contents)
+  - [Project Context](#project-context)
+    - [Branch Strategy](#branch-strategy)
+  - [Dependencies](#dependencies)
+    - [Required Tools](#required-tools)
+    - [Optional Tools](#optional-tools)
+    - [Version Requirements](#version-requirements)
+    - [Checking Dependencies](#checking-dependencies)
+    - [Platform-Specific Installation](#platform-specific-installation)
+  - [Documentation Standards](#documentation-standards)
+  - [Code Standards](#code-standards)
+    - [Comments](#comments)
+    - [Clean Code Principles](#clean-code-principles)
+    - [Error Handling Patterns](#error-handling-patterns)
+    - [Bash 3.2 Compatibility](#bash-32-compatibility)
+  - [Git Commit Attribution](#git-commit-attribution)
+  - [File Organization](#file-organization)
+    - [Stow Ignore Files](#stow-ignore-files)
+    - [Templates and Secrets](#templates-and-secrets)
+    - [Platform-Specific Configs](#platform-specific-configs)
+  - [Logging System](#logging-system)
+  - [Verbosity System](#verbosity-system)
+  - [Helper Functions](#helper-functions)
+  - [Validation](#validation)
+  - [Update Instructions](#update-instructions)
+    - [Triggers for Updates](#triggers-for-updates)
+    - [When Adding Instructions](#when-adding-instructions)
+    - [Update Frequency](#update-frequency)
+  - [Code Quality](#code-quality)
+  - [CI/CD](#cicd)
+    - [Workflow Structure](#workflow-structure)
+    - [CI Performance Optimization](#ci-performance-optimization)
+  - [Quick Reference](#quick-reference)
+  - [Common Tasks](#common-tasks)
+  - [Testing](#testing)
+    - [When to Write Tests](#when-to-write-tests)
+    - [Test-Driven Bug Fixing Pattern](#test-driven-bug-fixing-pattern)
+    - [Running Tests](#running-tests)
+    - [Test Categories](#test-categories)
+    - [Testing Strategy](#testing-strategy)
+    - [Why This Matters](#why-this-matters)
+    - [Test Documentation](#test-documentation)
+    - [Critical Testing Principles](#critical-testing-principles)
+  - [Troubleshooting](#troubleshooting)
+    - [Symlink Issues](#symlink-issues)
+    - [Installation Problems](#installation-problems)
+    - [CI/CD Issues](#cicd-issues)
+    - [Rollback Procedures](#rollback-procedures)
+  - [Pull Request Workflow](#pull-request-workflow)
+  - [GitHub Integration](#github-integration)
+    - [When to Use Each Tool](#when-to-use-each-tool)
+    - [MCP GitHub Tools](#mcp-github-tools)
+    - [GitHub CLI (`gh`)](#github-cli-gh)
+    - [Best Practice](#best-practice)
 
 ## Project Context
 
@@ -200,6 +229,166 @@ input_files=("$@")
 - Obvious operations that need no explanation
 
 **When restructuring removes comment need, restructure.**
+
+### Clean Code Principles
+
+Apply these principles to maintain code quality and readability:
+
+**1. Meaningful Names**
+
+Use descriptive, specific names that reveal intent:
+
+```bash
+# BAD: Unclear, abbreviated
+d="$HOME/.dotfiles"
+f=("$@")
+
+# GOOD: Clear purpose
+dotfiles_dir="$HOME/.dotfiles"
+files_to_process=("$@")
+```
+
+**2. Single Responsibility Principle (SRP)**
+
+Each function should have one reason to change:
+
+```bash
+# BAD: Function does too much
+process_files() {
+    validate_input
+    backup_files
+    transform_files
+    log_results
+}
+
+# GOOD: Separate responsibilities
+validate_input() { ... }
+backup_files() { ... }
+transform_files() { ... }
+log_results() { ... }
+```
+
+**3. Keep It Simple (KISS)**
+
+Favor simple solutions over clever ones:
+
+```bash
+# BAD: Overly clever
+result=$([[ "$var" =~ ^[0-9]+$ ]] && echo "num" || echo "str")
+
+# GOOD: Clear and simple
+if [[ "$var" =~ ^[0-9]+$ ]]; then
+    result="num"
+else
+    result="str"
+fi
+```
+
+**4. Don't Repeat Yourself (DRY)**
+
+Extract common patterns into functions:
+
+```bash
+# BAD: Repeated logic
+log_error "Failed to stow system"
+exit 1
+# ... later ...
+log_error "Failed to stow git"
+exit 1
+
+# GOOD: Extracted helper
+fail_with_error() {
+    log_error "$1"
+    exit 1
+}
+
+fail_with_error "Failed to stow system"
+fail_with_error "Failed to stow git"
+```
+
+**5. Functions Should Do One Thing**
+
+Keep functions focused and cohesive:
+
+```bash
+# BAD: Multiple responsibilities
+install_package() {
+    check_dependencies
+    download_files
+    verify_checksums
+    extract_archive
+    configure_settings
+    start_service
+}
+
+# GOOD: Each function has single purpose
+install_package() {
+    check_dependencies || return 1
+    download_and_verify || return 1
+    install_files || return 1
+    configure_package || return 1
+}
+```
+
+**6. Avoid Magic Numbers**
+
+Use named constants for clarity:
+
+```bash
+# BAD: Magic numbers
+if [[ ${#backups[@]} -gt 10 ]]; then
+    remove_old_backups 5
+fi
+
+# GOOD: Named constants
+readonly MAX_BACKUPS=10
+readonly BACKUPS_TO_KEEP=5
+
+if [[ ${#backups[@]} -gt $MAX_BACKUPS ]]; then
+    remove_old_backups "$BACKUPS_TO_KEEP"
+fi
+```
+
+**7. Prefer Readable Code Over Clever Code**
+
+Clarity trumps brevity:
+
+```bash
+# BAD: Clever but obscure
+files=($(find . -type f -exec sh -c 'echo {}' \; | awk '{print $1}' | sort -u))
+
+# GOOD: Clear intent
+find_unique_files() {
+    find . -type f -print | sort -u
+}
+files=($(find_unique_files))
+```
+
+**8. Small Functions**
+
+Functions should be short (typically < 20 lines):
+
+- Easy to understand at a glance
+- Easy to test
+- Easy to name accurately
+- Encourage code reuse
+
+**9. Fail Fast**
+
+Validate inputs early and return immediately:
+
+```bash
+# GOOD: Early validation
+process_file() {
+    local file="$1"
+    
+    [[ -z "$file" ]] && { log_error "File required"; return 1; }
+    [[ ! -f "$file" ]] && { log_error "File not found: $file"; return 1; }
+    [[ ! -r "$file" ]] && { log_error "File not readable: $file"; return 1; }
+    
+    # Main logic here
+}
+```
 
 ### Error Handling Patterns
 
