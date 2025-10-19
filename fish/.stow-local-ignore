@@ -4,3 +4,8 @@
 \.secret$
 \.example$
 
+# Machine-specific state files (not stowed)
+^\.config/fish/fish_variables$
+^\.config/fish/completions$
+^\.config/fish/conf\.d$
+
