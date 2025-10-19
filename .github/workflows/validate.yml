@@ -72,17 +72,14 @@ jobs:
       - name: Install BATS (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          # On macOS, install bats-core first
+          # Install bats-core first
           brew install bats-core stow git
           
-          # Helper libraries may not be in Homebrew - try tap or install manually
-          brew install bats-assert bats-support bats-file 2>/dev/null || {
-            echo "Helper libraries not in default tap, installing from GitHub..."
-            # Install helpers manually if not in Homebrew
-            git clone https://github.com/bats-core/bats-support /usr/local/lib/bats-support
-            git clone https://github.com/bats-core/bats-assert /usr/local/lib/bats-assert  
-            git clone https://github.com/bats-core/bats-file /usr/local/lib/bats-file
-          }
+          # Tap the bats-core tap for helper libraries
+          brew tap bats-core/bats-core
+          
+          # Install helper libraries from tap
+          brew install bats-support bats-assert bats-file
 
       - name: Verify BATS installation
         run: |
