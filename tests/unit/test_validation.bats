@@ -24,12 +24,12 @@ teardown() {
 }
 
 @test "count_orphaned_symlinks runs without crashing" {
-    # Create orphaned symlink in test directory
-    ln -s /nonexistent/path "$TEST_DOTFILES_DIR/orphan-link"
-
-    # Note: This function checks $HOME, so we'd need to mock that
-    # For now, just test it runs without error
+    # Note: count_orphaned_symlinks checks $HOME for broken symlinks
+    # Isolating HOME causes test execution issues in BATS
+    # This test verifies the function runs without error
     run count_orphaned_symlinks
     assert_success
+    # Output is a count (0 or more)
+    assert_output --regexp "^[0-9]+$"
 }
 
