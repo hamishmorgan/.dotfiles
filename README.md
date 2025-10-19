@@ -141,6 +141,19 @@ Customize behavior via environment variables:
 - `DOTFILES_GIT_TIMEOUT` - Git operations timeout (default: 60)
 - `DOTFILES_CURL_TIMEOUT` - Curl operations timeout (default: 30)
 
+### Security
+
+- `DOTFILES_SECRET_FILE_MODE` - Secret file permissions (default: 600)
+
+### Output
+
+- `DOTFILES_OUTPUT_PREFIX` - Output indentation character (default: │)
+
+### Backup Paths
+
+- `DOTFILES_BACKUP_DIR_PREFIX` - Backup directory prefix (default: backups/dotfiles-backup)
+- `DOTFILES_RESTORE_SAFETY_PREFIX` - Restore safety prefix (default: backups/dotfiles-pre-restore)
+
 ### Examples
 
 ```bash
@@ -158,6 +171,15 @@ DOTFILES_GIT_TIMEOUT=30 DOTFILES_CURL_TIMEOUT=15 ./dot install
 
 # Preview more files during restore
 DOTFILES_RESTORE_DISPLAY_LIMIT=50 ./dot restore
+
+# Read-only secret files (more secure)
+DOTFILES_SECRET_FILE_MODE=400 ./dot install
+
+# Plain ASCII output for CI/logs
+DOTFILES_OUTPUT_PREFIX="| " ./dot install
+
+# Custom backup location
+DOTFILES_BACKUP_DIR_PREFIX=.archive/dotfiles ./dot backup
 ```
 
 ## Optional: Set zsh as default shell

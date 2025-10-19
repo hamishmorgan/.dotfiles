@@ -37,7 +37,6 @@ SYMBOL_INFO='∙'
 
 # Configuration
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKUP_DIR="$DOTFILES_DIR/backups/dotfiles-backup-$(date +%s)"
 
 # Backup retention policy (configurable via environment variables)
 readonly MAX_BACKUPS_TO_DISPLAY="${DOTFILES_MAX_BACKUPS_TO_DISPLAY:-5}"     # Status output
@@ -49,6 +48,17 @@ readonly RESTORE_DISPLAY_LIMIT="${DOTFILES_RESTORE_DISPLAY_LIMIT:-20}"      # Re
 # Timeout values in seconds
 readonly GIT_TIMEOUT="${DOTFILES_GIT_TIMEOUT:-60}"                           # Git operations
 readonly CURL_TIMEOUT="${DOTFILES_CURL_TIMEOUT:-30}"                         # Curl downloads
+
+# Security
+readonly SECRET_FILE_MODE="${DOTFILES_SECRET_FILE_MODE:-600}"                # Secret file permissions
+
+# Output formatting
+readonly OUTPUT_PREFIX="${DOTFILES_OUTPUT_PREFIX:-│ }"                       # Indentation character
+
+# Backup paths
+readonly BACKUP_DIR_PREFIX="${DOTFILES_BACKUP_DIR_PREFIX:-backups/dotfiles-backup}"
+readonly RESTORE_SAFETY_PREFIX="${DOTFILES_RESTORE_SAFETY_PREFIX:-backups/dotfiles-pre-restore}"
+BACKUP_DIR="$DOTFILES_DIR/${BACKUP_DIR_PREFIX}-$(date +%s)"
 
 # Unit conversion constants
 readonly SECONDS_PER_DAY=86400
@@ -209,7 +219,7 @@ log_error() {
 # Prefix subcommand output for clarity with smart colorization
 # Colors lines based on content patterns (errors, warnings, info)
 prefix_output() {
-    local prefix="${1:-│ }"
+    local prefix="${1:-$OUTPUT_PREFIX}"
     while IFS= read -r line; do
         # Skip harmless stow BUG warnings about absolute path mismatches
         if [[ "$line" =~ "BUG in find_stowed_path? Absolute/relative mismatch" ]]; then
@@ -729,7 +739,7 @@ secure_secret_file() {
         return 0
     fi
 
-    if ! chmod 600 "$secret" 2>/dev/null; then
+    if ! chmod "$SECRET_FILE_MODE" "$secret" 2>/dev/null; then
         log_warning "Failed to set secure permissions on ${secret#"$DOTFILES_DIR"/}"
         return 1
     fi
@@ -997,7 +1007,7 @@ validate_package() {
 # Get list of backup directories
 get_backup_dirs() {
     local backup_dirs=()
-    for dir in "$DOTFILES_DIR"/backups/dotfiles-backup-*; do
+    for dir in "$DOTFILES_DIR"/${BACKUP_DIR_PREFIX}-*; do
         if [[ -d "$dir" ]]; then
             backup_dirs+=("$dir")
         fi
@@ -1291,9 +1301,9 @@ restore_from_backup() {
         # Try exact directory name match first
         if [[ -d "$DOTFILES_DIR/backups/$backup_id" ]]; then
             backup_dir="$DOTFILES_DIR/backups/$backup_id"
-        # Try with dotfiles-backup- prefix
-        elif [[ -d "$DOTFILES_DIR/backups/dotfiles-backup-$backup_id" ]]; then
-            backup_dir="$DOTFILES_DIR/backups/dotfiles-backup-$backup_id"
+        # Try with configured prefix
+        elif [[ -d "$DOTFILES_DIR/${BACKUP_DIR_PREFIX}-$backup_id" ]]; then
+            backup_dir="$DOTFILES_DIR/${BACKUP_DIR_PREFIX}-$backup_id"
         else
             log_error "Backup not found: $backup_id"
             log_info "Run ${BLUE}./dot backups${NC} to see available backups"
@@ -1339,7 +1349,7 @@ restore_from_backup() {
 
     # Create safety backup before restore
     local safety_backup
-    safety_backup="$DOTFILES_DIR/backups/dotfiles-pre-restore-$(date +%s)"
+    safety_backup="$DOTFILES_DIR/${RESTORE_SAFETY_PREFIX}-$(date +%s)"
     log_info "Creating safety backup..."
     if ! backup_existing_to "$safety_backup"; then
         log_warning "Could not create safety backup, but continuing..."
@@ -1927,7 +1937,7 @@ check_file_permissions() {
         # Check if world-readable (last digit > 0)
         if [[ "${perms: -1}" != "0" ]]; then
             log_warning "Secret config is world-readable: ${secret#"$DOTFILES_DIR"/}"
-            log_info "  Consider: chmod 600 $secret"
+            log_info "  Consider: chmod $SECRET_FILE_MODE $secret"
             ((warnings++))
         else
             log_success "${secret#"$DOTFILES_DIR"/} has secure permissions"

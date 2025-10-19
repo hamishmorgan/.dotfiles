@@ -254,11 +254,29 @@ When adding environment variables:
 
 **Current Environment Variables:**
 
+Display & Retention:
+
 - `DOTFILES_MAX_BACKUPS_TO_DISPLAY` (5) - Status output
 - `DOTFILES_MAX_BACKUPS_TO_KEEP` (10) - Retention policy
 - `DOTFILES_RESTORE_DISPLAY_LIMIT` (20) - Restore preview
+
+Timeouts:
+
 - `DOTFILES_GIT_TIMEOUT` (60) - Git operations
 - `DOTFILES_CURL_TIMEOUT` (30) - Curl downloads
+
+Security:
+
+- `DOTFILES_SECRET_FILE_MODE` (600) - Secret file permissions
+
+Output:
+
+- `DOTFILES_OUTPUT_PREFIX` (│) - Indentation character
+
+Backup Paths:
+
+- `DOTFILES_BACKUP_DIR_PREFIX` (backups/dotfiles-backup) - Backup directory prefix
+- `DOTFILES_RESTORE_SAFETY_PREFIX` (backups/dotfiles-pre-restore) - Restore safety prefix
 
 ### Shell Script Style
 
