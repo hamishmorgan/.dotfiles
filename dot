@@ -3388,7 +3388,7 @@ security_audit() {
         for file in "${insecure_files[@]}"; do
             echo "     ${SYMBOL_WARNING} ${file#"$DOTFILES_DIR"/}"
         done
-        echo "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 FILE"
+        echo "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 FILE (or 400)"
     else
         echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files have secure permissions"
     fi
@@ -3465,7 +3465,7 @@ security_audit() {
             for key in "${exposed_keys[@]}"; do
                 echo "     ${SYMBOL_WARNING} $key"
             done
-            echo "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 ~/.ssh/KEYFILE"
+            echo "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 ~/.ssh/KEYFILE (or 400)"
         else
             echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} SSH keys have secure permissions"
         fi
@@ -3584,6 +3584,10 @@ parse_arguments() {
                 fi
                 COMMAND="$1"
                 shift
+                ;;
+            # Unknown option (unknown flag)
+            -*)
+                die "Unknown option: $1" show_usage
                 ;;
             # Unknown argument
             *)
@@ -3729,7 +3733,15 @@ _dot_completion() {
         case "$prev" in
             install|update|health)
                 local flags="-v --verbose -vv"
-        local commands="install status health update diff backup backups restore clean uninstall enable disable packages security"
+                COMPREPLY=()
+                while IFS= read -r word; do
+                    COMPREPLY+=("$word")
+                done < <(compgen -W "$flags" -- "$cur")
+                ;;
+            enable|disable)
+                local packages="system git zsh tmux gh gnuplot bash fish"
+                COMPREPLY=()
+                while IFS= read -r word; do
                     COMPREPLY+=("$word")
                 done < <(compgen -W "$packages" -- "$cur")
                 ;;
