@@ -38,6 +38,7 @@ SYMBOL_INFO='∙'
 # Configuration
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$DOTFILES_DIR/backups/dotfiles-backup-$(date +%s)"
+readonly MAX_BACKUPS_TO_DISPLAY=5
 
 # Track installation state for rollback
 INSTALLED_PACKAGES=()
@@ -1126,16 +1127,15 @@ show_status() {
             backup_dirs+=("$dir")
         done < <(get_backup_dirs | sort -r)
 
-        # Show only the most recent 5 backups
-        local show_count=$((backup_count < 5 ? backup_count : 5))
+        local show_count=$((backup_count < MAX_BACKUPS_TO_DISPLAY ? backup_count : MAX_BACKUPS_TO_DISPLAY))
 
         for ((i=0; i<show_count; i++)); do
             local dir="${backup_dirs[$i]}"
             echo "   $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
         done
 
-        if [[ $backup_count -gt 5 ]]; then
-            echo "   ... and $((backup_count - 5)) older backup(s)"
+        if [[ $backup_count -gt $MAX_BACKUPS_TO_DISPLAY ]]; then
+            echo "   ... and $((backup_count - MAX_BACKUPS_TO_DISPLAY)) older backup(s)"
         fi
 
         echo ""
