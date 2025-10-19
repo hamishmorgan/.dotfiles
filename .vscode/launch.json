@@ -1,0 +1,23 @@
+{
+  // Debug configurations for shell scripts
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "bashdb",
+      "request": "launch",
+      "name": "Debug dot script",
+      "program": "${workspaceFolder}/dot",
+      "args": ["status"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "bashdb",
+      "request": "launch",
+      "name": "Debug Current Shell File",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
+
+
