@@ -665,7 +665,69 @@ Always run tests before committing. Regression tests are mandatory for bug fixes
 
 ### Test Documentation
 
-See `tests/TEST_FRAMEWORK.md` for comprehensive testing framework documentation.
+See DEVELOPMENT.md Testing section for comprehensive testing framework documentation.
+
+### Critical Testing Principles
+
+**DO NOT create "acceptable failure" tests:**
+
+```bash
+# ❌ BAD: Allowing either success or failure
+run ./dot health
+[[ "$status" -eq 0 || "$status" -eq 1 ]]  # This is an anti-pattern!
+
+# ✅ GOOD: Test specific behavior
+# If testing backup display, test the function directly
+source_dot_script
+run get_backup_stats
+assert_success
+assert_output --regexp "[0-9]+ [0-9]+"
+
+# ✅ GOOD: Or ensure proper test environment
+./dot install > /dev/null 2>&1  # Set up environment
+run ./dot health
+# Now health should have deterministic result
+```
+
+**Tests must have clear expectations:**
+
+- If a command should succeed, assert `assert_success`
+- If a command should fail, assert `assert_failure` (exit code 1)  
+- Never use `[[ "$status" -eq 0 || "$status" -eq 1 ]]` as a cop-out
+- If environment affects results, mock/set up the environment properly
+
+**Test functions in isolation when possible:**
+
+- Integration tests test full commands (slower, environmental dependencies)
+
+- Unit tests test functions directly (faster, more reliable)
+- Prefer unit tests for specific functionality
+- Use integration tests for end-to-end workflows
+Before (anti-pattern):
+
+```bash
+@test "health shows backups" {
+
+    run ./dot health
+    # May fail in test env - BAD!
+    [[ "$status" -eq 0 || "$status" -eq 1 ]]
+
+    assert_output --partial "15 backups"
+}
+```
+
+After (correct):
+
+```bash
+@test "get_backup_stats returns correct values" {
+    create_mock_backups 15 1
+    source_dot_script
+    run get_backup_stats
+    assert_success  # Function must succeed
+    count=$(echo "$output" | awk '{print $1}')
+    assert_equal "15" "$count"
+}
+```
 
 ## Troubleshooting
 

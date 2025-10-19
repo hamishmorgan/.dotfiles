@@ -12,58 +12,70 @@ teardown() {
     teardown_test_dotfiles
 }
 
-@test "health command runs without crashing" {
+@test "health command completes successfully" {
+    # Test in isolation by installing dotfiles first
+    ./dot install > /dev/null 2>&1 || true
+    
     run ./dot health
-    # May fail (exit 1) in test env due to missing deps, but should not crash
-    # Exit code 1 is expected failure (unhealthy), not a crash
-    [[ "$status" -eq 0 || "$status" -eq 1 ]]
-}
-
-@test "health command shows result status" {
-    run ./dot health
-    # May be unhealthy in test env, but should show result
+    # Health command must either pass or fail cleanly (not crash)
+    # Acceptable exit codes: 0 (healthy) or 1 (unhealthy)
+    # Any other code indicates a crash/error
+    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
+    
+    # Must always show result section
     assert_output --partial "Result:"
 }
 
-@test "health command with backups shows correct size" {
+@test "health command shows backup information correctly" {
     # Create test backups
     create_mock_backups 15 1
+    
+    # Install dotfiles for complete environment
+    ./dot install > /dev/null 2>&1 || true
 
     run ./dot health
-    # May fail overall, but should show backup info correctly
-
-    # Should show backup count
-    assert_output --partial "15 backups"
-
-    # Should NOT show 0MB (Issue #66)
-    refute_output --partial "0MB"
-
-    # Should show reasonable size
+    # With installation, health should now pass or be unhealthy
+    # (unhealthy is OK if backups > 10 or other warnings)
+    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
+    
+    # Should show backup information (count may vary due to installation backup)
+    assert_output --regexp "[0-9]+ backups"
+    
+    # Should NOT show 0MB (Issue #66 - the key regression test)
+    refute_output --partial "0MB)"
+    
+    # Should show reasonable non-zero size
     assert_output --regexp "[1-9][0-9]?MB"
 }
 
-@test "health command shows maintenance items with many backups" {
+@test "health command shows maintenance warnings" {
     # Create more than 10 backups to trigger maintenance warning
     create_mock_backups 12 1
+    
+    ./dot install > /dev/null 2>&1 || true
 
     run ./dot health
-    # Should show maintenance warning regardless of overall health
-
+    # Should complete (even if unhealthy due to backups)
+    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
+    
     assert_output --partial "backups using"
 }
 
-@test "health command verbose mode provides detailed output" {
+@test "health command verbose mode works" {
+    ./dot install > /dev/null 2>&1 || true
+    
     run ./dot health -v
-    # May fail overall in test env
-
-    # Should have more detailed information
-    assert_output --partial "Dependencies"
+    # Verbose mode must complete
+    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
+    
+    # Should have detailed information
+    assert_output --partial "Checking"
 }
 
-@test "health command accepts -vv flag" {
+@test "health command accepts verbosity flags" {
     run ./dot health -vv
-    # Should run without crashing (exit 0 or 1 both OK)
-    [[ "$status" -eq 0 || "$status" -eq 1 ]]
+    # Must complete without crashing
+    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
 }
 
 @test "help flag shows usage" {

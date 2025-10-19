@@ -460,9 +460,60 @@ Available in `tests/test_helper/common.bash`:
 
 **Required:** Write regression test for every bug fix.
 
-### Test Documentation
+### Test Implementation
 
-Complete guide: `tests/TEST_FRAMEWORK.md`
+**Basic test structure:**
+
+```bash
+#!/usr/bin/env bats
+
+load ../test_helper/common
+
+setup() {
+    setup_test_dotfiles
+    cd "$TEST_DOTFILES_DIR"
+}
+
+teardown() {
+    teardown_test_dotfiles
+}
+
+@test "descriptive test name" {
+    # Arrange: Set up test conditions
+    create_mock_backups 5 1
+    
+    # Act: Run the code being tested  
+    run ./dot health
+    
+    # Assert: Verify results
+    assert_success
+    assert_output --partial "5 backups"
+}
+```
+
+**Available assertions** (from bats-assert, bats-support, bats-file):
+
+- `assert_success` / `assert_failure` - Exit codes
+- `assert_equal "expected" "actual"` - Exact match
+- `assert_output --partial "text"` - Substring match
+- `assert_output --regexp "pattern"` - Regex match
+- `refute_output --partial "text"` - Does not contain
+- `assert_file_exist "path"` - File checks
+- `assert_dir_exist "path"` - Directory checks
+
+**Custom helpers** (from `tests/test_helper/common.bash`):
+
+- `setup_test_dotfiles` - Create isolated test environment
+- `create_mock_backups COUNT SIZE_MB` - Generate test backups
+- `source_dot_script` - Load dot script functions
+- `assert_in_range VALUE MIN MAX` - Numeric validation
+
+**Test isolation principles:**
+
+- Each test must be independent  
+- Use `setup()` / `teardown()` hooks
+- Don't rely on test execution order
+- Tests should pass when run individually or in suite
 
 ---
 

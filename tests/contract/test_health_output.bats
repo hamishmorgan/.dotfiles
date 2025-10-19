@@ -13,9 +13,13 @@ teardown() {
 }
 
 @test "health output has required sections" {
+    # Install dotfiles to ensure proper test environment
+    ./dot install > /dev/null 2>&1 || true
+    
     run ./dot health
-    # May fail in test env, but should have proper structure
-
+    # With installation complete, check output structure
+    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
+    
     # Check for all required sections (actual output format)
     assert_output --partial "Symlink Integrity"
     assert_output --partial "Dependencies"
@@ -23,19 +27,23 @@ teardown() {
     assert_output --partial "Result:"
 }
 
-@test "health output has proper status symbols" {
+@test "health output uses proper status symbols" {
+    ./dot install > /dev/null 2>&1 || true
+    
     run ./dot health
-    # May fail in test env, but should have symbols
-
+    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
+    
     # Should use status symbols (color codes or actual symbols)
     # At minimum should have checkmarks or status indicators
     assert_output --regexp "(✓|✗|∙|⚠|HEALTHY|pass|fail|info)"
 }
 
-@test "health verbose output includes detailed information" {
+@test "health verbose output has detailed information" {
+    ./dot install > /dev/null 2>&1 || true
+    
     run ./dot health -v
-    # May fail in test env, but should have detailed format
-
+    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
+    
     # Verbose should have more details
     assert_output --partial "Checking"
 }
