@@ -521,7 +521,8 @@ Immediate updates ensure the document stays current and prevents repeated mistak
 
 - All Markdown files must pass markdownlint validation
 - All Bash scripts must pass shellcheck validation
-- Configuration files: `.markdownlint.yml`, `.shellcheckrc`
+- Configuration files: `.markdownlint.yml`, `.markdownlintignore`, `.shellcheckrc`
+- Submodules and external dependencies excluded via `.markdownlintignore`
 - Linting runs as prerequisite in CI before validation tests
 - **Always run linting after making changes to verify code quality**
 

@@ -34,7 +34,7 @@ jobs:
 
     - name: Run linting
       run: |
-        npx --yes markdownlint-cli@0.42.0 "**/*.md" --ignore node_modules
+        npx --yes markdownlint-cli@0.42.0 "**/*.md"
         shellcheck dot
 
   smoke-test:

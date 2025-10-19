@@ -1,0 +1,10 @@
+# Markdownlint ignore patterns
+# Submodules and external dependencies
+zsh/.oh-my-zsh/
+tests/bats/
+tests/test_helper/bats-support/
+tests/test_helper/bats-assert/
+
+# Node modules
+node_modules/
+
