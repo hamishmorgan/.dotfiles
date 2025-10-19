@@ -125,6 +125,8 @@ jobs:
   # PLATFORM VALIDATION WITH OS MATRIX
   validate-platform:
     name: Full Validation (${{ matrix.name }})
+    permissions:
+      contents: read
     runs-on: ${{ matrix.os }}
     needs: lint
     strategy:
