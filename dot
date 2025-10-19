@@ -462,7 +462,7 @@ check_dependencies() {
     for dep in $all_deps; do
         if ! command_exists "$dep"; then
             # Check if this is a required (common) or optional dependency
-            if [[ " $common_deps " =~ " $dep " ]]; then
+            if [[ " $common_deps " =~ \ $dep\  ]]; then
                 missing_deps+=("$dep")
                 [[ $verbosity -ge 1 ]] && log_error "Checking $dep... not found"
             else
