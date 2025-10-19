@@ -3353,8 +3353,9 @@ security_audit() {
     local secrets_found="false"
     local matches
     # Exclude docs (may reference patterns) and this function itself
-    matches=$(git -C "$DOTFILES_DIR" grep -E -n -i "${grep_args[@]}" 2>/dev/null | \
-              grep -v -E '^(README\\.md|AGENTS\\.md|DEVELOPMENT\\.md|tests/|dot:3[3-9][0-9][0-9]:)' || true)
+    matches=$(git -C "$DOTFILES_DIR" grep -P -n -i "${grep_args[@]}" -- . \
+              ':(exclude)README.md' ':(exclude)AGENTS.md' ':(exclude)DEVELOPMENT.md' \
+              ':(exclude)tests/' ':(exclude)dot' 2>/dev/null || true)
     
     if [[ -n "$matches" ]]; then
         echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Potential secret patterns found:"
@@ -3373,10 +3374,17 @@ security_audit() {
     
     # 2. Check file permissions on secret files
     show_numbered_section "2" "Checking Secret File Permissions"
+
+    # Collect secret files once to avoid duplicate find operations
+    local secret_files=()
+    while IFS= read -r f; do
+        secret_files+=("$f")
+    done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
+
     
     local insecure_files=()
     
-    while IFS= read -r secret_file; do
+    for secret_file in "${secret_files[@]}"; do
         [[ -z "$secret_file" ]] && continue
         local perms
         perms=$(stat -c "%a" "$secret_file" 2>/dev/null || stat -f "%OLp" "$secret_file" 2>/dev/null || echo "000")
@@ -3405,7 +3413,7 @@ security_audit() {
     
     local unignored_secrets=()
     local untracked_unignored=()
-    while IFS= read -r secret_file; do
+    for secret_file in "${secret_files[@]}"; do
         [[ -z "$secret_file" ]] && continue
         # Compute relative path for git commands
         local rel_path="${secret_file#"$DOTFILES_DIR"/}"
@@ -3422,7 +3430,7 @@ security_audit() {
                 ((issues_found++))
             fi
         fi
-    done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
+    done
     
     if [[ ${#unignored_secrets[@]} -gt 0 ]]; then
         echo -e "   ${RED}${SYMBOL_ERROR}${NC} Secret files tracked in git:"
