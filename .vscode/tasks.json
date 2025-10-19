@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Run Smoke Tests",
+      "label": "Dev: Check (All Validation)",
       "type": "shell",
-      "command": "./tests/smoke-test.sh",
+      "command": "./dev/check",
       "problemMatcher": [],
       "group": {
         "kind": "test",
@@ -16,57 +16,100 @@
       }
     },
     {
-      "label": "Run Local CI",
+      "label": "Dev: Lint (All)",
       "type": "shell",
-      "command": "./tests/run-local-ci.sh",
-      "problemMatcher": [],
-      "group": "test",
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "Run BATS Tests",
-      "type": "shell",
-      "command": "./tests/run-bats.sh",
-      "problemMatcher": [],
-      "group": "test",
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "Lint Markdown",
-      "type": "shell",
-      "command": "markdownlint '**/*.md'",
-      "problemMatcher": [],
-      "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "Lint Shell Scripts",
-      "type": "shell",
-      "command": "shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh",
-      "problemMatcher": [],
-      "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "Lint All",
-      "dependsOn": [
-        "Lint Markdown",
-        "Lint Shell Scripts"
+      "command": "./dev/lint",
+      "problemMatcher": [
+        "$markdownlint",
+        "$shellcheck"
       ],
-      "problemMatcher": [],
       "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Dev: Test (Smoke + BATS)",
+      "type": "shell",
+      "command": "./dev/test",
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Dev: Lint Markdown",
+      "type": "shell",
+      "command": "./dev/lint-markdown",
+      "problemMatcher": "$markdownlint",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Dev: Lint Shell Scripts",
+      "type": "shell",
+      "command": "./dev/lint-shell",
+      "problemMatcher": "$shellcheck",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Dev: Smoke Tests",
+      "type": "shell",
+      "command": "./dev/smoke",
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Dev: BATS Tests",
+      "type": "shell",
+      "command": "./dev/bats",
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Dev: Local CI",
+      "type": "shell",
+      "command": "./dev/ci",
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Dev: Setup Environment",
+      "type": "shell",
+      "command": "./dev/setup",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Dev: Clean",
+      "type": "shell",
+      "command": "./dev/clean",
+      "problemMatcher": [],
       "presentation": {
         "reveal": "always",
         "panel": "shared"

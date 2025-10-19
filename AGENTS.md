@@ -966,10 +966,36 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 
 ## File Organization
 
-- Package-specific files go in their respective directories (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/)
-- Scripts (`dot`) remain in root
-- Configuration files use dot-prefixed names
+- **User tool**: `dot` script in root
+- **Development tools**: `dev/` directory (atomic and composite workflow commands)
+- **Package files**: Package-specific directories (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/, fish/)
+- **Test suites**: `tests/` directory (BATS tests, test helpers, CI infrastructure)
+- **Configuration**: Dot-prefixed names (`.gitconfig`, `.zshrc`, etc.)
 - `.gitignore` is project-specific, not managed by stow
+
+### Development Directory (`dev/`)
+
+Contains atomic and composite commands for development workflow:
+
+**Atomic commands** (single responsibility):
+
+- `dev/lint-markdown` - Markdown linting only
+- `dev/lint-shell` - Shell script linting only
+- `dev/smoke` - Smoke tests only
+- `dev/bats` - BATS tests only
+- `dev/ci` - Local CI only
+- `dev/setup` - Development environment setup
+- `dev/clean` - Clean temporary files
+
+**Composite commands** (orchestration):
+
+- `dev/lint` - All linting (calls lint-markdown && lint-shell)
+- `dev/test` - All tests (calls smoke && bats)
+- `dev/check` - Complete validation (calls lint && test && ci)
+- `dev/help` - Show available commands
+
+**Design principle**: Atomic commands do one thing, composite commands orchestrate multiple atomic commands.
+This enables flexible workflows: use atomic commands for fast iteration, composite for comprehensive checks.
 
 ### Stow Ignore Files
 
@@ -1230,29 +1256,47 @@ Phase 2 optimizations (Issue #22) consolidated BATS tests:
 
 ## Quick Reference
 
+### User Commands
+
 | Task | Command | Time |
 |------|---------|------|
 | Install dotfiles | `./dot install` | 1-2m |
 | Update dotfiles | `./dot update` | 1-2m |
 | Check health | `./dot health` | instant |
 | Check status | `./dot status` | instant |
-| Smoke test | `./tests/smoke-test.sh` | 30s |
-| Full local CI | `./tests/run-local-ci.sh` | 2-3m |
-| Lint Markdown | `markdownlint "**/*.md"` | 5s |
-| Lint Bash | `shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh` | 5s |
+
+### Development Commands
+
+| Task | Command | Time |
+|------|---------|------|
+| Complete validation | `./dev/check` | 3-4m |
+| All linting | `./dev/lint` | 10s |
+| All tests | `./dev/test` | 1m |
+| Lint Markdown | `./dev/lint-markdown` | 5s |
+| Lint Shell | `./dev/lint-shell` | 5s |
+| Smoke tests | `./dev/smoke` | 30s |
+| BATS tests | `./dev/bats` | 30s |
+| Local CI | `./dev/ci` | 2-3m |
+| Setup dev env | `./dev/setup` | varies |
+| Show all commands | `./dev/help` | instant |
+
+### GitHub Commands
+
+| Task | Command | Time |
+|------|---------|------|
 | Monitor CI | `gh pr checks <PR>` | instant |
 | View CI logs | `gh run view --log-failed` | instant |
 
 ## Common Tasks
 
+### User Workflow
+
 - Installation: `./dot install` (add `-v` or `-vv` for more detail)
 - Update: `./dot update` (add `-v` or `-vv` for more detail)
 - Status check: `./dot status`
 - Health check: `./dot health` (add `-v` for detailed output)
-- Linting: `markdownlint "**/*.md"` and `shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile`
 - Package management: `stow --verbose --restow --dir=. --target=$HOME package_name`
 - Backup location: `backups/dotfiles-backup-*` (timestamped directories)
-- CI validation: `.github/workflows/validate.yml`
 
 **Verbosity Examples:**
 
@@ -1262,6 +1306,35 @@ Phase 2 optimizations (Issue #22) consolidated BATS tests:
 ./dot install -vv      # Show all files
 ./dot health           # Table format
 ./dot health -v        # Detailed checks
+```
+
+### Development Workflow
+
+- Complete validation: `./dev/check` (lint + test + ci)
+- Before commit: `./dev/lint && ./dev/test` (fast, ~1m)
+- Fast iteration: `./dev/lint-shell` or `./dev/smoke` (seconds)
+- Specific linting: `./dev/lint-markdown` or `./dev/lint-shell`
+- Specific testing: `./dev/smoke` or `./dev/bats`
+- Setup environment: `./dev/setup`
+- Show all commands: `./dev/help`
+
+**Development Examples:**
+
+```bash
+# First time setup
+./dev/setup
+
+# Fast iteration on shell code
+./dev/lint-shell        # ~5s
+
+# Before commit (recommended)
+./dev/lint && ./dev/test   # ~1m
+
+# Before push (comprehensive)
+./dev/check             # ~3-4m
+
+# Test specific platform
+./dev/ci alpine         # BSD-like coreutils
 ```
 
 ## Testing

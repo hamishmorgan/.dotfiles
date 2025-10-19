@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Lint all shell scripts
+
+set -o pipefail
+
+shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh
+

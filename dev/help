@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Show available development commands
+
+readonly BLUE='\033[0;34m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly NC='\033[0m'
+
+cat << EOF
+${BLUE}Development Commands${NC}
+
+${GREEN}Atomic Commands${NC} (single responsibility):
+  ${YELLOW}./dev/lint-markdown${NC}    Lint Markdown files (~5s)
+  ${YELLOW}./dev/lint-shell${NC}       Lint shell scripts (~5s)
+  ${YELLOW}./dev/smoke${NC}             Fast structural validation (~30s)
+  ${YELLOW}./dev/bats${NC}              BATS test suites (~30s)
+  ${YELLOW}./dev/ci${NC}                Local CI in containers (~2-3m)
+  ${YELLOW}./dev/setup${NC}             Setup development environment
+  ${YELLOW}./dev/clean${NC}             Clean temporary files
+
+${GREEN}Composite Commands${NC} (orchestration):
+  ${YELLOW}./dev/lint${NC}              All linting (markdown + shell) (~10s)
+  ${YELLOW}./dev/test${NC}              All tests (smoke + bats) (~1m)
+  ${YELLOW}./dev/check${NC}             Complete validation (lint + test + ci) (~3-4m)
+
+${GREEN}Utilities${NC}:
+  ${YELLOW}./dev/help${NC}              Show this help message
+
+${BLUE}Common Workflows${NC}:
+  ${GREEN}Fast iteration${NC}:       ./dev/lint-shell
+  ${GREEN}Before commit${NC}:        ./dev/lint && ./dev/test
+  ${GREEN}Before push${NC}:          ./dev/check
+
+${BLUE}Options${NC}:
+  ./dev/ci <platform>   Run CI for specific platform (ubuntu, alpine, bash32, macos)
+  ./dev/clean --docker  Also clean Docker/Podman cache
+
+${BLUE}Legacy Scripts${NC} (backward compatibility):
+  ./tests/smoke-test.sh    → ./dev/smoke
+  ./tests/run-bats.sh      → ./dev/bats
+  ./tests/run-local-ci.sh  → ./dev/ci
+
+EOF
+

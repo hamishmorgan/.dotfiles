@@ -498,16 +498,66 @@ Verify installation:
 ./dot health
 ```
 
+## Development
+
+Development workflow commands are available in the `dev/` directory.
+
+### Quick Start
+
+```bash
+# Setup development environment
+./dev/setup
+
+# Fast iteration
+./dev/lint-shell        # Check shell scripts only
+./dev/smoke             # Quick validation
+
+# Before commit
+./dev/lint && ./dev/test
+
+# Before push
+./dev/check             # Run everything (lint + test + ci)
+```
+
+### Available Commands
+
+**Atomic Commands** (single responsibility):
+
+```bash
+./dev/lint-markdown     # Lint Markdown files (~5s)
+./dev/lint-shell        # Lint shell scripts (~5s)
+./dev/smoke             # Fast structural validation (~30s)
+./dev/bats              # BATS test suites (~30s)
+./dev/ci                # Local CI in containers (~2-3m)
+./dev/setup             # Setup development environment
+./dev/clean             # Clean temporary files
+```
+
+**Composite Commands** (orchestration):
+
+```bash
+./dev/lint              # All linting (~10s)
+./dev/test              # All tests (~1m)
+./dev/check             # Complete validation (~3-4m)
+./dev/help              # Show all commands
+```
+
+### VSCode Integration
+
+Run tasks via Command Palette (`Ctrl+Shift+P` → `Tasks: Run Task`):
+
+- `Dev: Check (All Validation)` - Complete validation
+- `Dev: Lint (All)` - All linters
+- `Dev: Test (Smoke + BATS)` - All tests
+- Individual atomic commands also available
+
 ## Contributing
 
-Interested in contributing? See [DEVELOPMENT.md](DEVELOPMENT.md) for comprehensive developer documentation:
+See [DEVELOPMENT.md](DEVELOPMENT.md) for comprehensive developer documentation:
 
-- Development environment setup
 - Git workflow and branch strategy
-- Testing and CI/CD
+- Testing framework and CI/CD
 - Code standards and Bash 3.2 compatibility
-- Linting tools and commands
-- Debugging tips
 - Architecture and design principles
 
 For AI agents, see [AGENTS.md](AGENTS.md) for detailed guidelines.

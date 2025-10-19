@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Setup development environment
+
+set -o pipefail
+
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m'
+
+log_info() {
+  echo -e "${BLUE}●${NC} $1"
+}
+
+log_success() {
+  echo -e "${GREEN}✓${NC} $1"
+}
+
+log_warning() {
+  echo -e "${YELLOW}⚠${NC} $1"
+}
+
+log_error() {
+  echo -e "${RED}✗${NC} $1" >&2
+}
+
+check_command() {
+  local cmd="$1"
+  local package="$2"
+
+  if command -v "$cmd" &> /dev/null; then
+    log_success "$cmd installed"
+    return 0
+  else
+    log_warning "$cmd not found"
+    if [[ -n "$package" ]]; then
+      echo "  Install: $package"
+    fi
+    return 1
+  fi
+}
+
+main() {
+  log_info "Checking development dependencies..."
+  echo ""
+
+  local missing=0
+
+  # Required tools
+  check_command "shellcheck" "brew install shellcheck / apt-get install shellcheck" || ((missing++))
+  check_command "bats" "npm install -g bats (auto-installed by run-bats.sh)" || ((missing++))
+
+  # Optional but recommended
+  check_command "docker" "https://docs.docker.com/get-docker/" || check_command "podman" "brew install podman / apt-get install podman" || ((missing++))
+  check_command "gh" "brew install gh / apt-get install gh" || ((missing++))
+  check_command "jq" "brew install jq / apt-get install jq" || ((missing++))
+
+  echo ""
+
+  if [[ $missing -eq 0 ]]; then
+    log_success "All development dependencies installed"
+    echo ""
+    log_info "Ready to develop! Try:"
+    echo "  ./dev/check  - Run all validation"
+    echo "  ./dev/help   - Show all commands"
+  else
+    log_warning "$missing development dependencies missing"
+    echo ""
+    log_info "Core functionality works, but some dev commands may fail"
+  fi
+}
+
+main "$@"
+

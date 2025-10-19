@@ -315,43 +315,65 @@ function_name() {
 
 ## Testing
 
-### Local Testing
+### Development Workflow Commands
 
-**Before committing:**
+**Recommended workflow using `dev/` commands:**
 
 ```bash
-# Quick smoke tests (30 seconds)
-./tests/smoke-test.sh
+# Setup development environment (first time)
+./dev/setup
 
-# BATS regression tests (fast, catches bug regressions)
-bats tests/regression/
+# Fast iteration (shell code changes)
+./dev/lint-shell        # Just shellcheck (~5s)
+
+# Before commit
+./dev/lint && ./dev/test   # Lint + smoke + BATS (~1m)
+
+# Before push
+./dev/check             # Complete validation (~3-4m)
 ```
 
-**During development:**
+### Atomic Test Commands
+
+**Individual test operations:**
 
 ```bash
-# Run all BATS tests
-./tests/run-bats.sh
+# Linting
+./dev/lint-markdown     # Markdown files only (~5s)
+./dev/lint-shell        # Shell scripts only (~5s)
+./dev/lint              # All linting (~10s)
 
-# Or run specific test suites
-bats tests/unit/          # Unit tests
-bats tests/integration/   # Integration tests
-bats tests/contract/      # Output validation
+# Testing
+./dev/smoke             # Fast structural validation (~30s)
+./dev/bats              # All BATS test suites (~30s)
+./dev/test              # Smoke + BATS (~1m)
+
+# CI
+./dev/ci                # Full local CI (~2-3m)
+./dev/ci ubuntu         # Test specific platform
+./dev/ci alpine         # Alpine (BusyBox/BSD-like)
+./dev/ci bash32         # Bash 3.2 compatibility
 ```
 
-**Before pushing:**
+### Legacy Test Scripts
+
+For backward compatibility (CI uses these):
 
 ```bash
-# Full cross-platform tests (2-3 minutes, requires Docker or Podman)
-./tests/run-local-ci.sh
+./tests/smoke-test.sh      # Redirects to ./dev/smoke
+./tests/run-bats.sh        # Redirects to ./dev/bats
+./tests/run-local-ci.sh    # Redirects to ./dev/ci
 ```
 
-**Test specific platforms:**
+### Direct BATS Commands
+
+Run specific test suites directly:
 
 ```bash
-./tests/run-local-ci.sh ubuntu     # Ubuntu container test
-./tests/run-local-ci.sh alpine     # Alpine container test (BusyBox-based, non-GNU)
-./tests/run-local-ci.sh bash32     # Bash 3.2 compatibility test
+bats tests/regression/   # Bug regression tests
+bats tests/unit/         # Unit tests
+bats tests/integration/  # Integration tests
+bats tests/contract/     # Output validation
 ```
 
 ### Test Framework Organization
@@ -644,26 +666,43 @@ Key learnings from CI optimization:
 
 ## Linting
 
+### Development Commands
+
+**Recommended workflow:**
+
+```bash
+# Run all linting
+./dev/lint              # Markdown + Shell (~10s)
+
+# Individual linters
+./dev/lint-markdown     # Just Markdown files (~5s)
+./dev/lint-shell        # Just shell scripts (~5s)
+```
+
 ### Shellcheck
 
 Lints bash scripts for common issues:
 
 ```bash
-# Lint main script
-shellcheck dot
+# Via dev command (recommended)
+./dev/lint-shell
 
-# Lint all shell scripts
-find . -name "*.sh" -type f -exec shellcheck {} +
+# Direct invocation
+shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh
 
-# Check specific issue with source following
+# Check with source following
 shellcheck -x dot
 ```
 
 **Configuration:** `.shellcheckrc`
 
+Disables acceptable patterns for dotfiles:
+
 ```bash
-# Disable specific checks if needed
-disable=SC2016  # Example: disable single-quoted expression warning
+disable=SC1090  # Can't follow non-constant source
+disable=SC1091  # Not following external files
+disable=SC2034  # Variables unused (used by frameworks)
+disable=SC2231  # Quote expansions in for loop globs
 ```
 
 ### Markdownlint
@@ -671,14 +710,14 @@ disable=SC2016  # Example: disable single-quoted expression warning
 Lints markdown documentation:
 
 ```bash
-# Lint all markdown files
-markdownlint "**/*.md"
+# Via dev command (recommended)
+./dev/lint-markdown
+
+# Direct invocation
+npx --yes markdownlint-cli@0.42.0 "**/*.md"
 
 # Fix auto-fixable issues
-markdownlint "**/*.md" --fix
-
-# Lint specific file
-markdownlint README.md
+npx --yes markdownlint-cli@0.42.0 "**/*.md" --fix
 ```
 
 **Configuration:** `.markdownlint.yml`

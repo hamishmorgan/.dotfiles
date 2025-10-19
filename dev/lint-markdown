@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Lint all Markdown files
+
+set -o pipefail
+
+npx --yes markdownlint-cli@0.42.0 "**/*.md"
+
