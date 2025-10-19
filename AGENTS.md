@@ -16,6 +16,7 @@ Instructions for AI agents working with this dotfiles repository.
     - [Platform-Specific Installation](#platform-specific-installation)
   - [Documentation Standards](#documentation-standards)
   - [Code Standards](#code-standards)
+    - [Shell Script Style](#shell-script-style)
     - [Comments](#comments)
     - [Clean Code Principles](#clean-code-principles)
       - [1. Meaningful Names](#1-meaningful-names)
@@ -200,6 +201,288 @@ apk add stow git bash
   - Short forms work on all platforms
 - Use explicit error handling instead of `set -e` (controlled failure handling)
 - Enable bash safety features: `shopt -s nullglob extglob`
+
+### Shell Script Style
+
+Follow these style guidelines based on the [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html):
+
+**Shebang and Interpreter:**
+
+```bash
+#!/usr/bin/env bash
+# Or for dotfiles: #!/bin/bash
+```
+
+**File Structure:**
+
+1. Shebang line
+2. File header comment (brief description)
+3. Constants and global variables
+4. Helper functions
+5. Main logic or `main()` function
+6. Call to `main "$@"` (for scripts with multiple functions)
+
+**Formatting:**
+
+- **Indentation**: 2 spaces (no tabs)
+- **Line length**: 80 characters preferred, 120 maximum
+- **Function braces**: Opening brace on same line as function name
+
+```bash
+my_function() {
+  local arg="$1"
+  # function body
+}
+```
+
+**Naming Conventions:**
+
+- **Functions**: `lowercase_with_underscores`
+- **Local variables**: `lowercase_with_underscores`
+- **Global variables**: `lowercase_with_underscores` or `UPPERCASE` if readonly
+- **Constants**: `UPPERCASE_WITH_UNDERSCORES`
+- **Environment variables**: `UPPERCASE_WITH_UNDERSCORES`
+
+```bash
+readonly MAX_RETRIES=3
+local retry_count=0
+MY_GLOBAL_VAR="value"
+```
+
+**Quoting:**
+
+- **Always quote** variables unless you specifically need word splitting
+- Quote command substitutions
+- Quote strings with spaces or special characters
+
+```bash
+# GOOD
+local file="$1"
+echo "Processing: $file"
+result="$(command "$arg")"
+
+# BAD: Unquoted variables
+local file=$1
+echo Processing: $file
+result=$(command $arg)
+```
+
+**Command Substitution:**
+
+Use `$()` instead of backticks:
+
+```bash
+# GOOD
+result="$(command)"
+count="$(echo "$list" | wc -l)"
+
+# BAD: Backticks are deprecated
+result=`command`
+```
+
+**Test and Conditionals:**
+
+- Use `[[ ... ]]` for tests (bash builtin, more powerful)
+- Avoid `[ ... ]` (POSIX test, less features)
+- Avoid `test` command
+
+```bash
+# GOOD
+if [[ -f "$file" ]]; then
+  echo "File exists"
+fi
+
+if [[ "$var" =~ ^[0-9]+$ ]]; then
+  echo "Numeric"
+fi
+
+# ACCEPTABLE but less powerful
+if [ -f "$file" ]; then
+  echo "File exists"
+fi
+```
+
+**Arithmetic:**
+
+Use `(( ))` for arithmetic operations:
+
+```bash
+# GOOD
+(( count++ ))
+(( total = count * 10 ))
+if (( count > 10 )); then
+  echo "Too many"
+fi
+
+# BAD: Using expr
+total=$(expr $count \* 10)
+
+# BAD: Using $[]
+total=$[ count * 10 ]
+```
+
+**Arrays:**
+
+Use bash arrays for lists:
+
+```bash
+# GOOD
+files=("file1.txt" "file2.txt" "file3.txt")
+for file in "${files[@]}"; do
+  process "$file"
+done
+
+# Access array elements
+first="${files[0]}"
+all_files="${files[*]}"  # Space-separated string
+all_files="${files[@]}"  # Separate arguments
+```
+
+**Local Variables:**
+
+Always use `local` for function variables:
+
+```bash
+my_function() {
+  local input="$1"
+  local result
+  
+  # Separate declaration from command substitution
+  result="$(compute "$input")"
+  if [[ $? -ne 0 ]]; then
+    return 1
+  fi
+  
+  echo "$result"
+}
+```
+
+**Function Placement:**
+
+Place all functions near the top of the file after constants:
+
+```bash
+#!/bin/bash
+# Script description
+
+readonly CONSTANT="value"
+
+helper_function() {
+  # implementation
+}
+
+main_function() {
+  # implementation
+}
+
+main "$@"
+```
+
+**STDOUT vs STDERR:**
+
+Send errors to STDERR:
+
+```bash
+echo "Normal output"                    # STDOUT
+echo "Error message" >&2                # STDERR
+log_error "Failed to process"           # Function sends to STDERR
+
+# Redirect in functions
+log_error() {
+  echo "[ERROR] $*" >&2
+}
+```
+
+**Return Value Checking:**
+
+Always check return values:
+
+```bash
+# GOOD
+if ! command arg1 arg2; then
+  log_error "Command failed"
+  return 1
+fi
+
+# Check specific exit code
+command arg1 arg2
+if [[ $? -eq 0 ]]; then
+  log_success "Success"
+fi
+
+# Pipeline status
+tar -cf - ./* | (cd "$dir" && tar -xf -)
+if [[ ${PIPESTATUS[0]} -ne 0 || ${PIPESTATUS[1]} -ne 0 ]]; then
+  log_error "Pipeline failed"
+fi
+```
+
+**Prefer Builtins:**
+
+Use shell builtins over external commands when possible:
+
+```bash
+# GOOD: Builtin parameter expansion
+filename="${path##*/}"        # basename
+dirname="${path%/*}"          # dirname
+extension="${file##*.}"       # file extension
+no_ext="${file%.*}"          # remove extension
+
+# ACCEPTABLE but slower: External commands
+filename="$(basename "$path")"
+dirname="$(dirname "$path")"
+```
+
+**Avoid in Scripts:**
+
+- `alias` (use functions instead)
+- `eval` (security risk, hard to debug)
+- `set -e` (use explicit error checking)
+
+**Main Function Pattern:**
+
+For scripts with multiple functions, use a `main()` function:
+
+```bash
+#!/bin/bash
+# Script description
+
+readonly VERSION="1.0.0"
+
+process_file() {
+  local file="$1"
+  # implementation
+}
+
+show_help() {
+  cat << EOF
+Usage: script.sh [options]
+Options:
+  -h    Show help
+EOF
+}
+
+main() {
+  local file=""
+  
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -h|--help)
+        show_help
+        return 0
+        ;;
+      *)
+        file="$1"
+        shift
+        ;;
+    esac
+  done
+  
+  process_file "$file"
+}
+
+main "$@"
+```
 
 ### Comments
 
