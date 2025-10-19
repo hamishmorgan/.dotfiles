@@ -34,34 +34,36 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 
 ```text
 .dotfiles/
-├── git/           # Git configuration and aliases
-│   ├── .gitconfig.template      # Git config template
-│   ├── .gitconfig.secret.example  # Secret config example
-│   └── .gitconfig.secret      # Secret config (git-ignored)
-├── zsh/           # Zsh configuration with Oh My Zsh
-│   ├── .zshrc
-│   ├── .zprofile
-│   ├── .zshrc.osx
-│   ├── .zshrc.linux
-│   └── .oh-my-zsh/  # Oh My Zsh submodule
-├── tmux/          # Tmux configuration
-├── gh/            # GitHub CLI configuration
-│   └── .config/gh/
-│       ├── config.yml.template
-│       ├── config.yml.secret.example
-│       └── config.yml.secret   # Secret config (git-ignored)
-├── gnuplot/       # GNU Plot configuration
-├── bash/          # Bash configuration
-│   ├── .bashrc
-│   └── .bash_profile
-├── fish/          # Fish shell configuration
-│   └── .config/fish/
-│       ├── config.fish
-│       ├── config.linux.fish
-│       ├── config.osx.fish
-│       └── functions/
-│           ├── d.fish           # Dotfiles wrapper function
-│           └── fish_prompt.fish # Custom prompt
+├── packages/      # All stowable configuration packages
+│   ├── git/           # Git configuration and aliases
+│   │   ├── .gitconfig.template      # Git config template
+│   │   ├── .gitconfig.secret.example  # Secret config example
+│   │   └── .gitconfig.secret      # Secret config (git-ignored)
+│   ├── zsh/           # Zsh configuration with Oh My Zsh
+│   │   ├── .zshrc
+│   │   ├── .zprofile
+│   │   ├── .zshrc.osx
+│   │   ├── .zshrc.linux
+│   │   └── .oh-my-zsh/  # Oh My Zsh submodule
+│   ├── tmux/          # Tmux configuration
+│   ├── gh/            # GitHub CLI configuration
+│   │   └── .config/gh/
+│   │       ├── config.yml.template
+│   │       ├── config.yml.secret.example
+│   │       └── config.yml.secret   # Secret config (git-ignored)
+│   ├── gnuplot/       # GNU Plot configuration
+│   ├── bash/          # Bash configuration
+│   │   ├── .bashrc
+│   │   └── .bash_profile
+│   ├── fish/          # Fish shell configuration
+│   │   └── .config/fish/
+│   │       ├── config.fish
+│   │       ├── config.linux.fish
+│   │       ├── config.osx.fish
+│   │       └── functions/
+│   │           ├── d.fish           # Dotfiles wrapper function
+│   │           └── fish_prompt.fish # Custom prompt
+│   └── system/        # System-wide files
 ├── dot            # Main dotfiles management script
 └── README.md      # This file
 ```

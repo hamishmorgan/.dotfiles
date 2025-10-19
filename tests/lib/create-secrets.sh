@@ -11,45 +11,45 @@ create_test_secrets() {
     log_test_info "Creating test secret files..."
     
     # Git secrets
-    cat > git/.gitconfig.secret << 'EOF'
+    cat > packages/git/.gitconfig.secret << 'EOF'
 [user]
 	name = Test User
 	email = test@example.com
 EOF
     
-    if [[ -f git/.gitconfig.secret ]]; then
-        log_test_success "Created git/.gitconfig.secret"
+    if [[ -f packages/git/.gitconfig.secret ]]; then
+        log_test_success "Created packages/git/.gitconfig.secret"
     else
-        log_test_error "Failed to create git/.gitconfig.secret"
+        log_test_error "Failed to create packages/git/.gitconfig.secret"
         return 1
     fi
     
     # GitHub CLI secrets
-    mkdir -p gh/.config/gh
+    mkdir -p packages/gh/.config/gh
     
-    cat > gh/.config/gh/config.yml.secret << 'EOF'
+    cat > packages/gh/.config/gh/config.yml.secret << 'EOF'
 editor: vim
 git_protocol: ssh
 EOF
     
-    if [[ -f gh/.config/gh/config.yml.secret ]]; then
-        log_test_success "Created gh/.config/gh/config.yml.secret"
+    if [[ -f packages/gh/.config/gh/config.yml.secret ]]; then
+        log_test_success "Created packages/gh/.config/gh/config.yml.secret"
     else
-        log_test_error "Failed to create gh/.config/gh/config.yml.secret"
+        log_test_error "Failed to create packages/gh/.config/gh/config.yml.secret"
         return 1
     fi
     
-    cat > gh/.config/gh/hosts.yml.secret << 'EOF'
+    cat > packages/gh/.config/gh/hosts.yml.secret << 'EOF'
 github.com:
     user: testuser
     oauth_token: test_token_12345
     git_protocol: ssh
 EOF
     
-    if [[ -f gh/.config/gh/hosts.yml.secret ]]; then
-        log_test_success "Created gh/.config/gh/hosts.yml.secret"
+    if [[ -f packages/gh/.config/gh/hosts.yml.secret ]]; then
+        log_test_success "Created packages/gh/.config/gh/hosts.yml.secret"
     else
-        log_test_error "Failed to create gh/.config/gh/hosts.yml.secret"
+        log_test_error "Failed to create packages/gh/.config/gh/hosts.yml.secret"
         return 1
     fi
     

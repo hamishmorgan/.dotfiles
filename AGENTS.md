@@ -72,7 +72,7 @@ Instructions for AI agents working with this dotfiles repository.
 
 ## Project Context
 
-This repository contains dotfiles managed with GNU Stow. Files are organized into packages:
+This repository contains dotfiles managed with GNU Stow. Files are organized into packages under the `packages/` directory:
 
 - **system**: System-wide configuration files (`.stow-global-ignore`)
 - **git**: Git configuration and global ignore patterns
@@ -85,6 +85,13 @@ This repository contains dotfiles managed with GNU Stow. Files are organized int
 
 Template-based secrets management separates public templates from private secret configurations.
 The `system` package is stowed first to ensure `.stow-global-ignore` is in place before other packages.
+
+**Repository Structure:**
+
+- `packages/`: Stowable configuration packages
+- `dev/`: Development tools (linting, testing, CI)
+- `tests/`: Test infrastructure (BATS, smoke tests, CI)
+- `dot`: Main user-facing script
 
 **Documentation Structure:**
 
@@ -968,7 +975,7 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 
 - **User tool**: `dot` script in root
 - **Development tools**: `dev/` directory (atomic and composite workflow commands)
-- **Package files**: Package-specific directories (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/, fish/)
+- **Package files**: `packages/` directory (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/, fish/)
 - **Test suites**: `tests/` directory (BATS tests, test helpers, CI infrastructure)
 - **Configuration**: Dot-prefixed names (`.gitconfig`, `.zshrc`, etc.)
 - `.gitignore` is project-specific, not managed by stow
