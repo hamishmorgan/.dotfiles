@@ -3,24 +3,39 @@
 
 # Load BATS helper libraries
 # These should be installed system-wide:
-# macOS: brew install bats-core (includes all helpers)
-# Ubuntu: sudo apt-get install bats-assert bats-support bats-file
+# macOS: brew install bats-core && brew tap bats-core/bats-core && brew install bats-support bats-assert bats-file
+# Ubuntu: sudo apt-get install bats bats-assert bats-support bats-file
 
-# Try to load from common locations
+# Determine brew prefix on macOS (if applicable)
+if command -v brew &>/dev/null; then
+    BREW_PREFIX="$(brew --prefix 2>/dev/null || echo "/usr/local")"
+else
+    BREW_PREFIX="/usr/local"
+fi
+
+# Try to load bats-support from various locations
 if [[ -f "/usr/lib/bats/bats-support/load.bash" ]]; then
     load "/usr/lib/bats/bats-support/load"
+elif [[ -f "$BREW_PREFIX/lib/bats-support/load.bash" ]]; then
+    load "$BREW_PREFIX/lib/bats-support/load"
 elif [[ -f "/usr/local/lib/bats-support/load.bash" ]]; then
     load "/usr/local/lib/bats-support/load"
 fi
 
+# Try to load bats-assert
 if [[ -f "/usr/lib/bats/bats-assert/load.bash" ]]; then
     load "/usr/lib/bats/bats-assert/load"
+elif [[ -f "$BREW_PREFIX/lib/bats-assert/load.bash" ]]; then
+    load "$BREW_PREFIX/lib/bats-assert/load"
 elif [[ -f "/usr/local/lib/bats-assert/load.bash" ]]; then
     load "/usr/local/lib/bats-assert/load"
 fi
 
+# Try to load bats-file
 if [[ -f "/usr/lib/bats/bats-file/load.bash" ]]; then
     load "/usr/lib/bats/bats-file/load"
+elif [[ -f "$BREW_PREFIX/lib/bats-file/load.bash" ]]; then
+    load "$BREW_PREFIX/lib/bats-file/load"
 elif [[ -f "/usr/local/lib/bats-file/load.bash" ]]; then
     load "/usr/local/lib/bats-file/load"
 fi

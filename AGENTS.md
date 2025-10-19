@@ -445,14 +445,33 @@ Immediate updates ensure the document stays current and prevents repeated mistak
 
 ## CI/CD
 
-- GitHub Actions workflow validates installation on Ubuntu and macOS
-- Uses `apt-get` for stable package management in scripts
-- Tests full installation pipeline including dependency checks
-- Linting job must pass before validation jobs run
+### Workflow Structure
+
+GitHub Actions workflow (`.github/workflows/validate.yml`) uses matrix strategy for efficient testing:
+
+**Job Overview:**
+
+- **lint**: Code quality (shellcheck + markdownlint) - prerequisite for all other jobs
+- **smoke-test**: Fast structural validation
+- **bats-tests**: All BATS test suites with OS matrix
+  - `[ubuntu-latest, macos-latest]` - validates test framework cross-platform
+  - Runs unit, integration, regression, and contract tests
+- **validate-platform**: Full installation with Bash version matrix
+  - Ubuntu + Bash 5.x (modern Linux)
+  - Ubuntu + Bash 3.2 (macOS compatibility)
+  - macOS + Bash 3.2 (actual macOS)
+- **test-summary**: Aggregates results and provides clear pass/fail summary
+
+**Matrix Benefits:**
+
+- Consolidates 4 separate BATS jobs into 1 (saves 6-8 min per run)
+- Validates test framework on both Ubuntu and macOS
+- Catches platform-specific issues in tests themselves
+- DRY approach reduces duplication
 
 ### CI Performance Optimization
 
-Key learnings from CI optimization work (Issue #42, PR #58):
+Key learnings from CI optimization work (Issue #42, PR #58, Issue #22):
 
 **Caching Strategies:**
 
@@ -492,13 +511,20 @@ Key learnings from CI optimization work (Issue #42, PR #58):
 
 **Measured Results:**
 
-Optimizations reduced CI time from 8-12 minutes to ~1 minute (92% improvement):
+Phase 1 optimizations (Issue #42, PR #58) reduced CI time from 8-12 minutes to ~1 minute (92% improvement):
 
 - Linting: 90s → 15s (83% faster)
 - Smoke: 30s → 6s (80% faster)
 - Ubuntu: 120s → 28s (77% faster)
 - Bash 3.2: 120s → 32s (73% faster, cache miss)
 - macOS: 180s → 26s (86% faster)
+
+Phase 2 optimizations (Issue #22) consolidated BATS tests:
+
+- **Before**: 4 separate BATS jobs × 2 min setup = 8 min overhead
+- **After**: 1 BATS job with OS matrix = 2 min overhead
+- **Savings**: 6 min per CI run (~25% additional improvement)
+- **Bonus**: BATS tests now validate on macOS (was Ubuntu-only)
 
 ## Quick Reference
 

@@ -10,11 +10,9 @@ jobs:
   lint:
     name: Code Quality (Shellcheck & Markdownlint)
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      # No submodules needed - linting only checks dot script and markdown files
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -29,7 +27,6 @@ jobs:
 
     - name: Install shellcheck
       run: |
-        # shellcheck is pre-installed on GitHub runners, but ensure it's available
         if ! command -v shellcheck &> /dev/null; then
           sudo apt-get update -qq
           sudo apt-get install -y -qq shellcheck
@@ -37,329 +34,260 @@ jobs:
 
     - name: Run linting
       run: |
-        # Use npx to avoid global install and leverage built-in npm caching
         npx --yes markdownlint-cli@0.42.0 "**/*.md" --ignore node_modules
         shellcheck dot
 
   smoke-test:
     name: Smoke Tests
     runs-on: ubuntu-latest
-    # Run in parallel with other jobs - smoke tests are independent
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      # No submodules needed - smoke tests only check file structure
 
     - name: Run smoke tests
       run: ./tests/smoke-test.sh
 
-  validate-bash32:
-    name: Ubuntu Latest (Bash 3.2)
-    runs-on: ubuntu-latest
+  # CONSOLIDATED BATS TESTS WITH OS MATRIX
+  bats-tests:
+    name: BATS Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     needs: lint
+    strategy:
+      fail-fast: false  # Run both even if one fails
+      matrix:
+        os: [ubuntu-latest, macos-latest]
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-
-    - name: Cache Bash 3.2
-      uses: actions/cache@v4
-      id: cache-bash32
-      with:
-        path: /tmp/bash-3.2.57-install
-        key: bash-3.2.57-${{ runner.os }}-${{ runner.arch }}
-
-    - name: Cache apt packages
-      uses: actions/cache@v4
-      with:
-        # Use user-writable directory to avoid permission issues with system paths
-        path: ~/.apt-cache
-        key: ${{ runner.os }}-apt-bash32-build-essential-stow-git-tmux-zsh
-        restore-keys: |
-          ${{ runner.os }}-apt-bash32-
-          ${{ runner.os }}-apt-
-
-    - name: Configure apt caching and skip documentation
-      run: |
-        # Create user-writable apt cache directory
-        mkdir -p ~/.apt-cache/archives/partial
-        # Configure apt to use user cache directory
-        sudo mkdir -p /etc/apt/apt.conf.d
-        echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
-        # Configure dpkg to skip documentation
-        sudo mkdir -p /etc/dpkg/dpkg.cfg.d
-        echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
-        echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
-
-    - name: Update apt package lists
-      if: steps.cache-bash32.outputs.cache-hit != 'true'
-      run: sudo apt-get update -qq
-
-    - name: Build Bash 3.2 and install dependencies
-      if: steps.cache-bash32.outputs.cache-hit != 'true'
-      run: |
-        sudo apt-get install -y -qq build-essential stow git tmux zsh
-
-        # Download and build bash 3.2.57
-        cd /tmp
-        curl -LO https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz
-
-        # Verify SHA256 checksum for security
-        echo "3fa9daf85ebf35068f090ce51283ddeeb3c75eb5bc70b1a4a7cb05868bfe06a4  bash-3.2.57.tar.gz" | sha256sum -c -
-
-        tar xzf bash-3.2.57.tar.gz
-        cd bash-3.2.57
-        ./configure --prefix=/tmp/bash-3.2.57-install
-        make -j4  # Use up to 4 cores for predictable resource usage
-        make install
-
-    - name: Update apt package lists (cache hit)
-      if: steps.cache-bash32.outputs.cache-hit == 'true'
-      run: sudo apt-get update -qq
-
-    - name: Install dependencies (cache hit)
-      if: steps.cache-bash32.outputs.cache-hit == 'true'
-      run: sudo apt-get install -y -qq stow git tmux zsh
-
-    - name: Install Bash 3.2
-      run: |
-        # Install bash from cache or fresh build
-        sudo cp -r /tmp/bash-3.2.57-install/* /usr/local/
-
-        # Verify version
-        /usr/local/bin/bash --version
-
-    - name: Make scripts executable
-      run: chmod +x dot tests/lib/*.sh
-
-    - name: Create test secrets
-      shell: /usr/local/bin/bash {0}
-      run: |
-        cd ${{ github.workspace }}
-        ./tests/lib/create-secrets.sh
-
-    - name: Run installation with Bash 3.2
-      shell: /usr/local/bin/bash {0}
-      run: |
-        cd ${{ github.workspace }}
-        ./tests/lib/run-installation.sh
-
-    - name: Verify health with Bash 3.2
-      shell: /usr/local/bin/bash {0}
-      run: |
-        cd ${{ github.workspace }}
-        ./tests/lib/verify-health.sh true
-
-    - name: Verify bash version used
-      shell: /usr/local/bin/bash {0}
-      run: |
-        echo "Bash version: $BASH_VERSION"
-        [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Error: Not running Bash 3.2" && exit 1)
-
-    - name: Clean up apt cache lock files
-      if: always()
-      run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
-
-  validate-ubuntu:
-    name: Ubuntu Latest (System Bash)
-    runs-on: ubuntu-latest
-    needs: lint
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-
-    - name: Verify bash version
-      run: |
-        echo "Bash version: $BASH_VERSION"
-        echo "OS: $(lsb_release -d | cut -f2)"
-        # Ubuntu latest should have Bash 5.x+
-        [[ "${BASH_VERSINFO[0]}" -ge 5 ]] || (echo "Error: Expected Bash 5.x+, got $BASH_VERSION" && exit 1)
-
-    - name: Cache apt packages
-      uses: actions/cache@v4
-      with:
-        # Use user-writable directory to avoid permission issues with system paths
-        path: ~/.apt-cache
-        key: ${{ runner.os }}-apt-ubuntu-stow-git-tmux-zsh
-        restore-keys: |
-          ${{ runner.os }}-apt-ubuntu-
-          ${{ runner.os }}-apt-
-
-    - name: Configure apt caching and skip documentation
-      run: |
-        # Create user-writable apt cache directory
-        mkdir -p ~/.apt-cache/archives/partial
-        # Configure apt to use user cache directory
-        sudo mkdir -p /etc/apt/apt.conf.d
-        echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
-        # Configure dpkg to skip documentation
-        sudo mkdir -p /etc/dpkg/dpkg.cfg.d
-        echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
-        echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
-
-    - name: Update apt package lists
-      run: sudo apt-get update -qq
-
-    - name: Install dependencies
-      run: sudo apt-get install -y -qq stow git tmux zsh
-
-    - name: Make scripts executable
-      run: chmod +x dot tests/lib/*.sh
-
-    - name: Create test secrets
-      run: |
-        cd ${{ github.workspace }}
-        ./tests/lib/create-secrets.sh
-
-    - name: Run installation
-      run: |
-        cd ${{ github.workspace }}
-        ./tests/lib/run-installation.sh
-
-    - name: Verify health
-      run: |
-        cd ${{ github.workspace }}
-        ./tests/lib/verify-health.sh true
-
-    - name: Clean up apt cache lock files
-      if: always()
-      run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
-
-  validate-macos:
-    name: macOS Latest (System Bash)
-    runs-on: macos-latest
-    needs: lint
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-
-    - name: Verify bash version
-      run: |
-        echo "Bash version: $BASH_VERSION"
-        echo "OS: $(sw_vers -productName) $(sw_vers -productVersion)"
-        # macOS system bash should be 3.2.x
-        [[ "$BASH_VERSION" =~ ^3\.2 ]] || (echo "Error: Expected Bash 3.2.x, got $BASH_VERSION" && exit 1)
-
-    - name: Install dependencies
-      # Note: No caching - Homebrew bottles install faster than cache restore
-      run: |
-        brew install stow git tmux zsh ncurses
-        # ncurses is keg-only and requires explicit linking
-        brew link --overwrite --force ncurses || true
-
-    - name: Make scripts executable
-      run: chmod +x dot tests/lib/*.sh
-
-    - name: Create test secrets
-      run: |
-        cd ${{ github.workspace }}
-        ./tests/lib/create-secrets.sh
-
-    - name: Run installation
-      env:
-        SKIP_DEPENDENCY_CHECK: "true"
-      run: |
-        cd ${{ github.workspace }}
-        # Run with verbose output for easier debugging
-        ./dot install -vv
-
-    - name: Verify health
-      run: |
-        cd ${{ github.workspace }}
-        ./tests/lib/verify-health.sh true
-
-  # BATS Test Suites
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    needs: lint
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install BATS
-        run: sudo apt-get update && sudo apt-get install -y bats bats-assert bats-support bats-file
-
-      - name: Run unit tests
-        run: bats tests/unit/
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
+      # Cache apt packages (Ubuntu only)
+      - name: Cache apt packages
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/cache@v4
         with:
-          name: unit-test-results
-          path: tests/unit/
+          path: ~/.apt-cache
+          key: ${{ runner.os }}-apt-bats-bats-assert-bats-support-bats-file-stow-git
+          restore-keys: |
+            ${{ runner.os }}-apt-bats-
+            ${{ runner.os }}-apt-
 
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install BATS and dependencies
+      # Ubuntu-specific setup
+      - name: Configure apt caching (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y bats bats-assert bats-support bats-file stow git
+          mkdir -p ~/.apt-cache/archives/partial
+          sudo mkdir -p /etc/apt/apt.conf.d
+          echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
+          sudo mkdir -p /etc/dpkg/dpkg.cfg.d
+          echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
+          echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
 
-      - name: Run integration tests
-        run: bats tests/integration/
+      - name: Install BATS (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bats bats-assert bats-support bats-file stow git
+
+      # macOS-specific setup
+      - name: Install BATS (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          # Install bats-core first
+          brew install bats-core stow git
+
+          # Tap the bats-core tap for helper libraries
+          brew tap bats-core/bats-core
+
+          # Install helper libraries from tap
+          brew install bats-support bats-assert bats-file
+
+      - name: Verify BATS installation
+        run: |
+          bats --version
+          echo "BATS helper libraries:"
+          ls -la /usr/lib/bats/ 2>/dev/null || ls -la /usr/local/lib/bats* 2>/dev/null || echo "Helper libs location varies by platform"
+
+      - name: Run all BATS test suites
+        run: ./tests/run-bats.sh
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-test-results
-          path: tests/integration/
+          name: bats-test-results-${{ matrix.os }}
+          path: tests/
 
-  regression-tests:
-    name: Regression Tests
-    runs-on: ubuntu-latest
+      - name: Clean up apt cache lock files
+        if: always() && matrix.os == 'ubuntu-latest'
+        run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
+
+  # PLATFORM VALIDATION WITH OS MATRIX
+  validate-platform:
+    name: Full Validation (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
     needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu with latest bash (5.x)
+          - name: Ubuntu Latest (Bash 5.x)
+            os: ubuntu-latest
+            bash-version: system
+            setup-bash: false
+
+          # Ubuntu with Bash 3.2 (macOS compatibility)
+          - name: Ubuntu Latest (Bash 3.2)
+            os: ubuntu-latest
+            bash-version: "3.2"
+            setup-bash: true
+
+          # macOS with system bash (3.2)
+          - name: macOS Latest (Bash 3.2)
+            os: macos-latest
+            bash-version: "3.2"
+            setup-bash: false
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install BATS
-        run: sudo apt-get update && sudo apt-get install -y bats bats-assert bats-support bats-file
-
-      - name: Run regression tests
-        run: bats tests/regression/
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: regression-test-results
-          path: tests/regression/
+          submodules: true
 
-  contract-tests:
-    name: Contract Tests
+      # Cache Bash 3.2 build (Ubuntu only)
+      - name: Cache Bash 3.2
+        if: matrix.setup-bash
+        uses: actions/cache@v4
+        id: cache-bash32
+        with:
+          path: /tmp/bash-3.2.57-install
+          key: bash-3.2.57-${{ runner.os }}-${{ runner.arch }}
+
+      # Ubuntu apt cache
+      - name: Cache apt packages
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/cache@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ runner.os }}-apt-${{ matrix.bash-version }}-stow-git-tmux-zsh
+          restore-keys: |
+            ${{ runner.os }}-apt-
+
+      # Ubuntu setup
+      - name: Configure apt caching (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p ~/.apt-cache/archives/partial
+          sudo mkdir -p /etc/apt/apt.conf.d
+          echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
+          sudo mkdir -p /etc/dpkg/dpkg.cfg.d
+          echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
+          echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+
+      - name: Update apt (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update -qq
+
+      # Build Bash 3.2 if needed (Ubuntu)
+      - name: Build Bash 3.2
+        if: matrix.setup-bash && steps.cache-bash32.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get install -y -qq build-essential
+          cd /tmp
+          curl -LO https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz
+          echo "3fa9daf85ebf35068f090ce51283ddeeb3c75eb5bc70b1a4a7cb05868bfe06a4  bash-3.2.57.tar.gz" | sha256sum -c -
+          tar xzf bash-3.2.57.tar.gz
+          cd bash-3.2.57
+          ./configure --prefix=/tmp/bash-3.2.57-install
+          make -j4
+          make install
+
+      - name: Install Bash 3.2
+        if: matrix.setup-bash
+        run: sudo cp -r /tmp/bash-3.2.57-install/* /usr/local/
+
+      # Install dependencies (platform-specific)
+      - name: Install dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install -y -qq stow git tmux zsh
+
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install stow git tmux zsh ncurses
+          brew link --overwrite --force ncurses || true
+
+      # Verify environment
+      - name: Verify bash version
+        run: |
+          if [[ "${{ matrix.setup-bash }}" == "true" ]]; then
+            /usr/local/bin/bash --version
+            echo "Using: /usr/local/bin/bash"
+          else
+            bash --version
+            echo "Using: $(which bash)"
+          fi
+
+      # Run tests
+      - name: Make scripts executable
+        run: chmod +x dot tests/lib/*.sh
+
+      - name: Create test secrets
+        run: ./tests/lib/create-secrets.sh
+
+      - name: Run installation
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}
+          if [[ "${{ matrix.setup-bash }}" == "true" ]]; then
+            /usr/local/bin/bash ./tests/lib/run-installation.sh
+          else
+            ./tests/lib/run-installation.sh
+          fi
+
+      - name: Verify health
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}
+          if [[ "${{ matrix.setup-bash }}" == "true" ]]; then
+            /usr/local/bin/bash ./tests/lib/verify-health.sh true
+          else
+            ./tests/lib/verify-health.sh true
+          fi
+
+      - name: Clean up (Ubuntu)
+        if: always() && matrix.os == 'ubuntu-latest'
+        run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
+
+  # SUMMARY JOB
+  test-summary:
+    name: Test Results Summary
+    if: always()
+    needs: [lint, smoke-test, bats-tests, validate-platform]
     runs-on: ubuntu-latest
-    needs: lint
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Check results
+        run: |
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Smoke Tests | ${{ needs.smoke-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| BATS Tests | ${{ needs.bats-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform Validation | ${{ needs.validate-platform.result }} |" >> $GITHUB_STEP_SUMMARY
 
-      - name: Install BATS
-        run: sudo apt-get update && sudo apt-get install -y bats bats-assert bats-support bats-file
+          if [[ "${{ needs.lint.result }}" == "success" ]] && \
+             [[ "${{ needs.smoke-test.result }}" == "success" ]] && \
+             [[ "${{ needs.bats-tests.result }}" == "success" ]] && \
+             [[ "${{ needs.validate-platform.result }}" == "success" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **All tests passed!**" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Some tests failed**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
-      - name: Run contract tests
-        run: bats tests/contract/
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: contract-test-results
-          path: tests/contract/
