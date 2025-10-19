@@ -73,8 +73,7 @@
     ".zshrc": ".zshrc.linux, .zshrc.osx, .zprofile",
     "config.fish": "config.linux.fish, config.osx.fish, config_private.fish",
     ".gitconfig.template": ".gitconfig.secret, .gitconfig.secret.example, .gitconfig.shopify.secret",
-    "*.yml.template": "*.yml.secret, *.yml.example",
-    "dot": "AGENTS.md, DEVELOPMENT.md"
+    "*.yml.template": "*.yml.secret, *.yml.example"
   },
   "diffEditor.ignoreTrimWhitespace": false,
   "diffEditor.renderSideBySide": true,
