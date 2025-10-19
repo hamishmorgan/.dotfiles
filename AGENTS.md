@@ -450,6 +450,7 @@ Immediate updates ensure the document stays current and prevents repeated mistak
 GitHub Actions workflow (`.github/workflows/validate.yml`) uses matrix strategy for efficient testing:
 
 **Job Overview:**
+
 - **lint**: Code quality (shellcheck + markdownlint) - prerequisite for all other jobs
 - **smoke-test**: Fast structural validation
 - **bats-tests**: All BATS test suites with OS matrix
@@ -462,6 +463,7 @@ GitHub Actions workflow (`.github/workflows/validate.yml`) uses matrix strategy 
 - **test-summary**: Aggregates results and provides clear pass/fail summary
 
 **Matrix Benefits:**
+
 - Consolidates 4 separate BATS jobs into 1 (saves 6-8 min per run)
 - Validates test framework on both Ubuntu and macOS
 - Catches platform-specific issues in tests themselves
@@ -510,6 +512,7 @@ Key learnings from CI optimization work (Issue #42, PR #58, Issue #22):
 **Measured Results:**
 
 Phase 1 optimizations (Issue #42, PR #58) reduced CI time from 8-12 minutes to ~1 minute (92% improvement):
+
 - Linting: 90s → 15s (83% faster)
 - Smoke: 30s → 6s (80% faster)
 - Ubuntu: 120s → 28s (77% faster)
@@ -517,6 +520,7 @@ Phase 1 optimizations (Issue #42, PR #58) reduced CI time from 8-12 minutes to ~
 - macOS: 180s → 26s (86% faster)
 
 Phase 2 optimizations (Issue #22) consolidated BATS tests:
+
 - **Before**: 4 separate BATS jobs × 2 min setup = 8 min overhead
 - **After**: 1 BATS job with OS matrix = 2 min overhead
 - **Savings**: 6 min per CI run (~25% additional improvement)
