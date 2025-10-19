@@ -1,6 +1,6 @@
 name: CI
 
-on:
+"on":
   push:
     branches: [ main ]
   pull_request:
@@ -56,33 +56,33 @@ jobs:
       fail-fast: false  # Run both even if one fails
       matrix:
         os: [ubuntu-latest, macos-latest]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       # Ubuntu-specific setup
       - name: Install BATS (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y bats bats-assert bats-support bats-file stow git
-      
+
       # macOS-specific setup
       - name: Install BATS (macOS)
         if: matrix.os == 'macos-latest'
         run: |
           brew install bats-core bats-assert bats-support bats-file stow git
-      
+
       - name: Verify BATS installation
         run: |
           bats --version
           echo "BATS helper libraries:"
           ls -la /usr/lib/bats/ 2>/dev/null || ls -la /usr/local/lib/bats* 2>/dev/null || echo "Helper libs location varies by platform"
-      
+
       - name: Run all BATS test suites
         run: ./tests/run-bats.sh
-      
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -104,25 +104,25 @@ jobs:
             os: ubuntu-latest
             bash-version: system
             setup-bash: false
-          
+
           # Ubuntu with Bash 3.2 (macOS compatibility)
           - name: Ubuntu Latest (Bash 3.2)
             os: ubuntu-latest
             bash-version: "3.2"
             setup-bash: true
-          
+
           # macOS with system bash (3.2)
           - name: macOS Latest (Bash 3.2)
             os: macos-latest
             bash-version: "3.2"
             setup-bash: false
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: true
-      
+
       # Cache Bash 3.2 build (Ubuntu only)
       - name: Cache Bash 3.2
         if: matrix.setup-bash
@@ -131,7 +131,7 @@ jobs:
         with:
           path: /tmp/bash-3.2.57-install
           key: bash-3.2.57-${{ runner.os }}-${{ runner.arch }}
-      
+
       # Ubuntu apt cache
       - name: Cache apt packages
         if: matrix.os == 'ubuntu-latest'
@@ -141,7 +141,7 @@ jobs:
           key: ${{ runner.os }}-apt-${{ matrix.bash-version }}-stow-git-tmux-zsh
           restore-keys: |
             ${{ runner.os }}-apt-
-      
+
       # Ubuntu setup
       - name: Configure apt caching (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
@@ -152,11 +152,11 @@ jobs:
           sudo mkdir -p /etc/dpkg/dpkg.cfg.d
           echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
           echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
-      
+
       - name: Update apt (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update -qq
-      
+
       # Build Bash 3.2 if needed (Ubuntu)
       - name: Build Bash 3.2
         if: matrix.setup-bash && steps.cache-bash32.outputs.cache-hit != 'true'
@@ -170,22 +170,22 @@ jobs:
           ./configure --prefix=/tmp/bash-3.2.57-install
           make -j4
           make install
-      
+
       - name: Install Bash 3.2
         if: matrix.setup-bash
         run: sudo cp -r /tmp/bash-3.2.57-install/* /usr/local/
-      
+
       # Install dependencies (platform-specific)
       - name: Install dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install -y -qq stow git tmux zsh
-      
+
       - name: Install dependencies (macOS)
         if: matrix.os == 'macos-latest'
         run: |
           brew install stow git tmux zsh ncurses
           brew link --overwrite --force ncurses || true
-      
+
       # Verify environment
       - name: Verify bash version
         run: |
@@ -196,26 +196,26 @@ jobs:
             bash --version
             echo "Using: $(which bash)"
           fi
-      
+
       # Run tests
       - name: Make scripts executable
         run: chmod +x dot tests/lib/*.sh
-      
+
       - name: Create test secrets
         run: ./tests/lib/create-secrets.sh
-      
+
       - name: Run installation
         shell: ${{ matrix.setup-bash && '/usr/local/bin/bash {0}' || 'bash' }}
         run: |
           cd ${{ github.workspace }}
           ./tests/lib/run-installation.sh
-      
+
       - name: Verify health
         shell: ${{ matrix.setup-bash && '/usr/local/bin/bash {0}' || 'bash' }}
         run: |
           cd ${{ github.workspace }}
           ./tests/lib/verify-health.sh true
-      
+
       - name: Clean up (Ubuntu)
         if: always() && matrix.os == 'ubuntu-latest'
         run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
@@ -237,7 +237,7 @@ jobs:
           echo "| Smoke Tests | ${{ needs.smoke-test.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| BATS Tests | ${{ needs.bats-tests.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Platform Validation | ${{ needs.validate-platform.result }} |" >> $GITHUB_STEP_SUMMARY
-          
+
           if [[ "${{ needs.lint.result }}" == "success" ]] && \
              [[ "${{ needs.smoke-test.result }}" == "success" ]] && \
              [[ "${{ needs.bats-tests.result }}" == "success" ]] && \
