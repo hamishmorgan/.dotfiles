@@ -39,6 +39,7 @@ SYMBOL_INFO='∙'
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$DOTFILES_DIR/backups/dotfiles-backup-$(date +%s)"
 readonly MAX_BACKUPS_TO_DISPLAY=5
+readonly MAX_BACKUPS_TO_KEEP=10
 
 # Track installation state for rollback
 INSTALLED_PACKAGES=()
@@ -1009,6 +1010,55 @@ get_backup_stats() {
     echo "$count $total_size"
 }
 
+# Automatically cleanup old backups if threshold exceeded
+auto_cleanup_backups() {
+    local backup_count
+    backup_count=$(get_backup_dirs | wc -l)
+    
+    if [[ $backup_count -le $MAX_BACKUPS_TO_KEEP ]]; then
+        return 0
+    fi
+    
+    local backups_to_remove=$((backup_count - MAX_BACKUPS_TO_KEEP))
+    log_info "Auto cleanup: $backup_count backups found, keeping $MAX_BACKUPS_TO_KEEP most recent"
+    
+    BACKUP_KEEP_COUNT=$MAX_BACKUPS_TO_KEEP clean_backups_silent
+    
+    return 0
+}
+
+# Silent version of clean_backups for auto-cleanup
+clean_backups_silent() {
+    local backup_dirs=()
+    while IFS= read -r dir; do
+        backup_dirs+=("$dir")
+    done < <(get_backup_dirs | sort -r)
+
+    local total_backups=${#backup_dirs[@]}
+    
+    if [[ $total_backups -eq 0 ]]; then
+        return 0
+    fi
+
+    local keep_count=${BACKUP_KEEP_COUNT:-5}
+    local removed_count=0
+
+    for i in "${!backup_dirs[@]}"; do
+        if [[ $i -ge $keep_count ]]; then
+            local backup="${backup_dirs[$i]}"
+            if rm -rf "$backup" 2>/dev/null; then
+                ((removed_count++))
+            fi
+        fi
+    done
+
+    if [[ $removed_count -gt 0 ]]; then
+        log_success "Removed $removed_count old backup(s)"
+    fi
+
+    return 0
+}
+
 # Count orphaned symlinks in home and .config directories
 # Returns: count of orphaned symlinks
 count_orphaned_symlinks() {
@@ -1562,6 +1612,8 @@ cmd_install() {
         "2. Set zsh as default shell: chsh -s \$(which zsh)" \
         "3. Verify installation: $0 health"
     echo ""
+
+    auto_cleanup_backups
 
     return 0
 }
@@ -2849,6 +2901,10 @@ cmd_update() {
 
     show_command_summary "success" "UPDATED" "$duration"
     echo ""
+
+    auto_cleanup_backups
+
+    return 0
 }
 
 cmd_status() {
