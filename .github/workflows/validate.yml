@@ -54,6 +54,8 @@ jobs:
     name: BATS Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     needs: lint
+    permissions:
+      contents: read
     strategy:
       fail-fast: false  # Run both even if one fails
       matrix:
@@ -127,6 +129,8 @@ jobs:
   # PLATFORM VALIDATION WITH OS MATRIX
   validate-platform:
     name: Full Validation (${{ matrix.name }})
+    permissions:
+      contents: read
     runs-on: ${{ matrix.os }}
     needs: lint
     strategy:
