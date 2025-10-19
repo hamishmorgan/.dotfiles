@@ -288,14 +288,30 @@ docker run -it dotfiles-test-bash32 bash
 
 **All commits made by AI agents must use the `--author` flag to distinguish them from user commits.**
 
-When making commits on behalf of the user, AI agents should attribute commits to "Cursor" rather
-than the user's personal identity. This provides clear distinction between manual user contributions
-and AI-generated changes in the git history.
+AI agents should attribute commits to their tool name rather than the user's personal identity.
+This provides clear distinction between manual user contributions and AI-generated changes in the
+git history.
 
 **Required pattern for all AI agent commits:**
 
 ```bash
-git commit --author="Cursor <cursor@noreply.local>" -m "Commit message"
+git commit --author="<AgentName> <agent@noreply.local>" -m "Commit message"
+```
+
+**Agent-specific examples:**
+
+```bash
+# Cursor AI
+git commit --author="Cursor <cursor@noreply.local>" -m "Add new feature"
+
+# GitHub Copilot
+git commit --author="Copilot <copilot@noreply.local>" -m "Add new feature"
+
+# Claude Code
+git commit --author="Claude <claude@noreply.local>" -m "Add new feature"
+
+# Other AI tools
+git commit --author="<ToolName> <toolname@noreply.local>" -m "Add new feature"
 ```
 
 **Example workflow:**
@@ -305,7 +321,7 @@ git commit --author="Cursor <cursor@noreply.local>" -m "Commit message"
 echo "new content" > file.txt
 git add file.txt
 
-# Commit with AI agent attribution
+# Commit with AI agent attribution (use your agent's name)
 git commit --author="Cursor <cursor@noreply.local>" -m "Add new feature
 
 Detailed description of changes made by the AI agent.
@@ -318,14 +334,16 @@ git push
 **Important notes:**
 
 - **Always use the `--author` flag** when committing as an AI agent
-- **Email address**: Use `cursor@noreply.local` (not linked to any GitHub account)
+- **Identify your tool**: Use your AI agent's actual name (Cursor, Copilot, Claude, etc.)
+- **Email format**: Use `<toolname>@noreply.local` (not linked to any GitHub account)
 - **User commits**: Do not override author for user's manual commits
-- **GitHub operations**: PRs and comments will still show the authenticated GitHub account (this is a platform limitation)
+- **GitHub operations**: PRs and comments will still show the authenticated GitHub account (platform limitation)
 - **Commit message quality**: Follow conventional commit format and provide clear descriptions
 
 **Why this matters:**
 
 - Maintains transparency about AI contributions
+- Identifies which AI tool made specific changes
 - Allows filtering commits by author in git history
 - Distinguishes automated changes from manual user work
 - Provides accountability and traceability
@@ -335,13 +353,16 @@ git push
 Check commit attribution in git log:
 
 ```bash
-git log --format="%an <%ae> - %s" -5
+git log --format="%an <%ae> - %s" -10
 ```
 
-AI-made commits should show:
+AI-made commits should show the agent name:
 
 ```text
-Cursor <cursor@noreply.local> - Commit message
+Cursor <cursor@noreply.local> - Document git commit attribution pattern
+Claude <claude@noreply.local> - Refactor helper functions
+Copilot <copilot@noreply.local> - Add validation checks
+Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 ```
 
 ## File Organization
