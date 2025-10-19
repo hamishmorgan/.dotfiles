@@ -6,7 +6,9 @@
       "request": "launch",
       "name": "Debug dot script",
       "program": "${workspaceFolder}/dot",
-      "args": ["status"],
+      "args": [
+        "status"
+      ],
       "cwd": "${workspaceFolder}"
     },
     {
@@ -18,5 +20,3 @@
     }
   ]
 }
-
-

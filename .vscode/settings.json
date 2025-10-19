@@ -84,7 +84,9 @@
   "shellcheck.enable": true,
   "shellcheck.run": "onType",
   "shellcheck.useWorkspaceRootAsCwd": true,
-  "shellcheck.customArgs": ["-x"],
+  "shellcheck.customArgs": [
+    "-x"
+  ],
   "markdownlint.config": {
     "extends": ".markdownlint.yml"
   },
