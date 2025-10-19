@@ -1283,9 +1283,8 @@ show_diff_preview() {
                 target=$(readlink "$home_path")
                 local expected_target="$DOTFILES_DIR/$package/$file"
                 
-                # Allow symlinks with alternative path formats (relative paths or different directory structures)
-                # Only warn if target matches neither the expected absolute path nor contains the dotfiles pattern
-                if [[ "$target" != "$expected_target" ]] && [[ "$target" != *"${DOTFILES_DIR}/${package}/${file}"* ]]; then
+                # Check if symlink points to our dotfiles (allows any path format - absolute, relative, etc.)
+                if [[ "$target" != *"${DOTFILES_DIR}/${package}/${file}"* ]]; then
                     echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $file"
                     echo "      Current: symlink → $target"
                     echo "      Expected: symlink → $expected_target"
@@ -1301,7 +1300,7 @@ show_diff_preview() {
                         
                         # Show diff preview (first 25 lines)
                         local diff_output
-                        diff_output=$(diff -u "$dotfile_path" "$home_path" 2>/dev/null || true)
+                        diff_output=$(diff -u "$home_path" "$dotfile_path" 2>/dev/null || true)
                         
                         while IFS= read -r line; do
                             if [[ "$line" == -* ]]; then
@@ -1314,7 +1313,7 @@ show_diff_preview() {
                         done < <(echo "$diff_output" | head -25)
                         
                         local diff_lines
-                        diff_lines=$(echo "$diff_output" | wc -l)
+                        diff_lines=$(echo "$diff_output" | grep -c '^')
                         if [[ $diff_lines -gt 25 ]]; then
                             echo "      ... ($(( diff_lines - 25 )) more lines)"
                         fi
