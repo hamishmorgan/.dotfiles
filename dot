@@ -2474,7 +2474,7 @@ cmd_health() {
             fi
 
             if [[ "${check_statuses[10]}" == "info" && $backup_count -gt 10 ]]; then
-                echo "  • $backup_count backups using $((backup_size / 1024))MB - run './dot clean' to free space"
+                echo "  • $backup_count backups using $((backup_size_kb / 1024))MB - run './dot clean' to free space"
             fi
         fi
 
