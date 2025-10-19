@@ -18,25 +18,27 @@ teardown() {
     assert_success
 }
 
-@test "status command shows dotfiles location" {
+@test "status command shows installed files" {
     run ./dot status
     assert_success
-    assert_output --partial "Location:"
+    assert_output --partial "Installed Files"
 }
 
-@test "status command shows dependency status" {
+@test "status command shows file count" {
     run ./dot status
     assert_success
-    assert_output --partial "Dependencies"
+    # Should show count like "16 of 16 files installed"
+    assert_output --regexp "[0-9]+ of [0-9]+ files installed"
 }
 
 @test "status command shows backup information" {
     # Create some backups
     create_mock_backups 5 1
-
+    
     run ./dot status
     assert_success
-    assert_output --partial "backups"
+    # Should show "Total: 5 backup(s)" or similar
+    assert_output --regexp "[0-9]+ backup"
 }
 
 @test "status command runs quickly" {

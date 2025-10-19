@@ -66,10 +66,10 @@ teardown() {
     [[ "$status" -eq 0 || "$status" -eq 1 ]]
 }
 
-@test "health command accepts --help flag" {
+@test "help flag shows usage" {
     run ./dot --help
-    # Should fail (shows help and exits)
-    assert_failure
+    # Shows help and exits successfully
+    assert_success
     assert_output --partial "Usage"
 }
 
