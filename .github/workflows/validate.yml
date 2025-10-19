@@ -61,12 +61,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Cache apt packages (Ubuntu only)
+      - name: Cache apt packages
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/cache@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ runner.os }}-apt-bats-bats-assert-bats-support-bats-file-stow-git
+          restore-keys: |
+            ${{ runner.os }}-apt-bats-
+            ${{ runner.os }}-apt-
+
       # Ubuntu-specific setup
+      - name: Configure apt caching (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p ~/.apt-cache/archives/partial
+          sudo mkdir -p /etc/apt/apt.conf.d
+          echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
+          sudo mkdir -p /etc/dpkg/dpkg.cfg.d
+          echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
+          echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+
       - name: Install BATS (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y bats bats-assert bats-support bats-file stow git
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bats bats-assert bats-support bats-file stow git
 
       # macOS-specific setup
       - name: Install BATS (macOS)
@@ -96,6 +117,10 @@ jobs:
         with:
           name: bats-test-results-${{ matrix.os }}
           path: tests/
+
+      - name: Clean up apt cache lock files
+        if: always() && matrix.os == 'ubuntu-latest'
+        run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
 
   # PLATFORM VALIDATION WITH OS MATRIX
   validate-platform:
