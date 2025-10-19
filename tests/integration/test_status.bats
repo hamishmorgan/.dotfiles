@@ -12,8 +12,9 @@ teardown() {
     teardown_test_dotfiles
 }
 
-@test "status command exits successfully" {
+@test "status command runs without crashing" {
     run ./dot status
+    # Should complete without crashing (exit 0 is expected)
     assert_success
 }
 

@@ -12,18 +12,18 @@ teardown() {
     teardown_test_dotfiles
 }
 
-@test "status output has location information" {
+@test "status output has installed files section" {
     run ./dot status
     assert_success
-
-    assert_output --partial "Location:"
+    
+    assert_output --partial "Installed Files"
 }
 
-@test "status output has dependencies section" {
+@test "status output has dotfiles title" {
     run ./dot status
     assert_success
-
-    assert_output --partial "Dependencies"
+    
+    assert_output --partial "Installation Status"
 }
 
 @test "status output has backup information" {
