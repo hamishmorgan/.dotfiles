@@ -3332,20 +3332,24 @@ security_audit() {
     # 1. Check for accidentally committed secrets
     show_numbered_section "1" "Checking for Committed Secrets"
     
+    # More specific patterns that match actual secrets with values
+    # Require actual values (4-8+ chars) after = to reduce false positives
     local patterns=(
-        "password.*="
-        "api[_-]?key.*="
-        "secret.*="
-        "token.*="
-        "private[_-]?key.*="
-        "aws[_-]?access"
-        "BEGIN.*PRIVATE KEY"
+        'password\s*=\s*['\''"]?\w{4,}'         # password=value (4+ chars)
+        'api[_-]?key\s*=\s*['\''"]?\w{8,}'      # api_key=value (8+ chars)
+        'secret\s*=\s*['\''"]?\w{8,}'           # secret=value (8+ chars)
+        'token\s*=\s*['\''"]?\w{8,}'            # token=value (8+ chars)
+        'private[_-]?key\s*=\s*['\''"]?\w{8,}'  # private_key=value (8+ chars)
+        'aws[_-]?access[_-]?key\s*=\s*['\''"]?\w{8,}'  # aws_access_key=value
+        'BEGIN\s+(RSA\s+)?PRIVATE\s+KEY'        # Actual private key blocks
     )
     
     local secrets_found=false
     for pattern in "${patterns[@]}"; do
         local matches
-        matches=$(git grep -E -n -i "$pattern" 2>/dev/null || true)
+        # Exclude docs (may reference patterns) and this function itself
+        matches=$(git grep -E -n -i "$pattern" 2>/dev/null | \
+                  grep -v -E '^(README\.md|AGENTS\.md|DEVELOPMENT\.md|tests/|dot:3[3-9][0-9][0-9]:)' || true)
         
         if [[ -n "$matches" ]]; then
             if ! $secrets_found; then
