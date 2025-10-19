@@ -39,7 +39,7 @@ SYMBOL_INFO='∙'
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$DOTFILES_DIR/backups/dotfiles-backup-$(date +%s)"
 readonly MAX_BACKUPS_TO_DISPLAY=5
-readonly MAX_BACKUPS_TO_KEEP=10
+readonly MAX_BACKUPS_TO_KEEP="${MAX_BACKUPS_TO_KEEP:-10}"
 
 # Track installation state for rollback
 INSTALLED_PACKAGES=()
@@ -1012,15 +1012,17 @@ get_backup_stats() {
 
 # Automatically cleanup old backups if threshold exceeded
 auto_cleanup_backups() {
-    local backup_count
-    backup_count=$(get_backup_dirs | wc -l)
+    local backup_count=0
+    while IFS= read -r _; do
+        ((backup_count++))
+    done < <(get_backup_dirs)
     
     if [[ $backup_count -le $MAX_BACKUPS_TO_KEEP ]]; then
         return 0
     fi
     
     local backups_to_remove=$((backup_count - MAX_BACKUPS_TO_KEEP))
-    log_info "Auto cleanup: $backup_count backups found, keeping $MAX_BACKUPS_TO_KEEP most recent"
+    log_info "Auto cleanup: $backup_count backups found, keeping $MAX_BACKUPS_TO_KEEP most recent, removing $backups_to_remove old backup(s)"
     
     BACKUP_KEEP_COUNT=$MAX_BACKUPS_TO_KEEP clean_backups_silent
     
@@ -1040,7 +1042,7 @@ clean_backups_silent() {
         return 0
     fi
 
-    local keep_count=${BACKUP_KEEP_COUNT:-5}
+    local keep_count=${BACKUP_KEEP_COUNT:-$MAX_BACKUPS_TO_KEEP}
     local removed_count=0
 
     for i in "${!backup_dirs[@]}"; do
