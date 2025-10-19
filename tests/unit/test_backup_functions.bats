@@ -73,7 +73,8 @@ teardown() {
     create_mock_backups 3 1
 
     result="$(get_backup_dirs)"
-    line_count=$(echo "$result" | wc -l)
+    # Trim whitespace from wc output (BSD/GNU compatibility)
+    line_count=$(echo "$result" | wc -l | tr -d ' ')
 
     [ "$line_count" = "3" ]
 }

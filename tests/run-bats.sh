@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Script to run all BATS tests locally
-
-set -e
+# Note: Do not use 'set -e' - we need to run all suites even if one fails
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -45,7 +44,7 @@ for suite in "${test_suites[@]}"; do
     fi
 
     echo -e "${BLUE}Running $name...${NC}"
-    
+
     if bats "$SCRIPT_DIR/$dir/"; then
         echo -e "${GREEN}✓ $name passed${NC}"
         ((total_pass++))
