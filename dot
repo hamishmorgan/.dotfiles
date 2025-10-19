@@ -265,6 +265,7 @@ show_usage() {
     echo "  enable        Enable a specific package"
     echo "  disable       Disable a specific package"
     echo "  packages      List all packages and their status"
+    echo "  security      Run security audit on dotfiles"
     echo ""
     echo "Options:"
     echo "  -h, --help           Show this help message"
@@ -3149,6 +3150,10 @@ cmd_packages() {
     list_packages
 }
 
+cmd_security() {
+    security_audit
+}
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Package Management Functions
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3315,6 +3320,191 @@ list_packages() {
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Security Audit Functions
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Run security audit on dotfiles
+security_audit() {
+    show_command_header "Security Audit"
+    
+    local issues_found=0
+    
+    # 1. Check for accidentally committed secrets
+    show_numbered_section "1" "Checking for Committed Secrets"
+    
+    # More specific patterns that match actual secrets with values
+    # Require actual values (4-8+ chars) after = to reduce false positives
+    local patterns=(
+        'password\s*=\s*['\''"]?\w{4,}'         # password=value (4+ chars)
+        'api[_-]?key\s*=\s*['\''"]?\w{8,}'      # api_key=value (8+ chars)
+        'secret\s*=\s*['\''"]?\w{8,}'           # secret=value (8+ chars)
+        'token\s*=\s*['\''"]?\w{8,}'            # token=value (8+ chars)
+        'private[_-]?key\s*=\s*['\''"]?\w{8,}'  # private_key=value (8+ chars)
+        'aws[_-]?access[_-]?key\s*=\s*['\''"]?\w{8,}'  # aws_access_key=value
+        'BEGIN\s+(RSA\s+)?PRIVATE\s+KEY'        # Actual private key blocks
+    )
+    
+    # Build grep args array for single git grep command (performance optimization)
+    local grep_args=()
+    for pattern in "${patterns[@]}"; do
+        grep_args+=("-e" "$pattern")
+    done
+    
+    local secrets_found="false"
+    local matches
+    # Exclude docs (may reference patterns) and this function itself
+    matches=$(git -C "$DOTFILES_DIR" grep -P -n -i "${grep_args[@]}" -- . \
+              ':(exclude)README.md' ':(exclude)AGENTS.md' ':(exclude)DEVELOPMENT.md' \
+              ':(exclude)tests/' ':(exclude)dot' 2>/dev/null || true)
+    
+    if [[ -n "$matches" ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Potential secret patterns found:"
+        while IFS= read -r line; do
+            echo "     $line"
+        done <<< "$matches"
+        echo ""
+        secrets_found="true"
+        ((issues_found++))
+    fi
+    
+    if [[ "$secrets_found" == "false" ]]; then
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} No secret patterns in tracked files"
+    fi
+    echo ""
+    
+    # 2. Check file permissions on secret files
+    show_numbered_section "2" "Checking Secret File Permissions"
+
+    # Collect secret files once to avoid duplicate find operations
+    local secret_files=()
+    while IFS= read -r f; do
+        secret_files+=("$f")
+    done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
+
+    
+    local insecure_files=()
+    
+    for secret_file in "${secret_files[@]}"; do
+        [[ -z "$secret_file" ]] && continue
+        local perms
+        perms=$(stat -c "%a" "$secret_file" 2>/dev/null || stat -f "%OLp" "$secret_file" 2>/dev/null || echo "000")
+        perms=${perms: -3}
+        
+        if [[ "$perms" != "600" ]] && [[ "$perms" != "400" ]]; then
+            insecure_files+=("$secret_file ($perms)")
+            ((issues_found++))
+        fi
+    done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
+    
+    if [[ ${#insecure_files[@]} -gt 0 ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure permissions on secret files:"
+        for file in "${insecure_files[@]}"; do
+            echo -e "     ${SYMBOL_WARNING} ${file#"$DOTFILES_DIR"/}"
+        done
+        echo -e "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 FILE (or 400)"
+    else
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files have secure permissions"
+    fi
+    echo ""
+    
+    # 3. Check .gitignore coverage
+    show_numbered_section "3" "Checking .gitignore Coverage"
+    
+    
+    local unignored_secrets=()
+    local untracked_unignored=()
+    for secret_file in "${secret_files[@]}"; do
+        [[ -z "$secret_file" ]] && continue
+        # Compute relative path for git commands
+        local rel_path="${secret_file#"$DOTFILES_DIR"/}"
+        if git -C "$DOTFILES_DIR" check-ignore -q -- "$rel_path" 2>/dev/null; then
+            : # properly ignored
+        else
+            # Check if file is tracked
+            if git -C "$DOTFILES_DIR" ls-files --error-unmatch -- "$rel_path" >/dev/null 2>&1; then
+                unignored_secrets+=("$secret_file")
+                ((issues_found++))
+            else
+                # Untracked but not ignored - potential future commit risk
+                untracked_unignored+=("$secret_file")
+                ((issues_found++))
+            fi
+        fi
+    done
+    
+    if [[ ${#unignored_secrets[@]} -gt 0 ]]; then
+        echo -e "   ${RED}${SYMBOL_ERROR}${NC} Secret files tracked in git:"
+        for file in "${unignored_secrets[@]}"; do
+            echo -e "     ${SYMBOL_ERROR} ${file#"$DOTFILES_DIR"/}"
+        done
+        echo -e "   ${RED}${SYMBOL_ERROR}${NC} These files are committed to git!"
+        echo ""
+    fi
+    
+    if [[ ${#untracked_unignored[@]} -gt 0 ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Secret files not ignored by git:"
+        for file in "${untracked_unignored[@]}"; do
+            echo -e "     ${SYMBOL_WARNING} ${file#"$DOTFILES_DIR"/}"
+        done
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Add patterns to .gitignore to prevent future commits"
+        echo ""
+    fi
+    
+    if [[ ${#unignored_secrets[@]} -eq 0 ]] && [[ ${#untracked_unignored[@]} -eq 0 ]]; then
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files properly ignored"
+    fi
+    echo ""
+    # 4. Check SSH key security
+    show_numbered_section "4" "Checking SSH Key Security"
+    
+    if [[ -d "$HOME/.ssh" ]]; then
+        local exposed_keys=()
+        
+        for key in "$HOME/.ssh"/id_* "$HOME/.ssh"/*.pem; do
+            [[ ! -f "$key" ]] && continue
+            [[ "$key" == *.pub ]] && continue
+            
+            local perms
+            perms=$(stat -c "%a" "$key" 2>/dev/null || stat -f "%OLp" "$key" 2>/dev/null || echo "000")
+            perms=${perms: -3}
+            
+            if [[ "$perms" != "600" ]] && [[ "$perms" != "400" ]]; then
+                exposed_keys+=("$(basename "$key") ($perms)")
+                ((issues_found++))
+            fi
+        done
+        
+        if [[ ${#exposed_keys[@]} -gt 0 ]]; then
+            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure SSH key permissions:"
+            for key in "${exposed_keys[@]}"; do
+                echo -e "     ${SYMBOL_WARNING} $key"
+            done
+            echo -e "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 ~/.ssh/KEYFILE (or 400)"
+        else
+            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} SSH keys have secure permissions"
+        fi
+    else
+        echo -e "   ${BLUE}${SYMBOL_INFO}${NC} No SSH directory found"
+    fi
+    echo ""
+    
+    # Summary
+    show_section_separator
+    echo ""
+    if [[ $issues_found -eq 0 ]]; then
+        log_success "No security issues detected"
+        show_command_summary "success" "SECURE" ""
+    else
+        log_warning "Security audit found $issues_found potential issue(s)"
+        show_command_summary "info" "$issues_found ISSUES FOUND" ""
+        echo ""
+        show_tip "Review and fix security issues before committing"
+    fi
+    echo ""
+    
+    return $issues_found
+}
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Argument Parsing Helpers
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -3326,12 +3516,11 @@ is_flag() {
 # Check if argument is a valid command
 is_valid_command() {
     local cmd="$1"
-    [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages)$ ]]
+    [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security)$ ]]
 }
 
 # Parse verbosity flag and return level increment
 # Handles: -v (1), -vv (2), -vvv (3), --verbose (1)
-# Returns: verbosity increment via echo (accumulated by caller)
 # Examples:
 #   -v           → 1
 #   -vv          → 2
@@ -3403,19 +3592,17 @@ parse_arguments() {
                 ;;
 
             # Valid commands
-            install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages)
+            install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security)
                 if [[ -n "$COMMAND" ]]; then
                     die "Multiple commands specified: '$COMMAND' and '$1'"
                 fi
                 COMMAND="$1"
                 shift
                 ;;
-
-            # Unknown flag
+            # Unknown option (unknown flag)
             -*)
                 die "Unknown option: $1" show_usage
                 ;;
-
             # Unknown argument
             *)
                 die "Unknown argument: $1" show_usage
@@ -3506,6 +3693,9 @@ main() {
         packages)
             cmd_packages
             ;;
+        security)
+            cmd_security
+            ;;
         *)
             die "Unknown command: $COMMAND"
             ;;
@@ -3533,6 +3723,7 @@ d() {
         r|restore) "$HOME/.dotfiles/dot" restore "$@" ;;
         c|clean)  "$HOME/.dotfiles/dot" clean "$@" ;;
         i|install) "$HOME/.dotfiles/dot" install "$@" ;;
+        security) "$HOME/.dotfiles/dot" security "$@" ;;
         cd)       builtin cd "$HOME/.dotfiles" || return ;;
         *)        "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
     esac
@@ -3545,7 +3736,7 @@ _dot_completion() {
 
     # Complete commands
     if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
-        local commands="install status health update diff backup backups restore clean uninstall enable disable packages"
+        local commands="install status health update diff backup backups restore clean uninstall enable disable packages security"
         local flags="-h --help -v --verbose -vv"
         # Bash 3.2 compatible (no mapfile)
         COMPREPLY=()
@@ -3563,7 +3754,7 @@ _dot_completion() {
                 done < <(compgen -W "$flags" -- "$cur")
                 ;;
             enable|disable)
-                local packages="system git zsh tmux gh gnuplot bash"
+                local packages="system git zsh tmux gh gnuplot bash fish"
                 COMPREPLY=()
                 while IFS= read -r word; do
                     COMPREPLY+=("$word")
@@ -3622,6 +3813,7 @@ d() {
         r|restore) "$HOME/.dotfiles/dot" restore "$@" ;;
         c|clean)  "$HOME/.dotfiles/dot" clean "$@" ;;
         i|install) "$HOME/.dotfiles/dot" install "$@" ;;
+        security) "$HOME/.dotfiles/dot" security "$@" ;;
         cd)       builtin cd "$HOME/.dotfiles" || return ;;
         *)        "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
     esac
@@ -3656,6 +3848,7 @@ _dot_completion() {
                 'enable:Enable a specific package'
                 'disable:Disable a specific package'
                 'packages:List all packages and their status'
+                'security:Run security audit on dotfiles'
             )
             _describe 'dot command' commands
             ;;
