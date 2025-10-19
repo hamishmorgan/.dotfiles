@@ -18,8 +18,9 @@ RUN apt-get update && apt-get install -y \
 # Build and install Bash 3.2
 # Using 3.2.57 (latest 3.2.x release)
 # Checksum verification skipped (dev/test container only, HTTPS provides basic integrity)
+# Using ftpmirror.gnu.org for automatic mirror selection (faster downloads)
 WORKDIR /tmp
-RUN curl -LO https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz && \
+RUN curl -LO https://ftpmirror.gnu.org/bash/bash-3.2.57.tar.gz && \
     tar xzf bash-3.2.57.tar.gz && \
     cd bash-3.2.57 && \
     ./configure --prefix=/usr/local && \
