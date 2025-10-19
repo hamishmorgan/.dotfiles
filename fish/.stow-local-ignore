@@ -9,3 +9,6 @@
 ^\.config/fish/completions$
 ^\.config/fish/conf\.d$
 
+# Private/secret configuration (not stowed)
+^\.config/fish/config_private\.fish$
+

@@ -42,3 +42,9 @@ if test -f ~/.dotfiles/dot
     source (~/.dotfiles/dot --completion fish)
 end
 
+# Load private/machine-specific configuration if it exists
+# Use this file for secrets, API keys, or machine-specific settings
+if test -f ~/.config/fish/config_private.fish
+    source ~/.config/fish/config_private.fish
+end
+
