@@ -39,7 +39,7 @@ end
 # Load dotfiles completions from dot script
 # Note: The 'd' function is auto-loaded from ~/.config/fish/functions/d.fish
 if test -f ~/.dotfiles/dot
-    source (~/.dotfiles/dot --completion fish)
+    ~/.dotfiles/dot --completion fish | source
 end
 
 # Load private/machine-specific configuration if it exists
