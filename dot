@@ -3345,7 +3345,7 @@ security_audit() {
     local secrets_found=false
     for pattern in "${patterns[@]}"; do
         local matches
-        matches=$(git grep -E -n -i "$pattern" -- '*.template' '*.example' '*.sh' '*.zsh' '*.bash' '*.md' 2>/dev/null || true)
+        matches=$(git grep -E -n -i "$pattern" 2>/dev/null || true)
         
         if [[ -n "$matches" ]]; then
             if ! $secrets_found; then
@@ -3374,7 +3374,8 @@ security_audit() {
     while IFS= read -r secret_file; do
         [[ -z "$secret_file" ]] && continue
         local perms
-        perms=$(stat -c "%a" "$secret_file" 2>/dev/null || stat -f "%A" "$secret_file" 2>/dev/null || echo "000")
+        perms=$(stat -c "%a" "$secret_file" 2>/dev/null || stat -f "%OLp" "$secret_file" 2>/dev/null || echo "000")
+        perms=${perms: -3}
         
         if [[ "$perms" != "600" ]] && [[ "$perms" != "400" ]]; then
             insecure_files+=("$secret_file ($perms)")
@@ -3450,7 +3451,8 @@ security_audit() {
             [[ "$key" == *.pub ]] && continue
             
             local perms
-            perms=$(stat -c "%a" "$key" 2>/dev/null || stat -f "%A" "$key" 2>/dev/null || echo "000")
+            perms=$(stat -c "%a" "$key" 2>/dev/null || stat -f "%OLp" "$key" 2>/dev/null || echo "000")
+            perms=${perms: -3}
             
             if [[ "$perms" != "600" ]] && [[ "$perms" != "400" ]]; then
                 exposed_keys+=("$(basename "$key") ($perms)")
