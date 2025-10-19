@@ -205,16 +205,24 @@ jobs:
         run: ./tests/lib/create-secrets.sh
 
       - name: Run installation
-        shell: ${{ matrix.setup-bash && '/usr/local/bin/bash {0}' || 'bash' }}
+        shell: bash
         run: |
           cd ${{ github.workspace }}
-          ./tests/lib/run-installation.sh
+          if [[ "${{ matrix.setup-bash }}" == "true" ]]; then
+            /usr/local/bin/bash ./tests/lib/run-installation.sh
+          else
+            ./tests/lib/run-installation.sh
+          fi
 
       - name: Verify health
-        shell: ${{ matrix.setup-bash && '/usr/local/bin/bash {0}' || 'bash' }}
+        shell: bash
         run: |
           cd ${{ github.workspace }}
-          ./tests/lib/verify-health.sh true
+          if [[ "${{ matrix.setup-bash }}" == "true" ]]; then
+            /usr/local/bin/bash ./tests/lib/verify-health.sh true
+          else
+            ./tests/lib/verify-health.sh true
+          fi
 
       - name: Clean up (Ubuntu)
         if: always() && matrix.os == 'ubuntu-latest'
