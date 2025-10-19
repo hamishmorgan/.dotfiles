@@ -95,10 +95,10 @@ jobs:
         run: |
           # Install bats-core first
           brew install bats-core stow git
-          
+
           # Tap the bats-core tap for helper libraries
           brew tap bats-core/bats-core
-          
+
           # Install helper libraries from tap
           brew install bats-support bats-assert bats-file
 
