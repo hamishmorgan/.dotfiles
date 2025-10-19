@@ -3349,7 +3349,7 @@ security_audit() {
         
         if [[ -n "$matches" ]]; then
             if ! $secrets_found; then
-                echo "   ${YELLOW}${SYMBOL_WARNING}${NC} Potential secret patterns found:"
+                echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Potential secret patterns found:"
                 secrets_found=true
             fi
             echo "   Pattern: $pattern"
@@ -3362,7 +3362,7 @@ security_audit() {
     done
     
     if ! $secrets_found; then
-        echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} No secret patterns in tracked files"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} No secret patterns in tracked files"
     fi
     echo ""
     
@@ -3384,13 +3384,13 @@ security_audit() {
     done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
     
     if [[ ${#insecure_files[@]} -gt 0 ]]; then
-        echo "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure permissions on secret files:"
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure permissions on secret files:"
         for file in "${insecure_files[@]}"; do
-            echo "     ${SYMBOL_WARNING} ${file#"$DOTFILES_DIR"/}"
+            echo -e "     ${SYMBOL_WARNING} ${file#"$DOTFILES_DIR"/}"
         done
-        echo "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 FILE (or 400)"
+        echo -e "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 FILE (or 400)"
     else
-        echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files have secure permissions"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files have secure permissions"
     fi
     echo ""
     
@@ -3419,25 +3419,25 @@ security_audit() {
     done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
     
     if [[ ${#unignored_secrets[@]} -gt 0 ]]; then
-        echo "   ${RED}${SYMBOL_ERROR}${NC} Secret files tracked in git:"
+        echo -e "   ${RED}${SYMBOL_ERROR}${NC} Secret files tracked in git:"
         for file in "${unignored_secrets[@]}"; do
-            echo "     ${SYMBOL_ERROR} ${file#"$DOTFILES_DIR"/}"
+            echo -e "     ${SYMBOL_ERROR} ${file#"$DOTFILES_DIR"/}"
         done
-        echo "   ${RED}${SYMBOL_ERROR}${NC} These files are committed to git!"
+        echo -e "   ${RED}${SYMBOL_ERROR}${NC} These files are committed to git!"
         echo ""
     fi
     
     if [[ ${#untracked_unignored[@]} -gt 0 ]]; then
-        echo "   ${YELLOW}${SYMBOL_WARNING}${NC} Secret files not ignored by git:"
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Secret files not ignored by git:"
         for file in "${untracked_unignored[@]}"; do
-            echo "     ${SYMBOL_WARNING} ${file#"$DOTFILES_DIR"/}"
+            echo -e "     ${SYMBOL_WARNING} ${file#"$DOTFILES_DIR"/}"
         done
-        echo "   ${YELLOW}${SYMBOL_WARNING}${NC} Add patterns to .gitignore to prevent future commits"
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Add patterns to .gitignore to prevent future commits"
         echo ""
     fi
     
     if [[ ${#unignored_secrets[@]} -eq 0 ]] && [[ ${#untracked_unignored[@]} -eq 0 ]]; then
-        echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files properly ignored"
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files properly ignored"
     fi
     echo ""
     # 4. Check SSH key security
@@ -3461,16 +3461,16 @@ security_audit() {
         done
         
         if [[ ${#exposed_keys[@]} -gt 0 ]]; then
-            echo "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure SSH key permissions:"
+            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure SSH key permissions:"
             for key in "${exposed_keys[@]}"; do
-                echo "     ${SYMBOL_WARNING} $key"
+                echo -e "     ${SYMBOL_WARNING} $key"
             done
-            echo "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 ~/.ssh/KEYFILE (or 400)"
+            echo -e "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 ~/.ssh/KEYFILE (or 400)"
         else
-            echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} SSH keys have secure permissions"
+            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} SSH keys have secure permissions"
         fi
     else
-        echo "   ${BLUE}${SYMBOL_INFO}${NC} No SSH directory found"
+        echo -e "   ${BLUE}${SYMBOL_INFO}${NC} No SSH directory found"
     fi
     echo ""
     
