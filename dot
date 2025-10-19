@@ -1012,10 +1012,8 @@ get_backup_stats() {
 
 # Automatically cleanup old backups if threshold exceeded
 auto_cleanup_backups() {
-    local backup_count=0
-    while IFS= read -r _; do
-        ((backup_count++))
-    done < <(get_backup_dirs)
+    local backup_count
+    backup_count=$(get_backup_dirs | wc -l | tr -d ' ')
     
     if [[ $backup_count -le $MAX_BACKUPS_TO_KEEP ]]; then
         return 0
@@ -1024,13 +1022,15 @@ auto_cleanup_backups() {
     local backups_to_remove=$((backup_count - MAX_BACKUPS_TO_KEEP))
     log_info "Auto cleanup: $backup_count backups found, keeping $MAX_BACKUPS_TO_KEEP most recent, removing $backups_to_remove old backup(s)"
     
-    BACKUP_KEEP_COUNT=$MAX_BACKUPS_TO_KEEP clean_backups_silent
+    clean_backups_silent "$MAX_BACKUPS_TO_KEEP"
     
     return 0
 }
 
 # Silent version of clean_backups for auto-cleanup
 clean_backups_silent() {
+    local keep_count="${1:-$MAX_BACKUPS_TO_KEEP}"
+    
     local backup_dirs=()
     while IFS= read -r dir; do
         backup_dirs+=("$dir")
@@ -1042,7 +1042,6 @@ clean_backups_silent() {
         return 0
     fi
 
-    local keep_count=${BACKUP_KEEP_COUNT:-$MAX_BACKUPS_TO_KEEP}
     local removed_count=0
 
     for i in "${!backup_dirs[@]}"; do

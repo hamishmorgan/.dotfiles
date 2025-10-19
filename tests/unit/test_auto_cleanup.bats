@@ -64,7 +64,7 @@ teardown() {
 @test "clean_backups_silent removes backups without verbose output" {
     create_mock_backups 15 1
     
-    BACKUP_KEEP_COUNT=5 run clean_backups_silent
+    run clean_backups_silent 5
     assert_success
     
     # Should only show final success message, no detailed output
