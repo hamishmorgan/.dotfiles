@@ -4,7 +4,7 @@
 # Note: bats-support and bats-assert should be installed system-wide
 # macOS: brew install bats-core (includes helpers)
 # Ubuntu: sudo apt-get install bats
-# 
+#
 # If you need the helper libraries, install them:
 # git clone https://github.com/bats-core/bats-support /usr/local/lib/bats-support
 # git clone https://github.com/bats-core/bats-assert /usr/local/lib/bats-assert
@@ -22,8 +22,15 @@ setup_test_dotfiles() {
     mkdir -p "$TEST_DOTFILES_DIR"/{backups,system,git,zsh,tmux,gh,gnuplot,bash,fish}
     mkdir -p "$TEST_DOTFILES_DIR/tests"
 
-    # Copy dot script
-    cp "$BATS_TEST_DIRNAME/../dot" "$TEST_DOTFILES_DIR/"
+    # Copy dot script (from repository root)
+    # BATS_TEST_DIRNAME points to the directory containing the test file
+    # For tests in tests/unit/, tests/integration/, etc., we need to go up two levels
+    local dot_script="$BATS_TEST_DIRNAME/../../dot"
+    if [[ ! -f "$dot_script" ]]; then
+        # Fallback: try one level up (for tests directly in tests/)
+        dot_script="$BATS_TEST_DIRNAME/../dot"
+    fi
+    cp "$dot_script" "$TEST_DOTFILES_DIR/"
 }
 
 # Clean up test dotfiles directory
@@ -57,11 +64,16 @@ source_dot_script() {
     local dot_script="${DOTFILES_DIR:-$TEST_DOTFILES_DIR}/dot"
 
     if [[ ! -f "$dot_script" ]]; then
-        dot_script="$BATS_TEST_DIRNAME/../dot"
+        # Try from repository root (two levels up from test file)
+        dot_script="$BATS_TEST_DIRNAME/../../dot"
+        if [[ ! -f "$dot_script" ]]; then
+            # Fallback: one level up
+            dot_script="$BATS_TEST_DIRNAME/../dot"
+        fi
     fi
 
     # Source the script to get access to functions
-    # Suppress main execution
+    # Suppress main execution by preventing main() call
     export BATS_TESTING=1
     source "$dot_script"
 }

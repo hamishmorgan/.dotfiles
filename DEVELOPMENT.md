@@ -30,10 +30,14 @@ Developer documentation for the .dotfiles repository.
 - Bash 3.2+ (macOS compatible)
 - GNU Stow 2.3+
 
+**Required (for development):**
+
+- bats (automated testing framework)
+- shellcheck (bash linting)
+
 **Optional (for development):**
 
 - Docker or Podman (for local CI)
-- shellcheck (bash linting)
 - markdownlint-cli (markdown linting)
 - gh (GitHub CLI for PR management)
 - jq (JSON processing for CI status)
@@ -64,7 +68,7 @@ git submodule update --init --recursive
 
 ```bash
 sudo apt-get update
-sudo apt-get install git stow shellcheck nodejs npm
+sudo apt-get install git stow bats shellcheck nodejs npm
 # Use npx for markdownlint (no global install needed)
 npx --yes markdownlint-cli@0.42.0 "**/*.md"
 ```
@@ -72,7 +76,7 @@ npx --yes markdownlint-cli@0.42.0 "**/*.md"
 **macOS:**
 
 ```bash
-brew install git stow shellcheck markdownlint-cli gh jq
+brew install git stow bats-core shellcheck markdownlint-cli gh jq
 ```
 
 ### Editor Setup
@@ -310,6 +314,21 @@ function_name() {
 ```bash
 # Quick smoke tests (30 seconds)
 ./tests/smoke-test.sh
+
+# BATS regression tests (fast, catches bug regressions)
+bats tests/regression/
+```
+
+**During development:**
+
+```bash
+# Run all BATS tests
+./tests/run-bats.sh
+
+# Or run specific test suites
+bats tests/unit/          # Unit tests
+bats tests/integration/   # Integration tests
+bats tests/contract/      # Output validation
 ```
 
 **Before pushing:**
@@ -329,9 +348,18 @@ function_name() {
 
 ### Testing Strategy
 
+- **BATS tests**: Automated unit, integration, and regression testing (40+ tests)
+- **Regression tests**: One test per bug fix to prevent recurrence
 - **Smoke tests**: Fast validation of basic functionality and structure
 - **Container tests**: Full installation on Ubuntu and Alpine (BusyBox-based, non-GNU)
 - **GitHub Actions**: Final validation on real Ubuntu and macOS runners
+
+### Test Categories
+
+1. **Unit Tests** (70%) - Test functions in isolation
+2. **Integration Tests** (25%) - Test complete commands
+3. **Regression Tests** - Prevent bugs from returning (e.g., Issue #66)
+4. **Contract Tests** - Validate output format stability
 
 ### Why This Matters
 
@@ -340,11 +368,13 @@ Cross-platform compatibility issues (BSD vs GNU commands) are caught by:
 1. Alpine tests (BusyBox-based coreutils, non-GNU)
 2. GitHub Actions macOS runner (actual macOS)
 
-Always run container tests before pushing to catch platform-specific issues early.
+BATS tests catch logic bugs and regressions (like Issue #66 - backup size showing 0MB).
+
+Always run tests before pushing to catch issues early.
 
 ### Test Documentation
 
-See `tests/README.md` for detailed testing framework documentation.
+See `tests/TEST_FRAMEWORK.md` for comprehensive testing framework documentation.
 
 ---
 

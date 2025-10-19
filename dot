@@ -3552,4 +3552,7 @@ EOF
 }
 
 # Run main function with all arguments
-main "$@"
+# Skip if being sourced for testing
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
