@@ -3,8 +3,8 @@
 
 # Load BATS helper libraries
 # These should be installed system-wide:
-# macOS: brew tap bats-core/bats-core && brew install bats-support bats-assert bats-file
-# Ubuntu: sudo apt-get install bats-assert bats-support bats-file
+# macOS: brew install bats-core && brew tap bats-core/bats-core && brew install bats-support bats-assert bats-file
+# Ubuntu: sudo apt-get install bats bats-assert bats-support bats-file
 
 # Determine brew prefix on macOS (if applicable)
 if command -v brew &>/dev/null; then
