@@ -3345,7 +3345,7 @@ security_audit() {
     local secrets_found=false
     for pattern in "${patterns[@]}"; do
         local matches
-        matches=$(git grep -i "$pattern" -- '*.template' '*.example' '*.sh' '*.zsh' '*.bash' '*.md' 2>/dev/null || true)
+        matches=$(git grep -E -n -i "$pattern" -- '*.template' '*.example' '*.sh' '*.zsh' '*.bash' '*.md' 2>/dev/null || true)
         
         if [[ -n "$matches" ]]; then
             if ! $secrets_found; then
@@ -3396,7 +3396,9 @@ security_audit() {
     # 3. Check .gitignore coverage
     show_numbered_section "3" "Checking .gitignore Coverage"
     
+    
     local unignored_secrets=()
+    local untracked_unignored=()
     
     while IFS= read -r secret_file; do
         [[ -z "$secret_file" ]] && continue
@@ -3407,21 +3409,36 @@ security_audit() {
             if git ls-files --error-unmatch "$secret_file" >/dev/null 2>&1; then
                 unignored_secrets+=("$secret_file")
                 ((issues_found++))
+            else
+                # Untracked but not ignored - potential future commit risk
+                untracked_unignored+=("$secret_file")
+                ((issues_found++))
             fi
         fi
     done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
     
     if [[ ${#unignored_secrets[@]} -gt 0 ]]; then
-        echo "   ${RED}${SYMBOL_ERROR}${NC} Secret files NOT ignored by git:"
+        echo "   ${RED}${SYMBOL_ERROR}${NC} Secret files tracked in git:"
         for file in "${unignored_secrets[@]}"; do
             echo "     ${SYMBOL_ERROR} ${file#"$DOTFILES_DIR"/}"
         done
-        echo "   ${RED}${SYMBOL_ERROR}${NC} These files may be committed to git!"
-    else
+        echo "   ${RED}${SYMBOL_ERROR}${NC} These files are committed to git!"
+        echo ""
+    fi
+    
+    if [[ ${#untracked_unignored[@]} -gt 0 ]]; then
+        echo "   ${YELLOW}${SYMBOL_WARNING}${NC} Secret files not ignored by git:"
+        for file in "${untracked_unignored[@]}"; do
+            echo "     ${SYMBOL_WARNING} ${file#"$DOTFILES_DIR"/}"
+        done
+        echo "   ${YELLOW}${SYMBOL_WARNING}${NC} Add patterns to .gitignore to prevent future commits"
+        echo ""
+    fi
+    
+    if [[ ${#unignored_secrets[@]} -eq 0 ]] && [[ ${#untracked_unignored[@]} -eq 0 ]]; then
         echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files properly ignored"
     fi
     echo ""
-    
     # 4. Check SSH key security
     show_numbered_section "4" "Checking SSH Key Security"
     
@@ -3460,10 +3477,10 @@ security_audit() {
     echo ""
     if [[ $issues_found -eq 0 ]]; then
         log_success "No security issues detected"
-        show_command_summary "success" "SECURE" "0"
+        show_command_summary "success" "SECURE" ""
     else
         log_warning "Security audit found $issues_found potential issue(s)"
-        show_command_summary "warn" "$issues_found ISSUES FOUND" "0"
+        show_command_summary "info" "$issues_found ISSUES FOUND" ""
         echo ""
         show_tip "Review and fix security issues before committing"
     fi
@@ -3484,7 +3501,10 @@ is_flag() {
 is_valid_command() {
     local cmd="$1"
     [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security)$ ]]
-# Returns: verbosity increment via echo (accumulated by caller)
+}
+
+# Parse verbosity flag and return level increment
+# Handles: -v (1), -vv (2), -vvv (3), --verbose (1)
 # Examples:
 #   -v           → 1
 #   -vv          → 2
@@ -3560,7 +3580,9 @@ parse_arguments() {
                 if [[ -n "$COMMAND" ]]; then
                     die "Multiple commands specified: '$COMMAND' and '$1'"
                 fi
-            install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security)
+                COMMAND="$1"
+                shift
+                ;;
             # Unknown argument
             *)
                 die "Unknown argument: $1" show_usage
