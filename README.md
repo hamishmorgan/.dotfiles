@@ -16,7 +16,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - Template-based secrets management
 - macOS and Linux support
 - Validation script for installation verification
-- Packages: git, zsh, tmux, gh, gnuplot, bash
+- Packages: git, zsh, tmux, gh, gnuplot, bash, fish
 - Oh My Zsh submodule
 - CI/CD validation with GitHub Actions
 
@@ -54,6 +54,14 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 ├── bash/          # Bash configuration
 │   ├── .bashrc
 │   └── .bash_profile
+├── fish/          # Fish shell configuration
+│   └── .config/fish/
+│       ├── config.fish
+│       ├── config.linux.fish
+│       ├── config.osx.fish
+│       └── functions/
+│           ├── d.fish           # Dotfiles wrapper function
+│           └── fish_prompt.fish # Custom prompt
 ├── dot            # Main dotfiles management script
 └── README.md      # This file
 ```

@@ -1,0 +1,14 @@
+# Fish package-specific stow ignore patterns
+# Template, secret, and example files are not stowed
+\.template$
+\.secret$
+\.example$
+
+# Machine-specific state files (not stowed)
+^\.config/fish/fish_variables$
+^\.config/fish/completions$
+^\.config/fish/conf\.d$
+
+# Private/secret configuration (not stowed)
+^\.config/fish/config_private\.fish$
+

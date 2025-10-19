@@ -41,6 +41,7 @@ This repository contains dotfiles managed with GNU Stow. Files are organized int
 - **gh**: GitHub CLI configuration
 - **gnuplot**: GNU Plot configuration
 - **bash**: Bash shell configuration
+- **fish**: Fish shell configuration
 
 Template-based secrets management separates public templates from private secret configurations.
 The `system` package is stowed first to ensure `.stow-global-ignore` is in place before other packages.
@@ -672,7 +673,7 @@ cp -r backups/dotfiles-backup-YYYYMMDD-HHMMSS/* ~/
 stow --verbose --delete --dir=. --target=$HOME package_name
 
 # Remove all dotfiles symlinks
-for pkg in system git zsh tmux gh gnuplot bash; do
+for pkg in system git zsh tmux gh gnuplot bash fish; do
     stow --verbose --delete --dir=. --target=$HOME "$pkg"
 done
 ```
