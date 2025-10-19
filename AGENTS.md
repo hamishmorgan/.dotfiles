@@ -1664,10 +1664,18 @@ For all code changes:
 6. **Repeat**: Continue until both CI and Copilot approve
 7. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
 8. **Merge**: Only merge after both CI and Copilot are satisfied
+9. **Post-Merge Cleanup**:
+   - Update local main: `git checkout main && git pull`
+   - Rebase shopify branch: `git checkout shopify && git rebase main && git push --force-with-lease`
+   - Delete feature branches: `git branch -d <branch-name>`
+   - Delete remote branches (if not auto-deleted): `git push origin --delete <branch-name>`
 
 This ensures code quality through automated testing and AI review.
 
 **Note:** The PR template includes an AGENTS.md update checklist to remind about documentation.
+
+**Post-merge routine:** Always rebase shopify branch on main after merging PRs to keep both branches in sync.
+Clean up feature branches locally and remotely to maintain a tidy repository.
 
 ## GitHub Integration
 
