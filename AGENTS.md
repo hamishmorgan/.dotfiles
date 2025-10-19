@@ -197,6 +197,7 @@ apk add stow git bash
 **Only add comments when they provide non-obvious information.**
 
 Good comments explain:
+
 - **Why** something is done a certain way
 - **Context** that isn't clear from the code
 - **Workarounds** for bugs or limitations
@@ -204,6 +205,7 @@ Good comments explain:
 - **Security** implications
 
 Bad comments restate what the code does:
+
 ```bash
 # BAD: Redundant
 # Set variable to value
@@ -215,6 +217,7 @@ my_var="value"
 ```
 
 **Prefer self-documenting code over comments:**
+
 ```bash
 # BAD: Needs comment to explain
 files=("$@")  # Get all arguments as array
@@ -224,6 +227,7 @@ input_files=("$@")
 ```
 
 **Remove redundant comments:**
+
 - Section headers that just label code blocks
 - Comments that repeat function/variable names
 - Obvious operations that need no explanation
@@ -234,7 +238,7 @@ input_files=("$@")
 
 Apply these principles to maintain code quality and readability:
 
-**1. Meaningful Names**
+#### 1. Meaningful Names
 
 Use descriptive, specific names that reveal intent:
 
@@ -248,7 +252,7 @@ dotfiles_dir="$HOME/.dotfiles"
 files_to_process=("$@")
 ```
 
-**2. Single Responsibility Principle (SRP)**
+#### 2. Single Responsibility Principle (SRP)
 
 Each function should have one reason to change:
 
@@ -268,7 +272,7 @@ transform_files() { ... }
 log_results() { ... }
 ```
 
-**3. Keep It Simple (KISS)**
+#### 3. Keep It Simple (KISS)
 
 Favor simple solutions over clever ones:
 
@@ -284,7 +288,7 @@ else
 fi
 ```
 
-**4. Don't Repeat Yourself (DRY)**
+#### 4. Don't Repeat Yourself (DRY)
 
 Extract common patterns into functions:
 
@@ -306,7 +310,7 @@ fail_with_error "Failed to stow system"
 fail_with_error "Failed to stow git"
 ```
 
-**5. Functions Should Do One Thing**
+#### 5. Functions Should Do One Thing
 
 Keep functions focused and cohesive:
 
@@ -330,7 +334,7 @@ install_package() {
 }
 ```
 
-**6. Avoid Magic Numbers**
+#### 6. Avoid Magic Numbers
 
 Use named constants for clarity:
 
@@ -349,7 +353,7 @@ if [[ ${#backups[@]} -gt $MAX_BACKUPS ]]; then
 fi
 ```
 
-**7. Prefer Readable Code Over Clever Code**
+#### 7. Prefer Readable Code Over Clever Code
 
 Clarity trumps brevity:
 
@@ -364,7 +368,7 @@ find_unique_files() {
 files=($(find_unique_files))
 ```
 
-**8. Small Functions**
+#### 8. Small Functions
 
 Functions should be short (typically < 20 lines):
 
@@ -373,7 +377,7 @@ Functions should be short (typically < 20 lines):
 - Easy to name accurately
 - Encourage code reuse
 
-**9. Fail Fast**
+#### 9. Fail Fast
 
 Validate inputs early and return immediately:
 
@@ -676,14 +680,26 @@ When modifying commands, prefer using these helpers over duplicating logic.
 
 ## Validation
 
-Before committing changes, verify:
+**CRITICAL: Always run linting before every commit. Do not commit files with linting errors.**
 
-**1. Linting passes:**
+Before committing changes, verify in this order:
+
+**1. Linting passes (MANDATORY):**
+
+Run linting on all modified files before committing:
 
 ```bash
+# Markdown files
 markdownlint "**/*.md"
+
+# Shell scripts
 shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh
+
+# Both together
+markdownlint "**/*.md" && shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh
 ```
+
+**If linting fails, fix all errors before committing. Zero tolerance for linting errors.**
 
 **2. Smoke tests pass (30 seconds):**
 
@@ -696,6 +712,14 @@ shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/
 ```bash
 ./tests/run-local-ci.sh
 ```
+
+**Pre-commit checklist:**
+
+- [ ] Run linting on all modified files
+- [ ] Fix all linting errors (zero errors required)
+- [ ] Run smoke tests
+- [ ] Verify changes work as expected
+- [ ] Update AGENTS.md if new patterns added
 
 **What gets validated:**
 
