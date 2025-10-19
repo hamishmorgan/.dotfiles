@@ -38,7 +38,7 @@ teardown() {
     run ./dot status
     assert_success
 
-    # Status should be brief (< 50 lines typically)
+    # Status should be brief (< 100 lines typically)
     line_count=$(echo "$output" | wc -l)
     [ "$line_count" -lt 100 ]
 }
