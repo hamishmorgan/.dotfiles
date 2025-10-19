@@ -1,4 +1,4 @@
-name: CI (Proposed Matrix Strategy)
+name: CI
 
 on:
   push:
