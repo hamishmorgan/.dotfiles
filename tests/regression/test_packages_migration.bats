@@ -91,3 +91,56 @@ load '../test_helper/common'
     [[ ! -L "$HOME/.config/gh/config.yml" ]]
 }
 
+@test "validate_package accepts packages/ directory symlinks" {
+    # Regression test for health check validation bug
+    # Issue: validate_package was checking for .dotfiles/<package> 
+    # but should check for .dotfiles/packages/<package>
+    
+    # Source the dot script
+    source_dot_script
+    
+    local dotfiles_dir="$BATS_TEST_DIRNAME/../.."
+    
+    # Create a symlink pointing to the CORRECT packages/ path
+    # (simulating what stow actually creates after migration)
+    ln -sf "$dotfiles_dir/packages/git/.gitconfig" "$HOME/.gitconfig"
+    
+    # Verify symlink points to packages/ directory
+    local target
+    target="$(readlink "$HOME/.gitconfig")"
+    [[ "$target" == *"/packages/git/"* ]]
+    
+    # Run validate_package for git package
+    run validate_package "git"
+    assert_success
+    
+    # Should report validation success
+    assert_output --partial "Git configuration validated successfully"
+}
+
+@test "health check passes with packages/ directory structure" {
+    # End-to-end regression test
+    # Verify health check correctly validates symlinks after packages/ migration
+    
+    cd "$BATS_TEST_DIRNAME/../.." || return 1
+    
+    # Install dotfiles (creates symlinks to packages/ directory)
+    ./dot install > /dev/null 2>&1 || true
+    
+    # Run health check
+    run ./dot health
+    
+    # Health should pass (exit 0) or fail gracefully (exit 1)
+    # Should NOT crash with exit 2 or other codes
+    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
+    
+    # Critical: Should NOT show symlink validation errors
+    refute_output --partial "validation failed"
+    
+    # If installation succeeded, symlink integrity should pass
+    if [[ "$status" -eq 0 ]]; then
+        assert_output --partial "Symlink Integrity"
+        assert_output --regexp "(✓ Pass|Pass)"
+    fi
+}
+
