@@ -1,266 +1,229 @@
 {
-    "remote.SSH.connectTimeout": 150,
-    "[ruby]": {
-        "editor.defaultFormatter": "Shopify.ruby-lsp",
-        "editor.formatOnSave": true,
-        "editor.formatOnType": true,
-        "editor.tabSize": 2,
-        "editor.insertSpaces": true,
-        "files.trimTrailingWhitespace": true,
-        "files.insertFinalNewline": true,
-        "files.trimFinalNewlines": true,
-        "editor.rulers": [
-            120
-        ],
-        "editor.semanticHighlighting.enabled": true
-    },
-    "git.autofetch": true,
-    "redhat.telemetry.enabled": false,
-    "githubPullRequests.pullBranch": "never",
-    "terminal.integrated.scrollback": 100000,
-    "diffEditor.ignoreTrimWhitespace": true,
+  // ============================================================================
+  // Cursor-Specific Settings
+  // ============================================================================
+  "cursor.composer.shouldAllowCustomModes": true,
+  "cursor.composer.usageSummaryDisplay": "always",
+  "cursor.diffs.useCharacterLevelDiffs": true,
+  "cursor.windowSwitcher.sidebarHoverCollapsed": true,
 
-    // Disable the auto-tapioca "Generating DSL RBIs" feature which breaks everything periodically
-    "rubyLsp.featureFlags": { "tapiocaAddon": false },
+  // ============================================================================
+  // Editor Appearance & Behavior
+  // ============================================================================
+  "workbench.colorTheme": "Spinel",
+  "workbench.iconTheme": "vscode-icons",
+  "workbench.editor.wrapTabs": true,
+  "window.density.editorTabHeight": "compact",
+  "editor.stickyTabStops": true,
 
-    // "byesig": {
-    //     "byesig.backgroundColor": "",
-    //     "enabled": true,
-    //     "byesig.fold": true,
-    //     "opacity": 0.8,
-    //     "byesig.showIcon": true
-    // },
-    // "highlight.regexes": {
-    //     "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *XXX(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-    //         "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-    //         "decorations": [
-    //             {
-    //                 "overviewRulerColor": "#ffcc00",
-    //                 "backgroundColor": "#ffcc00",
-    //                 "color": "#1f1f1f",
-    //                 "fontWeight": "bold"
-    //             },
-    //             {
-    //                 "backgroundColor": "#ffcc00",
-    //                 "color": "#1f1f1f"
-    //             }
-    //         ]
-    //     },
-    //     "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *TODO(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-    //         "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-    //         "decorations": [
-    //             {
-    //                 "overviewRulerColor": "#ffcc00",
-    //                 "backgroundColor": "#ffcc00",
-    //                 "color": "#1f1f1f",
-    //                 "fontWeight": "bold"
-    //             },
-    //             {
-    //                 "backgroundColor": "#ffcc00",
-    //                 "color": "#1f1f1f"
-    //             }
-    //         ]
-    //     },
-    //     "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:FIXME|FIX|BUG|UGLY|DEBUG|HACK)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-    //         "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-    //         "decorations": [
-    //             {
-    //                 "overviewRulerColor": "#cc0000",
-    //                 "backgroundColor": "#cc0000",
-    //                 "color": "#1f1f1f",
-    //                 "fontWeight": "bold"
-    //             },
-    //             {
-    //                 "backgroundColor": "#cc0000",
-    //                 "color": "#1f1f1f"
-    //             }
-    //         ]
-    //     },
-    //     "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:REVIEW|OPTIMIZE|TSC)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-    //         "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-    //         "decorations": [
-    //             {
-    //                 "overviewRulerColor": "#00ccff",
-    //                 "backgroundColor": "#00ccff",
-    //                 "color": "#1f1f1f",
-    //                 "fontWeight": "bold"
-    //             },
-    //             {
-    //                 "backgroundColor": "#00ccff",
-    //                 "color": "#1f1f1f"
-    //             }
-    //         ]
-    //     },
-    //     "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:IDEA)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-    //         "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-    //         "decorations": [
-    //             {
-    //                 "overviewRulerColor": "#cc00cc",
-    //                 "backgroundColor": "#cc00cc",
-    //                 "color": "#1f1f1f",
-    //                 "fontWeight": "bold"
-    //             },
-    //             {
-    //                 "backgroundColor": "#cc00cc",
-    //                 "color": "#1f1f1f"
-    //             }
-    //         ]
-    //     }
-    // },
-    "workbench.colorTheme": "Spinel",
-    // "github.copilot.advanced": {},
-    "githubPullRequests.terminalLinksHandler": "github",
-    "git.openRepositoryInParentFolders": "always",
-    "workbench.iconTheme": "vscode-icons",
-    "cSpell.languageSettings": [],
-    "cSpell.enableFiletypes": [
-        "ruby"
-    ],
-    "cSpell.userWords": [
-        "autofetch",
-        "byesig",
-        "cadetgear",
-        "Datetime",
-        "endcodeblock",
-        "fulfillable",
-        "Geolocator",
-        "Hotwire's",
-        "importmap",
-        "interruptible",
-        "isospin",
-        "Jsonify",
-        "kamal",
-        "killswitch",
-        "klass",
-        "merch",
-        "metafield",
-        "metafields",
-        "normalised",
-        "Omakase",
-        "preorder",
-        "propshaft",
-        "regexes",
-        "rubocop",
-        "scrollback",
-        "Shipify",
-        "Smush",
-        "snowdevil",
-        "snowdevils",
-        "statsd",
-        "unfulfill",
-        "unranked",
-        "unsplit",
-        "unstock",
-        "UNSUBMITTED",
-        "xlarge",
-        "Xpresspost",
-        "zoneinfo"
-    ],
-    "terminal.integrated.enableImages": true,
-    "workbench.colorCustomizations": {
-        "terminal.findMatchBackground": "#dddd00",
-        "terminal.findMatchBorder": "#dddd00",
-        "terminal.findMatchHighlightBackground": "#dddd00",
-        "terminal.findMatchHighlightBorder": "#dddd00",
-        "terminalOverviewRuler.findMatchForeground": "#dddd00"
-    },
-    "explorer.fileNesting.patterns": {
-        "*.ts": "${capture}.js",
-        "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
-        "*.jsx": "${capture}.js",
-        "*.tsx": "${capture}.ts",
-        "tsconfig.json": "tsconfig.*.json",
-        "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb",
-        "*.sqlite": "${capture}.${extname}-*",
-        "*.db": "${capture}.${extname}-*",
-        "*.sqlite3": "${capture}.${extname}-*",
-        "*.db3": "${capture}.${extname}-*",
-        "*.sdb": "${capture}.${extname}-*",
-        "*.s3db": "${capture}.${extname}-*"
-    },
-    "vsicons.dontShowNewVersionMessage": true,
-    "[json]": {
-        "editor.defaultFormatter": "vscode.json-language-features"
-    },
-    "gitlens.rebaseEditor.ordering": "asc",
-    "javascript.updateImportsOnFileMove.enabled": "always",
-    "cursor.windowSwitcher.sidebarHoverCollapsed": true,
-    "cursor.diffs.useCharacterLevelDiffs": true,
-    "workbench.editor.wrapTabs": true,
-    "window.density.editorTabHeight": "compact",
-    "editor.stickyTabStops": true,
-    "sorbet.highlightUntyped": "everywhere",
-    "cursor.composer.shouldAllowCustomModes": true,
-    "highlight.regexes": {
-        "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *TODO(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-            "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-            "decorations": [
-                {
-                    "overviewRulerColor": "#ffcc00",
-                    "backgroundColor": "#ffcc00",
-                    "color": "#1f1f1f",
-                    "fontWeight": "bold"
-                },
-                {
-                    "backgroundColor": "#ffcc00",
-                    "color": "#1f1f1f"
-                }
-            ]
+  // ============================================================================
+  // Git & Version Control
+  // ============================================================================
+  "git.autofetch": true,
+  "git.openRepositoryInParentFolders": "always",
+  "diffEditor.ignoreTrimWhitespace": true,
+  "gitlens.rebaseEditor.ordering": "asc",
+
+  // GitHub Pull Requests
+  "githubPullRequests.pullBranch": "never",
+  "githubPullRequests.terminalLinksHandler": "github",
+
+  // ============================================================================
+  // Terminal
+  // ============================================================================
+  "terminal.integrated.scrollback": 100000,
+  "terminal.integrated.enableImages": true,
+
+  // Terminal search highlighting
+  "workbench.colorCustomizations": {
+    "terminal.findMatchBackground": "#dddd00",
+    "terminal.findMatchBorder": "#dddd00",
+    "terminal.findMatchHighlightBackground": "#dddd00",
+    "terminal.findMatchHighlightBorder": "#dddd00",
+    "terminalOverviewRuler.findMatchForeground": "#dddd00"
+  },
+
+  // ============================================================================
+  // File Explorer
+  // ============================================================================
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.js",
+    "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
+    "*.jsx": "${capture}.js",
+    "*.tsx": "${capture}.ts",
+    "tsconfig.json": "tsconfig.*.json",
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb",
+    "*.sqlite": "${capture}.${extname}-*",
+    "*.db": "${capture}.${extname}-*",
+    "*.sqlite3": "${capture}.${extname}-*",
+    "*.db3": "${capture}.${extname}-*",
+    "*.sdb": "${capture}.${extname}-*",
+    "*.s3db": "${capture}.${extname}-*"
+  },
+
+  // ============================================================================
+  // Language-Specific Settings
+  // ============================================================================
+
+  // Ruby
+  "[ruby]": {
+    "editor.defaultFormatter": "Shopify.ruby-lsp",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "editor.rulers": [120],
+    "editor.semanticHighlighting.enabled": true
+  },
+
+  // JSON
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+
+  // Docker Compose
+  "[dockercompose]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+
+  // GitHub Actions
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+
+  // ============================================================================
+  // Extensions
+  // ============================================================================
+
+  // Ruby LSP
+  "rubyLsp.featureFlags": {
+    "tapiocaAddon": false
+  },
+
+  // Sorbet
+  "sorbet.highlightUntyped": "everywhere",
+
+  // Code Spell Checker
+  "cSpell.enableFiletypes": ["ruby"],
+  "cSpell.userWords": [
+    "autofetch",
+    "cadetgear",
+    "Datetime",
+    "fulfillable",
+    "Geolocator",
+    "importmap",
+    "interruptible",
+    "isospin",
+    "Jsonify",
+    "kamal",
+    "killswitch",
+    "klass",
+    "merch",
+    "metafield",
+    "metafields",
+    "normalised",
+    "Omakase",
+    "preorder",
+    "propshaft",
+    "regexes",
+    "rubocop",
+    "scrollback",
+    "Shipify",
+    "Smush",
+    "snowdevil",
+    "snowdevils",
+    "statsd",
+    "unfulfill",
+    "unranked",
+    "unsplit",
+    "unstock",
+    "UNSUBMITTED",
+    "xlarge",
+    "Xpresspost",
+    "zoneinfo"
+  ],
+
+  // VS Icons
+  "vsicons.dontShowNewVersionMessage": true,
+
+  // Red Hat telemetry
+  "redhat.telemetry.enabled": false,
+
+  // JavaScript/TypeScript
+  "javascript.updateImportsOnFileMove.enabled": "always",
+
+  // Comment highlighting (TODO, FIXME, etc)
+  "highlight.regexes": {
+    "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *TODO(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+      "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+      "decorations": [
+        {
+          "overviewRulerColor": "#ffcc00",
+          "backgroundColor": "#ffcc00",
+          "color": "#1f1f1f",
+          "fontWeight": "bold"
         },
-        "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:FIXME|FIX|BUG|UGLY|DEBUG|HACK)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-            "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-            "decorations": [
-                {
-                    "overviewRulerColor": "#cc0000",
-                    "backgroundColor": "#cc0000",
-                    "color": "#1f1f1f",
-                    "fontWeight": "bold"
-                },
-                {
-                    "backgroundColor": "#cc0000",
-                    "color": "#1f1f1f"
-                }
-            ]
-        },
-        "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:REVIEW|OPTIMIZE|TSC)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-            "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-            "decorations": [
-                {
-                    "overviewRulerColor": "#00ccff",
-                    "backgroundColor": "#00ccff",
-                    "color": "#1f1f1f",
-                    "fontWeight": "bold"
-                },
-                {
-                    "backgroundColor": "#00ccff",
-                    "color": "#1f1f1f"
-                }
-            ]
-        },
-        "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:IDEA)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-            "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-            "decorations": [
-                {
-                    "overviewRulerColor": "#cc00cc",
-                    "backgroundColor": "#cc00cc",
-                    "color": "#1f1f1f",
-                    "fontWeight": "bold"
-                },
-                {
-                    "backgroundColor": "#cc00cc",
-                    "color": "#1f1f1f"
-                }
-            ]
+        {
+          "backgroundColor": "#ffcc00",
+          "color": "#1f1f1f"
         }
+      ]
     },
-    "cursor.composer.usageSummaryDisplay": "always",
-    "[dockercompose]": {
-        "editor.insertSpaces": true,
-        "editor.tabSize": 2,
-        "editor.autoIndent": "advanced",
-        "editor.defaultFormatter": "redhat.vscode-yaml"
+    "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:FIXME|FIX|BUG|UGLY|DEBUG|HACK)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+      "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+      "decorations": [
+        {
+          "overviewRulerColor": "#cc0000",
+          "backgroundColor": "#cc0000",
+          "color": "#1f1f1f",
+          "fontWeight": "bold"
+        },
+        {
+          "backgroundColor": "#cc0000",
+          "color": "#1f1f1f"
+        }
+      ]
     },
-    "[github-actions-workflow]": {
-        "editor.defaultFormatter": "redhat.vscode-yaml"
+    "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:REVIEW|OPTIMIZE|TSC)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+      "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+      "decorations": [
+        {
+          "overviewRulerColor": "#00ccff",
+          "backgroundColor": "#00ccff",
+          "color": "#1f1f1f",
+          "fontWeight": "bold"
+        },
+        {
+          "backgroundColor": "#00ccff",
+          "color": "#1f1f1f"
+        }
+      ]
+    },
+    "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:IDEA)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+      "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+      "decorations": [
+        {
+          "overviewRulerColor": "#cc00cc",
+          "backgroundColor": "#cc00cc",
+          "color": "#1f1f1f",
+          "fontWeight": "bold"
+        },
+        {
+          "backgroundColor": "#cc00cc",
+          "color": "#1f1f1f"
+        }
+      ]
     }
+  },
+
+  // ============================================================================
+  // Remote Development
+  // ============================================================================
+  "remote.SSH.connectTimeout": 150
 }

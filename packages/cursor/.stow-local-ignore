@@ -4,5 +4,6 @@
 
 # Standard patterns to ignore
 ^README\.md$
+^SETTINGS_NOTES\.md$
 ^\.DS_Store$
 
