@@ -6,7 +6,7 @@ Manages Cursor IDE user settings and keybindings across machines with cross-plat
 
 This package uses a **dual-path structure** to support both macOS and Linux:
 
-```
+```text
 packages/cursor/
 ├── .config/Cursor/User/           # Primary (Linux standard, XDG)
 │   ├── settings.json              # Source of truth
@@ -43,14 +43,16 @@ Cursor uses different paths on different platforms:
 ### Result
 
 **On macOS:**
-```
+
+```text
 ~/Library/Application Support/Cursor/User/settings.json
   → ~/.dotfiles/packages/cursor/Library/.../settings.json
     → ~/.dotfiles/packages/cursor/.config/Cursor/User/settings.json
 ```
 
 **On Linux:**
-```
+
+```text
 ~/.config/Cursor/User/settings.json
   → ~/.dotfiles/packages/cursor/.config/Cursor/User/settings.json
 ```
@@ -170,4 +172,3 @@ The same pattern can be used for VSCode:
 - Main documentation: `/README.md`
 - Settings cleanup notes: `SETTINGS_NOTES.md`
 - Dot script: `/dot`
-

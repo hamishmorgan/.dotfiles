@@ -52,25 +52,28 @@ Added nesting for:
 - Documentation: `"README.md": "README*, CHANGELOG*, CONTRIBUTING*, LICENSE*"`
 - Enabled file nesting by default: `"explorer.fileNesting.enabled": true`
 
-#### 4. More Subtle Terminal Colors
+#### 4. Terminal Colors
 
-Changed from bright `#dddd00` to semi-transparent overlays:
+Terminal search highlighting uses bright yellow for visibility:
 
 ```json
-"terminal.findMatchBackground": "#ffcc0060",        // 40% opacity
-"terminal.findMatchHighlightBackground": "#ffcc0040", // 25% opacity
+"terminal.findMatchBackground": "#dddd00",
+"terminal.findMatchHighlightBackground": "#dddd00"
 ```
 
-#### 5. More Subtle Comment Highlighting
+Note: Could be improved with semi-transparent colors (e.g., `#ffcc0060`) for better theme integration.
 
-Changed from harsh bright colors to softer, semi-transparent versions:
+#### 5. Comment Highlighting
 
-- TODO: `#ffcc00` → `#ffcc0040` (40% opacity yellow)
-- FIXME/BUG: `#cc0000` → `#ff6b6b40` (softer red, 40% opacity)
-- REVIEW: `#00ccff` → `#4ecdc440` (softer cyan, 40% opacity)
-- IDEA: `#cc00cc` → `#c678dd40` (softer purple, 40% opacity)
+Comment markers use bright opaque colors for high visibility:
 
-Colors now blend with your theme instead of harsh blocks.
+- TODO: `#ffcc00` (bright yellow)
+- FIXME/BUG: `#cc0000` (bright red)
+- REVIEW: `#00ccff` (bright cyan)
+- IDEA: `#cc00cc` (bright magenta)
+
+Note: Could be improved with semi-transparent colors for better theme integration:
+`#ffcc0040`, `#ff6b6b40`, `#4ecdc440`, `#c678dd40`
 
 #### 6. Ruby Settings Enhanced
 
@@ -127,8 +130,8 @@ These settings could be moved to shopify branch when you implement branch-specif
 
 **Full cross-platform support** using dual-path structure:
 
-- **macOS**: `~/Library/Application Support/Cursor/User/` ✅
-- **Linux**: `~/.config/Cursor/User/` ✅
+- **macOS**: `~/Library/Application Support/Cursor/User` ✅
+- **Linux**: `~/.config/Cursor/User` ✅
 
 **How it works:**
 
