@@ -1009,9 +1009,10 @@ validate_package() {
     IFS=',' read -ra file_array <<< "$files"
 
     for file in "${file_array[@]}"; do
-        # Use packages/ with trailing slash to ensure path component boundary
-        # Prevents false positives with siblings like packages/git-old/
-        if ! check_symlink "$file" "packages/$package/"; then
+        # Use .dotfiles/packages/ with trailing slash for security and precision
+        # - .dotfiles/ ensures symlinks point to our repo (not arbitrary paths)
+        # - trailing slash prevents false positives with siblings like git-old/
+        if ! check_symlink "$file" ".dotfiles/packages/$package/"; then
             ((errors++))
         fi
     done
