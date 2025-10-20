@@ -135,7 +135,7 @@ trap handle_interrupt INT TERM
 
 # Package definitions
 # Note: system package is stowed first to ensure .stow-global-ignore is in place
-PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish")
+PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "cursor")
 
 # Get package files (bash 3.2 compatible - no associative arrays)
 get_package_files() {
@@ -149,6 +149,7 @@ get_package_files() {
         gnuplot) echo ".gnuplot" ;;
         bash)    echo ".bashrc,.bash_profile" ;;
         fish)    echo ".config/fish" ;;
+        cursor)  echo "Library/Application Support/Cursor/User" ;;
         *)       echo "" ;;
     esac
 }
@@ -165,6 +166,7 @@ get_package_name() {
         gnuplot) echo "GNU Plot" ;;
         bash)    echo "Bash" ;;
         fish)    echo "Fish" ;;
+        cursor)  echo "Cursor" ;;
         *)       echo "$package" ;;
     esac
 }
@@ -176,6 +178,92 @@ get_required_deps() {
         common)   echo "stow git" ;;
         optional) echo "tmux zsh fish" ;;
         *)        echo "" ;;
+    esac
+}
+
+# Check if package requires platform-specific path handling
+# Returns: 0 (true) if package has dual paths, 1 (false) otherwise
+is_dual_path_package() {
+    local package="$1"
+    case "$package" in
+        cursor|vscode) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Setup internal symlinks for dual-path packages
+# Creates symlinks from macOS path to .config (primary) path
+setup_dual_path_symlinks() {
+    local package="$1"
+
+    if ! is_dual_path_package "$package"; then
+        return 0
+    fi
+
+    local package_dir="$PACKAGES_DIR/$package"
+    local config_dir="$package_dir/.config"
+    local macos_base="$package_dir/Library/Application Support"
+
+    # Determine app name from package
+    local app_name
+    case "$package" in
+        cursor) app_name="Cursor" ;;
+        vscode) app_name="Code" ;;
+        *) return 0 ;;
+    esac
+
+    local macos_dir="$macos_base/$app_name/User"
+    local config_target="../../../../.config/$app_name/User"
+
+    # Create macOS directory structure if it doesn't exist
+    if [[ ! -d "$macos_dir" ]]; then
+        mkdir -p "$macos_dir"
+    fi
+
+    # Create symlinks for each file in .config
+    for file in "$config_dir/$app_name/User"/*; do
+        if [[ -f "$file" ]]; then
+            local filename
+            filename=$(basename "$file")
+            local symlink_path="$macos_dir/$filename"
+            local target="$config_target/$filename"
+
+            # Create symlink if it doesn't exist or is broken
+            if [[ ! -L "$symlink_path" ]] || [[ ! -e "$symlink_path" ]]; then
+                ln -sf "$target" "$symlink_path"
+            fi
+        fi
+    done
+}
+
+# Get platform-specific stow ignore pattern for dual-path packages
+# Returns: --ignore flag value or empty string
+get_platform_ignore() {
+    local package="$1"
+    local platform
+    platform=$(detect_platform)
+
+    # Only apply ignore for dual-path packages
+    if ! is_dual_path_package "$package"; then
+        echo ""
+        return 0
+    fi
+
+    # Platform-specific ignore to stow only the correct path
+    case "$platform" in
+        macos)
+            # On macOS: ignore .config, use Library/Application Support
+            echo "--ignore=.config"
+            ;;
+        linux)
+            # On Linux: ignore Library, use .config
+            echo "--ignore=Library"
+            ;;
+        *)
+            # Unknown platform: log warning, don't ignore anything
+            log_warning "$package: Unknown platform, stowing both paths"
+            echo ""
+            ;;
     esac
 }
 
@@ -872,6 +960,14 @@ install_dotfiles() {
         # Add rollback action before installing
         add_rollback "stow --verbose --delete --dir='$PACKAGES_DIR' --target='$HOME' '$package' 2>/dev/null || true"
 
+        # Setup internal symlinks for dual-path packages (cursor, vscode)
+        setup_dual_path_symlinks "$package"
+
+        # Get platform-specific ignore flag for dual-path packages
+        local platform_ignore
+        platform_ignore=$(get_platform_ignore "$package")
+        local package_stow_flags="$stow_flags $platform_ignore"
+
         # Run stow with appropriate output handling
         local stow_output
         local stow_result
@@ -879,7 +975,7 @@ install_dotfiles() {
         # shellcheck disable=SC2086
         if [[ $verbosity -ge 2 ]]; then
             # Level 2: Show all stow file operations
-            if stow_output=$(stow $stow_flags "$package" 2>&1); then
+            if stow_output=$(stow $package_stow_flags "$package" 2>&1); then
                 echo "$stow_output" | prefix_output "│ "
                 INSTALLED_PACKAGES+=("$package")
                 log_success "Installed $package"
@@ -892,7 +988,7 @@ install_dotfiles() {
             fi
         elif [[ $verbosity -eq 1 ]]; then
             # Level 1: Just show success per package
-            if stow $stow_flags "$package" >/dev/null 2>&1; then
+            if stow $package_stow_flags "$package" >/dev/null 2>&1; then
                 INSTALLED_PACKAGES+=("$package")
                 log_success "Installed $package"
                 stow_result=0
@@ -903,7 +999,7 @@ install_dotfiles() {
             fi
         else
             # Level 0: Silent, no package messages
-            if stow $stow_flags "$package" >/dev/null 2>&1; then
+            if stow $package_stow_flags "$package" >/dev/null 2>&1; then
                 INSTALLED_PACKAGES+=("$package")
                 stow_result=0
             else

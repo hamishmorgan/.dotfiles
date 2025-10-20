@@ -16,7 +16,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - Template-based secrets management
 - macOS and Linux support
 - Validation script for installation verification
-- Packages: git, zsh, tmux, gh, gnuplot, bash, fish
+- Packages: git, zsh, tmux, gh, gnuplot, bash, fish, cursor
 - Oh My Zsh submodule
 - CI/CD validation with GitHub Actions
 
@@ -63,6 +63,13 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 │   │       └── functions/
 │   │           ├── d.fish           # Dotfiles wrapper function
 │   │           └── fish_prompt.fish # Custom prompt
+│   ├── cursor/        # Cursor IDE configuration (cross-platform)
+│   │   ├── .config/Cursor/User/   # Primary (Linux standard)
+│   │   │   ├── settings.json      # Source of truth
+│   │   │   └── keybindings.json
+│   │   └── Library/Application Support/Cursor/User/  # macOS (symlinks to .config)
+│   │       ├── settings.json → .config/...
+│   │       └── keybindings.json → .config/...
 │   └── system/        # System-wide files
 ├── dot            # Main dotfiles management script
 └── README.md      # This file
@@ -244,7 +251,7 @@ cat gh/.config/gh/config.yml.template gh/.config/gh/config.yml.secret > gh/.conf
 stow --verbose --restow --dir=. --target=$HOME system
 
 # Install other packages
-stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash
+stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash fish cursor
 
 # Or install selectively
 stow --verbose --restow --dir=. --target=$HOME git zsh
@@ -283,7 +290,7 @@ git pull origin main
 git submodule update --remote --merge
 
 # Reinstall packages (picks up changes)
-stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash
+stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash fish cursor
 ```
 
 #### Manual Uninstall
@@ -292,7 +299,7 @@ stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash
 cd ~/.dotfiles
 
 # Remove all symlinks
-stow --verbose --delete --dir=. --target=$HOME system git zsh tmux gh gnuplot bash
+stow --verbose --delete --dir=. --target=$HOME system git zsh tmux gh gnuplot bash fish cursor
 
 # Or remove specific packages
 stow --verbose --delete --dir=. --target=$HOME git
@@ -389,6 +396,19 @@ The health check performs 11 categories of checks:
 - NVM, mise, and cargo integration
 - Custom aliases
 
+### Cursor (`cursor/`)
+
+- Editor settings (preferences, theme, extensions)
+- Keyboard shortcuts and keybindings
+- **Cross-platform support** (macOS and Linux)
+
+**How it works:** Uses dual-path structure with platform-specific stowing. Primary files
+are in `.config/Cursor/User/` (Linux standard). macOS path symlinks to .config internally.
+The install script uses `--ignore` to stow only the correct path for your platform.
+
+**Note:** This package manages Cursor user settings only. Project-specific rules
+(`.cursor/rules/*.mdc`) should be managed per-project using Shopify's standard approach.
+
 ## Updating
 
 ### Update Global Gitignore
@@ -476,7 +496,7 @@ Like `install`, the `update` command supports verbosity flags:
 
 ```bash
 cd ~/.dotfiles
-stow -D git zsh tmux gh gnuplot bash
+stow -D git zsh tmux gh gnuplot bash fish cursor
 # Restore from backup directories in ~/.dotfiles-backup-* if needed
 ```
 
@@ -491,7 +511,7 @@ chmod +x dot
 ### Stow Conflicts
 
 ```bash
-stow -v -R git zsh tmux gh gnuplot bash
+stow -v -R git zsh tmux gh gnuplot bash fish cursor
 ```
 
 Verify installation:
