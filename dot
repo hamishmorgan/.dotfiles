@@ -1009,7 +1009,7 @@ validate_package() {
     IFS=',' read -ra file_array <<< "$files"
 
     for file in "${file_array[@]}"; do
-        if ! check_symlink "$file" ".dotfiles/$package"; then
+        if ! check_symlink "$file" ".dotfiles/packages/$package"; then
             ((errors++))
         fi
     done
