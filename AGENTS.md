@@ -215,6 +215,11 @@ apk add stow git bash
   - Short forms work on all platforms
 - Use explicit error handling instead of `set -e` (controlled failure handling)
 - Enable bash safety features: `shopt -s nullglob extglob`
+- **Follow `.editorconfig` rules** (`packages/system/.editorconfig`):
+  - Remove trailing whitespace (except in Markdown)
+  - Use LF line endings
+  - Insert final newline
+  - Use 2-space indentation for shell scripts
 
 ### Environment Variables
 

@@ -1255,37 +1255,37 @@ show_status() {
 # Show diff preview of what would change
 show_diff_preview() {
     show_command_header "Dotfiles Diff Preview"
-    
+
     log_info "Comparing current state with dotfiles repository..."
     echo ""
-    
+
     local changes_found=false
     local new_files=0
     local modified_files=0
     local wrong_target_files=0
-    
+
     show_section_separator "File Changes"
     echo ""
-    
+
     for package in "${PACKAGES[@]}"; do
         local package_files
         package_files=$(get_package_files "$package")
-        
+
         IFS=',' read -ra files <<< "$package_files"
-        
+
         for file in "${files[@]}"; do
             local dotfile_path="$DOTFILES_DIR/$package/$file"
             local home_path="$HOME/$file"
-            
+
             # Skip if dotfile doesn't exist (shouldn't happen)
             [[ ! -e "$dotfile_path" ]] && continue
-            
+
             if [[ -L "$home_path" ]]; then
                 # It's a symlink - check target
                 local target
                 target=$(readlink "$home_path")
                 local expected_target="$DOTFILES_DIR/$package/$file"
-                
+
                 # Check if symlink points to our dotfiles (allows any path format - absolute, relative, etc.)
                 if [[ "$target" != *"${DOTFILES_DIR}/${package}/${file}"* ]]; then
                     echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $file"
@@ -1300,11 +1300,11 @@ show_diff_preview() {
                 if [[ -f "$dotfile_path" ]]; then
                     if ! diff -q "$home_path" "$dotfile_path" > /dev/null 2>&1; then
                         echo -e "   ${BLUE}${SYMBOL_INFO}${NC} $file ${YELLOW}(content differs)${NC}"
-                        
+
                         # Show diff preview (first 25 lines)
                         local diff_output
                         diff_output=$(diff -u "$home_path" "$dotfile_path" 2>/dev/null || true)
-                        
+
                         while IFS= read -r line; do
                             if [[ "$line" == -* ]]; then
                                 echo -e "      ${RED}$line${NC}"
@@ -1314,13 +1314,13 @@ show_diff_preview() {
                                 echo "      $line"
                             fi
                         done < <(echo "$diff_output" | head -25)
-                        
+
                         local diff_lines
                         diff_lines=$(echo "$diff_output" | grep -c '^')
                         if [[ $diff_lines -gt 25 ]]; then
                             echo "      ... ($(( diff_lines - 25 )) more lines)"
                         fi
-                        
+
                         echo ""
                         changes_found=true
                         ((modified_files++))
@@ -1334,15 +1334,15 @@ show_diff_preview() {
             fi
         done
     done
-    
+
     if ! $changes_found; then
         echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} No changes detected - system matches repository"
     fi
-    
+
     echo ""
     show_section_separator "Summary"
     echo ""
-    
+
     if $changes_found; then
         [[ $new_files -gt 0 ]] && echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} New files: $new_files"
         [[ $modified_files -gt 0 ]] && echo "   ${BLUE}${SYMBOL_INFO}${NC} Modified files: $modified_files"
@@ -1352,7 +1352,7 @@ show_diff_preview() {
     else
         log_success "System is up to date with repository"
     fi
-    
+
     echo ""
 }
 
@@ -2960,12 +2960,12 @@ update_oh_my_zsh() {
 remove_mispointed_symlinks() {
     local verbosity="${1:-0}"
     local removed_count=0
-    
+
     # Find all symlinks in $HOME that point to $DOTFILES_DIR
     while IFS= read -r symlink; do
         local target
         target="$(readlink "$symlink")"
-        
+
         # Check if symlink is broken OR points to wrong location
         if [[ ! -e "$symlink" ]] || [[ "$target" == "$DOTFILES_DIR/"* && "$target" != "$PACKAGES_DIR/"* ]]; then
             if [[ $verbosity -ge 2 ]]; then
@@ -2975,13 +2975,13 @@ remove_mispointed_symlinks() {
             ((removed_count++))
         fi
     done < <(find "$HOME" -maxdepth 1 -type l 2>/dev/null)
-    
+
     # Also check .config directory
     if [[ -d "$HOME/.config" ]]; then
         while IFS= read -r symlink; do
             local target
             target="$(readlink "$symlink")"
-            
+
             if [[ ! -e "$symlink" ]] || [[ "$target" == *"$DOTFILES_DIR/"* && "$target" != *"$PACKAGES_DIR/"* ]]; then
                 if [[ $verbosity -ge 2 ]]; then
                     log_info "Removing outdated symlink: ${symlink#"$HOME"/}"
@@ -2991,11 +2991,11 @@ remove_mispointed_symlinks() {
             fi
         done < <(find "$HOME/.config" -maxdepth 3 -type l 2>/dev/null)
     fi
-    
+
     if [[ $removed_count -gt 0 && $verbosity -ge 1 ]]; then
         log_info "Removed $removed_count outdated symlink(s)"
     fi
-    
+
     return 0
 }
 
@@ -3082,7 +3082,7 @@ cmd_update() {
     else
         remove_mispointed_symlinks 0
     fi
-    
+
     # Step 4: Reinstall
     show_numbered_section "4" "Reinstall Dotfiles"
     if ! run_with_verbosity "$verbosity" 1 "" run_installation_pipeline "$verbosity"; then
@@ -3328,12 +3328,12 @@ list_packages() {
 # Run security audit on dotfiles
 security_audit() {
     show_command_header "Security Audit"
-    
+
     local issues_found=0
-    
+
     # 1. Check for accidentally committed secrets
     show_numbered_section "1" "Checking for Committed Secrets"
-    
+
     # More specific patterns that match actual secrets with values
     # Require actual values (4-8+ chars) after = to reduce false positives
     local patterns=(
@@ -3345,20 +3345,20 @@ security_audit() {
         'aws[_-]?access[_-]?key\s*=\s*['\''"]?\w{8,}'  # aws_access_key=value
         'BEGIN\s+(RSA\s+)?PRIVATE\s+KEY'        # Actual private key blocks
     )
-    
+
     # Build grep args array for single git grep command (performance optimization)
     local grep_args=()
     for pattern in "${patterns[@]}"; do
         grep_args+=("-e" "$pattern")
     done
-    
+
     local secrets_found="false"
     local matches
     # Exclude docs (may reference patterns) and this function itself
     matches=$(git -C "$DOTFILES_DIR" grep -P -n -i "${grep_args[@]}" -- . \
               ':(exclude)README.md' ':(exclude)AGENTS.md' ':(exclude)DEVELOPMENT.md' \
               ':(exclude)tests/' ':(exclude)dot' 2>/dev/null || true)
-    
+
     if [[ -n "$matches" ]]; then
         echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Potential secret patterns found:"
         while IFS= read -r line; do
@@ -3368,12 +3368,12 @@ security_audit() {
         secrets_found="true"
         ((issues_found++))
     fi
-    
+
     if [[ "$secrets_found" == "false" ]]; then
         echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} No secret patterns in tracked files"
     fi
     echo ""
-    
+
     # 2. Check file permissions on secret files
     show_numbered_section "2" "Checking Secret File Permissions"
 
@@ -3383,21 +3383,21 @@ security_audit() {
         secret_files+=("$f")
     done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
 
-    
+
     local insecure_files=()
-    
+
     for secret_file in "${secret_files[@]}"; do
         [[ -z "$secret_file" ]] && continue
         local perms
         perms=$(stat -c "%a" "$secret_file" 2>/dev/null || stat -f "%OLp" "$secret_file" 2>/dev/null || echo "000")
         perms=${perms: -3}
-        
+
         if [[ "$perms" != "600" ]] && [[ "$perms" != "400" ]]; then
             insecure_files+=("$secret_file ($perms)")
             ((issues_found++))
         fi
     done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
-    
+
     if [[ ${#insecure_files[@]} -gt 0 ]]; then
         echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure permissions on secret files:"
         for file in "${insecure_files[@]}"; do
@@ -3408,11 +3408,11 @@ security_audit() {
         echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files have secure permissions"
     fi
     echo ""
-    
+
     # 3. Check .gitignore coverage
     show_numbered_section "3" "Checking .gitignore Coverage"
-    
-    
+
+
     local unignored_secrets=()
     local untracked_unignored=()
     for secret_file in "${secret_files[@]}"; do
@@ -3433,7 +3433,7 @@ security_audit() {
             fi
         fi
     done
-    
+
     if [[ ${#unignored_secrets[@]} -gt 0 ]]; then
         echo -e "   ${RED}${SYMBOL_ERROR}${NC} Secret files tracked in git:"
         for file in "${unignored_secrets[@]}"; do
@@ -3442,7 +3442,7 @@ security_audit() {
         echo -e "   ${RED}${SYMBOL_ERROR}${NC} These files are committed to git!"
         echo ""
     fi
-    
+
     if [[ ${#untracked_unignored[@]} -gt 0 ]]; then
         echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Secret files not ignored by git:"
         for file in "${untracked_unignored[@]}"; do
@@ -3451,31 +3451,31 @@ security_audit() {
         echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Add patterns to .gitignore to prevent future commits"
         echo ""
     fi
-    
+
     if [[ ${#unignored_secrets[@]} -eq 0 ]] && [[ ${#untracked_unignored[@]} -eq 0 ]]; then
         echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files properly ignored"
     fi
     echo ""
     # 4. Check SSH key security
     show_numbered_section "4" "Checking SSH Key Security"
-    
+
     if [[ -d "$HOME/.ssh" ]]; then
         local exposed_keys=()
-        
+
         for key in "$HOME/.ssh"/id_* "$HOME/.ssh"/*.pem; do
             [[ ! -f "$key" ]] && continue
             [[ "$key" == *.pub ]] && continue
-            
+
             local perms
             perms=$(stat -c "%a" "$key" 2>/dev/null || stat -f "%OLp" "$key" 2>/dev/null || echo "000")
             perms=${perms: -3}
-            
+
             if [[ "$perms" != "600" ]] && [[ "$perms" != "400" ]]; then
                 exposed_keys+=("$(basename "$key") ($perms)")
                 ((issues_found++))
             fi
         done
-        
+
         if [[ ${#exposed_keys[@]} -gt 0 ]]; then
             echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure SSH key permissions:"
             for key in "${exposed_keys[@]}"; do
@@ -3489,7 +3489,7 @@ security_audit() {
         echo -e "   ${BLUE}${SYMBOL_INFO}${NC} No SSH directory found"
     fi
     echo ""
-    
+
     # Summary
     show_section_separator
     echo ""
@@ -3503,7 +3503,7 @@ security_audit() {
         show_tip "Review and fix security issues before committing"
     fi
     echo ""
-    
+
     return $issues_found
 }
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
