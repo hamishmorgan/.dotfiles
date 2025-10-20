@@ -125,8 +125,6 @@ load '../test_helper/common'
     # Source the dot script
     source_dot_script
 
-    local dotfiles_dir="$BATS_TEST_DIRNAME/../.."
-
     # Create a symlink pointing to a SIBLING directory (git-old not git)
     mkdir -p "$BATS_TEST_TMPDIR/fake-dotfiles/packages/git-old"
     echo "[user]" > "$BATS_TEST_TMPDIR/fake-dotfiles/packages/git-old/.gitconfig"
