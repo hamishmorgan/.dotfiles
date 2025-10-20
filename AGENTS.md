@@ -1684,10 +1684,9 @@ For all code changes:
    - Verify the fix completely addresses the issue
    - Check you haven't introduced new problems
    - Ensure the fix follows all code standards
-8. **Test Your Fixes**: Run tests locally before pushing
-   - Shell linting: `./dev/lint-shell`
-   - Smoke tests: `./dev/smoke`
-   - If tests affected: `./dev/bats` or specific test file
+8. **Test Your Fixes**: Run full validation locally before pushing
+   - Run: `./dev/check` (lint + test + ci - ~3-4 minutes)
+   - Much faster than waiting for CI feedback
    - Fix any failures before pushing
 9. **Push and Wait for Re-Review**: Push fixes and wait for CI and Copilot to re-review
 10. **Repeat Steps 6-9**: Continue until both CI and Copilot approve with no new issues
