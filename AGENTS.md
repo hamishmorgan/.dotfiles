@@ -1684,12 +1684,17 @@ For all code changes:
    - Verify the fix completely addresses the issue
    - Check you haven't introduced new problems
    - Ensure the fix follows all code standards
-8. **Push and Wait for Re-Review**: Push fixes and wait for CI and Copilot to re-review
-9. **Repeat Steps 6-8**: Continue until both CI and Copilot approve with no new issues
-10. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
-11. **Wait for User Approval**: Do NOT merge until user explicitly instructs you to do so
-12. **Merge**: Only merge after user approval, CI passing, and Copilot satisfied
-13. **Post-Merge Cleanup**:
+8. **Test Your Fixes**: Run tests locally before pushing
+   - Shell linting: `./dev/lint-shell`
+   - Smoke tests: `./dev/smoke`
+   - If tests affected: `./dev/bats` or specific test file
+   - Fix any failures before pushing
+9. **Push and Wait for Re-Review**: Push fixes and wait for CI and Copilot to re-review
+10. **Repeat Steps 6-9**: Continue until both CI and Copilot approve with no new issues
+11. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
+12. **Wait for User Approval**: Do NOT merge until user explicitly instructs you to do so
+13. **Merge**: Only merge after user approval, CI passing, and Copilot satisfied
+14. **Post-Merge Cleanup**:
     - Update local main: `git checkout main && git pull`
     - Rebase shopify branch: `git checkout shopify && git rebase main && git push --force-with-lease`
     - Delete feature branches: `git branch -d <branch-name>`
