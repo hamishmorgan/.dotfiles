@@ -63,10 +63,13 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 │   │       └── functions/
 │   │           ├── d.fish           # Dotfiles wrapper function
 │   │           └── fish_prompt.fish # Custom prompt
-│   ├── cursor/        # Cursor IDE configuration (macOS)
-│   │   └── Library/Application Support/Cursor/User/
-│   │       ├── settings.json       # Editor settings
-│   │       └── keybindings.json    # Keyboard shortcuts
+│   ├── cursor/        # Cursor IDE configuration (cross-platform)
+│   │   ├── .config/Cursor/User/   # Primary (Linux standard)
+│   │   │   ├── settings.json      # Source of truth
+│   │   │   └── keybindings.json
+│   │   └── Library/Application Support/Cursor/User/  # macOS (symlinks to .config)
+│   │       ├── settings.json → .config/...
+│   │       └── keybindings.json → .config/...
 │   └── system/        # System-wide files
 ├── dot            # Main dotfiles management script
 └── README.md      # This file
@@ -397,12 +400,14 @@ The health check performs 11 categories of checks:
 
 - Editor settings (preferences, theme, extensions)
 - Keyboard shortcuts and keybindings
+- **Cross-platform support** (macOS and Linux)
+
+**How it works:** Uses dual-path structure with platform-specific stowing. Primary files
+are in `.config/Cursor/User/` (Linux standard). macOS path symlinks to .config internally.
+The install script uses `--ignore` to stow only the correct path for your platform.
 
 **Note:** This package manages Cursor user settings only. Project-specific rules
 (`.cursor/rules/*.mdc`) should be managed per-project using Shopify's standard approach.
-
-**Note:** Currently macOS-specific. Linux support requires platform-specific path handling
-(`~/Library/Application Support/Cursor/User/` on macOS vs `~/.config/Cursor/User/` on Linux).
 
 ## Updating
 

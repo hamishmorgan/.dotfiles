@@ -125,12 +125,20 @@ These settings could be moved to shopify branch when you implement branch-specif
 
 ## Cross-Platform Compatibility
 
-**Important:** This package is currently macOS-specific due to different platform paths:
+**Full cross-platform support** using dual-path structure:
 
-- **macOS**: `~/Library/Application Support/Cursor/User/` ✅ (current package)
-- **Linux**: `~/.config/Cursor/User/` ❌ (not yet supported)
+- **macOS**: `~/Library/Application Support/Cursor/User/` ✅
+- **Linux**: `~/.config/Cursor/User/` ✅
 
-Cursor uses platform-specific paths. Future enhancement needed for Linux support.
+**How it works:**
+
+- Primary files stored in `.config/Cursor/User/` (Linux/XDG standard)
+- macOS `Library/` path contains symlinks to `.config` files
+- Install script uses platform-specific `--ignore` flag:
+  - macOS: `stow --ignore=.config` (only stows Library path)
+  - Linux: `stow --ignore=Library` (only stows .config path)
+
+Both platforms read the same settings via the symlink chain!
 
 ## Testing Recommendations
 
