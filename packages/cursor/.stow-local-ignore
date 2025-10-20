@@ -1,0 +1,8 @@
+# Cursor package local ignore patterns
+# Currently no templates or secrets in this package
+# This file exists for consistency with other packages
+
+# Standard patterns to ignore
+^README\.md$
+^\.DS_Store$
+
