@@ -16,6 +16,7 @@ Instructions for AI agents working with this dotfiles repository.
     - [Platform-Specific Installation](#platform-specific-installation)
   - [Documentation Standards](#documentation-standards)
   - [Code Standards](#code-standards)
+    - [Environment Variables](#environment-variables)
     - [Shell Script Style](#shell-script-style)
     - [Comments](#comments)
     - [Clean Code Principles](#clean-code-principles)
@@ -32,6 +33,7 @@ Instructions for AI agents working with this dotfiles repository.
     - [Bash 3.2 Compatibility](#bash-32-compatibility)
   - [Git Commit Attribution](#git-commit-attribution)
   - [File Organization](#file-organization)
+    - [Development Directory (`dev/`)](#development-directory-dev)
     - [Stow Ignore Files](#stow-ignore-files)
     - [Templates and Secrets](#templates-and-secrets)
     - [Platform-Specific Configs](#platform-specific-configs)
@@ -48,7 +50,12 @@ Instructions for AI agents working with this dotfiles repository.
     - [Workflow Structure](#workflow-structure)
     - [CI Performance Optimization](#ci-performance-optimization)
   - [Quick Reference](#quick-reference)
+    - [User Commands](#user-commands)
+    - [Development Commands](#development-commands)
+    - [GitHub Commands](#github-commands)
   - [Common Tasks](#common-tasks)
+    - [User Workflow](#user-workflow)
+    - [Development Workflow](#development-workflow)
   - [Testing](#testing)
     - [When to Write Tests](#when-to-write-tests)
     - [Test-Driven Bug Fixing Pattern](#test-driven-bug-fixing-pattern)
@@ -208,6 +215,11 @@ apk add stow git bash
   - Short forms work on all platforms
 - Use explicit error handling instead of `set -e` (controlled failure handling)
 - Enable bash safety features: `shopt -s nullglob extglob`
+- **Follow `.editorconfig` rules** (`packages/system/.editorconfig`):
+  - Remove trailing whitespace (except in Markdown)
+  - Use LF line endings
+  - Insert final newline
+  - Use 2-space indentation for shell scripts
 
 ### Environment Variables
 
@@ -1657,18 +1669,35 @@ git pull               # Update to latest
 For all code changes:
 
 1. **Create Pull Request**: Use GitHub MCP to raise PR
-2. **Request Copilot Review**: Use `mcp_github_request_copilot_review`
-3. **Wait for CI**: Monitor CI status until passing
-4. **Wait for Copilot Review**: Review Copilot feedback
-5. **Address Issues**: Fix any problems identified
-6. **Repeat**: Continue until both CI and Copilot approve
-7. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
-8. **Merge**: Only merge after both CI and Copilot are satisfied
-9. **Post-Merge Cleanup**:
-   - Update local main: `git checkout main && git pull`
-   - Rebase shopify branch: `git checkout shopify && git rebase main && git push --force-with-lease`
-   - Delete feature branches: `git branch -d <branch-name>`
-   - Delete remote branches (if not auto-deleted): `git push origin --delete <branch-name>`
+2. **Self-Review**: Critically review your own changes before requesting external review
+   - Read the full diff: `gh pr diff <PR_NUMBER>`
+   - Check for anti-patterns documented in AGENTS.md
+   - Verify tests follow testing principles (no acceptable failure patterns)
+   - Ensure code follows style guidelines
+   - Look for inconsistencies or missed edge cases
+3. **Request Copilot Review**: Use `mcp_github_request_copilot_review`
+4. **Wait for CI**: Monitor CI status until passing
+5. **Wait for Copilot Review**: Review Copilot feedback
+6. **Address Issues**: Fix any problems identified (including from self-review)
+7. **Self-Review Your Fixes**: Before pushing changes, critically review them
+   - Read the diff of your fixes: `git diff`
+   - Verify the fix completely addresses the issue
+   - Check you haven't introduced new problems
+   - Ensure the fix follows all code standards
+8. **Test Your Fixes**: Run full validation locally before pushing
+   - Run: `./dev/check` (lint + test + ci - ~3-4 minutes)
+   - Much faster than waiting for CI feedback
+   - Fix any failures before pushing
+9. **Push and Wait for Re-Review**: Push fixes and wait for CI and Copilot to re-review
+10. **Repeat Steps 6-9**: Continue until both CI and Copilot approve with no new issues
+11. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
+12. **Wait for User Approval**: Do NOT merge until user explicitly instructs you to do so
+13. **Merge**: Only merge after user approval, CI passing, and Copilot satisfied
+14. **Post-Merge Cleanup**:
+    - Update local main: `git checkout main && git pull`
+    - Rebase shopify branch: `git checkout shopify && git rebase main && git push --force-with-lease`
+    - Delete feature branches: `git branch -d <branch-name>`
+    - Delete remote branches (if not auto-deleted): `git push origin --delete <branch-name>`
 
 This ensures code quality through automated testing and AI review.
 
