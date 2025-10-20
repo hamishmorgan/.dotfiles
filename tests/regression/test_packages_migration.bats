@@ -99,20 +99,20 @@ load '../test_helper/common'
     # Source the dot script
     source_dot_script
 
-    local dotfiles_dir="$BATS_TEST_DIRNAME/../.."
-
-    # Create symlink from repo to $HOME/.dotfiles to ensure path contains '.dotfiles'
-    # This makes the test robust across different environments
-    ln -sfn "$dotfiles_dir" "$HOME/.dotfiles"
+    # Create a test structure that matches the actual repo layout
+    # Name it .dotfiles to match the validation pattern
+    local test_dotfiles="$BATS_TEST_TMPDIR/.dotfiles"
+    mkdir -p "$test_dotfiles/packages/git"
+    echo "[user]" > "$test_dotfiles/packages/git/.gitconfig"
 
     # Create a symlink pointing to the CORRECT packages/ path
     # (simulating what stow actually creates after migration)
-    ln -sf "$HOME/.dotfiles/packages/git/.gitconfig" "$HOME/.gitconfig"
+    ln -sf "$test_dotfiles/packages/git/.gitconfig" "$HOME/.gitconfig"
 
-    # Verify symlink points to packages/ directory
+    # Verify symlink points to .dotfiles/packages/ directory
     local target
     target="$(readlink "$HOME/.gitconfig")"
-    [[ "$target" == *"/packages/git/"* ]]
+    [[ "$target" == *"/.dotfiles/packages/git/"* ]]
 
     # Run validate_package for git package
     run validate_package "git"
