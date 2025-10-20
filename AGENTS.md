@@ -1679,11 +1679,17 @@ For all code changes:
 4. **Wait for CI**: Monitor CI status until passing
 5. **Wait for Copilot Review**: Review Copilot feedback
 6. **Address Issues**: Fix any problems identified (including from self-review)
-7. **Repeat**: Continue until both CI and Copilot approve
-8. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
-9. **Wait for User Approval**: Do NOT merge until user explicitly instructs you to do so
-10. **Merge**: Only merge after user approval, CI passing, and Copilot satisfied
-11. **Post-Merge Cleanup**:
+7. **Self-Review Your Fixes**: Before pushing changes, critically review them
+   - Read the diff of your fixes: `git diff`
+   - Verify the fix completely addresses the issue
+   - Check you haven't introduced new problems
+   - Ensure the fix follows all code standards
+8. **Push and Wait for Re-Review**: Push fixes and wait for CI and Copilot to re-review
+9. **Repeat Steps 6-8**: Continue until both CI and Copilot approve with no new issues
+10. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
+11. **Wait for User Approval**: Do NOT merge until user explicitly instructs you to do so
+12. **Merge**: Only merge after user approval, CI passing, and Copilot satisfied
+13. **Post-Merge Cleanup**:
     - Update local main: `git checkout main && git pull`
     - Rebase shopify branch: `git checkout shopify && git rebase main && git push --force-with-lease`
     - Delete feature branches: `git branch -d <branch-name>`
