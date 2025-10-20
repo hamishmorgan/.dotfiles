@@ -16,6 +16,7 @@ Instructions for AI agents working with this dotfiles repository.
     - [Platform-Specific Installation](#platform-specific-installation)
   - [Documentation Standards](#documentation-standards)
   - [Code Standards](#code-standards)
+    - [Environment Variables](#environment-variables)
     - [Shell Script Style](#shell-script-style)
     - [Comments](#comments)
     - [Clean Code Principles](#clean-code-principles)
@@ -32,6 +33,7 @@ Instructions for AI agents working with this dotfiles repository.
     - [Bash 3.2 Compatibility](#bash-32-compatibility)
   - [Git Commit Attribution](#git-commit-attribution)
   - [File Organization](#file-organization)
+    - [Development Directory (`dev/`)](#development-directory-dev)
     - [Stow Ignore Files](#stow-ignore-files)
     - [Templates and Secrets](#templates-and-secrets)
     - [Platform-Specific Configs](#platform-specific-configs)
@@ -48,7 +50,12 @@ Instructions for AI agents working with this dotfiles repository.
     - [Workflow Structure](#workflow-structure)
     - [CI Performance Optimization](#ci-performance-optimization)
   - [Quick Reference](#quick-reference)
+    - [User Commands](#user-commands)
+    - [Development Commands](#development-commands)
+    - [GitHub Commands](#github-commands)
   - [Common Tasks](#common-tasks)
+    - [User Workflow](#user-workflow)
+    - [Development Workflow](#development-workflow)
   - [Testing](#testing)
     - [When to Write Tests](#when-to-write-tests)
     - [Test-Driven Bug Fixing Pattern](#test-driven-bug-fixing-pattern)
@@ -1669,8 +1676,9 @@ For all code changes:
 6. **Address Issues**: Fix any problems identified (including from self-review)
 7. **Repeat**: Continue until both CI and Copilot approve
 8. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
-9. **Merge**: Only merge after both CI and Copilot are satisfied
-10. **Post-Merge Cleanup**:
+9. **Wait for User Approval**: Do NOT merge until user explicitly instructs you to do so
+10. **Merge**: Only merge after user approval, CI passing, and Copilot satisfied
+11. **Post-Merge Cleanup**:
     - Update local main: `git checkout main && git pull`
     - Rebase shopify branch: `git checkout shopify && git rebase main && git push --force-with-lease`
     - Delete feature branches: `git branch -d <branch-name>`
