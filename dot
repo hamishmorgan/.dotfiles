@@ -135,7 +135,7 @@ trap handle_interrupt INT TERM
 
 # Package definitions
 # Note: system package is stowed first to ensure .stow-global-ignore is in place
-PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "cursor")
+PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "cursor" "vscode")
 
 # Get package files (bash 3.2 compatible - no associative arrays)
 get_package_files() {
@@ -150,6 +150,7 @@ get_package_files() {
         bash)    echo ".bashrc,.bash_profile" ;;
         fish)    echo ".config/fish" ;;
         cursor)  echo ".config/Cursor/User" ;;
+        vscode)  echo ".config/Code/User" ;;
         *)       echo "" ;;
     esac
 }
@@ -167,6 +168,7 @@ get_package_name() {
         bash)    echo "Bash" ;;
         fish)    echo "Fish" ;;
         cursor)  echo "Cursor" ;;
+        vscode)  echo "VSCode" ;;
         *)       echo "$package" ;;
     esac
 }
