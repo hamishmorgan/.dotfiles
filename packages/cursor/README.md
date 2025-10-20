@@ -11,7 +11,7 @@ packages/cursor/
 ├── .config/Cursor/User/           # Primary (Linux standard, XDG)
 │   ├── settings.json              # Source of truth
 │   └── keybindings.json           # Source of truth
-└── Library/Application Support/Cursor/User/  # macOS compatibility
+└── Library/Application Support/Cursor/User/  # macOS compatibility (committed symlinks)
     ├── settings.json → ../../../../.config/Cursor/User/settings.json
     └── keybindings.json → ../../../../.config/Cursor/User/keybindings.json
 ```
@@ -33,8 +33,8 @@ Cursor uses different paths on different platforms:
    - Single source of truth
 
 2. **macOS compatibility**: `Library/Application Support/Cursor/User/`
-   - Contains symlinks pointing to `.config` files
-   - Enables stow to work on both platforms
+   - Contains symlinks (committed to repo) pointing to `.config` files
+   - Enables stow to create a double-symlink chain on macOS
 
 3. **Platform-specific stowing**:
    - **macOS**: `stow --ignore=.config cursor` → Only stows Library path
@@ -122,26 +122,28 @@ No manual setup required!
 
 ### Implementation in dot script
 
+The internal symlinks are committed to the repository for reliability. The install script also includes defensive
+logic to create/verify them:
+
 ```bash
-# Check if package requires platform-specific handling
-is_dual_path_package() {
-    case "$package" in
-        cursor|vscode) return 0 ;;
-        *) return 1 ;;
-    esac
+# Create/verify internal symlinks (Library → .config)
+setup_dual_path_symlinks() {
+    # Creates symlinks if missing or broken
+    # Ensures: packages/cursor/Library/.../User/settings.json
+    #       → packages/cursor/.config/Cursor/User/settings.json
 }
 
-# Get platform-specific ignore flag
+# Get platform-specific ignore flag for stow
 get_platform_ignore() {
     if is_dual_path_package "$package"; then
         case "$(detect_platform)" in
-            macos) echo "--ignore=.config" ;;
-            linux) echo "--ignore=Library" ;;
+            macos) echo "--ignore=.config" ;;  # Stow only Library path
+            linux) echo "--ignore=Library" ;;  # Stow only .config path
         esac
     fi
 }
 
-# Use in stow invocation
+# Stow with platform-specific ignore
 stow $stow_flags $(get_platform_ignore "$package") "$package"
 ```
 

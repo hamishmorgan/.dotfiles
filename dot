@@ -213,7 +213,7 @@ setup_dual_path_symlinks() {
     esac
 
     local macos_dir="$macos_base/$app_name/User"
-    local config_target="../../../.config/$app_name/User"
+    local config_target="../../../../.config/$app_name/User"
 
     # Create macOS directory structure if it doesn't exist
     if [[ ! -d "$macos_dir" ]]; then
