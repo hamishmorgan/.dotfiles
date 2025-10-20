@@ -150,7 +150,7 @@ get_package_files() {
         bash)    echo ".bashrc,.bash_profile" ;;
         fish)    echo ".config/fish" ;;
         cursor)  echo ".config/Cursor/User" ;;
-        vscode)  echo ".config/Code/User" ;;
+        vscode)  echo "Library/Application Support/Code/User" ;;
         *)       echo "" ;;
     esac
 }

@@ -3,6 +3,7 @@
 ## Changes Made
 
 ### Cleanup (First Pass)
+
 - **Removed all commented-out code** (~100 lines):
   - Disabled "byesig" configuration block
   - Empty "github.copilot.advanced" object
@@ -13,6 +14,7 @@
 ### Improvements (Second Pass)
 
 #### 1. Global Editor Settings Added
+
 ```json
 "editor.formatOnSave": true,           // Auto-format on save
 "editor.minimap.enabled": true,        // Enable minimap
@@ -26,6 +28,7 @@
 ```
 
 #### 2. Search Exclusions
+
 ```json
 "search.exclude": {
   "**/node_modules": true,
@@ -40,7 +43,9 @@
 ```
 
 #### 3. Enhanced File Nesting Patterns
+
 Added nesting for:
+
 - Ruby test/spec files: `"*.rb": "${capture}_test.rb, ${capture}_spec.rb"`
 - Gemfile: `"Gemfile": "Gemfile.lock"`
 - Environment files: `".env": ".env.*, .envrc"`
@@ -48,14 +53,18 @@ Added nesting for:
 - Enabled file nesting by default: `"explorer.fileNesting.enabled": true`
 
 #### 4. More Subtle Terminal Colors
+
 Changed from bright `#dddd00` to semi-transparent overlays:
+
 ```json
 "terminal.findMatchBackground": "#ffcc0060",        // 40% opacity
 "terminal.findMatchHighlightBackground": "#ffcc0040", // 25% opacity
 ```
 
 #### 5. More Subtle Comment Highlighting
+
 Changed from harsh bright colors to softer, semi-transparent versions:
+
 - TODO: `#ffcc00` → `#ffcc0040` (40% opacity yellow)
 - FIXME/BUG: `#cc0000` → `#ff6b6b40` (softer red, 40% opacity)
 - REVIEW: `#00ccff` → `#4ecdc440` (softer cyan, 40% opacity)
@@ -64,6 +73,7 @@ Changed from harsh bright colors to softer, semi-transparent versions:
 Colors now blend with your theme instead of harsh blocks.
 
 #### 6. Ruby Settings Enhanced
+
 ```json
 "editor.quickSuggestions": {
   "comments": true  // Enable suggestions in comments
@@ -72,7 +82,9 @@ Colors now blend with your theme instead of harsh blocks.
 ```
 
 #### 7. Additional Language Settings
+
 Added sensible defaults for:
+
 - YAML: 2-space indentation, auto-indent
 - Markdown: Word wrap, disable autocomplete
 - TypeScript: Auto-update imports on file move
@@ -80,6 +92,7 @@ Added sensible defaults for:
 ## Organization
 
 Settings grouped into logical sections:
+
 1. **Cursor-Specific Settings** - Cursor IDE features
 2. **Editor - Global Settings** - Cross-language editor behavior
 3. **Editor Appearance & Workbench** - Theme, icons, UI density
@@ -91,6 +104,7 @@ Settings grouped into logical sections:
 9. **Remote Development** - SSH settings
 
 ## File Size
+
 - **Original**: 267 lines (with commented code)
 - **After cleanup**: 240 lines (organized, no dead code)
 - **After improvements**: 274 lines (added useful features)
@@ -100,7 +114,9 @@ Net result: Slightly larger but significantly more capable and maintainable.
 ## Deferred Improvements
 
 ### Split Shopify-Specific Settings (Future)
+
 These settings could be moved to shopify branch when you implement branch-specific config:
+
 - Ruby LSP configuration (`rubyLsp.featureFlags`)
 - Sorbet highlighting (`sorbet.highlightUntyped`)
 - Many cSpell words: "Shipify", "merch", "metafield", "fulfillable", "unfulfill"
@@ -108,11 +124,13 @@ These settings could be moved to shopify branch when you implement branch-specif
 **Strategy**: Keep current unified settings for now, split when needed.
 
 ## Cross-Platform Compatibility
+
 All settings work on both macOS and Linux. No platform-specific settings detected.
 
 ## Testing Recommendations
 
 After pulling these changes:
+
 1. Restart Cursor to load new settings
 2. Verify auto-save works (`files.autoSave`)
 3. Check comment highlighting is more subtle

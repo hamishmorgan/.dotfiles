@@ -67,8 +67,8 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 │   │   └── .config/Cursor/User/
 │   │       ├── settings.json       # Editor settings
 │   │       └── keybindings.json    # Keyboard shortcuts
-│   ├── vscode/        # VSCode configuration
-│   │   └── .config/Code/User/
+│   ├── vscode/        # VSCode configuration (macOS)
+│   │   └── Library/Application Support/Code/User/
 │   │       └── settings.json       # Editor settings
 │   └── system/        # System-wide files
 ├── dot            # Main dotfiles management script
@@ -408,8 +408,10 @@ The health check performs 11 categories of checks:
 ### VSCode (`vscode/`)
 
 - Editor settings (preferences, theme, extensions)
-- Cross-platform configuration sync
 - Shares many settings with Cursor (both based on VSCode)
+
+**Note:** Currently macOS-specific. Linux support requires platform-specific path handling
+(`~/Library/Application Support/Code/User/` on macOS vs `~/.config/Code/User/` on Linux).
 
 ## Updating
 

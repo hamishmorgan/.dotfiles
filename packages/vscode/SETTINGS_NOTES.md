@@ -47,10 +47,13 @@ Same as Cursor package:
 
 ## Cross-Platform Compatibility
 
-All settings work on both macOS and Linux:
+**Important:** This package is currently macOS-specific due to different paths:
 
-- macOS: `~/Library/Application Support/Code/User/settings.json`
-- Linux: `~/.config/Code/User/settings.json`
+- **macOS**: `~/Library/Application Support/Code/User/settings.json` ✅ (current package)
+- **Linux**: `~/.config/Code/User/settings.json` ❌ (not yet supported)
+
+Unlike Cursor (which uses `.config/Cursor/User/` on both platforms), VSCode uses
+platform-specific paths. Future enhancement needed for Linux support.
 
 ## Testing Recommendations
 

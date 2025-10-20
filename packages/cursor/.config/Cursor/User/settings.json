@@ -84,20 +84,20 @@
     "*.jsx": "${capture}.js",
     "*.tsx": "${capture}.ts",
     "tsconfig.json": "tsconfig.*.json",
-    
+
     // Package managers
     "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb",
     "Gemfile": "Gemfile.lock",
-    
+
     // Ruby
     "*.rb": "${capture}_test.rb, ${capture}_spec.rb",
-    
+
     // Environment files
     ".env": ".env.*, .envrc",
-    
+
     // Documentation
     "README.md": "README*, CHANGELOG*, CONTRIBUTING*, LICENSE*",
-    
+
     // Database files
     "*.sqlite": "${capture}.${extname}-*",
     "*.db": "${capture}.${extname}-*",
