@@ -1,45 +1,28 @@
 {
   // ============================================================================
-  // Editor - Global Settings
+  // Cursor-Specific Settings
   // ============================================================================
-  "editor.formatOnSave": true,
-  "editor.minimap.enabled": true,
-  "editor.minimap.showSlider": "always",
-  "editor.bracketPairColorization.enabled": true,
-  "editor.guides.bracketPairs": true,
-
-  // File handling
-  "files.autoSave": "onFocusChange",
-  "files.trimTrailingWhitespace": true,
-  "files.insertFinalNewline": true,
-
-  // Breadcrumbs
-  "breadcrumbs.enabled": true,
-
-  // Search
-  "search.exclude": {
-    "**/node_modules": true,
-    "**/bower_components": true,
-    "**/.git": true,
-    "**/vendor": true,
-    "**/.bundle": true,
-    "**/tmp": true,
-    "**/log": true,
-    "**/*.log": true
-  },
+  "cursor.composer.shouldAllowCustomModes": true,
+  "cursor.composer.usageSummaryDisplay": "always",
+  "cursor.diffs.useCharacterLevelDiffs": true,
+  "cursor.windowSwitcher.sidebarHoverCollapsed": true,
 
   // ============================================================================
-  // Editor Appearance & Workbench
+  // Editor Appearance & Behavior
   // ============================================================================
   "workbench.colorTheme": "Spinel",
   "workbench.iconTheme": "vscode-icons",
+  "workbench.editor.wrapTabs": true,
+  "window.density.editorTabHeight": "compact",
+  "editor.stickyTabStops": true,
 
   // ============================================================================
   // Git & Version Control
   // ============================================================================
   "git.autofetch": true,
   "git.openRepositoryInParentFolders": "always",
-  "diffEditor.ignoreTrimWhitespace": false,
+  "diffEditor.ignoreTrimWhitespace": true,
+  "gitlens.rebaseEditor.ordering": "asc",
 
   // GitHub Pull Requests
   "githubPullRequests.pullBranch": "never",
@@ -51,42 +34,25 @@
   "terminal.integrated.scrollback": 100000,
   "terminal.integrated.enableImages": true,
 
-  // Terminal customizations (more subtle search highlighting)
+  // Terminal search highlighting
   "workbench.colorCustomizations": {
-    "terminal.findMatchBackground": "#ffcc0060",
-    "terminal.findMatchBorder": "#ffcc00",
-    "terminal.findMatchHighlightBackground": "#ffcc0040",
-    "terminal.findMatchHighlightBorder": "#ffcc0080",
-    "terminalOverviewRuler.findMatchForeground": "#ffcc00"
+    "terminal.findMatchBackground": "#dddd00",
+    "terminal.findMatchBorder": "#dddd00",
+    "terminal.findMatchHighlightBackground": "#dddd00",
+    "terminal.findMatchHighlightBorder": "#dddd00",
+    "terminalOverviewRuler.findMatchForeground": "#dddd00"
   },
 
   // ============================================================================
   // File Explorer
   // ============================================================================
-  "explorer.fileNesting.enabled": true,
-  "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
-    // TypeScript/JavaScript
-    "*.ts": "${capture}.js, ${capture}.d.ts",
+    "*.ts": "${capture}.js",
     "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
     "*.jsx": "${capture}.js",
     "*.tsx": "${capture}.ts",
     "tsconfig.json": "tsconfig.*.json",
-    
-    // Package managers
     "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb",
-    "Gemfile": "Gemfile.lock",
-    
-    // Ruby
-    "*.rb": "${capture}_test.rb, ${capture}_spec.rb",
-    
-    // Environment files
-    ".env": ".env.*, .envrc",
-    
-    // Documentation
-    "README.md": "README*, CHANGELOG*, CONTRIBUTING*, LICENSE*",
-    
-    // Database files
     "*.sqlite": "${capture}.${extname}-*",
     "*.db": "${capture}.${extname}-*",
     "*.sqlite3": "${capture}.${extname}-*",
@@ -110,11 +76,7 @@
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
     "editor.rulers": [120],
-    "editor.semanticHighlighting.enabled": true,
-    "editor.quickSuggestions": {
-      "comments": true
-    },
-    "editor.suggest.showWords": false
+    "editor.semanticHighlighting.enabled": true
   },
 
   // JSON
@@ -122,21 +84,17 @@
     "editor.defaultFormatter": "vscode.json-language-features"
   },
 
-  // YAML
-  "[yaml]": {
+  // Docker Compose
+  "[dockercompose]": {
     "editor.insertSpaces": true,
     "editor.tabSize": 2,
-    "editor.autoIndent": "advanced"
+    "editor.autoIndent": "advanced",
+    "editor.defaultFormatter": "redhat.vscode-yaml"
   },
 
-  // Markdown
-  "[markdown]": {
-    "editor.wordWrap": "on",
-    "editor.quickSuggestions": {
-      "comments": "off",
-      "strings": "off",
-      "other": "off"
-    }
+  // GitHub Actions
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
   },
 
   // ============================================================================
@@ -148,37 +106,46 @@
     "tapiocaAddon": false
   },
 
+  // Sorbet
+  "sorbet.highlightUntyped": "everywhere",
+
   // Code Spell Checker
   "cSpell.enableFiletypes": ["ruby"],
   "cSpell.userWords": [
     "autofetch",
-    "byesig",
     "cadetgear",
     "Datetime",
     "fulfillable",
     "Geolocator",
-    "Hotwire's",
     "importmap",
+    "interruptible",
     "isospin",
     "Jsonify",
     "kamal",
+    "killswitch",
     "klass",
-    "kwargs",
     "merch",
     "metafield",
     "metafields",
     "normalised",
     "Omakase",
+    "preorder",
     "propshaft",
     "regexes",
     "rubocop",
     "scrollback",
+    "Shipify",
+    "Smush",
     "snowdevil",
+    "snowdevils",
+    "statsd",
     "unfulfill",
-    "unshippable",
+    "unranked",
     "unsplit",
+    "unstock",
     "UNSUBMITTED",
     "xlarge",
+    "Xpresspost",
     "zoneinfo"
   ],
 
@@ -188,40 +155,23 @@
   // Red Hat telemetry
   "redhat.telemetry.enabled": false,
 
-  // Byesig (signature hiding)
-  "byesig.enabled": true,
-  "byesig.fold": true,
-  "byesig.opacity": 0.8,
-  "byesig.showIcon": true,
-  "byesig.backgroundColor": "",
+  // JavaScript/TypeScript
+  "javascript.updateImportsOnFileMove.enabled": "always",
 
-  // Comment highlighting (TODO, FIXME, etc) - more subtle colors
+  // Comment highlighting (TODO, FIXME, etc)
   "highlight.regexes": {
-    "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *XXX(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-      "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-      "decorations": [
-        {
-          "overviewRulerColor": "#ffcc00",
-          "backgroundColor": "#ffcc0040",
-          "color": "#ffcc00",
-          "fontWeight": "bold"
-        },
-        {
-          "backgroundColor": "#ffcc0020"
-        }
-      ]
-    },
     "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *TODO(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
       "filterFileRegex": ".*(?<!CHANGELOG.md)$",
       "decorations": [
         {
           "overviewRulerColor": "#ffcc00",
-          "backgroundColor": "#ffcc0040",
-          "color": "#ffcc00",
+          "backgroundColor": "#ffcc00",
+          "color": "#1f1f1f",
           "fontWeight": "bold"
         },
         {
-          "backgroundColor": "#ffcc0020"
+          "backgroundColor": "#ffcc00",
+          "color": "#1f1f1f"
         }
       ]
     },
@@ -229,13 +179,14 @@
       "filterFileRegex": ".*(?<!CHANGELOG.md)$",
       "decorations": [
         {
-          "overviewRulerColor": "#ff6b6b",
-          "backgroundColor": "#ff6b6b40",
-          "color": "#ff6b6b",
+          "overviewRulerColor": "#cc0000",
+          "backgroundColor": "#cc0000",
+          "color": "#1f1f1f",
           "fontWeight": "bold"
         },
         {
-          "backgroundColor": "#ff6b6b20"
+          "backgroundColor": "#cc0000",
+          "color": "#1f1f1f"
         }
       ]
     },
@@ -243,13 +194,14 @@
       "filterFileRegex": ".*(?<!CHANGELOG.md)$",
       "decorations": [
         {
-          "overviewRulerColor": "#4ecdc4",
-          "backgroundColor": "#4ecdc440",
-          "color": "#4ecdc4",
+          "overviewRulerColor": "#00ccff",
+          "backgroundColor": "#00ccff",
+          "color": "#1f1f1f",
           "fontWeight": "bold"
         },
         {
-          "backgroundColor": "#4ecdc420"
+          "backgroundColor": "#00ccff",
+          "color": "#1f1f1f"
         }
       ]
     },
@@ -257,13 +209,14 @@
       "filterFileRegex": ".*(?<!CHANGELOG.md)$",
       "decorations": [
         {
-          "overviewRulerColor": "#c678dd",
-          "backgroundColor": "#c678dd40",
-          "color": "#c678dd",
+          "overviewRulerColor": "#cc00cc",
+          "backgroundColor": "#cc00cc",
+          "color": "#1f1f1f",
           "fontWeight": "bold"
         },
         {
-          "backgroundColor": "#c678dd20"
+          "backgroundColor": "#cc00cc",
+          "color": "#1f1f1f"
         }
       ]
     }

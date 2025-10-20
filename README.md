@@ -16,7 +16,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - Template-based secrets management
 - macOS and Linux support
 - Validation script for installation verification
-- Packages: git, zsh, tmux, gh, gnuplot, bash, fish, cursor, vscode
+- Packages: git, zsh, tmux, gh, gnuplot, bash, fish, cursor
 - Oh My Zsh submodule
 - CI/CD validation with GitHub Actions
 
@@ -63,13 +63,10 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 │   │       └── functions/
 │   │           ├── d.fish           # Dotfiles wrapper function
 │   │           └── fish_prompt.fish # Custom prompt
-│   ├── cursor/        # Cursor IDE configuration
-│   │   └── .config/Cursor/User/
+│   ├── cursor/        # Cursor IDE configuration (macOS)
+│   │   └── Library/Application Support/Cursor/User/
 │   │       ├── settings.json       # Editor settings
 │   │       └── keybindings.json    # Keyboard shortcuts
-│   ├── vscode/        # VSCode configuration (macOS)
-│   │   └── Library/Application Support/Code/User/
-│   │       └── settings.json       # Editor settings
 │   └── system/        # System-wide files
 ├── dot            # Main dotfiles management script
 └── README.md      # This file
@@ -251,7 +248,7 @@ cat gh/.config/gh/config.yml.template gh/.config/gh/config.yml.secret > gh/.conf
 stow --verbose --restow --dir=. --target=$HOME system
 
 # Install other packages
-stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash fish cursor vscode
+stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash fish cursor
 
 # Or install selectively
 stow --verbose --restow --dir=. --target=$HOME git zsh
@@ -290,7 +287,7 @@ git pull origin main
 git submodule update --remote --merge
 
 # Reinstall packages (picks up changes)
-stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash fish cursor vscode
+stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash fish cursor
 ```
 
 #### Manual Uninstall
@@ -299,7 +296,7 @@ stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash fish
 cd ~/.dotfiles
 
 # Remove all symlinks
-stow --verbose --delete --dir=. --target=$HOME system git zsh tmux gh gnuplot bash fish cursor vscode
+stow --verbose --delete --dir=. --target=$HOME system git zsh tmux gh gnuplot bash fish cursor
 
 # Or remove specific packages
 stow --verbose --delete --dir=. --target=$HOME git
@@ -400,18 +397,12 @@ The health check performs 11 categories of checks:
 
 - Editor settings (preferences, theme, extensions)
 - Keyboard shortcuts and keybindings
-- Cross-platform configuration sync
 
 **Note:** This package manages Cursor user settings only. Project-specific rules
 (`.cursor/rules/*.mdc`) should be managed per-project using Shopify's standard approach.
 
-### VSCode (`vscode/`)
-
-- Editor settings (preferences, theme, extensions)
-- Shares many settings with Cursor (both based on VSCode)
-
 **Note:** Currently macOS-specific. Linux support requires platform-specific path handling
-(`~/Library/Application Support/Code/User/` on macOS vs `~/.config/Code/User/` on Linux).
+(`~/Library/Application Support/Cursor/User/` on macOS vs `~/.config/Cursor/User/` on Linux).
 
 ## Updating
 
@@ -500,7 +491,7 @@ Like `install`, the `update` command supports verbosity flags:
 
 ```bash
 cd ~/.dotfiles
-stow -D git zsh tmux gh gnuplot bash fish cursor vscode
+stow -D git zsh tmux gh gnuplot bash fish cursor
 # Restore from backup directories in ~/.dotfiles-backup-* if needed
 ```
 
@@ -515,7 +506,7 @@ chmod +x dot
 ### Stow Conflicts
 
 ```bash
-stow -v -R git zsh tmux gh gnuplot bash fish cursor vscode
+stow -v -R git zsh tmux gh gnuplot bash fish cursor
 ```
 
 Verify installation:

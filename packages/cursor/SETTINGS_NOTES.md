@@ -125,7 +125,12 @@ These settings could be moved to shopify branch when you implement branch-specif
 
 ## Cross-Platform Compatibility
 
-All settings work on both macOS and Linux. No platform-specific settings detected.
+**Important:** This package is currently macOS-specific due to different platform paths:
+
+- **macOS**: `~/Library/Application Support/Cursor/User/` ✅ (current package)
+- **Linux**: `~/.config/Cursor/User/` ❌ (not yet supported)
+
+Cursor uses platform-specific paths. Future enhancement needed for Linux support.
 
 ## Testing Recommendations
 
