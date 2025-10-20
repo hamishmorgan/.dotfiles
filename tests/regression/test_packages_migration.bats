@@ -100,23 +100,25 @@ load '../test_helper/common'
     source_dot_script
 
     # Create a test structure that matches the actual repo layout
-    # Name it .dotfiles to match the validation pattern
+    # Use tmux package (single file) for simplicity
     local test_dotfiles="$BATS_TEST_TMPDIR/.dotfiles"
-    mkdir -p "$test_dotfiles/packages/git"
-    echo "[user]" > "$test_dotfiles/packages/git/.gitconfig"
+    mkdir -p "$test_dotfiles/packages/tmux"
+    echo "# tmux config" > "$test_dotfiles/packages/tmux/.tmux.conf"
 
     # Create a symlink pointing to the CORRECT packages/ path
     # (simulating what stow actually creates after migration)
-    ln -sf "$test_dotfiles/packages/git/.gitconfig" "$HOME/.gitconfig"
+    ln -sf "$test_dotfiles/packages/tmux/.tmux.conf" "$HOME/.tmux.conf"
 
     # Verify symlink points to .dotfiles/packages/ directory
     local target
-    target="$(readlink "$HOME/.gitconfig")"
-    [[ "$target" == *"/.dotfiles/packages/git/"* ]]
+    target="$(readlink "$HOME/.tmux.conf")"
+    [[ "$target" == *"/.dotfiles/packages/tmux/"* ]]
 
-    # Run validate_package for git package
-    run validate_package "git"
-    assert_success
+    # Run validate_package for tmux package - should succeed with packages/ path
+    run validate_package "tmux"
+    
+    # Check it succeeded (exit code 0)
+    [ "$status" -eq 0 ]
 }
 
 @test "validate_package rejects old-style package paths" {
