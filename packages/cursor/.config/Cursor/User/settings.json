@@ -8,13 +8,42 @@
   "cursor.windowSwitcher.sidebarHoverCollapsed": true,
 
   // ============================================================================
-  // Editor Appearance & Behavior
+  // Editor - Global Settings
+  // ============================================================================
+  "editor.stickyTabStops": true,
+  "editor.formatOnSave": true,
+  "editor.minimap.enabled": true,
+  "editor.minimap.showSlider": "always",
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+
+  // File handling
+  "files.autoSave": "onFocusChange",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // Breadcrumbs
+  "breadcrumbs.enabled": true,
+
+  // Search
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/.git": true,
+    "**/vendor": true,
+    "**/.bundle": true,
+    "**/tmp": true,
+    "**/log": true,
+    "**/*.log": true
+  },
+
+  // ============================================================================
+  // Editor Appearance & Workbench
   // ============================================================================
   "workbench.colorTheme": "Spinel",
   "workbench.iconTheme": "vscode-icons",
   "workbench.editor.wrapTabs": true,
   "window.density.editorTabHeight": "compact",
-  "editor.stickyTabStops": true,
 
   // ============================================================================
   // Git & Version Control
@@ -34,25 +63,42 @@
   "terminal.integrated.scrollback": 100000,
   "terminal.integrated.enableImages": true,
 
-  // Terminal search highlighting
+  // Terminal customizations (more subtle search highlighting)
   "workbench.colorCustomizations": {
-    "terminal.findMatchBackground": "#dddd00",
-    "terminal.findMatchBorder": "#dddd00",
-    "terminal.findMatchHighlightBackground": "#dddd00",
-    "terminal.findMatchHighlightBorder": "#dddd00",
-    "terminalOverviewRuler.findMatchForeground": "#dddd00"
+    "terminal.findMatchBackground": "#ffcc0060",
+    "terminal.findMatchBorder": "#ffcc00",
+    "terminal.findMatchHighlightBackground": "#ffcc0040",
+    "terminal.findMatchHighlightBorder": "#ffcc0080",
+    "terminalOverviewRuler.findMatchForeground": "#ffcc00"
   },
 
   // ============================================================================
   // File Explorer
   // ============================================================================
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
-    "*.ts": "${capture}.js",
+    // TypeScript/JavaScript
+    "*.ts": "${capture}.js, ${capture}.d.ts",
     "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
     "*.jsx": "${capture}.js",
     "*.tsx": "${capture}.ts",
     "tsconfig.json": "tsconfig.*.json",
+    
+    // Package managers
     "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb",
+    "Gemfile": "Gemfile.lock",
+    
+    // Ruby
+    "*.rb": "${capture}_test.rb, ${capture}_spec.rb",
+    
+    // Environment files
+    ".env": ".env.*, .envrc",
+    
+    // Documentation
+    "README.md": "README*, CHANGELOG*, CONTRIBUTING*, LICENSE*",
+    
+    // Database files
     "*.sqlite": "${capture}.${extname}-*",
     "*.db": "${capture}.${extname}-*",
     "*.sqlite3": "${capture}.${extname}-*",
@@ -76,7 +122,11 @@
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
     "editor.rulers": [120],
-    "editor.semanticHighlighting.enabled": true
+    "editor.semanticHighlighting.enabled": true,
+    "editor.quickSuggestions": {
+      "comments": true
+    },
+    "editor.suggest.showWords": false
   },
 
   // JSON
@@ -95,6 +145,23 @@
   // GitHub Actions
   "[github-actions-workflow]": {
     "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+
+  // YAML
+  "[yaml]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced"
+  },
+
+  // Markdown
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off"
+    }
   },
 
   // ============================================================================
@@ -157,21 +224,21 @@
 
   // JavaScript/TypeScript
   "javascript.updateImportsOnFileMove.enabled": "always",
+  "typescript.updateImportsOnFileMove.enabled": "always",
 
-  // Comment highlighting (TODO, FIXME, etc)
+  // Comment highlighting (TODO, FIXME, etc) - more subtle colors with transparency
   "highlight.regexes": {
     "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *TODO(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
       "filterFileRegex": ".*(?<!CHANGELOG.md)$",
       "decorations": [
         {
           "overviewRulerColor": "#ffcc00",
-          "backgroundColor": "#ffcc00",
-          "color": "#1f1f1f",
+          "backgroundColor": "#ffcc0040",
+          "color": "#ffcc00",
           "fontWeight": "bold"
         },
         {
-          "backgroundColor": "#ffcc00",
-          "color": "#1f1f1f"
+          "backgroundColor": "#ffcc0020"
         }
       ]
     },
@@ -179,14 +246,13 @@
       "filterFileRegex": ".*(?<!CHANGELOG.md)$",
       "decorations": [
         {
-          "overviewRulerColor": "#cc0000",
-          "backgroundColor": "#cc0000",
-          "color": "#1f1f1f",
+          "overviewRulerColor": "#ff6b6b",
+          "backgroundColor": "#ff6b6b40",
+          "color": "#ff6b6b",
           "fontWeight": "bold"
         },
         {
-          "backgroundColor": "#cc0000",
-          "color": "#1f1f1f"
+          "backgroundColor": "#ff6b6b20"
         }
       ]
     },
@@ -194,14 +260,13 @@
       "filterFileRegex": ".*(?<!CHANGELOG.md)$",
       "decorations": [
         {
-          "overviewRulerColor": "#00ccff",
-          "backgroundColor": "#00ccff",
-          "color": "#1f1f1f",
+          "overviewRulerColor": "#4ecdc4",
+          "backgroundColor": "#4ecdc440",
+          "color": "#4ecdc4",
           "fontWeight": "bold"
         },
         {
-          "backgroundColor": "#00ccff",
-          "color": "#1f1f1f"
+          "backgroundColor": "#4ecdc420"
         }
       ]
     },
@@ -209,14 +274,13 @@
       "filterFileRegex": ".*(?<!CHANGELOG.md)$",
       "decorations": [
         {
-          "overviewRulerColor": "#cc00cc",
-          "backgroundColor": "#cc00cc",
-          "color": "#1f1f1f",
+          "overviewRulerColor": "#c678dd",
+          "backgroundColor": "#c678dd40",
+          "color": "#c678dd",
           "fontWeight": "bold"
         },
         {
-          "backgroundColor": "#cc00cc",
-          "color": "#1f1f1f"
+          "backgroundColor": "#c678dd20"
         }
       ]
     }
