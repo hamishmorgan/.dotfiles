@@ -118,29 +118,31 @@ load '../test_helper/common'
     assert_output --partial "Git configuration validated successfully"
 }
 
-@test "health check passes with packages/ directory structure" {
-    # End-to-end regression test
-    # Verify health check correctly validates symlinks after packages/ migration
+@test "validate_package rejects old-style package paths" {
+    # Regression test: ensure trailing slash prevents false positives
+    # The trailing slash in 'packages/git/' should NOT match 'packages/git-old/'
     
-    cd "$BATS_TEST_DIRNAME/../.." || return 1
+    # Source the dot script
+    source_dot_script
     
-    # Install dotfiles (creates symlinks to packages/ directory)
-    ./dot install > /dev/null 2>&1 || true
+    local dotfiles_dir="$BATS_TEST_DIRNAME/../.."
     
-    # Run health check
-    run ./dot health
+    # Create a symlink pointing to a SIBLING directory (git-old not git)
+    mkdir -p "$BATS_TEST_TMPDIR/fake-dotfiles/packages/git-old"
+    echo "[user]" > "$BATS_TEST_TMPDIR/fake-dotfiles/packages/git-old/.gitconfig"
+    ln -sf "$BATS_TEST_TMPDIR/fake-dotfiles/packages/git-old/.gitconfig" "$HOME/.gitconfig"
     
-    # Health should pass (exit 0) or fail gracefully (exit 1)
-    # Should NOT crash with exit 2 or other codes
-    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
+    # Verify symlink points to git-old (not git)
+    local target
+    target="$(readlink "$HOME/.gitconfig")"
+    [[ "$target" == *"/packages/git-old/"* ]]
     
-    # Critical: Should NOT show symlink validation errors
-    refute_output --partial "validation failed"
+    # Run validate_package for git package - should FAIL
+    # because symlink points to git-old, not git
+    run validate_package "git"
+    assert_failure
     
-    # If installation succeeded, symlink integrity should pass
-    if [[ "$status" -eq 0 ]]; then
-        assert_output --partial "Symlink Integrity"
-        assert_output --regexp "(✓ Pass|Pass)"
-    fi
+    # Should report validation failure
+    assert_output --partial "validation failed"
 }
 

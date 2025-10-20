@@ -1657,18 +1657,24 @@ git pull               # Update to latest
 For all code changes:
 
 1. **Create Pull Request**: Use GitHub MCP to raise PR
-2. **Request Copilot Review**: Use `mcp_github_request_copilot_review`
-3. **Wait for CI**: Monitor CI status until passing
-4. **Wait for Copilot Review**: Review Copilot feedback
-5. **Address Issues**: Fix any problems identified
-6. **Repeat**: Continue until both CI and Copilot approve
-7. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
-8. **Merge**: Only merge after both CI and Copilot are satisfied
-9. **Post-Merge Cleanup**:
-   - Update local main: `git checkout main && git pull`
-   - Rebase shopify branch: `git checkout shopify && git rebase main && git push --force-with-lease`
-   - Delete feature branches: `git branch -d <branch-name>`
-   - Delete remote branches (if not auto-deleted): `git push origin --delete <branch-name>`
+2. **Self-Review**: Critically review your own changes before requesting external review
+   - Read the full diff: `gh pr diff <PR_NUMBER>`
+   - Check for anti-patterns documented in AGENTS.md
+   - Verify tests follow testing principles (no acceptable failure patterns)
+   - Ensure code follows style guidelines
+   - Look for inconsistencies or missed edge cases
+3. **Request Copilot Review**: Use `mcp_github_request_copilot_review`
+4. **Wait for CI**: Monitor CI status until passing
+5. **Wait for Copilot Review**: Review Copilot feedback
+6. **Address Issues**: Fix any problems identified (including from self-review)
+7. **Repeat**: Continue until both CI and Copilot approve
+8. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
+9. **Merge**: Only merge after both CI and Copilot are satisfied
+10. **Post-Merge Cleanup**:
+    - Update local main: `git checkout main && git pull`
+    - Rebase shopify branch: `git checkout shopify && git rebase main && git push --force-with-lease`
+    - Delete feature branches: `git branch -d <branch-name>`
+    - Delete remote branches (if not auto-deleted): `git push origin --delete <branch-name>`
 
 This ensures code quality through automated testing and AI review.
 
