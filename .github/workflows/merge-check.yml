@@ -1,0 +1,54 @@
+name: PR Merge Check
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  merge-check:
+    name: Merge Conflict Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check merge conflicts
+        run: |
+          echo "Checking if PR can merge cleanly into ${{ github.event.pull_request.base.ref }}..."
+
+          # Checkout base branch
+          git checkout origin/${{ github.event.pull_request.base.ref }}
+
+          # Try to merge PR branch into base branch (dry run)
+          if git merge --no-commit --no-ff ${{ github.event.pull_request.head.sha }}; then
+            echo "✅ No merge conflicts detected"
+            git merge --abort 2>/dev/null || true
+            exit 0
+          else
+            echo "❌ Merge conflicts detected!"
+            echo ""
+            echo "Conflicting files:"
+            git diff --name-only --diff-filter=U
+            echo ""
+            echo "On your PR branch, rebase on ${{ github.event.pull_request.base.ref }}:"
+            echo "  git checkout ${{ github.event.pull_request.head.ref }}"
+            echo "  git fetch origin ${{ github.event.pull_request.base.ref }}"
+            echo "  git rebase origin/${{ github.event.pull_request.base.ref }}"
+            echo "  git push --force-with-lease"
+            git merge --abort 2>/dev/null || true
+            exit 1
+          fi

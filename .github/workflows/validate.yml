@@ -284,6 +284,7 @@ jobs:
           echo "| BATS Tests | ${{ needs.bats-tests.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Platform Validation | ${{ needs.validate-platform.result }} |" >> $GITHUB_STEP_SUMMARY
 
+          # Check if all required jobs passed (merge-check runs independently)
           if [[ "${{ needs.lint.result }}" == "success" ]] && \
              [[ "${{ needs.smoke-test.result }}" == "success" ]] && \
              [[ "${{ needs.bats-tests.result }}" == "success" ]] && \
