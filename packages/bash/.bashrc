@@ -149,6 +149,11 @@ if [[ -x ~/.local/state/tec/profiles/base/current/global/init ]] && [[ $- == *i*
     eval "$(~/.local/state/tec/profiles/base/current/global/init bash)"
 fi
 
+# Enhanced configuration (modern CLI tools)
+if [ -f ~/.bashrc.enhanced ]; then
+    source ~/.bashrc.enhanced
+fi
+
 # Machine-specific configuration (not version-controlled)
 if [ -f ~/.bashrc.local ]; then
     source ~/.bashrc.local

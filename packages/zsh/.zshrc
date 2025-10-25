@@ -145,6 +145,11 @@ if [[ -x ~/.local/state/tec/profiles/base/current/global/init ]] && [[ $- == *i*
     eval "$(~/.local/state/tec/profiles/base/current/global/init zsh)"
 fi
 
+# Enhanced configuration (modern CLI tools)
+if [ -f ~/.zshrc.enhanced ]; then
+    source ~/.zshrc.enhanced
+fi
+
 # Machine-specific configuration (not version-controlled)
 if [ -f ~/.zshrc.local ]; then
     source ~/.zshrc.local

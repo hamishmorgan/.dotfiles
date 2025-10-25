@@ -179,13 +179,60 @@ DOTFILES_OUTPUT_PREFIX="| " ./dot install
 DOTFILES_BACKUP_DIR_PREFIX=.archive/dotfiles ./dot backup
 ```
 
-## Optional: Set zsh as default shell
+## Optional Enhancements
+
+### Set zsh as default shell
 
 ```bash
 chsh -s $(which zsh)
 ```
 
 Log out and back in for the change to take effect.
+
+### Modern CLI Tools
+
+The dotfiles include optional integrations for modern CLI tools. These tools are detected automatically and aliases are configured if installed.
+
+#### eza (modern ls replacement)
+
+[eza](https://github.com/eza-community/eza) is a modern replacement for `ls` with better defaults, icons, git integration, and tree views.
+
+**Installation:**
+
+```bash
+# macOS
+brew install eza
+
+# Ubuntu/Debian (via cargo)
+cargo install eza
+
+# Or download binary from GitHub releases
+```
+
+**Aliases (auto-configured when eza is installed):**
+
+- `ls` - Basic listing with icons and grouped directories
+- `ll` - Long format with headers, icons, and git status
+- `la` - Long format with all files (including hidden)
+- `lt` - Tree view (2 levels)
+- `lta` - Tree view with hidden files
+- `lg` - Git-enhanced listing (shows git status)
+- `lm` - Time-sorted (most recently modified first)
+- `lz` - Size-sorted (largest first)
+
+**Testing:**
+
+```bash
+# Verify eza is installed
+command -v eza
+
+# Test aliases
+ll
+lt
+lg
+```
+
+The aliases are defined in `.bashrc.enhanced`, `.zshrc.enhanced`, and `config.fish`. If eza is not installed, the shell configs fall back to standard `ls` aliases.
 
 ### Manual Installation
 
