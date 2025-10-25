@@ -3346,6 +3346,7 @@ list_packages() {
             gnuplot) description="Gnuplot configuration" ;;
             bash)    description="Bash shell configuration" ;;
             fish)    description="Fish shell configuration" ;;
+            wezterm) description="WezTerm terminal emulator" ;;
             bat)     description="Bat syntax highlighter" ;;
             *)       description="Unknown package" ;;
         esac
