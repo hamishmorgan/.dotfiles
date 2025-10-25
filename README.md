@@ -234,7 +234,7 @@ lt
 lg
 ```
 
-The aliases are defined in `.bashrc.enhanced`, `.zshrc.enhanced`, and `config.fish`. If eza is not installed,
+The aliases are integrated into `.bashrc`, `.zshrc`, and `config.fish`. If eza is not installed,
 the shell configs fall back to standard `ls` aliases.
 
 ### Manual Installation

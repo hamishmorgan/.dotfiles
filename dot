@@ -143,11 +143,11 @@ get_package_files() {
     case "$package" in
         system)  echo ".stow-global-ignore,.stowrc,.editorconfig,.inputrc" ;;
         git)     echo ".gitconfig,.gitattributes,.gitignore-globals" ;;
-        zsh)     echo ".zshrc,.zshrc.enhanced,.zprofile,.oh-my-zsh" ;;
+        zsh)     echo ".zshrc,.zprofile,.oh-my-zsh" ;;
         tmux)    echo ".tmux.conf" ;;
         gh)      echo ".config/gh" ;;
         gnuplot) echo ".gnuplot" ;;
-        bash)    echo ".bashrc,.bashrc.enhanced,.bash_profile" ;;
+        bash)    echo ".bashrc,.bash_profile" ;;
         fish)    echo ".config/fish" ;;
         *)       echo "" ;;
     esac
