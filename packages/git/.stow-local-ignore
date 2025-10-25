@@ -3,4 +3,3 @@
 \.example$
 \.local$
 ^\.gitconfig\.template$
-^\.gitconfig\.delta$

@@ -875,103 +875,6 @@ merge_secret_configs() {
     return 0
 }
 
-# Configure git-delta if installed
-configure_git_delta() {
-    log_info "Configuring git-delta integration..."
-
-    local gitconfig="$PACKAGES_DIR/git/.gitconfig"
-    local delta_config="$PACKAGES_DIR/git/.gitconfig.delta"
-
-    if [[ ! -f "$gitconfig" ]]; then
-        log_warning "Git config not found, skipping delta configuration"
-        return 0
-    fi
-
-    if [[ ! -f "$delta_config" ]]; then
-        log_warning "Delta config file not found, skipping delta configuration"
-        return 0
-    fi
-
-    # Check if delta is installed
-    if command_exists delta; then
-        log_info "Delta detected, enabling enhanced diff viewer"
-
-        # Check if delta include is already present
-        if grep -q "path = ~/.gitconfig.delta" "$gitconfig" 2>/dev/null; then
-            log_info "Delta configuration already included"
-        else
-            # Add delta include before the .gitconfig.local include
-            # This ensures .local can override delta settings if needed
-            if grep -q "path = ~/.gitconfig.local" "$gitconfig" 2>/dev/null; then
-                # Insert before .gitconfig.local include
-                local temp_file
-                temp_file=$(mktemp)
-                awk '
-                    /^\[include\]/ && !delta_added {
-                        print ""
-                        print "# Git Delta - Enhanced diff viewer (optional)"
-                        print "# Automatically included when delta is installed"
-                        print "[include]"
-                        print "\tpath = ~/.gitconfig.delta"
-                        delta_added = 1
-                    }
-                    { print }
-                ' "$gitconfig" > "$temp_file"
-                mv "$temp_file" "$gitconfig"
-                log_success "Added delta configuration to .gitconfig"
-            else
-                # No .local include, append delta include
-                {
-                    echo ""
-                    echo "# Git Delta - Enhanced diff viewer (optional)"
-                    echo "# Automatically included when delta is installed"
-                    echo "[include]"
-                    printf '\tpath = ~/.gitconfig.delta\n'
-                } >> "$gitconfig"
-                log_success "Added delta configuration to .gitconfig"
-            fi
-        fi
-
-        # Copy delta config to home directory
-        if cp "$delta_config" "$HOME/.gitconfig.delta" 2>/dev/null; then
-            log_success "Installed delta configuration"
-        else
-            log_error "Failed to install delta configuration"
-            return 1
-        fi
-    else
-        log_info "Delta not installed, skipping enhanced diff configuration"
-        log_info "Install with: brew install git-delta (macOS) or cargo install git-delta"
-
-        # Remove delta include if present (cleanup from previous installation)
-        if grep -q "path = ~/.gitconfig.delta" "$gitconfig" 2>/dev/null; then
-            local temp_file
-            temp_file=$(mktemp)
-            # Remove delta include section (more robust pattern matching)
-            awk '
-                BEGIN { in_delta = 0 }
-                /^# Git Delta - Enhanced diff viewer/ { in_delta = 1; next }
-                in_delta && /^# Automatically included when delta is installed/ { next }
-                in_delta && /^\[include\]/ { next }
-                in_delta && /^[[:space:]]*path = ~\/\.gitconfig\.delta/ { next }
-                in_delta && /^$/ { next }
-                /^[^#[:space:]]/ { in_delta = 0 }
-                !in_delta { print }
-            ' "$gitconfig" > "$temp_file"
-            mv "$temp_file" "$gitconfig"
-            log_info "Removed delta configuration (delta not installed)"
-        fi
-
-        # Remove delta config from home if present
-        if [[ -f "$HOME/.gitconfig.delta" ]]; then
-            rm -f "$HOME/.gitconfig.delta"
-            log_info "Removed delta configuration file"
-        fi
-    fi
-
-    return 0
-}
-
 # Install dotfiles using Stow with rollback support
 install_dotfiles() {
     local verbosity="${1:-0}"
@@ -3158,10 +3061,6 @@ run_installation_pipeline() {
     if ! merge_secret_configs; then
         log_error "Secret config merging failed"
         return 1
-    fi
-
-    if ! configure_git_delta; then
-        log_warning "Git delta configuration failed (non-critical)"
     fi
 
     if ! install_dotfiles "$verbosity"; then

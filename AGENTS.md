@@ -1119,26 +1119,29 @@ This enables flexible workflows: use atomic commands for fast iteration, composi
 
 ### Optional Enhancement Configs
 
-Some configurations are conditionally applied based on tool availability:
+Some configurations support optional tools through stow + manual activation:
 
 **Git Delta** (`.gitconfig.delta`):
 
 - Enhanced diff viewer configuration
-- Automatically included when `delta` is installed
-- Gracefully skipped when not available
-- Added via `configure_git_delta()` function during installation
-- **NOT stowed** - copied to `~/.gitconfig.delta` and included via git config
-- Automatically removed when delta is uninstalled
+- **Stowed** like other config files (symlinked to `~/.gitconfig.delta`)
+- User manually activates by adding `[include] path = ~/.gitconfig.delta` to `~/.gitconfig.local`
+- No automatic detection or modification of user files
+- Follows existing pattern: install tool → configure in `.local` file
 
 **Implementation Pattern:**
 
 1. Create enhancement config file (e.g., `.gitconfig.delta`)
-2. Add to package `.stow-local-ignore` (not stowed)
-3. Detect tool availability in installation pipeline
-4. Conditionally copy config and add include directive
-5. Clean up when tool is not available
+2. Let stow handle it (symlink like other configs)
+3. Document activation in README (add include to `.gitconfig.local`)
+4. User controls when/if to enable it
 
-This pattern allows optional enhancements without breaking installations when tools are missing.
+**Why this approach:**
+
+- Respects user ownership of `.local` files (installer never modifies them)
+- Simple and transparent (no hidden magic)
+- Consistent with existing optional tools (eza, etc.)
+- No need for conditional logic in installation pipeline
 
 ### Platform-Specific Configs
 
