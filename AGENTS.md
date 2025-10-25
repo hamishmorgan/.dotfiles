@@ -1117,6 +1117,32 @@ This enables flexible workflows: use atomic commands for fast iteration, composi
 - **`.local` files are NOT stowed** - ignored via package `.stow-local-ignore` files
 - **`.local` files are secured** - automatically set to mode 600 during installation
 
+### Optional Enhancement Configs
+
+Some configurations support optional tools through stow + manual activation:
+
+**Git Delta** (`.gitconfig.delta`):
+
+- Enhanced diff viewer configuration
+- **Stowed** like other config files (symlinked to `~/.gitconfig.delta`)
+- User manually activates by adding `[include] path = ~/.gitconfig.delta` to `~/.gitconfig.local`
+- No automatic detection or modification of user files
+- Follows existing pattern: install tool → configure in `.local` file
+
+**Implementation Pattern:**
+
+1. Create enhancement config file (e.g., `.gitconfig.delta`)
+2. Let stow handle it (symlink like other configs)
+3. Document activation in README (add include to `.gitconfig.local`)
+4. User controls when/if to enable it
+
+**Why this approach:**
+
+- Respects user ownership of `.local` files (installer never modifies them)
+- Simple and transparent (no hidden magic)
+- Consistent with existing optional tools (eza, etc.)
+- No need for conditional logic in installation pipeline
+
 ### Platform-Specific Configs
 
 - OS-specific configs use suffixes: `.bashrc.osx`, `.bashrc.linux`, `.zshrc.osx`, `.zshrc.linux`
