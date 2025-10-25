@@ -14,19 +14,15 @@
 #       path = ~/.gitconfig.local
 
 # Example: Git signing with 1Password (personal laptop)
-# Template already has format=ssh and 1Password program, so just set key:
-# [user]
-#     signingkey = ssh-ed25519 YOUR_SSH_KEY_HERE
-
-# Or override both format and program:
 # [gpg]
 #     format = ssh
 # [gpg "ssh"]
 #     program = /opt/1Password/op-ssh-sign
+# [user]
+#     signingkey = ssh-ed25519 YOUR_SSH_KEY_HERE
 
 # Example: Shopify laptop configuration
 # Include all Shopify-managed git configuration (signing, credentials, URL rewrites)
-# IMPORTANT: Must override format from ssh (template) to openpgp for yubikey
 # [gpg]
 #     format = openpgp
 # [include]

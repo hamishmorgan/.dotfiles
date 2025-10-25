@@ -168,13 +168,11 @@
 	autosquash = true
 	autostash = true
 
-[gpg]
-	format = ssh
-[gpg "ssh"]
-	program = /opt/1Password/op-ssh-sign
+# GPG signing enabled, but method configured per-machine in ~/.gitconfig.local
 [commit]
 	gpgsign = true
 
 # Machine-specific configuration (not version-controlled)
+# Configure signing method here (1Password, Yubikey, etc.)
 [include]
 	path = ~/.gitconfig.local
