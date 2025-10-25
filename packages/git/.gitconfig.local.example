@@ -24,12 +24,13 @@
 # [gpg "ssh"]
 #     program = /opt/1Password/op-ssh-sign
 
-# Example: Git signing with Yubikey (Shopify laptop)
-# Override format to openpgp, then include Shopify's managed config:
+# Example: Shopify laptop configuration
+# Include all Shopify-managed git configuration (signing, credentials, URL rewrites)
+# IMPORTANT: Must override format from ssh (template) to openpgp for yubikey
 # [gpg]
 #     format = openpgp
 # [include]
-#     path = ~/.config/dev/gitconfig.yubikey
+#     path = ~/.config/dev/gitconfig
 
 # Example: Disable signing (if not needed)
 # [commit]
