@@ -4,50 +4,50 @@ permissions:
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   lint:
     name: Code Quality (Shellcheck & Markdownlint)
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-    - name: Configure apt to skip documentation
-      run: |
-        sudo mkdir -p /etc/dpkg/dpkg.cfg.d
-        echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
-        echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+      - name: Configure apt to skip documentation
+        run: |
+          sudo mkdir -p /etc/dpkg/dpkg.cfg.d
+          echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
+          echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
 
-    - name: Install shellcheck
-      run: |
-        if ! command -v shellcheck &> /dev/null; then
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq shellcheck
-        fi
+      - name: Install shellcheck
+        run: |
+          if ! command -v shellcheck &> /dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq shellcheck
+          fi
 
-    - name: Run linting
-      run: |
-        npx --yes markdownlint-cli@0.42.0 "**/*.md"
-        shellcheck dot packages/bash/.bashrc* packages/bash/.bash_profile packages/zsh/.zshrc* packages/zsh/.zprofile
+      - name: Run linting
+        run: |
+          npx --yes markdownlint-cli@0.42.0 "**/*.md"
+          shellcheck dot packages/bash/.bashrc* packages/bash/.bash_profile packages/zsh/.zshrc* packages/zsh/.zprofile
 
   smoke-test:
     name: Smoke Tests
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Run smoke tests
-      run: ./tests/smoke-test.sh
+      - name: Run smoke tests
+        run: ./tests/smoke-test.sh
 
   # CONSOLIDATED BATS TESTS WITH OS MATRIX
   bats-tests:
@@ -57,7 +57,7 @@ jobs:
     permissions:
       contents: read
     strategy:
-      fail-fast: false  # Run both even if one fails
+      fail-fast: false # Run both even if one fails
       matrix:
         os: [ubuntu-latest, macos-latest]
 
@@ -239,8 +239,8 @@ jobs:
       - name: Make scripts executable
         run: chmod +x dot tests/lib/*.sh
 
-      - name: Create test secrets
-        run: ./tests/lib/create-secrets.sh
+      - name: Create test .local files
+        run: ./tests/lib/create-locals.sh
 
       - name: Run installation
         shell: bash
@@ -296,4 +296,3 @@ jobs:
             echo "❌ **Some tests failed**" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
-

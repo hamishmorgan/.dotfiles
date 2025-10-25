@@ -766,7 +766,37 @@ secure_secret_file() {
     return 0
 }
 
+# Secure permissions on .local files (machine-specific configs)
+secure_local_files() {
+    local local_files=(
+        "$HOME/.gitconfig.local"
+        "$HOME/.bashrc.local"
+        "$HOME/.bash_profile.local"
+        "$HOME/.zshrc.local"
+        "$HOME/.zprofile.local"
+        "$HOME/.config/fish/config_private.fish"
+    )
+
+    local secured_count=0
+
+    for file in "${local_files[@]}"; do
+        if [[ -f "$file" ]]; then
+            if chmod 600 "$file" 2>/dev/null; then
+                ((secured_count++))
+            fi
+        fi
+    done
+
+    if [[ $secured_count -gt 0 ]]; then
+        log_info "Secured $secured_count .local file(s) with mode 600"
+    fi
+
+    return 0
+}
+
 # Merge secret configurations with templates (auto-discovered)
+# NOTE: Legacy function - retained for backward compatibility but dormant
+# (no .secret files exist after consolidation to .local pattern)
 merge_secret_configs() {
     log_info "Merging secret configurations..."
 
@@ -3034,6 +3064,10 @@ run_installation_pipeline() {
     if ! install_dotfiles "$verbosity"; then
         log_error "Stow installation failed"
         return 1
+    fi
+
+    if ! secure_local_files; then
+        log_warning "Failed to set secure permissions on some .local files"
     fi
 
     return 0

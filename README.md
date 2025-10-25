@@ -36,25 +36,25 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 .dotfiles/
 ├── packages/      # All stowable configuration packages
 │   ├── git/           # Git configuration and aliases
-│   │   ├── .gitconfig.template      # Git config template
-│   │   ├── .gitconfig.secret.example  # Secret config example
-│   │   └── .gitconfig.secret      # Secret config (git-ignored)
+│   │   ├── .gitconfig              # Git config (tracked)
+│   │   └── .gitconfig.local.example  # Example for ~/.gitconfig.local
 │   ├── zsh/           # Zsh configuration with Oh My Zsh
 │   │   ├── .zshrc
 │   │   ├── .zprofile
 │   │   ├── .zshrc.osx
 │   │   ├── .zshrc.linux
+│   │   ├── .zshrc.local.example    # Example for ~/.zshrc.local
 │   │   └── .oh-my-zsh/  # Oh My Zsh submodule
 │   ├── tmux/          # Tmux configuration
 │   ├── gh/            # GitHub CLI configuration
 │   │   └── .config/gh/
-│   │       ├── config.yml.template
-│   │       ├── config.yml.secret.example
-│   │       └── config.yml.secret   # Secret config (git-ignored)
+│   │       ├── config.yml          # GH CLI config (tracked)
+│   │       └── hosts.yml           # GH hosts config (tracked)
 │   ├── gnuplot/       # GNU Plot configuration
 │   ├── bash/          # Bash configuration
 │   │   ├── .bashrc
-│   │   └── .bash_profile
+│   │   ├── .bash_profile
+│   │   └── .bashrc.local.example   # Example for ~/.bashrc.local
 │   ├── fish/          # Fish shell configuration
 │   │   └── .config/fish/
 │   │       ├── config.fish
@@ -145,8 +145,6 @@ Customize behavior via environment variables:
 
 ### Security
 
-- `DOTFILES_SECRET_FILE_MODE` - Secret file permissions (default: 600)
-
 ### Output
 
 - `DOTFILES_OUTPUT_PREFIX` - Output indentation character (default: │)
@@ -173,9 +171,6 @@ DOTFILES_GIT_TIMEOUT=30 DOTFILES_CURL_TIMEOUT=15 ./dot install
 
 # Preview more files during restore
 DOTFILES_RESTORE_DISPLAY_LIMIT=50 ./dot restore
-
-# Read-only secret files (more secure)
-DOTFILES_SECRET_FILE_MODE=400 ./dot install
 
 # Plain ASCII output for CI/logs
 DOTFILES_OUTPUT_PREFIX="| " ./dot install
@@ -204,56 +199,53 @@ cd ~/.dotfiles
 git submodule update --init --recursive
 ```
 
-#### 2. Create Secret Files
+#### 2. Create Machine-Specific Configuration
 
-Create personal configuration files (git-ignored):
+Create `.local` files for your machine-specific settings (git-ignored):
 
-**Git configuration:**
+**Git configuration (required):**
 
 ```bash
-cp git/.gitconfig.secret.example git/.gitconfig.secret
+cp packages/git/.gitconfig.local.example ~/.gitconfig.local
 # Edit with your information:
-# - name, email, GitHub username
-nano git/.gitconfig.secret
+# - name, email, username
+# - Signing configuration (1Password, Yubikey, or disable)
+nano ~/.gitconfig.local
+chmod 600 ~/.gitconfig.local
 ```
 
-**GitHub CLI configuration:**
+**Shell configuration (optional):**
 
 ```bash
-cp gh/.config/gh/config.yml.secret.example gh/.config/gh/config.yml.secret
-# Edit with your preferences
-nano gh/.config/gh/config.yml.secret
+# Bash
+cp packages/bash/.bashrc.local.example ~/.bashrc.local
+nano ~/.bashrc.local
+
+# Zsh
+cp packages/zsh/.zshrc.local.example ~/.zshrc.local
+nano ~/.zshrc.local
+
+# Fish
+nano ~/.config/fish/config_private.fish
 ```
 
-#### 3. Process Templates
-
-Merge templates with secret configs:
-
-```bash
-# Git configuration
-cat git/.gitconfig.template git/.gitconfig.secret > git/.gitconfig
-
-# GitHub CLI configuration (if using gh)
-cat gh/.config/gh/config.yml.template gh/.config/gh/config.yml.secret > gh/.config/gh/config.yml
-```
-
-#### 4. Install Packages with Stow
+#### 3. Install Packages with Stow
 
 ```bash
 # Install system package first (provides .stow-global-ignore)
-stow --verbose --restow --dir=. --target=$HOME system
+stow --verbose --restow --dir=packages --target=$HOME system
 
 # Install other packages
-stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash
+stow --verbose --restow --dir=packages --target=$HOME git zsh tmux gh gnuplot bash fish
 
 # Or install selectively
-stow --verbose --restow --dir=. --target=$HOME git zsh
+stow --verbose --restow --dir=packages --target=$HOME git zsh
 ```
 
 **What Stow does:**
 
-- Creates symlinks from `~/.dotfiles/PACKAGE/FILE` to `~/FILE`
-- Example: `~/.dotfiles/git/.gitconfig` → `~/.gitconfig`
+- Creates symlinks from `~/.dotfiles/packages/PACKAGE/FILE` to `~/FILE`
+- Example: `~/.dotfiles/packages/git/.gitconfig` → `~/.gitconfig`
 - Handles nested directory structures automatically
 
 #### 5. Verify Installation
@@ -263,10 +255,10 @@ stow --verbose --restow --dir=. --target=$HOME git zsh
 ls -la ~ | grep "^l"
 
 # Should show:
-# lrwxr-xr-x .gitconfig -> .dotfiles/git/.gitconfig
-# lrwxr-xr-x .zshrc -> .dotfiles/zsh/.zshrc
+# lrwxr-xr-x .gitconfig -> .dotfiles/packages/git/.gitconfig
+# lrwxr-xr-x .zshrc -> .dotfiles/packages/zsh/.zshrc
 
-# Test configurations
+# Test configurations (from your ~/.gitconfig.local)
 git config --get user.name
 git config --get user.email
 ```
@@ -283,7 +275,7 @@ git pull origin main
 git submodule update --remote --merge
 
 # Reinstall packages (picks up changes)
-stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash
+stow --verbose --restow --dir=packages --target=$HOME git zsh tmux gh gnuplot bash fish
 ```
 
 #### Manual Uninstall
@@ -292,10 +284,10 @@ stow --verbose --restow --dir=. --target=$HOME git zsh tmux gh gnuplot bash
 cd ~/.dotfiles
 
 # Remove all symlinks
-stow --verbose --delete --dir=. --target=$HOME system git zsh tmux gh gnuplot bash
+stow --verbose --delete --dir=packages --target=$HOME system git zsh tmux gh gnuplot bash fish
 
 # Or remove specific packages
-stow --verbose --delete --dir=. --target=$HOME git
+stow --verbose --delete --dir=packages --target=$HOME git
 ```
 
 **When to use manual installation:**
@@ -309,8 +301,8 @@ stow --verbose --delete --dir=. --target=$HOME git
 **When to use the script:**
 
 - You want automated setup with backups
-- You need template processing and secret merging
 - You want health checks and validation
+- You want automatic .local file permission setting
 - You prefer a guided installation experience
 
 ## Verification
@@ -335,19 +327,18 @@ The health check performs comprehensive diagnostics in a clean, scannable table 
 The table format shows all checks at a glance with Pass/Fail/Warn status and identifies
 maintenance items that need attention.
 
-The health check performs 11 categories of checks:
+The health check performs 10 categories of checks:
 
 1. **Symlink Integrity**: Verifies all configuration symlinks point to correct files
 2. **Configuration Syntax**: Validates git, tmux, zsh, and bash configuration syntax
 3. **Submodule Health**: Checks Oh My Zsh submodule status and initialization
 4. **Git Repository Status**: Reports uncommitted changes, branch status, and sync with origin
-5. **Template Configuration Consistency**: Detects missing secret configs and stale merged files
-6. **File Permissions**: Ensures secret configs have secure permissions and aren't tracked by git
-7. **Shell Integration**: Verifies shell configs are active and PATH is properly configured
-8. **Stow Conflicts**: Detects unmanaged files that would conflict with stow
-9. **Orphaned Symlinks**: Finds broken symlinks in home and .config directories
-10. **Dependencies**: Checks all required tools are installed
-11. **Backup Health**: Reports backup directory status and suggests cleanup if needed
+5. **File Permissions**: Ensures .local files have secure permissions (chmod 600)
+6. **Shell Integration**: Verifies shell configs are active and PATH is properly configured
+7. **Stow Conflicts**: Detects unmanaged files that would conflict with stow
+8. **Orphaned Symlinks**: Finds broken symlinks in home and .config directories
+9. **Dependencies**: Checks all required tools are installed
+10. **Backup Health**: Reports backup directory status and suggests cleanup if needed
 
 ## What gets installed
 
@@ -473,50 +464,19 @@ git commit -m "Your changes"
 git commit -am "WIP: changes"
 ```
 
-## Secret Configuration
+## Secure File Permissions
 
-This dotfiles setup uses a template-based approach for managing sensitive information.
-Secret configurations are stored in separate files that are git-ignored.
+Machine-specific `.local` files contain sensitive information and are automatically
+secured with `chmod 600` (owner read/write only) during installation.
 
-### Setting Up Secret Configuration
+**Files secured:**
 
-1. **Git Configuration**:
+- `~/.gitconfig.local` - User identity and git signing keys
+- `~/.bashrc.local` - May contain API keys or tokens
+- `~/.zshrc.local` - May contain private environment variables
+- `~/.config/fish/config_private.fish` - Private fish configuration
 
-   ```bash
-   # Copy the example and customize
-   cp ~/.dotfiles/git/.gitconfig.secret.example ~/.dotfiles/git/.gitconfig.secret
-   
-   # Edit with your personal information
-   nano ~/.dotfiles/git/.gitconfig.secret
-   ```
-
-2. **GitHub CLI Configuration**:
-
-   ```bash
-   # Copy the example and customize
-   cp ~/.dotfiles/gh/.config/gh/config.yml.secret.example ~/.dotfiles/gh/.config/gh/config.yml.secret
-   
-   # Edit with your personal preferences
-   nano ~/.dotfiles/gh/.config/gh/config.yml.secret
-   ```
-
-3. **Reinstall to apply changes**:
-
-   ```bash
-   ./dot install
-   ```
-
-### Template System
-
-- **Templates**: Public configuration files with placeholders (e.g., `YOUR_EMAIL_HERE`)
-- **Secret Configs**: Private files with actual sensitive values (git-ignored)
-- **Merged Configs**: Final configuration files created during installation
-
-The installation script automatically:
-
-1. Creates config files from templates
-2. Merges secret configurations
-3. Installs using Stow
+The installation script automatically sets secure permissions on these files if they exist.
 
 ### Update
 

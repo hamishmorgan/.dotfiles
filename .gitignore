@@ -1,18 +1,11 @@
 # Backup directories
 backups/
 
-# Secret configuration files (contain sensitive information)
-*.secret
+# Machine-specific configuration files (contain sensitive/private information)
 *.local
-
-# Specific secret files
-git/.gitconfig.secret
-git/.gitconfig.shopify.secret
-gh/.config/gh/config.yml.secret
-gh/.config/gh/hosts.yml.secret
-
-# Generated configuration files (created from templates + secret configs)
-git/.gitconfig
-git/.gitconfig.shopify
-gh/.config/gh/config.yml
-gh/.config/gh/hosts.yml
+.gitconfig.local
+.bashrc.local
+.zshrc.local
+.bash_profile.local
+.zprofile.local
+config_private.fish

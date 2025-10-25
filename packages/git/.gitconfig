@@ -1,8 +1,5 @@
-[user]
-	email = YOUR_EMAIL_HERE
-	name = YOUR_NAME_HERE
-	username = YOUR_USERNAME_HERE
-	signingkey = YOUR_SIGNING_KEY_HERE
+# User information configured in ~/.gitconfig.local (machine-specific)
+# See .gitconfig.local.example for setup instructions
 
 [alias]
 	# Basic shortcuts
