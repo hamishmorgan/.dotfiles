@@ -1254,7 +1254,7 @@ show_status() {
     echo ""
 
     # Check if cursor config exists in dotfiles and system
-    local cursor_dotfiles="$DOTFILES_DIR/packages/cursor/.config/Cursor/User"
+    local cursor_dotfiles="$DOTFILES_DIR/packages/cursor"
     local cursor_system
 
     case "$(uname -s)" in
@@ -3285,7 +3285,7 @@ cmd_pull_cursor() {
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 sync_cursor_to_system() {
-    local source="$DOTFILES_DIR/packages/cursor/.config/Cursor/User"
+    local source="$DOTFILES_DIR/packages/cursor"
     local target
 
     case "$(uname -s)" in
@@ -3343,7 +3343,7 @@ sync_cursor_to_system() {
 
 pull_cursor_from_system() {
     local source
-    local target="$DOTFILES_DIR/packages/cursor/.config/Cursor/User"
+    local target="$DOTFILES_DIR/packages/cursor"
 
     case "$(uname -s)" in
         Darwin)

@@ -12,14 +12,15 @@ Cursor (based on VSCode) does not handle symlinked configuration files well. Use
 
 Therefore, this package uses a copy-based sync approach where:
 
-- Source of truth: `packages/cursor/.config/Cursor/User/`
-- Target location: `~/Library/Application Support/Cursor/User/` (macOS)
-- Sync method: `./dot sync-cursor` copies files from dotfiles to Cursor
+- **Source of truth**: `packages/cursor/` (platform-agnostic)
+- **Target location (macOS)**: `~/Library/Application Support/Cursor/User/`
+- **Target location (Linux)**: `~/.config/Cursor/User/`
+- **Sync method**: `./dot sync-cursor` copies files from dotfiles to system location
 
 ## Usage
 
 ```bash
-# Sync Cursor configs from dotfiles to Cursor
+# Sync Cursor configs from dotfiles to system
 ./dot sync-cursor
 
 # After making changes in Cursor, pull them back to dotfiles
@@ -42,9 +43,9 @@ git commit -m "update cursor settings"
 - Workspace settings (project-specific)
 - Machine-specific caches
 
-## Cross-Platform Notes
+## Platform Support
 
-- **macOS**: `~/Library/Application Support/Cursor/User/`
-- **Linux**: `~/.config/Cursor/User/` (to be implemented)
+- ✅ **macOS**: Fully supported (`~/Library/Application Support/Cursor/User/`)
+- ✅ **Linux**: Implemented but untested (`~/.config/Cursor/User/`)
 
-Current implementation targets macOS only.
+The package source (`packages/cursor/`) is platform-agnostic. The sync commands handle platform-specific paths automatically.
