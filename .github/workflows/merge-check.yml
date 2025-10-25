@@ -29,10 +29,10 @@ jobs:
       - name: Check merge conflicts
         run: |
           echo "Checking if PR can merge cleanly into ${{ github.event.pull_request.base.ref }}..."
-          
+
           # Checkout base branch
           git checkout origin/${{ github.event.pull_request.base.ref }}
-          
+
           # Try to merge PR branch into base branch (dry run)
           if git merge --no-commit --no-ff ${{ github.event.pull_request.head.sha }}; then
             echo "✅ No merge conflicts detected"
@@ -45,7 +45,7 @@ jobs:
             git diff --name-only --diff-filter=U
             echo ""
             echo "On your PR branch, rebase on ${{ github.event.pull_request.base.ref }}:"
-            echo "  git checkout your-branch-name"
+            echo "  git checkout ${{ github.event.pull_request.head.ref }}"
             echo "  git fetch origin ${{ github.event.pull_request.base.ref }}"
             echo "  git rebase origin/${{ github.event.pull_request.base.ref }}"
             echo "  git push --force-with-lease"
