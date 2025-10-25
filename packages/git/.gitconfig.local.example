@@ -14,12 +14,24 @@
 #       path = ~/.gitconfig.local
 
 # Example: Git signing with 1Password (personal laptop)
+# Template already has format=ssh and 1Password program, so just set key:
+# [user]
+#     signingkey = ssh-ed25519 YOUR_SSH_KEY_HERE
+
+# Or override both format and program:
 # [gpg]
 #     format = ssh
 # [gpg "ssh"]
 #     program = /opt/1Password/op-ssh-sign
 
-# Example: Disable signing (if Shopify manages it via ~/.config/dev/gitconfig)
+# Example: Git signing with Yubikey (Shopify laptop)
+# Override format to openpgp, then include Shopify's managed config:
+# [gpg]
+#     format = openpgp
+# [include]
+#     path = ~/.config/dev/gitconfig.yubikey
+
+# Example: Disable signing (if not needed)
 # [commit]
 #     gpgsign = false
 
