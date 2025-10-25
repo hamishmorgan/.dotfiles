@@ -115,6 +115,19 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+# ls aliases - use eza if available, otherwise rely on Oh My Zsh defaults
+if command -v eza &>/dev/null; then
+  # eza (modern ls replacement) aliases
+  alias ls='eza --icons --group-directories-first'
+  alias ll='eza --long --header --icons --group-directories-first --git'
+  alias la='eza --long --all --header --icons --group-directories-first --git'
+  alias lt='eza --tree --level=2 --icons'
+  alias lta='eza --tree --level=2 --all --icons'
+  alias lg='eza --long --git --git-ignore --icons'
+  alias lm='eza --long --sort=modified --reverse --icons'
+  alias lz='eza --long --sort=size --reverse --icons'
+fi
+
 # Detect OS for conditional configuration loading
 export ZSH_HOST_OS=$(uname | awk '{print tolower($0)}')
 
