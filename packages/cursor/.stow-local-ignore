@@ -1,0 +1,5 @@
+# Cursor package local ignore patterns
+README.md
+SETTINGS_NOTES.md
+\.DS_Store
+
