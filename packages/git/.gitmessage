@@ -13,10 +13,9 @@
 # - Wrap body at 72 characters
 # - Focus on why, not what (code shows what)
 # - Reference issues/PRs: "fixes #123", "closes #456", or "(#123)"
-# - Use PR labels for categorization (feat, fix, docs, etc)
 # - Breaking changes: Explain impact in body
 # - Co-authored-by: Name <email> (for pair programming)
-# - AI commits: Use --author flag per AGENTS.md
+# - AI commits: Use --author="Agent Name <agent@noreply.local>" to specify the AI agent as the commit author
 #
 # Examples:
 # Add disk space cleanup utility (#106)
