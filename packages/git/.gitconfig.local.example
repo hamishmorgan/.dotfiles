@@ -1,0 +1,42 @@
+# Machine-specific git configuration
+#
+# Copy this file to ~/.gitconfig.local and customize for this machine
+# This file is git-ignored and won't be tracked in the repository
+#
+# Use for:
+# - Machine-specific git signing configuration
+# - Local git aliases
+# - Machine-specific credential helpers
+# - Git hooks or tool integrations
+#
+# NOTE: The main .gitconfig includes this file via:
+#   [include]
+#       path = ~/.gitconfig.local
+
+# Example: Git signing with 1Password (personal laptop)
+# [gpg]
+#     format = ssh
+# [gpg "ssh"]
+#     program = /opt/1Password/op-ssh-sign
+# [user]
+#     signingkey = ssh-ed25519 YOUR_SSH_KEY_HERE
+
+# Example: Shopify laptop configuration
+# Include all Shopify-managed git configuration (signing, credentials, URL rewrites)
+# [gpg]
+#     format = openpgp
+# [include]
+#     path = ~/.config/dev/gitconfig
+
+# Example: Disable signing (if not needed)
+# [commit]
+#     gpgsign = false
+
+# Example: Machine-specific aliases
+# [alias]
+#     work-log = log --author="work-email@company.com"
+
+# Example: Local credential helper
+# [credential]
+#     helper = custom-helper
+

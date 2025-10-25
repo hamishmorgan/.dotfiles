@@ -45,3 +45,8 @@ if [ -f "$HOME/.bashrc" ]; then
   . "$HOME/.bashrc"
 fi
 
+# Machine-specific configuration (not version-controlled)
+if [ -f ~/.bash_profile.local ]; then
+    source ~/.bash_profile.local
+fi
+

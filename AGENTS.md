@@ -7,7 +7,7 @@ Instructions for AI agents working with this dotfiles repository.
 - [Agent Instructions](#agent-instructions)
   - [Table of Contents](#table-of-contents)
   - [Project Context](#project-context)
-    - [Branch Strategy](#branch-strategy)
+    - [Machine-Specific Configuration Strategy](#machine-specific-configuration-strategy)
   - [Dependencies](#dependencies)
     - [Required Tools](#required-tools)
     - [Optional Tools](#optional-tools)
@@ -107,34 +107,55 @@ The `system` package is stowed first to ensure `.stow-global-ignore` is in place
 - **AGENTS.md**: AI agent instructions (this file - technical implementation guidance)
 - **tests/README.md**: Testing framework documentation
 
-### Branch Strategy
+### Machine-Specific Configuration Strategy
 
-Branch-based profile management provides configuration flexibility without runtime complexity.
+Machine-specific configuration uses `.local` files for per-machine customization without
+branch complexity.
 
-- **main branch**: Personal configurations for home use
-- **shopify branch**: Work environment configurations (Shopify-specific tools and settings)
-  - Rebase on main to pull in general improvements
-  - Allow dev tools to modify files freely without affecting main
-  - Push auto-generated changes without concern
+**Single branch approach:**
 
-**Switching contexts:**
+- **main branch**: All shared configuration (works on all machines)
+- **`.local` files**: Machine-specific overrides (git-ignored)
+
+**Configuration layers:**
 
 ```bash
-git checkout shopify    # Switch to work environment
-git checkout main       # Switch to personal environment
+~/.bashrc               # Symlinked from repo, contains base config + conditional integrations
+~/.bashrc.local         # Git-ignored, machine-specific customizations
+~/.gitconfig            # Generated from template + secret
+~/.gitconfig.local      # Git-ignored, machine-specific git settings
 ```
 
-**Why branches instead of runtime profiles:**
+**Why .local files instead of branches:**
 
-- Full git version control for each configuration set
-- Complete flexibility (different files, configs, templates, dependencies)
-- Simpler workflow (standard git commands)
-- No state management or profile tracking files
-- Better collaboration (work branch shareable with team)
-- Leverage git rebase to sync improvements between profiles
+- Single branch eliminates rebasing complexity
+- Machine-specific configs stay separate from shared configs
+- No git conflicts from auto-appending tools
+- Works across unlimited machines without branch proliferation
+- Simpler mental model (base + machine overlay)
+- Standard pattern used by many dotfiles implementations
 
-Runtime profile systems add unnecessary complexity for single-user dotfiles.
-Branches provide superior flexibility with standard git tooling.
+**Handling Auto-Appending Tools:**
+
+Development tools (Shopify's `dev`, `tec agent`, etc.) automatically append initialization
+code to shell configs. The dotfiles handle this by:
+
+1. **Pre-including integrations** with conditional checks (safe on all machines)
+2. **Accepting duplication** when tools re-append (creates git noise but manageable)
+3. **Git workflow** using `git add -p` to skip duplicate lines when committing
+
+**Managing git noise from auto-appends:**
+
+```bash
+# Interactive staging - skip duplicates
+git add -p packages/bash/.bashrc
+
+# Or reset before committing
+git checkout -- packages/bash/.bashrc packages/zsh/.zshrc
+```
+
+Runtime profiles and branch-based strategies add unnecessary complexity for single-user
+dotfiles when tools forcibly modify config files daily.
 
 ## Dependencies
 

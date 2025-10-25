@@ -136,3 +136,20 @@ fi
 if [ -f "$HOME/.dotfiles/dot" ]; then
     source <("$HOME/.dotfiles/dot" --completion bash)
 fi
+
+# Shopify development environment (conditional - safe on all machines)
+# dev.sh provides: chruby, nvm, PATH setup, autocomplete
+if [[ -f /opt/dev/dev.sh ]] && [[ $- == *i* ]]; then
+    source /opt/dev/dev.sh
+fi
+
+# Tec agent integration (Shopify's managed Nix environment)
+# Note: eval is required - tec init outputs shell-specific code
+if [[ -x ~/.local/state/tec/profiles/base/current/global/init ]] && [[ $- == *i* ]]; then
+    eval "$(~/.local/state/tec/profiles/base/current/global/init bash)"
+fi
+
+# Machine-specific configuration (not version-controlled)
+if [ -f ~/.bashrc.local ]; then
+    source ~/.bashrc.local
+fi

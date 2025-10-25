@@ -1,0 +1,5 @@
+# Bash package stow ignore patterns
+# Machine-specific configuration files (git-ignored)
+\.local$
+\.example$
+
