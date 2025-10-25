@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # Machine-specific bash configuration
-# 
+#
 # Copy this file to ~/.bashrc.local and customize for this machine
 # This file is git-ignored and won't be tracked in the repository
 #

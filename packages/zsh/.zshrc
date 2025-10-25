@@ -135,14 +135,14 @@ fi
 
 # Shopify development environment (conditional - safe on all machines)
 if [[ -f /opt/dev/dev.sh ]] && [[ $- == *i* ]]; then
-  source /opt/dev/dev.sh
+    source /opt/dev/dev.sh
 fi
 
 [[ -f /opt/dev/sh/chruby/chruby.sh ]] && { type chruby >/dev/null 2>&1 || \
-  chruby () { source /opt/dev/sh/chruby/chruby.sh; chruby "$@"; } }
+    chruby () { source /opt/dev/sh/chruby/chruby.sh; chruby "$@"; } }
 
 if [[ -x ~/.local/state/tec/profiles/base/current/global/init ]] && [[ $- == *i* ]]; then
-  eval "$(~/.local/state/tec/profiles/base/current/global/init zsh)"
+    eval "$(~/.local/state/tec/profiles/base/current/global/init zsh)"
 fi
 
 # Machine-specific configuration (not version-controlled)

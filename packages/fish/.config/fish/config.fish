@@ -56,4 +56,3 @@ end
 if test -f ~/.config/fish/config_private.fish
     source ~/.config/fish/config_private.fish
 end
-

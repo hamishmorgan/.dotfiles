@@ -13,7 +13,7 @@
 	sw = switch
 	rs = restore
 	rb = rebase
-	
+
 	# Status and information
 	s = status -s
 	short = status --short
@@ -21,7 +21,7 @@
 	last = log -1 HEAD
 	who = blame
 	when = log --pretty=format:"%h %ad %s" --date=short --author
-	
+
 	# Log formats
 	lol = log --graph --decorate --pretty=oneline --abbrev-commit
 	lola = log --graph --decorate --pretty=oneline --abbrev-commit --all
@@ -29,7 +29,7 @@
 	l = !git --no-pager log -n 40 --graph --pretty=format:'%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%cr) %C(blue bold)<%an>%Creset'
 	lg = log --oneline --decorate --graph --all
 	lgp = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
-	
+
 	# Branch and remote management
 	tags = tag -l
 	branches = branch -av
@@ -38,7 +38,7 @@
 	del = branch -D
 	cleanup = "!git branch --merged | grep -v '\\*\\|main\\|master' | xargs -n 1 git branch -d"
 	dm = "!git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d"
-	
+
 	# Commit operations
 	amend = commit --amend --reuse-message=HEAD
 	commend = commit --amend --no-edit
@@ -47,12 +47,12 @@
 	uncommit = reset --soft HEAD~1
 	undo = reset --hard HEAD~1
 	unstage = reset HEAD --
-	
+
 	# Diff and comparison
 	diffc = diff --cached
 	diffw = diff --word-diff
 	diffp = diff --patience
-	
+
 	# Push and pull
 	forcepush = push --force-with-lease
 	visual = !code
@@ -62,13 +62,13 @@
 	excludesfile = ~/.gitignore-globals
 	attributesFile = ~/.gitattributes
 	commitTemplate = ~/.gitmessage
-	
+
 	# Line ending configuration
 	eol = native
 	autocrlf = input
 	safecrlf = true
 	ignorecase = false
-	
+
 	# macOS specific
 	trustctime = false
 	precomposeunicode = false
