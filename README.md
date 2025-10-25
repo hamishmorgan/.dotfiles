@@ -181,6 +181,38 @@ DOTFILES_BACKUP_DIR_PREFIX=.archive/dotfiles ./dot backup
 
 ## Optional Enhancements
 
+### Git Delta - Enhanced Diff Viewer
+
+The dotfiles automatically detect and configure [git-delta](https://github.com/dandavison/delta) when installed, providing:
+
+- Syntax-highlighted diffs
+- Side-by-side view
+- Line numbers
+- Better visualization of changes
+
+**Installation:**
+
+```bash
+# macOS
+brew install git-delta
+
+# Ubuntu/Debian
+wget https://github.com/dandavison/delta/releases/download/0.18.2/git-delta_0.18.2_amd64.deb
+sudo dpkg -i git-delta_0.18.2_amd64.deb
+
+# Cargo (all platforms)
+cargo install git-delta
+```
+
+**Activation:**
+
+Delta is automatically configured during `./dot install` or `./dot update` when detected. No manual configuration needed.
+
+**Graceful Degradation:**
+
+If delta is not installed, git uses standard diff output. The configuration is automatically
+added/removed based on delta availability.
+
 ### Set zsh as default shell
 
 ```bash
