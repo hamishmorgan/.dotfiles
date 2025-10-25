@@ -37,7 +37,7 @@ fi
 
 # Test 3: All packages defined
 echo -n "Test 3: All packages defined... "
-if grep -q 'PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm")' "$DOTFILES_DIR/dot"; then
+if grep -q 'PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm" "bat")' "$DOTFILES_DIR/dot"; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"

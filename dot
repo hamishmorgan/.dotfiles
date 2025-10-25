@@ -135,7 +135,7 @@ trap handle_interrupt INT TERM
 
 # Package definitions
 # Note: system package is stowed first to ensure .stow-global-ignore is in place
-PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm")
+PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm" "bat")
 
 # Get package files (bash 3.2 compatible - no associative arrays)
 get_package_files() {
@@ -150,6 +150,7 @@ get_package_files() {
         bash)    echo ".bashrc,.bash_profile" ;;
         fish)    echo ".config/fish" ;;
         wezterm) echo ".config/wezterm" ;;
+        bat)     echo ".config/bat" ;;
         *)       echo "" ;;
     esac
 }
@@ -167,6 +168,7 @@ get_package_name() {
         bash)    echo "Bash" ;;
         fish)    echo "Fish" ;;
         wezterm) echo "WezTerm" ;;
+        bat)     echo "Bat" ;;
         *)       echo "$package" ;;
     esac
 }
@@ -176,7 +178,7 @@ get_required_deps() {
     local type="$1"
     case "$type" in
         common)   echo "stow git" ;;
-        optional) echo "tmux zsh fish" ;;
+        optional) echo "tmux zsh fish bat batcat" ;;
         *)        echo "" ;;
     esac
 }
@@ -3247,7 +3249,7 @@ enable_package() {
         return 1
     fi
 
-    if [[ ! -d "$DOTFILES_DIR/$package" ]]; then
+    if [[ ! -d "$PACKAGES_DIR/$package" ]]; then
         log_error "Package directory not found: $package"
         return 1
     fi
@@ -3343,6 +3345,8 @@ list_packages() {
             gh)      description="GitHub CLI configuration" ;;
             gnuplot) description="Gnuplot configuration" ;;
             bash)    description="Bash shell configuration" ;;
+            fish)    description="Fish shell configuration" ;;
+            bat)     description="Bat syntax highlighter" ;;
             *)       description="Unknown package" ;;
         esac
 
@@ -3591,10 +3595,11 @@ die() {
 }
 
 # Parse command-line arguments
-# Sets global variables: COMMAND, VERBOSITY
+# Sets global variables: COMMAND, VERBOSITY, COMMAND_ARGS
 parse_arguments() {
     COMMAND=""
     VERBOSITY=0
+    COMMAND_ARGS=()
 
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -3638,6 +3643,11 @@ parse_arguments() {
                 fi
                 COMMAND="$1"
                 shift
+                # Collect remaining arguments for commands that need them
+                while [[ $# -gt 0 ]]; do
+                    COMMAND_ARGS+=("$1")
+                    shift
+                done
                 ;;
             # Unknown option (unknown flag)
             -*)
@@ -3678,7 +3688,7 @@ handle_completion() {
 
 # Main script logic
 main() {
-    # Parse command-line arguments into global COMMAND and VERBOSITY
+    # Parse command-line arguments into global COMMAND, VERBOSITY, and COMMAND_ARGS
     parse_arguments "$@"
 
     # Execute command with verbosity level
@@ -3711,8 +3721,7 @@ main() {
             ;;
         restore)
             # Pass backup ID argument if provided
-            shift  # Remove command from args
-            cmd_restore "$@"
+            cmd_restore "${COMMAND_ARGS[@]}"
             ;;
         clean)
             cmd_clean
@@ -3722,13 +3731,11 @@ main() {
             ;;
         enable)
             # Pass package argument
-            shift  # Remove command from args
-            cmd_enable "$@"
+            cmd_enable "${COMMAND_ARGS[@]}"
             ;;
         disable)
             # Pass package argument
-            shift  # Remove command from args
-            cmd_disable "$@"
+            cmd_disable "${COMMAND_ARGS[@]}"
             ;;
         packages)
             cmd_packages
@@ -3794,7 +3801,7 @@ _dot_completion() {
                 done < <(compgen -W "$flags" -- "$cur")
                 ;;
             enable|disable)
-                local packages="system git zsh tmux gh gnuplot bash fish"
+                local packages="system git zsh tmux gh gnuplot bash fish bat"
                 COMPREPLY=()
                 while IFS= read -r word; do
                     COMPREPLY+=("$word")
@@ -3910,6 +3917,8 @@ _dot_completion() {
                         'gh:GitHub CLI configuration'
                         'gnuplot:Gnuplot configuration'
                         'bash:Bash shell configuration'
+                        'fish:Fish shell configuration'
+                        'bat:Bat syntax highlighter'
                     )
                     _describe 'package' packages
                     ;;
@@ -4019,6 +4028,7 @@ complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "gh" -d "GitH
 complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "gnuplot" -d "Gnuplot configuration"
 complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "bash" -d "Bash shell configuration"
 complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "fish" -d "Fish shell configuration"
+complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "bat" -d "Bat syntax highlighter"
 
 # Fish completion for d function wrapper
 complete -c d -f
