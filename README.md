@@ -553,6 +553,126 @@ Run tasks via Command Palette (`Ctrl+Shift+P` → `Tasks: Run Task`):
 - `Dev: Test (Smoke + BATS)` - All tests
 - Individual atomic commands also available
 
+## Disk Cleanup Utility
+
+A comprehensive disk space cleanup utility for developers at `bin/disk-cleanup`.
+
+### Quick Usage
+
+```bash
+# Interactive mode (recommends, asks for confirmation)
+./bin/disk-cleanup
+
+# Non-interactive, safe operations only
+./bin/disk-cleanup --yes
+
+# Preview what would be cleaned
+./bin/disk-cleanup --dry-run
+
+# Aggressive cleanup (Docker images, etc.)
+./bin/disk-cleanup --yes --aggressive
+```
+
+### Features
+
+- **25+ Developer Tools**: Cleans caches for Homebrew, npm, yarn, Docker, Git, RubyGems, pip, Go, and more
+- **Per-Tool Space Reporting**: Shows exactly how much each tool cleaned
+- **Multiple Aggression Levels**: Safe defaults with optional aggressive modes
+- **Git Repository Auto-Discovery**: Finds and cleans repos in common locations
+- **System Cache Cleaning**: macOS thumbnails, font caches (optional, requires sudo)
+- **Comprehensive Logging**: Detailed logs in `~/.cache/dev-cleanup/`
+- **Cross-Platform**: Works on macOS and Linux
+- **Bash 3.2 Compatible**: No external dependencies
+
+### Categories
+
+The utility cleans seven categories of developer artifacts:
+
+1. **Package Managers**: Homebrew, apt, yum/dnf
+2. **Language Tools**: npm, yarn, pnpm, gem, pip, go, composer
+3. **Build Tools**: bundler, ccache
+4. **Git Repositories**: Auto-discovered in `~/Projects`, `~/src`, `~/world`, etc.
+5. **Docker/Podman**: Containers, images, volumes (configurable)
+6. **System Caches**: macOS thumbnails and fonts (optional)
+7. **Xcode** (macOS): Simulators, derived data, archives
+
+### Options
+
+```bash
+# Verbosity
+-q, --quiet              # Minimal output
+-v, --verbose            # Detailed output
+
+# Modes
+-n, --dry-run            # Preview without executing
+-y, --yes                # Non-interactive mode
+
+# Aggression
+--aggressive             # More thorough (all unused Docker images)
+--very-aggressive        # Most thorough (includes volumes - WARNING)
+
+# Git
+--prune-git              # Prune git repos (gc --prune=now)
+--aggressive-git         # Aggressive git gc (slow on large repos)
+
+# Scope
+--system-caches          # Include system caches (requires sudo)
+--detailed-space         # Measure per-tool space savings (slower)
+--only=CATEGORIES        # Only run specific categories
+--exclude=CATEGORIES     # Exclude specific categories
+
+# Examples
+./bin/disk-cleanup --only=languages,docker
+./bin/disk-cleanup --exclude=git,system
+```
+
+### Environment Variables
+
+All configuration options can be set via environment variables:
+
+```bash
+CLEANUP_GIT_GC_TIMEOUT=300          # Git gc timeout (seconds)
+CLEANUP_DOCKER_TIMEOUT=300          # Docker cleanup timeout
+CLEANUP_BREW_TIMEOUT=600            # Homebrew cleanup timeout
+CLEANUP_GIT_MAX_DEPTH=3             # Max depth for git repo search
+CLEANUP_LOG_DIR="$HOME/.cache/dev-cleanup"
+CLEANUP_KEEP_LOGS=10                # Number of log files to keep
+```
+
+### Safety
+
+- **Safe defaults**: Only runs non-destructive cleanups without confirmation
+- **Confirmation prompts**: Asks before destructive operations (Docker prune)
+- **Non-interactive safety**: `--yes` mode skips destructive operations unless combined with `--aggressive`
+- **Dry-run mode**: Preview exact commands before executing
+- **Comprehensive logging**: All operations logged for troubleshooting
+- **Graceful failures**: Continues cleaning other tools if one fails
+
+### Example Output
+
+```text
+Disk Space Cleanup Utility v1.0.0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Initial disk usage: 485.2 GB
+
+Language Tools
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1/24] ✓ npm cache                           834 MB cleaned
+[2/24] ✓ yarn cache                          245 MB cleaned
+[3/24] ✓ RubyGems                            89 MB cleaned
+
+Git Repositories
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[4/24] ✓ ~/.dotfiles                         4 MB cleaned
+[5/24] ✓ ~/Projects/myapp                    89 MB cleaned
+
+Total space reclaimed: 10.8 GB
+Final disk usage: 474.4 GB
+
+Detailed log: ~/.cache/dev-cleanup/cleanup-20250124-143022.log
+```
+
 ## Contributing
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for comprehensive developer documentation:

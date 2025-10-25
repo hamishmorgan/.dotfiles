@@ -5,3 +5,6 @@ packages/zsh/.oh-my-zsh/
 # Node modules
 node_modules/
 
+# Backups directory (contains old files from previous installations)
+backups/
+

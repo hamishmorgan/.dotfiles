@@ -986,11 +986,43 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 ## File Organization
 
 - **User tool**: `dot` script in root
+- **Utilities**: `bin/` directory (standalone scripts like `disk-cleanup`)
 - **Development tools**: `dev/` directory (atomic and composite workflow commands)
 - **Package files**: `packages/` directory (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/, fish/)
 - **Test suites**: `tests/` directory (BATS tests, test helpers, CI infrastructure)
 - **Configuration**: Dot-prefixed names (`.gitconfig`, `.zshrc`, etc.)
 - `.gitignore` is project-specific, not managed by stow
+
+### Disk Cleanup Utility (`bin/disk-cleanup`)
+
+Standalone disk space cleanup utility for developer caches and build artifacts.
+
+**Key characteristics:**
+
+- **Independent of dotfiles management**: Not tied to `./dot` script or stow
+- **Comprehensive tool coverage**: 25+ developer tools across 7 categories
+- **Safe defaults**: Non-destructive operations, confirmation prompts for risky actions
+- **Environment variable configuration**: All settings configurable via `CLEANUP_*` vars
+- **Bash 3.2 compatible**: No external dependencies
+- **Cross-platform**: macOS and Linux support
+
+**Implementation notes:**
+
+- Uses same logging patterns as `./dot` script (symbols, colors, prefixed output)
+- Protected main() execution for testing (only runs when not sourced)
+- All configuration via readonly variables with env var overrides
+- Helper functions for size conversion, directory measurement, git repo discovery
+- Categories can be filtered with `--only` and `--exclude` flags
+- Multiple aggression levels for Docker cleanup (default safe, --aggressive, --very-aggressive)
+- Git cleanup uses `--auto` by default (safe), `--prune-git`, or `--aggressive-git`
+- Comprehensive logging to `~/.cache/dev-cleanup/` with retention policy
+
+**Testing:**
+
+- Integration tests in `tests/integration/test_clean_basic.bats`
+- Tests use core bats only (no bats-assert dependency)
+- 26 test cases covering all major functionality
+- Includes bash 3.2 compatibility checks and shellcheck validation
 
 ### Development Directory (`dev/`)
 
@@ -1700,6 +1732,60 @@ For all code changes:
     - Delete remote branches (if not auto-deleted): `git push origin --delete <branch-name>`
 
 This ensures code quality through automated testing and AI review.
+
+### Checking for Unaddressed Comments
+
+**CRITICAL:** When asked to check PR comments, you MUST check BOTH general comments AND inline review comments.
+
+**Incomplete check (DON'T DO THIS):**
+
+```bash
+# ❌ WRONG: Only shows PR overview, misses inline review comments
+gh pr view <PR_NUMBER>
+gh pr checks <PR_NUMBER>
+```
+
+**Complete check (REQUIRED):**
+
+```bash
+# ✅ CORRECT: Check ALL comment sources
+
+# 1. General PR comments and overview
+gh pr view <PR_NUMBER> --comments
+
+# 2. Inline code review comments (CRITICAL - often missed)
+gh api repos/<owner>/<repo>/pulls/<PR_NUMBER>/comments --jq '.[] | {path, line, body, created_at}'
+
+# 3. Review decision status
+gh pr view <PR_NUMBER> --json reviewDecision
+
+# 4. CI status
+gh pr checks <PR_NUMBER>
+```
+
+**Why this matters:**
+
+- `gh pr view` shows **general comments only** (conversation tab)
+- Inline review comments (code-specific feedback) require `gh api .../comments`
+- Copilot leaves most feedback as **inline comments on specific lines**
+- Missing inline comments means missing critical feedback
+
+**Example of what you'll miss:**
+
+```bash
+# These are inline comments (not shown by gh pr view):
+# - "Hardcoded path '/Users/hamish/' should use $HOME"
+# - "Regex pattern should be quoted"
+# - "Variable name typo on line 123"
+```
+
+**Checklist when user asks to check comments:**
+
+- [ ] Run `gh pr view <PR> --comments` (general comments)
+- [ ] Run `gh api repos/.../pulls/<PR>/comments` (inline review comments)
+- [ ] Run `gh pr view <PR> --json reviewDecision` (approval status)
+- [ ] Check each comment is addressed in code
+- [ ] Verify no unresolved threads remain
 
 **Note:** The PR template includes an AGENTS.md update checklist to remind about documentation.
 

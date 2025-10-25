@@ -109,6 +109,132 @@ source_dot_script() {
     source "$dot_script"
 }
 
+# Fallback assert functions if bats-assert is not available
+# These provide basic functionality compatible with bats-assert API
+
+# Assert command succeeded (exit code 0)
+if ! command -v assert_success &>/dev/null; then
+    assert_success() {
+        if [[ "${status:-$?}" -ne 0 ]]; then
+            echo "Expected success (exit code 0), got: ${status:-$?}"
+            echo "Output: ${output:-}"
+            return 1
+        fi
+    }
+fi
+
+# Assert command failed (non-zero exit code)
+if ! command -v assert_failure &>/dev/null; then
+    assert_failure() {
+        if [[ "${status:-$?}" -eq 0 ]]; then
+            echo "Expected failure (non-zero exit code), got: 0"
+            echo "Output: ${output:-}"
+            return 1
+        fi
+    }
+fi
+
+# Assert output matches conditions
+if ! command -v assert_output &>/dev/null; then
+    assert_output() {
+        local flag="${1:-}"
+        local expected="${2:-}"
+
+        case "$flag" in
+            --partial)
+                # Use literal string search instead of regex to avoid escaping issues
+                if [[ "$output" != *"$expected"* ]]; then
+                    echo "Expected output to contain: $expected"
+                    echo "Actual output: $output"
+                    return 1
+                fi
+                ;;
+            --regexp)
+                if [[ ! "$output" =~ $expected ]]; then
+                    echo "Expected output to match regex: $expected"
+                    echo "Actual output: $output"
+                    return 1
+                fi
+                ;;
+            *)
+                # Exact match
+                if [[ "$output" != "$flag" ]]; then
+                    echo "Expected output: $flag"
+                    echo "Actual output: $output"
+                    return 1
+                fi
+                ;;
+        esac
+    }
+fi
+
+# Refute output matches conditions
+if ! command -v refute_output &>/dev/null; then
+    refute_output() {
+        local flag="${1:-}"
+        local expected="${2:-}"
+
+        case "$flag" in
+            --partial)
+                # Use literal string search
+                if [[ "$output" == *"$expected"* ]]; then
+                    echo "Expected output to NOT contain: $expected"
+                    echo "Actual output: $output"
+                    return 1
+                fi
+                ;;
+            --regexp)
+                if [[ "$output" =~ $expected ]]; then
+                    echo "Expected output to NOT match regex: $expected"
+                    echo "Actual output: $output"
+                    return 1
+                fi
+                ;;
+            *)
+                # Exact non-match
+                if [[ "$output" == "$flag" ]]; then
+                    echo "Expected output to NOT be: $flag"
+                    echo "Actual output: $output"
+                    return 1
+                fi
+                ;;
+        esac
+    }
+fi
+
+# Assert two values are equal
+if ! command -v assert_equal &>/dev/null; then
+    assert_equal() {
+        local expected="$1"
+        local actual="$2"
+        if [[ "$expected" != "$actual" ]]; then
+            echo "Expected: $expected"
+            echo "Actual: $actual"
+            return 1
+        fi
+    }
+fi
+
+# Fail with message
+if ! command -v fail &>/dev/null; then
+    fail() {
+        local message="${1:-Test failed}"
+        echo "$message"
+        return 1
+    }
+fi
+
+# Assert directory exists
+if ! command -v assert_dir_exists &>/dev/null; then
+    assert_dir_exists() {
+        local dir="$1"
+        if [[ ! -d "$dir" ]]; then
+            echo "Directory does not exist: $dir"
+            return 1
+        fi
+    }
+fi
+
 # Assert output contains a pattern
 # Usage: assert_output_contains "pattern"
 assert_output_contains() {
