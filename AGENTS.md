@@ -35,7 +35,7 @@ Instructions for AI agents working with this dotfiles repository.
   - [File Organization](#file-organization)
     - [Development Directory (`dev/`)](#development-directory-dev)
     - [Stow Ignore Files](#stow-ignore-files)
-    - [Templates and Secrets](#templates-and-secrets)
+    - [Configuration Files](#configuration-files)
     - [Platform-Specific Configs](#platform-specific-configs)
   - [Logging System](#logging-system)
   - [Verbosity System](#verbosity-system)
@@ -1077,13 +1077,13 @@ This enables flexible workflows: use atomic commands for fast iteration, composi
   contains package-specific ignore patterns
 - Template/secret/example files are ignored via `.stow-local-ignore` in each package
 
-### Templates and Secrets
+### Configuration Files
 
-- Templates (`.template` files) contain placeholders for sensitive information
-- Secret configs (`.secret` files) are git-ignored and contain actual sensitive values
-- Example files (`.example` files) show format for secret configs
-- **These files are NOT stowed** - ignored via package `.stow-local-ignore` files
-- Installation script merges templates with secret configs during installation
+- Configuration files (`.gitconfig`, `config.yml`, etc.) contain shared defaults
+- Example files (`.example` files) show format for machine-specific configs
+- Machine-specific configs (`.local` files) override defaults per-machine
+- **`.local` files are NOT stowed** - ignored via package `.stow-local-ignore` files
+- **`.local` files are secured** - automatically set to mode 600 during installation
 
 ### Platform-Specific Configs
 

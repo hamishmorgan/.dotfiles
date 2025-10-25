@@ -1,13 +1,4 @@
-# GitHub CLI package local ignore patterns
-# Ignore template, secret, and example files - processed by script, not stowed
-# Patterns match against the file path relative to the package directory
-
-# Match any file ending with these extensions anywhere in the package
-\.secret$
-\.secret\.example$
-\.template$
-
-# Explicit patterns for .config/gh files
-^\.config/gh/.*\.secret$
-^\.config/gh/.*\.secret\.example$
-^\.config/gh/.*\.template$
+# GitHub CLI package stow ignore patterns
+# Example files and machine-specific files are not stowed
+\.example$
+\.local$

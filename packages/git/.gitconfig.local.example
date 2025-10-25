@@ -3,40 +3,55 @@
 # Copy this file to ~/.gitconfig.local and customize for this machine
 # This file is git-ignored and won't be tracked in the repository
 #
-# Use for:
-# - Machine-specific git signing configuration
-# - Local git aliases
-# - Machine-specific credential helpers
-# - Git hooks or tool integrations
+# REQUIRED: Set your user information here
+# OPTIONAL: Add machine-specific git signing, aliases, etc.
 #
 # NOTE: The main .gitconfig includes this file via:
 #   [include]
 #       path = ~/.gitconfig.local
 
-# Example: Git signing with 1Password (personal laptop)
+# ============================================================================
+# REQUIRED: User Information (customize for each machine)
+# ============================================================================
+[user]
+    email = your.email@example.com
+    name = Your Full Name
+    username = yourusername
+    # signingkey set in signing configuration below
+
+# ============================================================================
+# Git Signing Configuration (choose one method below)
+# ============================================================================
+
+# Option 1: 1Password SSH signing (personal laptop)
+# Uncomment and add signingkey to [user] section above
 # [gpg]
 #     format = ssh
 # [gpg "ssh"]
 #     program = /opt/1Password/op-ssh-sign
-# [user]
+# And add to [user] section above:
 #     signingkey = ssh-ed25519 YOUR_SSH_KEY_HERE
 
-# Example: Shopify laptop configuration
-# Include all Shopify-managed git configuration (signing, credentials, URL rewrites)
+# Option 2: Shopify laptop (Yubikey via Shopify-managed config)
+# Uncomment below and comment out Option 1:
 # [gpg]
 #     format = openpgp
 # [include]
 #     path = ~/.config/dev/gitconfig
 
-# Example: Disable signing (if not needed)
+# Option 3: Disable signing
 # [commit]
 #     gpgsign = false
 
-# Example: Machine-specific aliases
+# ============================================================================
+# Optional: Machine-Specific Settings
+# ============================================================================
+
+# Machine-specific aliases
 # [alias]
 #     work-log = log --author="work-email@company.com"
 
-# Example: Local credential helper
+# Machine-specific credential helper
 # [credential]
 #     helper = custom-helper
 

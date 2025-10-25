@@ -1,6 +1,4 @@
-# Git package local ignore patterns
-# Ignore template, secret, and example files - processed by script, not stowed
-
-^\.gitconfig\.secret$
-^\.gitconfig\.secret\.example$
-^\.gitconfig\.template$
+# Git package stow ignore patterns
+# Example files and machine-specific files are not stowed
+\.example$
+\.local$

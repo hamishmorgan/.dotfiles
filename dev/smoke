@@ -44,10 +44,10 @@ else
     exit 1
 fi
 
-# Test 4: Template files exist
-echo -n "Test 4: Template files exist... "
-if [[ -f "$DOTFILES_DIR/packages/git/.gitconfig.template" ]] && \
-   [[ -f "$DOTFILES_DIR/packages/gh/.config/gh/config.yml.template" ]]; then
+# Test 4: Configuration files exist
+echo -n "Test 4: Configuration files exist... "
+if [[ -f "$DOTFILES_DIR/packages/git/.gitconfig" ]] && \
+   [[ -f "$DOTFILES_DIR/packages/gh/.config/gh/config.yml" ]]; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"

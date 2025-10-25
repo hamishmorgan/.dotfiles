@@ -7,7 +7,7 @@ set -e
 
 # Source shared test utilities
 source /tests/lib/common.sh
-source /tests/lib/create-secrets.sh
+source /tests/lib/create-locals.sh
 source /tests/lib/run-installation.sh
 source /tests/lib/verify-health.sh
 
@@ -31,10 +31,10 @@ if ! git submodule update --init --recursive 2>&1 | grep -qv "fatal: not a git r
     log_test_info "Submodule initialization skipped (expected in container)"
 fi
 
-# Create test secrets using shared function
-log_test_section "Creating Test Secrets"
-if ! create_test_secrets; then
-    log_test_error "Failed to create test secrets"
+# Create test .local files using shared function
+log_test_section "Creating Test .local Files"
+if ! create_gitconfig_local; then
+    log_test_error "Failed to create test .local files"
     exit 1
 fi
 
