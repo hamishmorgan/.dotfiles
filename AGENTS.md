@@ -915,7 +915,8 @@ This allows proper cleanup, logging, and user-friendly error messages.
 
 **Commands with Arguments:**
 
-When implementing commands that accept arguments (like `enable PACKAGE`, `restore BACKUP_ID`), use the `COMMAND_ARGS` array pattern:
+When implementing commands that accept arguments (like `enable PACKAGE`, `restore BACKUP_ID`),
+use the `COMMAND_ARGS` array pattern:
 
 ```bash
 # In parse_arguments()
