@@ -138,6 +138,10 @@ trap handle_interrupt INT TERM
 PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm" "bat")
 
 # Get package files (bash 3.2 compatible - no associative arrays)
+# Get files/directories for each package (for status display)
+# Note: Returns macOS-specific paths for cross-platform packages (cursor).
+# This function is used for display/validation purposes only.
+# Actual stowing logic handles platform differences via get_platform_ignore().
 get_package_files() {
     local package="$1"
     case "$package" in
@@ -1066,11 +1070,13 @@ validate_package() {
 # Get list of backup directories
 get_backup_dirs() {
     local backup_dirs=()
+    shopt -s nullglob
     for dir in "$DOTFILES_DIR"/${BACKUP_DIR_PREFIX}-*; do
         if [[ -d "$dir" ]]; then
             backup_dirs+=("$dir")
         fi
     done
+    shopt -u nullglob
     printf '%s\n' "${backup_dirs[@]}"
 }
 
@@ -1250,7 +1256,7 @@ show_status() {
     # Check if cursor config exists in dotfiles and system
     local cursor_dotfiles="$DOTFILES_DIR/packages/cursor/.config/Cursor/User"
     local cursor_system
-    
+
     case "$(uname -s)" in
         Darwin)
             cursor_system="$HOME/Library/Application Support/Cursor/User"
@@ -1274,19 +1280,19 @@ show_status() {
         # Check if settings are in sync
         local settings_synced=false
         local keybindings_synced=false
-        
+
         if [[ -f "$cursor_dotfiles/settings.json" ]] && [[ -f "$cursor_system/settings.json" ]]; then
             if diff -q "$cursor_dotfiles/settings.json" "$cursor_system/settings.json" >/dev/null 2>&1; then
                 settings_synced=true
             fi
         fi
-        
+
         if [[ -f "$cursor_dotfiles/keybindings.json" ]] && [[ -f "$cursor_system/keybindings.json" ]]; then
             if diff -q "$cursor_dotfiles/keybindings.json" "$cursor_system/keybindings.json" >/dev/null 2>&1; then
                 keybindings_synced=true
             fi
         fi
-        
+
         if [[ "$settings_synced" == true ]] && [[ "$keybindings_synced" == true ]]; then
             echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} settings.json ${BLUE}(synced)${NC}"
             echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} keybindings.json ${BLUE}(synced)${NC}"
@@ -1296,13 +1302,13 @@ show_status() {
             else
                 echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} settings.json ${BLUE}(out of sync)${NC}"
             fi
-            
+
             if [[ "$keybindings_synced" == true ]]; then
                 echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} keybindings.json ${BLUE}(synced)${NC}"
             else
                 echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} keybindings.json ${BLUE}(out of sync)${NC}"
             fi
-            
+
             echo ""
             show_tips \
                 "Copy-sync approach" \
@@ -3702,6 +3708,7 @@ security_audit() {
     if [[ -d "$HOME/.ssh" ]]; then
         local exposed_keys=()
 
+        shopt -s nullglob
         for key in "$HOME/.ssh"/id_* "$HOME/.ssh"/*.pem; do
             [[ ! -f "$key" ]] && continue
             [[ "$key" == *.pub ]] && continue
@@ -3715,6 +3722,7 @@ security_audit() {
                 ((issues_found++))
             fi
         done
+        shopt -u nullglob
 
         if [[ ${#exposed_keys[@]} -gt 0 ]]; then
             echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure SSH key permissions:"

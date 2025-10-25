@@ -2,63 +2,86 @@
   // ============================================================================
   // Cursor-Specific Settings
   // ============================================================================
-  "cursor.composer.shouldAllowCustomModes": true,
-  "cursor.composer.usageSummaryDisplay": "always",
-  "cursor.diffs.useCharacterLevelDiffs": true,
-  "cursor.windowSwitcher.sidebarHoverCollapsed": true,
+  "cursor": {
+    "composer.shouldAllowCustomModes": true,
+    "composer.usageSummaryDisplay": "always",
+    "diffs.useCharacterLevelDiffs": true,
+    "windowSwitcher.sidebarHoverCollapsed": true
+  },
 
   // ============================================================================
   // Editor Appearance & Behavior
   // ============================================================================
-  "workbench.colorTheme": "Spinel",
-  "workbench.iconTheme": "vscode-icons",
-  "workbench.editor.wrapTabs": true,
-  "window.density.editorTabHeight": "compact",
-  "editor.stickyTabStops": true,
+  "workbench": {
+    "colorTheme": "Spinel",
+    "iconTheme": "vscode-icons",
+    "editor.wrapTabs": true,
+    "colorCustomizations": {
+      "terminal.findMatchBackground": "#dddd00",
+      "terminal.findMatchBorder": "#dddd00",
+      "terminal.findMatchHighlightBackground": "#dddd00",
+      "terminal.findMatchHighlightBorder": "#dddd00",
+      "terminalOverviewRuler.findMatchForeground": "#dddd00"
+    }
+  },
+
+  "window": {
+    "density.editorTabHeight": "compact",
+    "commandCenter": true
+  },
+
+  "editor": {
+    "stickyTabStops": true
+  },
 
   // ============================================================================
   // Git & Version Control
   // ============================================================================
-  "git.autofetch": true,
-  "git.openRepositoryInParentFolders": "always",
-  "diffEditor.ignoreTrimWhitespace": true,
-  "gitlens.rebaseEditor.ordering": "asc",
+  "git": {
+    "autofetch": true,
+    "openRepositoryInParentFolders": "always"
+  },
+
+  "diffEditor": {
+    "ignoreTrimWhitespace": true
+  },
+
+  "gitlens": {
+    "rebaseEditor.ordering": "asc"
+  },
 
   // GitHub Pull Requests
-  "githubPullRequests.pullBranch": "never",
-  "githubPullRequests.terminalLinksHandler": "github",
+  "githubPullRequests": {
+    "pullBranch": "never",
+    "terminalLinksHandler": "github"
+  },
 
   // ============================================================================
   // Terminal
   // ============================================================================
-  "terminal.integrated.scrollback": 100000,
-  "terminal.integrated.enableImages": true,
-
-  // Terminal search highlighting
-  "workbench.colorCustomizations": {
-    "terminal.findMatchBackground": "#dddd00",
-    "terminal.findMatchBorder": "#dddd00",
-    "terminal.findMatchHighlightBackground": "#dddd00",
-    "terminal.findMatchHighlightBorder": "#dddd00",
-    "terminalOverviewRuler.findMatchForeground": "#dddd00"
+  "terminal": {
+    "integrated.scrollback": 100000,
+    "integrated.enableImages": true
   },
 
   // ============================================================================
   // File Explorer
   // ============================================================================
-  "explorer.fileNesting.patterns": {
-    "*.ts": "${capture}.js",
-    "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
-    "*.jsx": "${capture}.js",
-    "*.tsx": "${capture}.ts",
-    "tsconfig.json": "tsconfig.*.json",
-    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb",
-    "*.sqlite": "${capture}.${extname}-*",
-    "*.db": "${capture}.${extname}-*",
-    "*.sqlite3": "${capture}.${extname}-*",
-    "*.db3": "${capture}.${extname}-*",
-    "*.sdb": "${capture}.${extname}-*",
-    "*.s3db": "${capture}.${extname}-*"
+  "explorer": {
+    "fileNesting.patterns": {
+      "*.ts": "${capture}.js",
+      "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
+      "*.jsx": "${capture}.js",
+      "*.tsx": "${capture}.ts",
+      "tsconfig.json": "tsconfig.*.json",
+      "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb",
+      "*.sqlite": "${capture}.${extname}-*",
+      "*.db": "${capture}.${extname}-*",
+      "*.sqlite3": "${capture}.${extname}-*",
+      "*.db3": "${capture}.${extname}-*",
+      "*.sdb": "${capture}.${extname}-*",
+      "*.s3db": "${capture}.${extname}-*"
+    }
   },
 
   // ============================================================================
@@ -102,129 +125,144 @@
   // ============================================================================
 
   // Ruby LSP
-  "rubyLsp.featureFlags": {
-    "tapiocaAddon": false
+  "rubyLsp": {
+    "featureFlags": {
+      "tapiocaAddon": false
+    }
   },
 
   // Sorbet
-  "sorbet.highlightUntyped": "everywhere",
+  "sorbet": {
+    "highlightUntyped": "everywhere"
+  },
 
   // Code Spell Checker
-  "cSpell.enableFiletypes": ["ruby"],
-  "cSpell.userWords": [
-    "autofetch",
-    "cadetgear",
-    "Datetime",
-    "fulfillable",
-    "Geolocator",
-    "importmap",
-    "interruptible",
-    "isospin",
-    "Jsonify",
-    "kamal",
-    "killswitch",
-    "klass",
-    "merch",
-    "metafield",
-    "metafields",
-    "normalised",
-    "Omakase",
-    "preorder",
-    "propshaft",
-    "regexes",
-    "rubocop",
-    "scrollback",
-    "Shipify",
-    "Smush",
-    "snowdevil",
-    "snowdevils",
-    "statsd",
-    "unfulfill",
-    "unranked",
-    "unsplit",
-    "unstock",
-    "UNSUBMITTED",
-    "xlarge",
-    "Xpresspost",
-    "zoneinfo"
-  ],
+  "cSpell": {
+    "enableFiletypes": ["ruby"],
+    "userWords": [
+      "autofetch",
+      "cadetgear",
+      "Datetime",
+      "fulfillable",
+      "Geolocator",
+      "importmap",
+      "interruptible",
+      "isospin",
+      "Jsonify",
+      "kamal",
+      "killswitch",
+      "klass",
+      "merch",
+      "metafield",
+      "metafields",
+      "normalised",
+      "Omakase",
+      "preorder",
+      "propshaft",
+      "regexes",
+      "rubocop",
+      "scrollback",
+      "Shipify",
+      "Smush",
+      "snowdevil",
+      "snowdevils",
+      "statsd",
+      "unfulfill",
+      "unranked",
+      "unsplit",
+      "unstock",
+      "UNSUBMITTED",
+      "xlarge",
+      "Xpresspost",
+      "zoneinfo"
+    ]
+  },
 
   // VS Icons
-  "vsicons.dontShowNewVersionMessage": true,
+  "vsicons": {
+    "dontShowNewVersionMessage": true
+  },
 
   // Red Hat telemetry
-  "redhat.telemetry.enabled": false,
+  "redhat": {
+    "telemetry.enabled": false
+  },
 
   // JavaScript/TypeScript
-  "javascript.updateImportsOnFileMove.enabled": "always",
+  "javascript": {
+    "updateImportsOnFileMove.enabled": "always"
+  },
 
   // Comment highlighting (TODO, FIXME, etc)
-  "highlight.regexes": {
-    "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *TODO(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-      "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-      "decorations": [
-        {
-          "overviewRulerColor": "#ffcc00",
-          "backgroundColor": "#ffcc00",
-          "color": "#1f1f1f",
-          "fontWeight": "bold"
-        },
-        {
-          "backgroundColor": "#ffcc00",
-          "color": "#1f1f1f"
-        }
-      ]
-    },
-    "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:FIXME|FIX|BUG|UGLY|DEBUG|HACK)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-      "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-      "decorations": [
-        {
-          "overviewRulerColor": "#cc0000",
-          "backgroundColor": "#cc0000",
-          "color": "#1f1f1f",
-          "fontWeight": "bold"
-        },
-        {
-          "backgroundColor": "#cc0000",
-          "color": "#1f1f1f"
-        }
-      ]
-    },
-    "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:REVIEW|OPTIMIZE|TSC)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-      "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-      "decorations": [
-        {
-          "overviewRulerColor": "#00ccff",
-          "backgroundColor": "#00ccff",
-          "color": "#1f1f1f",
-          "fontWeight": "bold"
-        },
-        {
-          "backgroundColor": "#00ccff",
-          "color": "#1f1f1f"
-        }
-      ]
-    },
-    "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:IDEA)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
-      "filterFileRegex": ".*(?<!CHANGELOG.md)$",
-      "decorations": [
-        {
-          "overviewRulerColor": "#cc00cc",
-          "backgroundColor": "#cc00cc",
-          "color": "#1f1f1f",
-          "fontWeight": "bold"
-        },
-        {
-          "backgroundColor": "#cc00cc",
-          "color": "#1f1f1f"
-        }
-      ]
+  "highlight": {
+    "regexes": {
+      "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *TODO(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+        "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+        "decorations": [
+          {
+            "overviewRulerColor": "#ffcc00",
+            "backgroundColor": "#ffcc00",
+            "color": "#1f1f1f",
+            "fontWeight": "bold"
+          },
+          {
+            "backgroundColor": "#ffcc00",
+            "color": "#1f1f1f"
+          }
+        ]
+      },
+      "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:FIXME|FIX|BUG|UGLY|DEBUG|HACK)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+        "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+        "decorations": [
+          {
+            "overviewRulerColor": "#cc0000",
+            "backgroundColor": "#cc0000",
+            "color": "#1f1f1f",
+            "fontWeight": "bold"
+          },
+          {
+            "backgroundColor": "#cc0000",
+            "color": "#1f1f1f"
+          }
+        ]
+      },
+      "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:REVIEW|OPTIMIZE|TSC)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+        "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+        "decorations": [
+          {
+            "overviewRulerColor": "#00ccff",
+            "backgroundColor": "#00ccff",
+            "color": "#1f1f1f",
+            "fontWeight": "bold"
+          },
+          {
+            "backgroundColor": "#00ccff",
+            "color": "#1f1f1f"
+          }
+        ]
+      },
+      "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:IDEA)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+        "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+        "decorations": [
+          {
+            "overviewRulerColor": "#cc00cc",
+            "backgroundColor": "#cc00cc",
+            "color": "#1f1f1f",
+            "fontWeight": "bold"
+          },
+          {
+            "backgroundColor": "#cc00cc",
+            "color": "#1f1f1f"
+          }
+        ]
+      }
     }
   },
 
   // ============================================================================
   // Remote Development
   // ============================================================================
-  "remote.SSH.connectTimeout": 150,
-  "window.commandCenter": true
+  "remote": {
+    "SSH.connectTimeout": 150
+  }
 }
