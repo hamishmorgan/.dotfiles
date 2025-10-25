@@ -157,6 +157,38 @@ git checkout -- packages/bash/.bashrc packages/zsh/.zshrc
 Runtime profiles and branch-based strategies add unnecessary complexity for single-user
 dotfiles when tools forcibly modify config files daily.
 
+**Key learnings about auto-appending tools:**
+
+Based on investigation of Shopify's dev tools (`/opt/dev/dev.sh`, `tec agent`):
+
+- **No prevention mechanism**: Tools hardcode append to `~/.bashrc`, `~/.zshrc`, etc.
+- **No environment variables**: Cannot redirect where they append
+- **No sentinel markers**: Tools don't check for existing config before appending
+- **No configuration options**: Cannot disable auto-append behavior
+- **Daily+ frequency**: Some tools re-append after updates (varies by tool)
+- **Idempotent loading**: Tools use guards (e.g., `USING_DEV` env var) to prevent double-loading
+
+Design decision: Accept manageable git noise
+
+Given constraints (daily+ re-appends, frequent commits from work machine), evaluated:
+
+- Chezmoi migration (1-2 weeks effort, bidirectional sync, templating)
+- XDG launcher pattern (breaks stow model for shell configs)
+- Git assume-unchanged/skip-worktree (hidden state, easy to forget)
+- Two-repository overlay (complexity, doesn't solve appends)
+
+Chosen: Pre-add integrations + .local files + accept git noise
+
+Rationale:
+
+- Keeps stow (simple, proven)
+- Single branch (no rebasing)
+- Tools duplicate existing code (easy to identify)
+- Use `git add -p` to skip duplicates when staging
+- Small price for avoiding complex migrations
+
+Alternative: Migrate to chezmoi later if git noise becomes unmanageable.
+
 ## Dependencies
 
 ### Required Tools
