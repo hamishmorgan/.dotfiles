@@ -55,10 +55,10 @@
 
 	# Push and pull
 	forcepush = push --force-with-lease
-	visual = !code
+	visual = !cursor
 
 [core]
-	editor = code -w
+	editor = cursor -w
 	excludesfile = ~/.gitignore-globals
 	attributesFile = ~/.gitattributes
 	commitTemplate = ~/.gitmessage
