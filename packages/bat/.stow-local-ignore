@@ -1,0 +1,4 @@
+# Stow ignore patterns for bat package
+# These files/patterns will not be symlinked
+
+\.stow-local-ignore$

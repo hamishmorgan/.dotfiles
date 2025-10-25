@@ -141,6 +141,18 @@ if [ "$ZSH_HOST_OS" = "linux" ]; then
   source "$HOME/.zshrc.linux"
 fi
 
+# bat (modern cat replacement with syntax highlighting)
+# Ubuntu/Debian name the binary 'batcat' to avoid conflict with bacula-console-qt
+if command -v batcat &>/dev/null; then
+    alias bat='batcat'
+    export BAT_CONFIG_PATH="$HOME/.config/bat/config"
+elif command -v bat &>/dev/null; then
+    export BAT_CONFIG_PATH="$HOME/.config/bat/config"
+fi
+# Optional: Uncomment to replace cat with bat everywhere
+# Note: This may break scripts that parse cat output
+# alias cat='bat --paging=never'
+
 # Load dotfiles management function and completions from dot script
 if [ -f "$HOME/.dotfiles/dot" ]; then
     source <("$HOME/.dotfiles/dot" --completion zsh)
