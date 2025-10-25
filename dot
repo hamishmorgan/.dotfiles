@@ -926,7 +926,7 @@ configure_git_delta() {
                     echo "# Git Delta - Enhanced diff viewer (optional)"
                     echo "# Automatically included when delta is installed"
                     echo "[include]"
-                    echo "	path = ~/.gitconfig.delta"
+                    printf '\tpath = ~/.gitconfig.delta\n'
                 } >> "$gitconfig"
                 log_success "Added delta configuration to .gitconfig"
             fi
@@ -947,13 +947,16 @@ configure_git_delta() {
         if grep -q "path = ~/.gitconfig.delta" "$gitconfig" 2>/dev/null; then
             local temp_file
             temp_file=$(mktemp)
-            # Remove delta include section (3 comment lines + [include] + path line)
+            # Remove delta include section (more robust pattern matching)
             awk '
-                /^# Git Delta - Enhanced diff viewer/ {
-                    getline; getline; getline; getline
-                    next
-                }
-                { print }
+                BEGIN { in_delta = 0 }
+                /^# Git Delta - Enhanced diff viewer/ { in_delta = 1; next }
+                in_delta && /^# Automatically included when delta is installed/ { next }
+                in_delta && /^\[include\]/ { next }
+                in_delta && /^[[:space:]]*path = ~\/\.gitconfig\.delta/ { next }
+                in_delta && /^$/ { next }
+                /^[^#[:space:]]/ { in_delta = 0 }
+                !in_delta { print }
             ' "$gitconfig" > "$temp_file"
             mv "$temp_file" "$gitconfig"
             log_info "Removed delta configuration (delta not installed)"
