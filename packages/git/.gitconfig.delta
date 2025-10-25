@@ -1,0 +1,32 @@
+# Git Delta Configuration
+# Enhanced diff viewer with syntax highlighting and side-by-side view
+# Only active when delta is installed and included by .gitconfig
+# https://github.com/dandavison/delta
+
+[core]
+	pager = delta
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+	navigate = true
+	light = false
+	side-by-side = true
+	line-numbers = true
+	syntax-theme = Dracula
+
+	# Decorations
+	file-style = bold yellow
+	file-decoration-style = yellow box
+	hunk-header-style = file line-number syntax
+
+	# Better diff markers
+	plus-style = syntax "#003800"
+	minus-style = syntax "#3f0001"
+
+	# Whitespace highlighting
+	whitespace-error-style = reverse red
+
+[merge]
+	conflictstyle = diff3
