@@ -1,20 +1,23 @@
-# <type>(<scope>): <subject>
+# Summary (imperative, 50 chars max)
 #
-# <body>
+# Why this change is needed
 #
-# <footer>
+# Additional context or implementation notes
+#
+# Refs: #123
 
-# Type should be one of the following:
-# * feat: A new feature
-# * fix: A bug fix
-# * docs: Documentation only changes
-# * style: Changes that do not affect the meaning of the code
-# * refactor: A code change that neither fixes a bug nor adds a feature
-# * perf: A code change that improves performance
-# * test: Adding missing tests or correcting existing tests
-# * chore: Changes to the build process or auxiliary tools
+# Guidelines:
+# - Use imperative mood: "add" not "added" or "adds"
+# - Keep first line under 50 characters
+# - Separate subject from body with blank line
+# - Wrap body at 72 characters
+# - Focus on why, not what (code shows what)
+# - Reference issues/PRs: "fixes #123", "closes #456", or "(#123)"
+# - Breaking changes: Explain impact in body
+# - Co-authored-by: Name <email> (for pair programming)
+# - AI commits: Use --author="Agent Name <agent@noreply.local>" to specify the AI agent as the commit author
 #
-# Scope is optional and should be the area of the codebase affected
-# Subject should be imperative, present tense: "change" not "changed" nor "changes"
-# Body should explain what and why, not how
-# Footer should contain any information about Breaking Changes
+# Examples:
+# Add disk space cleanup utility (#106)
+# Fix health check validation after packages/ migration (#99)
+# Remove backups/.gitkeep in favor of dynamic directory creation
