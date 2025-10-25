@@ -135,7 +135,7 @@ trap handle_interrupt INT TERM
 
 # Package definitions
 # Note: system package is stowed first to ensure .stow-global-ignore is in place
-PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish")
+PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm")
 
 # Get package files (bash 3.2 compatible - no associative arrays)
 get_package_files() {
@@ -149,6 +149,7 @@ get_package_files() {
         gnuplot) echo ".gnuplot" ;;
         bash)    echo ".bashrc,.bash_profile" ;;
         fish)    echo ".config/fish" ;;
+        wezterm) echo ".config/wezterm" ;;
         *)       echo "" ;;
     esac
 }
@@ -165,6 +166,7 @@ get_package_name() {
         gnuplot) echo "GNU Plot" ;;
         bash)    echo "Bash" ;;
         fish)    echo "Fish" ;;
+        wezterm) echo "WezTerm" ;;
         *)       echo "$package" ;;
     esac
 }
