@@ -32,38 +32,39 @@ config.front_end = 'WebGpu'
 config.default_cursor_style = 'BlinkingBar'
 config.cursor_blink_rate = 500
 
--- Key bindings (common across platforms)
+-- Key bindings (cross-platform using SUPER)
+-- SUPER maps to: CMD on macOS, Windows/Super on Linux, Windows key on Windows
 config.keys = {
   -- Split panes
   {
     key = 'd',
-    mods = 'CMD',
+    mods = 'SUPER',
     action = wezterm.action.SplitHorizontal { domain = 'CurrentPaneDomain' },
   },
   {
     key = 'd',
-    mods = 'CMD|SHIFT',
+    mods = 'SUPER|SHIFT',
     action = wezterm.action.SplitVertical { domain = 'CurrentPaneDomain' },
   },
   -- Navigate panes
   {
     key = 'LeftArrow',
-    mods = 'CMD|SHIFT',
+    mods = 'SUPER|SHIFT',
     action = wezterm.action.ActivatePaneDirection 'Left',
   },
   {
     key = 'RightArrow',
-    mods = 'CMD|SHIFT',
+    mods = 'SUPER|SHIFT',
     action = wezterm.action.ActivatePaneDirection 'Right',
   },
   {
     key = 'UpArrow',
-    mods = 'CMD|SHIFT',
+    mods = 'SUPER|SHIFT',
     action = wezterm.action.ActivatePaneDirection 'Up',
   },
   {
     key = 'DownArrow',
-    mods = 'CMD|SHIFT',
+    mods = 'SUPER|SHIFT',
     action = wezterm.action.ActivatePaneDirection 'Down',
   },
 }

@@ -18,10 +18,12 @@ brew install wezterm
 - **Theme**: Tokyo Night
 - **Opacity**: 95% with macOS blur
 - **Tabs**: Hidden when only one tab, fancy tab bar
-- **Splits**: CMD+D (horizontal), CMD+SHIFT+D (vertical)
-- **Pane Navigation**: CMD+SHIFT+Arrows
+- **Splits**: SUPER+D (horizontal), SUPER+SHIFT+D (vertical)
+- **Pane Navigation**: SUPER+SHIFT+Arrows
 - **Scrollback**: 10,000 lines
 - **Performance**: WebGpu rendering
+
+**Note**: SUPER key maps to CMD on macOS, Windows/Super on Linux, and Windows key on Windows.
 
 ## Customization
 
