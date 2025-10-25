@@ -1722,35 +1722,53 @@ git pull               # Update to latest
 For all code changes:
 
 1. **Create Pull Request**: Use GitHub MCP to raise PR
-2. **Self-Review**: Critically review your own changes before requesting external review
+2. **Check Rebase Status**: Always check if PR needs rebasing on main before review
+
+   ```bash
+   gh pr view <PR> --json mergeStateStatus --jq '.mergeStateStatus'
+   # If "BEHIND": rebase immediately
+   git fetch origin main
+   git rebase origin/main
+   git push --force-with-lease
+   ```
+
+3. **Self-Review**: Critically review your own changes before requesting external review
    - Read the full diff: `gh pr diff <PR_NUMBER>`
    - Check for anti-patterns documented in AGENTS.md
    - Verify tests follow testing principles (no acceptable failure patterns)
    - Ensure code follows style guidelines
    - Look for inconsistencies or missed edge cases
-3. **Request Copilot Review**: Use `mcp_github_request_copilot_review`
-4. **Wait for CI**: Monitor CI status until passing
-5. **Wait for Copilot Review**: Review Copilot feedback
-6. **Address Issues**: Fix any problems identified (including from self-review)
-7. **Self-Review Your Fixes**: Before pushing changes, critically review them
+4. **Request Copilot Review**: Use `mcp_github_request_copilot_review`
+5. **Wait for CI**: Monitor CI status until passing
+6. **Wait for Copilot Review**: Review Copilot feedback
+7. **Address Issues**: Fix any problems identified (including from self-review)
+8. **Check Rebase Status Again**: Before pushing fixes, check if main has advanced
+   - If PR is BEHIND, rebase again before pushing fixes
+9. **Self-Review Your Fixes**: Before pushing changes, critically review them
    - Read the diff of your fixes: `git diff`
    - Verify the fix completely addresses the issue
    - Check you haven't introduced new problems
    - Ensure the fix follows all code standards
-8. **Test Your Fixes**: Run full validation locally before pushing
-   - Run: `./dev/check` (lint + test + ci - ~3-4 minutes)
-   - Much faster than waiting for CI feedback
-   - Fix any failures before pushing
-9. **Push and Wait for Re-Review**: Push fixes and wait for CI and Copilot to re-review
-10. **Repeat Steps 6-9**: Continue until both CI and Copilot approve with no new issues
-11. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
-12. **Wait for User Approval**: Do NOT merge until user explicitly instructs you to do so
-13. **Merge**: Only merge after user approval, CI passing, and Copilot satisfied
-14. **Post-Merge Cleanup**:
+10. **Test Your Fixes**: Run full validation locally before pushing
+    - Run: `./dev/check` (lint + test + ci - ~3-4 minutes)
+    - Much faster than waiting for CI feedback
+    - Fix any failures before pushing
+11. **Check Rebase Before Each Push**: Always check merge status before pushing
+
+    ```bash
+    gh pr view <PR> --json mergeStateStatus --jq '.mergeStateStatus'
+    # If BEHIND: git fetch && git rebase origin/main && git push --force-with-lease
+    ```
+
+12. **Push and Wait for Re-Review**: Push fixes and wait for CI and Copilot to re-review
+13. **Repeat Steps 7-12**: Continue until both CI and Copilot approve with no new issues
+14. **Update AGENTS.md**: Document new patterns, optimizations, or lessons learned
+15. **Wait for User Approval**: Do NOT merge until user explicitly instructs you to do so
+16. **Merge**: Only merge after user approval, CI passing, and Copilot satisfied
+17. **Post-Merge Cleanup**:
     - Update local main: `git checkout main && git pull`
-    - Rebase shopify branch: `git checkout shopify && git rebase main && git push --force-with-lease`
-    - Delete feature branches: `git branch -d <branch-name>`
-    - Delete remote branches (if not auto-deleted): `git push origin --delete <branch-name>`
+    - Delete feature branch: `git branch -d <branch-name>`
+    - Delete remote branch (if not auto-deleted): `git push origin --delete <branch-name>`
 
 This ensures code quality through automated testing and AI review.
 
