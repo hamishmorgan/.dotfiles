@@ -1,12 +1,13 @@
-# shellcheck shell=sh
+# shellcheck shell=bash
 # Enhanced shell configuration
 # ~/.zshrc.enhanced
 #
 # This file contains optional enhancements for modern CLI tools.
 # Sourced from ~/.zshrc if present.
+# Note: Uses bash-compatible syntax (Zsh supports bash syntax)
 
 # eza configuration (modern ls replacement)
-if command -v eza >/dev/null 2>&1; then
+if command -v eza &>/dev/null; then
   # Basic aliases
   alias ls='eza --icons --group-directories-first'
   alias ll='eza --long --header --icons --group-directories-first --git'
