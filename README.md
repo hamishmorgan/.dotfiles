@@ -191,11 +191,13 @@ Log out and back in for the change to take effect.
 
 ### Modern CLI Tools
 
-The dotfiles include optional integrations for modern CLI tools. These tools are detected automatically and aliases are configured if installed.
+The dotfiles include optional integrations for modern CLI tools. These tools are detected automatically and
+aliases are configured if installed.
 
 #### eza (modern ls replacement)
 
-[eza](https://github.com/eza-community/eza) is a modern replacement for `ls` with better defaults, icons, git integration, and tree views.
+[eza](https://github.com/eza-community/eza) is a modern replacement for `ls` with better defaults, icons,
+git integration, and tree views.
 
 **Installation:**
 
@@ -232,7 +234,8 @@ lt
 lg
 ```
 
-The aliases are defined in `.bashrc.enhanced`, `.zshrc.enhanced`, and `config.fish`. If eza is not installed, the shell configs fall back to standard `ls` aliases.
+The aliases are defined in `.bashrc.enhanced`, `.zshrc.enhanced`, and `config.fish`. If eza is not installed,
+the shell configs fall back to standard `ls` aliases.
 
 ### Manual Installation
 

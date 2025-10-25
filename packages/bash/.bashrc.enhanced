@@ -4,6 +4,7 @@
 #
 # This file contains optional enhancements for modern CLI tools.
 # Sourced from ~/.bashrc if present.
+# Note: shellcheck configured for bash to catch bash-specific issues in conditionals
 
 # eza configuration (modern ls replacement)
 if command -v eza &>/dev/null; then
