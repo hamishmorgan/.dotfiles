@@ -25,8 +25,11 @@ jobs:
         run: |
           echo "Checking if PR can merge cleanly into ${{ github.event.pull_request.base.ref }}..."
           
-          # Try to merge base into current branch (dry run)
-          if git merge --no-commit --no-ff origin/${{ github.event.pull_request.base.ref }}; then
+          # Checkout base branch
+          git checkout origin/${{ github.event.pull_request.base.ref }}
+          
+          # Try to merge PR branch into base branch (dry run)
+          if git merge --no-commit --no-ff ${{ github.event.pull_request.head.sha }}; then
             echo "✅ No merge conflicts detected"
             git merge --abort 2>/dev/null || true
             exit 0
@@ -36,11 +39,11 @@ jobs:
             echo "Conflicting files:"
             git diff --name-only --diff-filter=U
             echo ""
-            echo "Please rebase your branch on ${{ github.event.pull_request.base.ref }}:"
+            echo "On your PR branch, rebase on ${{ github.event.pull_request.base.ref }}:"
+            echo "  git checkout your-branch-name"
             echo "  git fetch origin ${{ github.event.pull_request.base.ref }}"
             echo "  git rebase origin/${{ github.event.pull_request.base.ref }}"
             echo "  git push --force-with-lease"
             git merge --abort 2>/dev/null || true
             exit 1
           fi
-
