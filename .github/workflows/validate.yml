@@ -9,6 +9,45 @@ on:
     branches: [main]
 
 jobs:
+  # Check if PR can merge cleanly (PR only)
+  merge-check:
+    name: Merge Conflict Check
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+
+      - name: Check merge conflicts
+        run: |
+          echo "Checking if PR can merge cleanly into ${{ github.event.pull_request.base.ref }}..."
+          
+          # Try to merge base into current branch (dry run)
+          if git merge --no-commit --no-ff origin/${{ github.event.pull_request.base.ref }}; then
+            echo "✅ No merge conflicts detected"
+            git merge --abort 2>/dev/null || true
+            exit 0
+          else
+            echo "❌ Merge conflicts detected!"
+            echo ""
+            echo "Conflicting files:"
+            git diff --name-only --diff-filter=U
+            echo ""
+            echo "Please rebase your branch on ${{ github.event.pull_request.base.ref }}:"
+            echo "  git fetch origin ${{ github.event.pull_request.base.ref }}"
+            echo "  git rebase origin/${{ github.event.pull_request.base.ref }}"
+            echo "  git push --force-with-lease"
+            git merge --abort 2>/dev/null || true
+            exit 1
+          fi
+
   lint:
     name: Code Quality (Shellcheck & Markdownlint)
     runs-on: ubuntu-latest
@@ -270,7 +309,7 @@ jobs:
   test-summary:
     name: Test Results Summary
     if: always()
-    needs: [lint, smoke-test, bats-tests, validate-platform]
+    needs: [merge-check, lint, smoke-test, bats-tests, validate-platform]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -279,15 +318,35 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Only show merge check for PRs
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "| Merge Check | ${{ needs.merge-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
           echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Smoke Tests | ${{ needs.smoke-test.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| BATS Tests | ${{ needs.bats-tests.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Platform Validation | ${{ needs.validate-platform.result }} |" >> $GITHUB_STEP_SUMMARY
 
-          if [[ "${{ needs.lint.result }}" == "success" ]] && \
-             [[ "${{ needs.smoke-test.result }}" == "success" ]] && \
-             [[ "${{ needs.bats-tests.result }}" == "success" ]] && \
-             [[ "${{ needs.validate-platform.result }}" == "success" ]]; then
+          # Check if all required jobs passed
+          all_passed=true
+          
+          # For PRs, check merge-check too
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if [[ "${{ needs.merge-check.result }}" != "success" ]]; then
+              all_passed=false
+            fi
+          fi
+          
+          if [[ "${{ needs.lint.result }}" != "success" ]] || \
+             [[ "${{ needs.smoke-test.result }}" != "success" ]] || \
+             [[ "${{ needs.bats-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.validate-platform.result }}" != "success" ]]; then
+            all_passed=false
+          fi
+
+          if [[ "$all_passed" == "true" ]]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "✅ **All tests passed!**" >> $GITHUB_STEP_SUMMARY
             exit 0
