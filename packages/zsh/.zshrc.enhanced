@@ -6,7 +6,7 @@
 # Sourced from ~/.zshrc if present.
 
 # eza configuration (modern ls replacement)
-if command -v eza &>/dev/null; then
+if command -v eza >/dev/null 2>&1; then
   # Basic aliases
   alias ls='eza --icons --group-directories-first'
   alias ll='eza --long --header --icons --group-directories-first --git'
