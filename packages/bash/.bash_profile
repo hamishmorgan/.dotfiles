@@ -45,3 +45,13 @@ if [ -f "$HOME/.bashrc" ]; then
   . "$HOME/.bashrc"
 fi
 
+# Tec agent integration (conditional - safe on all machines)
+if [[ -x ~/.local/state/tec/profiles/base/current/global/init ]]; then
+  eval "$(~/.local/state/tec/profiles/base/current/global/init bash)"
+fi
+
+# Machine-specific configuration (not version-controlled)
+if [ -f ~/.bash_profile.local ]; then
+    source ~/.bash_profile.local
+fi
+

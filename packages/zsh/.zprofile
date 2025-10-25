@@ -33,3 +33,8 @@ fi
 # shellcheck source=/dev/null
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
+# Machine-specific configuration (not version-controlled)
+if [ -f ~/.zprofile.local ]; then
+    source ~/.zprofile.local
+fi
+

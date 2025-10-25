@@ -174,3 +174,7 @@
 	program = /opt/1Password/op-ssh-sign
 [commit]
 	gpgsign = true
+
+# Machine-specific configuration (not version-controlled)
+[include]
+	path = ~/.gitconfig.local

@@ -403,6 +403,76 @@ Or using the gi alias:
 gi linux,osx,vscode,vim,jetbrains > ~/.gitignore-globals
 ```
 
+## Machine-Specific Configuration
+
+This dotfiles setup supports machine-specific configurations through `.local` files.
+These files are git-ignored and allow you to customize settings per machine without
+affecting the shared configuration.
+
+### Setting Up Machine-Specific Configuration
+
+**Bash:**
+
+```bash
+cp ~/.dotfiles/packages/bash/.bashrc.local.example ~/.bashrc.local
+nano ~/.bashrc.local
+```
+
+**Zsh:**
+
+```bash
+cp ~/.dotfiles/packages/zsh/.zshrc.local.example ~/.zshrc.local
+nano ~/.zshrc.local
+```
+
+**Git:**
+
+```bash
+cp ~/.dotfiles/packages/git/.gitconfig.local.example ~/.gitconfig.local
+nano ~/.gitconfig.local
+```
+
+**Fish:**
+
+```bash
+# Fish uses config_private.fish instead of config.local.fish
+nano ~/.config/fish/config_private.fish
+```
+
+### Use Cases for .local Files
+
+- Machine-specific aliases and functions
+- Private API keys or environment variables
+- Git signing configuration (different per machine)
+- Tool-specific settings that vary by environment
+- Work vs. personal customizations
+
+### Handling Auto-Appending Tools
+
+Some development tools (like Shopify's `dev` and `tec agent`) automatically append
+initialization code to shell configuration files. This dotfiles setup handles this by:
+
+1. **Pre-including integrations**: Common tool integrations are pre-added with conditional
+   checks, so they're safe on all machines
+2. **Graceful duplication**: When tools re-append, they create duplicates that can be
+   safely ignored or cleaned up
+3. **Git workflow**: Use `git add -p` to interactively stage changes, skipping duplicates
+
+**Managing git noise from auto-appends:**
+
+```bash
+# Option A: Interactive staging (skip duplicate lines)
+git add -p packages/bash/.bashrc
+
+# Option B: Reset shell configs before committing other changes
+git checkout -- packages/bash/.bashrc packages/zsh/.zshrc
+git add <other-files>
+git commit -m "Your changes"
+
+# Option C: Commit everything, clean up duplicates later
+git commit -am "WIP: changes"
+```
+
 ## Secret Configuration
 
 This dotfiles setup uses a template-based approach for managing sensitive information.

@@ -1,0 +1,6 @@
+# Zsh package stow ignore patterns
+# Machine-specific configuration files (git-ignored)
+^\.zshrc\.local$
+^\.zshrc\.local\.example$
+^\.zprofile\.local$
+

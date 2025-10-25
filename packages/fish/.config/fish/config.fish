@@ -42,6 +42,15 @@ if test -f ~/.dotfiles/dot
     ~/.dotfiles/dot --completion fish | source
 end
 
+# Shopify development environment (conditional - safe on all machines)
+if test -f /opt/dev/dev.fish
+    source /opt/dev/dev.fish
+end
+
+if test -x ~/.local/state/tec/profiles/base/current/global/init
+    eval "$(~/.local/state/tec/profiles/base/current/global/init fish)"
+end
+
 # Load private/machine-specific configuration if it exists
 # Use this file for secrets, API keys, or machine-specific settings
 if test -f ~/.config/fish/config_private.fish

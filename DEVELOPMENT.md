@@ -117,19 +117,27 @@ let g:ale_linters = {
 
 ### Branch Strategy
 
-- **`main`**: Personal configurations (stable)
-- **`shopify`**: Work environment configurations
-  - Rebase on main to pull improvements
-  - Allow dev tools to modify freely
+- **`main`**: All shared configurations with machine-specific support via `.local` files
 
-**Why branches instead of runtime profiles:**
+**Machine-specific configuration:**
 
-- Full git version control for each configuration set
-- Complete flexibility (different files, configs, templates, dependencies)
-- Simpler workflow (standard git commands)
-- No state management or profile tracking files
-- Better collaboration (work branch shareable with team)
-- Leverage git rebase to sync improvements between profiles
+Machine-specific customizations use `.local` files (git-ignored) that are sourced by the
+main configuration files. This eliminates the need for separate branches and the complexity
+of rebasing.
+
+**Configuration layers:**
+
+- Base configs (`.bashrc`, `.zshrc`, etc.) - Git-tracked, symlinked via stow
+- Machine-specific (`.bashrc.local`, `.gitconfig.local`) - Git-ignored, manually created
+- Auto-appended content - Managed through git workflow (see below)
+
+**Why .local files instead of branches:**
+
+- Single branch eliminates rebasing pain
+- Machine-specific configs stay separate and git-ignored
+- No conflicts from auto-appending development tools
+- Scales to unlimited machines
+- Standard pattern in dotfiles community
 
 ### Feature Development
 
