@@ -1113,6 +1113,7 @@ Cursor IDE configuration uses a **copy-sync approach** instead of symlinks.
 **Why not symlinks:**
 
 Cursor (VSCode-based) does not handle symlinked configuration files well:
+
 - Users report broken commands and CLI tools
 - Indexing failures occur with symlinked configs
 - Permission issues when configs are symlinks
@@ -1121,6 +1122,7 @@ Cursor (VSCode-based) does not handle symlinked configuration files well:
 **Research findings (Issue #104):**
 
 Comprehensive web research found:
+
 - **Zero successful examples** of symlinking entire Cursor User directory
 - **One claimed success** with file-level symlinks, but many failures reported
 - **Community consensus**: Copy-based sync is the only reliable approach
@@ -1129,6 +1131,7 @@ Comprehensive web research found:
 **Implementation:**
 
 Copy-sync commands in `dot` script:
+
 - `./dot sync-cursor`: Copy dotfiles → Cursor (apply configs)
 - `./dot pull-cursor`: Copy Cursor → dotfiles (save changes)
 
@@ -1156,6 +1159,7 @@ git pull                            # Get latest dotfiles
 
 Not all tools integrate with symlink-based dotfiles. Copy-sync provides a fallback
 pattern for tools that:
+
 - Write to their own config locations
 - Check that config directories are real directories
 - Use file watchers that don't follow symlinks
