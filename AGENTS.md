@@ -89,6 +89,7 @@ This repository contains dotfiles managed with GNU Stow. Files are organized int
 - **gnuplot**: GNU Plot configuration
 - **bash**: Bash shell configuration
 - **fish**: Fish shell configuration
+- **bat**: Bat syntax highlighter configuration
 
 Template-based secrets management separates public templates from private secret configurations.
 The `system` package is stowed first to ensure `.stow-global-ignore` is in place before other packages.
@@ -910,6 +911,58 @@ fi
 Do not use `set -e` (exit on error). Use explicit error checking for controlled failure handling.
 This allows proper cleanup, logging, and user-friendly error messages.
 
+### Argument Parsing Patterns
+
+**Commands with Arguments:**
+
+When implementing commands that accept arguments (like `enable PACKAGE`, `restore BACKUP_ID`),
+use the `COMMAND_ARGS` array pattern:
+
+```bash
+# In parse_arguments()
+parse_arguments() {
+    COMMAND=""
+    VERBOSITY=0
+    COMMAND_ARGS=()
+    
+    # ... parse flags and options ...
+    
+    # When command is found, collect remaining args
+    case $1 in
+        enable|disable|restore)
+            COMMAND="$1"
+            shift
+            # Collect all remaining arguments
+            while [[ $# -gt 0 ]]; do
+                COMMAND_ARGS+=("$1")
+                shift
+            done
+            ;;
+    esac
+}
+
+# In main()
+main() {
+    parse_arguments "$@"
+    
+    case $COMMAND in
+        enable)
+            # Pass collected arguments to command
+            cmd_enable "${COMMAND_ARGS[@]}"
+            ;;
+    esac
+}
+```
+
+**Why this pattern:**
+
+- `parse_arguments` consumes all arguments during parsing
+- Trying to `shift` in `main()` after parsing leaves `$@` empty
+- `COMMAND_ARGS` array preserves arguments for commands that need them
+- Bash 3.2 compatible (uses regular arrays, not associative)
+
+**Related:** Issue #90, PR #111 - Discovered during `bat` package implementation
+
 ### Bash 3.2 Compatibility
 
 Required for macOS default bash support.
@@ -1041,10 +1094,17 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 - **User tool**: `dot` script in root
 - **Utilities**: `bin/` directory (standalone scripts like `disk-cleanup`)
 - **Development tools**: `dev/` directory (atomic and composite workflow commands)
-- **Package files**: `packages/` directory (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/, fish/)
+- **Package files**: `packages/` directory (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/, fish/, bat/)
 - **Test suites**: `tests/` directory (BATS tests, test helpers, CI infrastructure)
 - **Configuration**: Dot-prefixed names (`.gitconfig`, `.zshrc`, etc.)
 - `.gitignore` is project-specific, not managed by stow
+
+**Important Path Variables:**
+
+- `DOTFILES_DIR`: Repository root (e.g., `$HOME/.dotfiles`)
+- `PACKAGES_DIR`: Package directory (`$DOTFILES_DIR/packages`)
+- Always use `$PACKAGES_DIR` when referencing package directories in code
+- Example: `$PACKAGES_DIR/bat` not `$DOTFILES_DIR/bat`
 
 ### Disk Cleanup Utility (`bin/disk-cleanup`)
 
