@@ -138,6 +138,10 @@ trap handle_interrupt INT TERM
 PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm" "bat")
 
 # Get package files (bash 3.2 compatible - no associative arrays)
+# Get files/directories for each package (for status display)
+# Note: Returns macOS-specific paths for cross-platform packages (cursor).
+# This function is used for display/validation purposes only.
+# Actual stowing logic handles platform differences via get_platform_ignore().
 get_package_files() {
     local package="$1"
     case "$package" in
@@ -149,7 +153,7 @@ get_package_files() {
         gnuplot) echo ".gnuplot" ;;
         bash)    echo ".bashrc,.bash_profile" ;;
         fish)    echo ".config/fish" ;;
-        wezterm) echo ".config/wezterm,.wezterm.lua" ;;
+        wezterm) echo ".config/wezterm" ;;
         bat)     echo ".config/bat" ;;
         *)       echo "" ;;
     esac
@@ -167,6 +171,8 @@ get_package_name() {
         gnuplot) echo "GNU Plot" ;;
         bash)    echo "Bash" ;;
         fish)    echo "Fish" ;;
+        wezterm) echo "WezTerm" ;;
+        bat)     echo "Bat" ;;
         *)       echo "$package" ;;
     esac
 }
@@ -176,7 +182,7 @@ get_required_deps() {
     local type="$1"
     case "$type" in
         common)   echo "stow git" ;;
-        optional) echo "tmux zsh fish" ;;
+        optional) echo "tmux zsh fish bat batcat" ;;
         *)        echo "" ;;
     esac
 }
@@ -258,14 +264,18 @@ show_usage() {
     echo "  status        Show installation status and recent backups"
     echo "  health        Run comprehensive diagnostics"
     echo "  update        Update configurations and reinstall"
+    echo "  diff          Preview changes before applying"
     echo "  uninstall     Remove dotfiles symlinks"
     echo "  backup        Create backup of existing files"
     echo "  backups       List all available backups with details"
-    echo "  restore       Restore from backup (default: latest)"
-    echo "  clean         Clean up backup directories"
-    echo "  enable        Enable a specific package"
-    echo "  disable       Disable a specific package"
-    echo "  packages      List all packages and their status"
+    echo "  restore       Restore from a specific backup"
+    echo "  clean         Remove old backup files"
+    echo "  packages      List all available packages"
+    echo "  enable        Enable (install) a specific package"
+    echo "  disable       Disable (uninstall) a specific package"
+    echo "  security      Run security audit on dotfiles"
+    echo "  sync-cursor   Sync Cursor config from dotfiles to system"
+    echo "  pull-cursor   Pull Cursor config from system to dotfiles"
     echo ""
     echo "Options:"
     echo "  -h, --help           Show this help message"
@@ -766,7 +776,37 @@ secure_secret_file() {
     return 0
 }
 
+# Secure permissions on .local files (machine-specific configs)
+secure_local_files() {
+    local local_files=(
+        "$HOME/.gitconfig.local"
+        "$HOME/.bashrc.local"
+        "$HOME/.bash_profile.local"
+        "$HOME/.zshrc.local"
+        "$HOME/.zprofile.local"
+        "$HOME/.config/fish/config_private.fish"
+    )
+
+    local secured_count=0
+
+    for file in "${local_files[@]}"; do
+        if [[ -f "$file" ]]; then
+            if chmod 600 "$file" 2>/dev/null; then
+                ((secured_count++))
+            fi
+        fi
+    done
+
+    if [[ $secured_count -gt 0 ]]; then
+        log_info "Secured $secured_count .local file(s) with mode 600"
+    fi
+
+    return 0
+}
+
 # Merge secret configurations with templates (auto-discovered)
+# NOTE: Legacy function - retained for backward compatibility but dormant
+# (no .secret files exist after consolidation to .local pattern)
 merge_secret_configs() {
     log_info "Merging secret configurations..."
 
@@ -1030,11 +1070,13 @@ validate_package() {
 # Get list of backup directories
 get_backup_dirs() {
     local backup_dirs=()
+    shopt -s nullglob
     for dir in "$DOTFILES_DIR"/${BACKUP_DIR_PREFIX}-*; do
         if [[ -d "$dir" ]]; then
             backup_dirs+=("$dir")
         fi
     done
+    shopt -u nullglob
     printf '%s\n' "${backup_dirs[@]}"
 }
 
@@ -1208,6 +1250,74 @@ show_status() {
     done
 
     echo ""
+    show_section_separator "Cursor Configuration"
+    echo ""
+
+    # Check if cursor config exists in dotfiles and system
+    local cursor_dotfiles="$DOTFILES_DIR/packages/cursor"
+    local cursor_system
+
+    case "$(uname -s)" in
+        Darwin)
+            cursor_system="$HOME/Library/Application Support/Cursor/User"
+            ;;
+        Linux)
+            cursor_system="$HOME/.config/Cursor/User"
+            ;;
+        *)
+            cursor_system=""
+            ;;
+    esac
+
+    if [[ ! -d "$cursor_dotfiles" ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor package not found in dotfiles"
+    elif [[ -z "$cursor_system" ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Unsupported platform for Cursor sync"
+    elif [[ ! -d "$cursor_system" ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor not installed on system"
+        echo -e "   ${BLUE}💡${NC} Run './dot sync-cursor' to create config directory"
+    else
+        # Check if settings are in sync
+        local settings_synced=false
+        local keybindings_synced=false
+
+        if [[ -f "$cursor_dotfiles/settings.json" ]] && [[ -f "$cursor_system/settings.json" ]]; then
+            if diff -q "$cursor_dotfiles/settings.json" "$cursor_system/settings.json" >/dev/null 2>&1; then
+                settings_synced=true
+            fi
+        fi
+
+        if [[ -f "$cursor_dotfiles/keybindings.json" ]] && [[ -f "$cursor_system/keybindings.json" ]]; then
+            if diff -q "$cursor_dotfiles/keybindings.json" "$cursor_system/keybindings.json" >/dev/null 2>&1; then
+                keybindings_synced=true
+            fi
+        fi
+
+        if [[ "$settings_synced" == true ]] && [[ "$keybindings_synced" == true ]]; then
+            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} settings.json ${BLUE}(synced)${NC}"
+            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} keybindings.json ${BLUE}(synced)${NC}"
+        else
+            if [[ "$settings_synced" == true ]]; then
+                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} settings.json ${BLUE}(synced)${NC}"
+            else
+                echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} settings.json ${BLUE}(out of sync)${NC}"
+            fi
+
+            if [[ "$keybindings_synced" == true ]]; then
+                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} keybindings.json ${BLUE}(synced)${NC}"
+            else
+                echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} keybindings.json ${BLUE}(out of sync)${NC}"
+            fi
+
+            echo ""
+            show_tips \
+                "Copy-sync approach" \
+                "Sync to system: ./dot sync-cursor" \
+                "Pull from system: ./dot pull-cursor"
+        fi
+    fi
+
+    echo ""
     show_section_separator "Backups"
     echo ""
 
@@ -1251,6 +1361,110 @@ show_status() {
         echo ""
         show_tip "Run './dot clean' to remove old backups"
     fi
+    echo ""
+}
+
+# Show diff preview of what would change
+show_diff_preview() {
+    show_command_header "Dotfiles Diff Preview"
+
+    log_info "Comparing current state with dotfiles repository..."
+    echo ""
+
+    local changes_found=false
+    local new_files=0
+    local modified_files=0
+    local wrong_target_files=0
+
+    show_section_separator "File Changes"
+    echo ""
+
+    for package in "${PACKAGES[@]}"; do
+        local package_files
+        package_files=$(get_package_files "$package")
+
+        IFS=',' read -ra files <<< "$package_files"
+
+        for file in "${files[@]}"; do
+            local dotfile_path="$DOTFILES_DIR/$package/$file"
+            local home_path="$HOME/$file"
+
+            # Skip if dotfile doesn't exist (shouldn't happen)
+            [[ ! -e "$dotfile_path" ]] && continue
+
+            if [[ -L "$home_path" ]]; then
+                # It's a symlink - check target
+                local target
+                target=$(readlink "$home_path")
+                local expected_target="$DOTFILES_DIR/$package/$file"
+
+                # Check if symlink points to our dotfiles (allows any path format - absolute, relative, etc.)
+                if [[ "$target" != *"${DOTFILES_DIR}/${package}/${file}"* ]]; then
+                    echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $file"
+                    echo "      Current: symlink → $target"
+                    echo "      Expected: symlink → $expected_target"
+                    changes_found=true
+                    ((wrong_target_files++))
+                fi
+                # Symlink points to correct location - no diff needed
+            elif [[ -f "$home_path" ]]; then
+                # Regular file - compare content
+                if [[ -f "$dotfile_path" ]]; then
+                    if ! diff -q "$home_path" "$dotfile_path" > /dev/null 2>&1; then
+                        echo -e "   ${BLUE}${SYMBOL_INFO}${NC} $file ${YELLOW}(content differs)${NC}"
+
+                        # Show diff preview (first 25 lines)
+                        local diff_output
+                        diff_output=$(diff -u "$home_path" "$dotfile_path" 2>/dev/null || true)
+
+                        while IFS= read -r line; do
+                            if [[ "$line" == -* ]]; then
+                                echo -e "      ${RED}$line${NC}"
+                            elif [[ "$line" == +* ]]; then
+                                echo -e "      ${GREEN}$line${NC}"
+                            else
+                                echo "      $line"
+                            fi
+                        done < <(echo "$diff_output" | head -25)
+
+                        local diff_lines
+                        diff_lines=$(echo "$diff_output" | grep -c '^')
+                        if [[ $diff_lines -gt 25 ]]; then
+                            echo "      ... ($(( diff_lines - 25 )) more lines)"
+                        fi
+
+                        echo ""
+                        changes_found=true
+                        ((modified_files++))
+                    fi
+                fi
+            elif [[ ! -e "$home_path" ]]; then
+                # File doesn't exist - would be created
+                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${GREEN}(would create new symlink)${NC}"
+                changes_found=true
+                ((new_files++))
+            fi
+        done
+    done
+
+    if ! $changes_found; then
+        echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} No changes detected - system matches repository"
+    fi
+
+    echo ""
+    show_section_separator "Summary"
+    echo ""
+
+    if $changes_found; then
+        [[ $new_files -gt 0 ]] && echo "   ${GREEN}${SYMBOL_SUCCESS}${NC} New files: $new_files"
+        [[ $modified_files -gt 0 ]] && echo "   ${BLUE}${SYMBOL_INFO}${NC} Modified files: $modified_files"
+        [[ $wrong_target_files -gt 0 ]] && echo "   ${YELLOW}${SYMBOL_WARNING}${NC} Wrong targets: $wrong_target_files"
+        echo ""
+        show_tip "Run ${BLUE}./dot install${NC} to apply these changes"
+    else
+        log_success "System is up to date with repository"
+    fi
+
     echo ""
 }
 
@@ -2932,6 +3146,10 @@ run_installation_pipeline() {
         return 1
     fi
 
+    if ! secure_local_files; then
+        log_warning "Failed to set secure permissions on some .local files"
+    fi
+
     return 0
 }
 
@@ -3011,6 +3229,10 @@ cmd_status() {
     show_status
 }
 
+cmd_diff() {
+    show_diff_preview
+}
+
 cmd_backup() {
     backup_existing
 }
@@ -3044,6 +3266,137 @@ cmd_disable() {
 
 cmd_packages() {
     list_packages
+}
+
+cmd_security() {
+    security_audit
+}
+
+cmd_sync_cursor() {
+    sync_cursor_to_system
+}
+
+cmd_pull_cursor() {
+    pull_cursor_from_system
+}
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Cursor Configuration Sync Functions
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+sync_cursor_to_system() {
+    local source="$DOTFILES_DIR/packages/cursor"
+    local target
+
+    case "$(uname -s)" in
+        Darwin)
+            target="$HOME/Library/Application Support/Cursor/User"
+            ;;
+        Linux)
+            target="$HOME/.config/Cursor/User"
+            ;;
+        *)
+            log_error "Unsupported operating system for Cursor sync"
+            return 1
+            ;;
+    esac
+
+    if [[ ! -d "$source" ]]; then
+        log_error "Cursor package not found in dotfiles"
+        log_info "Expected location: $source"
+        return 1
+    fi
+
+    if [[ ! -d "$target" ]]; then
+        log_warning "Cursor config directory not found"
+        log_info "Creating directory: $target"
+        mkdir -p "$target"
+    fi
+
+    log_info "Syncing Cursor configs to system..."
+
+    if [[ -f "$source/settings.json" ]]; then
+        if cp "$source/settings.json" "$target/settings.json" 2>/dev/null; then
+            log_success "Synced settings.json"
+        else
+            log_error "Failed to sync settings.json"
+            return 1
+        fi
+    else
+        log_warning "settings.json not found in dotfiles"
+    fi
+
+    if [[ -f "$source/keybindings.json" ]]; then
+        if cp "$source/keybindings.json" "$target/keybindings.json" 2>/dev/null; then
+            log_success "Synced keybindings.json"
+        else
+            log_error "Failed to sync keybindings.json"
+            return 1
+        fi
+    else
+        log_warning "keybindings.json not found in dotfiles"
+    fi
+
+    log_success "Cursor configuration synced successfully"
+    show_tip "Restart Cursor to apply changes"
+}
+
+pull_cursor_from_system() {
+    local source
+    local target="$DOTFILES_DIR/packages/cursor"
+
+    case "$(uname -s)" in
+        Darwin)
+            source="$HOME/Library/Application Support/Cursor/User"
+            ;;
+        Linux)
+            source="$HOME/.config/Cursor/User"
+            ;;
+        *)
+            log_error "Unsupported operating system for Cursor sync"
+            return 1
+            ;;
+    esac
+
+    if [[ ! -d "$source" ]]; then
+        log_error "Cursor config directory not found"
+        log_info "Expected location: $source"
+        return 1
+    fi
+
+    if [[ ! -d "$target" ]]; then
+        log_info "Creating dotfiles cursor directory: $target"
+        mkdir -p "$target"
+    fi
+
+    log_info "Pulling Cursor configs from system..."
+
+    if [[ -f "$source/settings.json" ]]; then
+        if cp "$source/settings.json" "$target/settings.json" 2>/dev/null; then
+            log_success "Pulled settings.json"
+        else
+            log_error "Failed to pull settings.json"
+            return 1
+        fi
+    else
+        log_warning "settings.json not found in Cursor"
+    fi
+
+    if [[ -f "$source/keybindings.json" ]]; then
+        if cp "$source/keybindings.json" "$target/keybindings.json" 2>/dev/null; then
+            log_success "Pulled keybindings.json"
+        else
+            log_error "Failed to pull keybindings.json"
+            return 1
+        fi
+    else
+        log_warning "keybindings.json not found in Cursor"
+    fi
+
+    log_success "Cursor configuration pulled successfully"
+    show_tips \
+        "Review changes: git diff packages/cursor" \
+        "Commit if satisfied: git add packages/cursor && git commit"
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3195,6 +3548,9 @@ list_packages() {
             gh)      description="GitHub CLI configuration" ;;
             gnuplot) description="Gnuplot configuration" ;;
             bash)    description="Bash shell configuration" ;;
+            fish)    description="Fish shell configuration" ;;
+            wezterm) description="WezTerm terminal emulator" ;;
+            bat)     description="Bat syntax highlighter" ;;
             *)       description="Unknown package" ;;
         esac
 
@@ -3212,6 +3568,193 @@ list_packages() {
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Security Audit Functions
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Run security audit on dotfiles
+security_audit() {
+    show_command_header "Security Audit"
+
+    local issues_found=0
+
+    # 1. Check for accidentally committed secrets
+    show_numbered_section "1" "Checking for Committed Secrets"
+
+    # More specific patterns that match actual secrets with values
+    # Require actual values (4-8+ chars) after = to reduce false positives
+    local patterns=(
+        'password\s*=\s*['\''"]?\w{4,}'         # password=value (4+ chars)
+        'api[_-]?key\s*=\s*['\''"]?\w{8,}'      # api_key=value (8+ chars)
+        'secret\s*=\s*['\''"]?\w{8,}'           # secret=value (8+ chars)
+        'token\s*=\s*['\''"]?\w{8,}'            # token=value (8+ chars)
+        'private[_-]?key\s*=\s*['\''"]?\w{8,}'  # private_key=value (8+ chars)
+        'aws[_-]?access[_-]?key\s*=\s*['\''"]?\w{8,}'  # aws_access_key=value
+        'BEGIN\s+(RSA\s+)?PRIVATE\s+KEY'        # Actual private key blocks
+    )
+
+    # Build grep args array for single git grep command (performance optimization)
+    local grep_args=()
+    for pattern in "${patterns[@]}"; do
+        grep_args+=("-e" "$pattern")
+    done
+
+    local secrets_found="false"
+    local matches
+    # Exclude docs (may reference patterns) and this function itself
+    matches=$(git -C "$DOTFILES_DIR" grep -P -n -i "${grep_args[@]}" -- . \
+              ':(exclude)README.md' ':(exclude)AGENTS.md' ':(exclude)DEVELOPMENT.md' \
+              ':(exclude)tests/' ':(exclude)dot' 2>/dev/null || true)
+
+    if [[ -n "$matches" ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Potential secret patterns found:"
+        while IFS= read -r line; do
+            echo "     $line"
+        done <<< "$matches"
+        echo ""
+        secrets_found="true"
+        ((issues_found++))
+    fi
+
+    if [[ "$secrets_found" == "false" ]]; then
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} No secret patterns in tracked files"
+    fi
+    echo ""
+
+    # 2. Check file permissions on secret files
+    show_numbered_section "2" "Checking Secret File Permissions"
+
+    # Collect secret files once to avoid duplicate find operations
+    local secret_files=()
+    while IFS= read -r f; do
+        secret_files+=("$f")
+    done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
+
+
+    local insecure_files=()
+
+    for secret_file in "${secret_files[@]}"; do
+        [[ -z "$secret_file" ]] && continue
+        local perms
+        perms=$(stat -c "%a" "$secret_file" 2>/dev/null || stat -f "%OLp" "$secret_file" 2>/dev/null || echo "000")
+        perms=${perms: -3}
+
+        if [[ "$perms" != "600" ]] && [[ "$perms" != "400" ]]; then
+            insecure_files+=("$secret_file ($perms)")
+            ((issues_found++))
+        fi
+    done < <(find "$DOTFILES_DIR" -name "*.secret" -type f 2>/dev/null)
+
+    if [[ ${#insecure_files[@]} -gt 0 ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure permissions on secret files:"
+        for file in "${insecure_files[@]}"; do
+            echo -e "     ${SYMBOL_WARNING} ${file#"$DOTFILES_DIR"/}"
+        done
+        echo -e "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 FILE (or 400)"
+    else
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files have secure permissions"
+    fi
+    echo ""
+
+    # 3. Check .gitignore coverage
+    show_numbered_section "3" "Checking .gitignore Coverage"
+
+
+    local unignored_secrets=()
+    local untracked_unignored=()
+    for secret_file in "${secret_files[@]}"; do
+        [[ -z "$secret_file" ]] && continue
+        # Compute relative path for git commands
+        local rel_path="${secret_file#"$DOTFILES_DIR"/}"
+        if git -C "$DOTFILES_DIR" check-ignore -q -- "$rel_path" 2>/dev/null; then
+            : # properly ignored
+        else
+            # Check if file is tracked
+            if git -C "$DOTFILES_DIR" ls-files --error-unmatch -- "$rel_path" >/dev/null 2>&1; then
+                unignored_secrets+=("$secret_file")
+                ((issues_found++))
+            else
+                # Untracked but not ignored - potential future commit risk
+                untracked_unignored+=("$secret_file")
+                ((issues_found++))
+            fi
+        fi
+    done
+
+    if [[ ${#unignored_secrets[@]} -gt 0 ]]; then
+        echo -e "   ${RED}${SYMBOL_ERROR}${NC} Secret files tracked in git:"
+        for file in "${unignored_secrets[@]}"; do
+            echo -e "     ${SYMBOL_ERROR} ${file#"$DOTFILES_DIR"/}"
+        done
+        echo -e "   ${RED}${SYMBOL_ERROR}${NC} These files are committed to git!"
+        echo ""
+    fi
+
+    if [[ ${#untracked_unignored[@]} -gt 0 ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Secret files not ignored by git:"
+        for file in "${untracked_unignored[@]}"; do
+            echo -e "     ${SYMBOL_WARNING} ${file#"$DOTFILES_DIR"/}"
+        done
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Add patterns to .gitignore to prevent future commits"
+        echo ""
+    fi
+
+    if [[ ${#unignored_secrets[@]} -eq 0 ]] && [[ ${#untracked_unignored[@]} -eq 0 ]]; then
+        echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} All secret files properly ignored"
+    fi
+    echo ""
+    # 4. Check SSH key security
+    show_numbered_section "4" "Checking SSH Key Security"
+
+    if [[ -d "$HOME/.ssh" ]]; then
+        local exposed_keys=()
+
+        shopt -s nullglob
+        for key in "$HOME/.ssh"/id_* "$HOME/.ssh"/*.pem; do
+            [[ ! -f "$key" ]] && continue
+            [[ "$key" == *.pub ]] && continue
+
+            local perms
+            perms=$(stat -c "%a" "$key" 2>/dev/null || stat -f "%OLp" "$key" 2>/dev/null || echo "000")
+            perms=${perms: -3}
+
+            if [[ "$perms" != "600" ]] && [[ "$perms" != "400" ]]; then
+                exposed_keys+=("$(basename "$key") ($perms)")
+                ((issues_found++))
+            fi
+        done
+        shopt -u nullglob
+
+        if [[ ${#exposed_keys[@]} -gt 0 ]]; then
+            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Insecure SSH key permissions:"
+            for key in "${exposed_keys[@]}"; do
+                echo -e "     ${SYMBOL_WARNING} $key"
+            done
+            echo -e "   ${BLUE}${SYMBOL_INFO}${NC} Fix with: chmod 600 ~/.ssh/KEYFILE (or 400)"
+        else
+            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} SSH keys have secure permissions"
+        fi
+    else
+        echo -e "   ${BLUE}${SYMBOL_INFO}${NC} No SSH directory found"
+    fi
+    echo ""
+
+    # Summary
+    show_section_separator
+    echo ""
+    if [[ $issues_found -eq 0 ]]; then
+        log_success "No security issues detected"
+        show_command_summary "success" "SECURE" ""
+    else
+        log_warning "Security audit found $issues_found potential issue(s)"
+        show_command_summary "info" "$issues_found ISSUES FOUND" ""
+        echo ""
+        show_tip "Review and fix security issues before committing"
+    fi
+    echo ""
+
+    return $issues_found
+}
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Argument Parsing Helpers
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -3223,12 +3766,11 @@ is_flag() {
 # Check if argument is a valid command
 is_valid_command() {
     local cmd="$1"
-    [[ "$cmd" =~ ^(install|health|update|status|backup|backups|restore|clean|uninstall|enable|disable|packages)$ ]]
+    [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync-cursor|pull-cursor)$ ]]
 }
 
 # Parse verbosity flag and return level increment
 # Handles: -v (1), -vv (2), -vvv (3), --verbose (1)
-# Returns: verbosity increment for a single flag via echo; caller accumulates total verbosity by summing results for each flag
 # Examples:
 #   -v           → 1
 #   -vv          → 2
@@ -3301,27 +3843,25 @@ parse_arguments() {
                 ;;
 
             # Valid commands
-            install|health|update|status|backup|backups|restore|clean|uninstall|enable|disable|packages)
+            install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync-cursor|pull-cursor)
                 if [[ -n "$COMMAND" ]]; then
                     die "Multiple commands specified: '$COMMAND' and '$1'"
                 fi
                 COMMAND="$1"
                 shift
+                # Collect remaining arguments for commands that need them
+                while [[ $# -gt 0 ]]; do
+                    COMMAND_ARGS+=("$1")
+                    shift
+                done
                 ;;
-
-            # Unknown flag
+            # Unknown option (unknown flag)
             -*)
                 die "Unknown option: $1" show_usage
                 ;;
-
-            # Unknown argument (when we have a command, collect as command arguments)
+            # Unknown argument
             *)
-                if [[ -n "$COMMAND" ]]; then
-                    COMMAND_ARGS+=("$1")
-                    shift
-                else
-                    die "Unknown argument: $1" show_usage
-                fi
+                die "Unknown argument: $1" show_usage
                 ;;
         esac
     done
@@ -3354,7 +3894,7 @@ handle_completion() {
 
 # Main script logic
 main() {
-    # Parse command-line arguments into global COMMAND and VERBOSITY
+    # Parse command-line arguments into global COMMAND, VERBOSITY, and COMMAND_ARGS
     parse_arguments "$@"
 
     # Execute command with verbosity level
@@ -3376,6 +3916,9 @@ main() {
         status)
             cmd_status
             ;;
+        diff)
+            cmd_diff
+            ;;
         backup)
             cmd_backup
             ;;
@@ -3383,7 +3926,7 @@ main() {
             cmd_backups
             ;;
         restore)
-            # Pass backup ID argument from COMMAND_ARGS array
+            # Pass backup ID argument if provided
             cmd_restore "${COMMAND_ARGS[@]}"
             ;;
         clean)
@@ -3393,15 +3936,24 @@ main() {
             cmd_uninstall
             ;;
         enable)
-            # Pass package argument from COMMAND_ARGS array
+            # Pass package argument
             cmd_enable "${COMMAND_ARGS[@]}"
             ;;
         disable)
-            # Pass package argument from COMMAND_ARGS array
+            # Pass package argument
             cmd_disable "${COMMAND_ARGS[@]}"
             ;;
         packages)
             cmd_packages
+            ;;
+        security)
+            cmd_security
+            ;;
+        sync-cursor)
+            cmd_sync_cursor
+            ;;
+        pull-cursor)
+            cmd_pull_cursor
             ;;
         *)
             die "Unknown command: $COMMAND"
@@ -3424,11 +3976,13 @@ d() {
         h|health) "$HOME/.dotfiles/dot" health "$@" ;;
         s|status) "$HOME/.dotfiles/dot" status "$@" ;;
         u|update) "$HOME/.dotfiles/dot" update "$@" ;;
+        d|diff)   "$HOME/.dotfiles/dot" diff "$@" ;;
         b|backup) "$HOME/.dotfiles/dot" backup "$@" ;;
         backups)  "$HOME/.dotfiles/dot" backups "$@" ;;
         r|restore) "$HOME/.dotfiles/dot" restore "$@" ;;
         c|clean)  "$HOME/.dotfiles/dot" clean "$@" ;;
         i|install) "$HOME/.dotfiles/dot" install "$@" ;;
+        security) "$HOME/.dotfiles/dot" security "$@" ;;
         cd)       builtin cd "$HOME/.dotfiles" || return ;;
         *)        "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
     esac
@@ -3441,7 +3995,7 @@ _dot_completion() {
 
     # Complete commands
     if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
-        local commands="install status health update backup backups restore clean uninstall enable disable packages"
+        local commands="install status health update diff backup backups restore clean uninstall enable disable packages security sync-cursor pull-cursor"
         local flags="-h --help -v --verbose -vv"
         # Bash 3.2 compatible (no mapfile)
         COMPREPLY=()
@@ -3459,7 +4013,7 @@ _dot_completion() {
                 done < <(compgen -W "$flags" -- "$cur")
                 ;;
             enable|disable)
-                local packages="system git zsh tmux gh gnuplot bash fish bat wezterm"
+                local packages="system git zsh tmux gh gnuplot bash fish bat"
                 COMPREPLY=()
                 while IFS= read -r word; do
                     COMPREPLY+=("$word")
@@ -3512,11 +4066,13 @@ d() {
         h|health) "$HOME/.dotfiles/dot" health "$@" ;;
         s|status) "$HOME/.dotfiles/dot" status "$@" ;;
         u|update) "$HOME/.dotfiles/dot" update "$@" ;;
+        d|diff)   "$HOME/.dotfiles/dot" diff "$@" ;;
         b|backup) "$HOME/.dotfiles/dot" backup "$@" ;;
         backups)  "$HOME/.dotfiles/dot" backups "$@" ;;
         r|restore) "$HOME/.dotfiles/dot" restore "$@" ;;
         c|clean)  "$HOME/.dotfiles/dot" clean "$@" ;;
         i|install) "$HOME/.dotfiles/dot" install "$@" ;;
+        security) "$HOME/.dotfiles/dot" security "$@" ;;
         cd)       builtin cd "$HOME/.dotfiles" || return ;;
         *)        "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
     esac
@@ -3542,6 +4098,7 @@ _dot_completion() {
                 'status:Show installation status and recent backups'
                 'health:Run comprehensive diagnostics'
                 'update:Update configurations and reinstall'
+                'diff:Preview changes before applying'
                 'backup:Create backup of existing files'
                 'backups:List all available backups with details'
                 'restore:Restore from backup (default: latest)'
@@ -3550,6 +4107,7 @@ _dot_completion() {
                 'enable:Enable a specific package'
                 'disable:Disable a specific package'
                 'packages:List all packages and their status'
+                'security:Run security audit on dotfiles'
             )
             _describe 'dot command' commands
             ;;
@@ -3572,7 +4130,6 @@ _dot_completion() {
                         'gnuplot:Gnuplot configuration'
                         'bash:Bash shell configuration'
                         'fish:Fish shell configuration'
-                        'wezterm:WezTerm terminal emulator'
                         'bat:Bat syntax highlighter'
                     )
                     _describe 'package' packages
@@ -3617,6 +4174,8 @@ _d_completion() {
                 'status:Quick status check'
                 'u:update - Update and reinstall'
                 'update:Update and reinstall'
+                'd:diff - Preview changes'
+                'diff:Preview changes'
                 'b:backup - Create backup'
                 'backup:Create backup'
                 'backups:List all available backups'
@@ -3681,7 +4240,6 @@ complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "gh" -d "GitH
 complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "gnuplot" -d "Gnuplot configuration"
 complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "bash" -d "Bash shell configuration"
 complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "fish" -d "Fish shell configuration"
-complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "wezterm" -d "WezTerm terminal emulator"
 complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "bat" -d "Bat syntax highlighter"
 
 # Fish completion for d function wrapper

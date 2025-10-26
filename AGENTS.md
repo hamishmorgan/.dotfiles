@@ -1094,7 +1094,7 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 - **User tool**: `dot` script in root
 - **Utilities**: `bin/` directory (standalone scripts like `disk-cleanup`)
 - **Development tools**: `dev/` directory (atomic and composite workflow commands)
-- **Package files**: `packages/` directory (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/, fish/, bat/)
+- **Package files**: `packages/` directory (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/, fish/, bat/, cursor/)
 - **Test suites**: `tests/` directory (BATS tests, test helpers, CI infrastructure)
 - **Configuration**: Dot-prefixed names (`.gitconfig`, `.zshrc`, etc.)
 - `.gitignore` is project-specific, not managed by stow
@@ -1105,6 +1105,115 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 - `PACKAGES_DIR`: Package directory (`$DOTFILES_DIR/packages`)
 - Always use `$PACKAGES_DIR` when referencing package directories in code
 - Example: `$PACKAGES_DIR/bat` not `$DOTFILES_DIR/bat`
+
+### Cursor IDE Configuration (`packages/cursor/`)
+
+Cursor IDE configuration uses a **copy-sync approach** instead of symlinks.
+
+**Why not symlinks:**
+
+Cursor (VSCode-based) does not handle symlinked configuration files well:
+
+- Users report broken commands and CLI tools
+- Indexing failures occur with symlinked configs
+- Permission issues when configs are symlinks
+- Both directory-level and file-level symlinks fail
+
+**Research findings (Issue #104):**
+
+Comprehensive web research found:
+
+- **Zero successful examples** of symlinking entire Cursor User directory
+- **One claimed success** with file-level symlinks, but many failures reported
+- **Community consensus**: Copy-based sync is the only reliable approach
+- Cursor forum discussions confirm symlink issues disrupt functionality
+
+**Implementation:**
+
+Copy-sync commands in `dot` script:
+
+- `./dot sync-cursor`: Copy dotfiles → Cursor (apply configs)
+- `./dot pull-cursor`: Copy Cursor → dotfiles (save changes)
+
+**Workflow:**
+
+```bash
+# After making changes in Cursor
+./dot pull-cursor                   # Pull changes to dotfiles
+git diff packages/cursor            # Review changes
+git add packages/cursor             # Stage if satisfied
+git commit -m "update cursor settings"
+
+# On another machine
+git pull                            # Get latest dotfiles
+./dot sync-cursor                   # Apply to local Cursor
+# Restart Cursor to apply
+```
+
+**Integration Notes:**
+
+- **Cursor is NOT in the `PACKAGES` array** (line 138 of `dot`) - it's excluded from stow-based package management
+- **Cursor won't appear in `./dot packages` output** - it has its own commands instead
+- **DO NOT add cursor to `PACKAGES` array** - it uses copy-sync, not stow
+- `.stow-local-ignore` exists in `packages/cursor/` for consistency, but cursor is never stowed
+
+**Machine-Specific Settings Pattern:**
+
+To avoid hardcoded user paths in shared configs, use empty strings or platform detection:
+
+**❌ BAD (hardcoded path breaks other users):**
+
+```json
+"rubyLsp.rubyExecutablePath": "/home/hamish/.local/share/mise/shims/ruby"
+```
+
+**✅ GOOD (empty string enables auto-detection):**
+
+```json
+"rubyLsp.rubyExecutablePath": ""
+```
+
+**✅ GOOD (alternatives for machine-specific paths):**
+
+- Leave empty - let Cursor/Copilot/Ruby LSP auto-detect the path
+- Users can override in Cursor's User Settings directly (per-machine customization)
+- Use relative paths or environment variables if supported by the extension
+
+**File Structure:**
+
+```text
+packages/cursor/
+├── .stow-local-ignore    # Stow ignore patterns (cursor not stow-managed)
+├── README.md             # User documentation
+├── settings.json         # Platform-agnostic settings (no hardcoded paths)
+└── keybindings.json      # Cross-platform keybindings (with when conditions)
+```
+
+Critical: Settings in `settings.json` must work across all machines. Never hardcode user paths:
+
+- User home directory paths (`/home/USERNAME/`, `/Users/USERNAME/`)
+- Machine-specific installation paths
+- Absolute local paths
+
+Use empty strings for auto-detection, let users override in Cursor, or use relative paths.
+
+**Cross-platform support:**
+
+- macOS: `~/Library/Application Support/Cursor/User/`
+- Linux: `~/.config/Cursor/User/` (implemented, not tested)
+
+**Why this matters:**
+
+Not all tools integrate with symlink-based dotfiles. Copy-sync provides a fallback
+pattern for tools that:
+
+- Write to their own config locations
+- Check that config directories are real directories
+- Use file watchers that don't follow symlinks
+- Have permission/security checks that fail with symlinks
+
+Other tools that may need copy-sync: VSCode, certain IDE extensions, any tool
+that explicitly rejects symlinked configs.
 
 ### Disk Cleanup Utility (`bin/disk-cleanup`)
 
