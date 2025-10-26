@@ -10,6 +10,9 @@ brew install wezterm
 
 # Linux
 # See: https://wezfurlong.org/wezterm/installation.html
+
+# Install WezTerm terminfo (enables advanced features)
+./install-terminfo.sh
 ```
 
 ## Features Configured
