@@ -3766,7 +3766,7 @@ is_flag() {
 # Check if argument is a valid command
 is_valid_command() {
     local cmd="$1"
-    [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security)$ ]]
+    [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync-cursor|pull-cursor)$ ]]
 }
 
 # Parse verbosity flag and return level increment
@@ -3995,7 +3995,7 @@ _dot_completion() {
 
     # Complete commands
     if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
-        local commands="install status health update diff backup backups restore clean uninstall enable disable packages security"
+        local commands="install status health update diff backup backups restore clean uninstall enable disable packages security sync-cursor pull-cursor"
         local flags="-h --help -v --verbose -vv"
         # Bash 3.2 compatible (no mapfile)
         COMPREPLY=()

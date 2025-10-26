@@ -140,6 +140,7 @@
   "rubyLsp.rubyVersionManager": {
     "identifier": "mise"
   },
+  // NOTE: Customize this path for your system. Users should update this to match their mise shim location
   "rubyLsp.rubyExecutablePath": "/home/hamish/.local/share/mise/shims/ruby",
   "rubyLsp.featureFlags": {
     "tapiocaAddon": false
