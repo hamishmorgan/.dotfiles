@@ -1150,6 +1150,53 @@ git pull                            # Get latest dotfiles
 # Restart Cursor to apply
 ```
 
+**Integration Notes:**
+
+- **Cursor is NOT in the `PACKAGES` array** (line 138 of `dot`) - it's excluded from stow-based package management
+- **Cursor won't appear in `./dot packages` output** - it has its own commands instead
+- **DO NOT add cursor to `PACKAGES` array** - it uses copy-sync, not stow
+- `.stow-local-ignore` exists in `packages/cursor/` for consistency, but cursor is never stowed
+
+**Machine-Specific Settings Pattern:**
+
+To avoid hardcoded user paths in shared configs, use empty strings or platform detection:
+
+**❌ BAD (hardcoded path breaks other users):**
+
+```json
+"rubyLsp.rubyExecutablePath": "/home/hamish/.local/share/mise/shims/ruby"
+```
+
+**✅ GOOD (empty string enables auto-detection):**
+
+```json
+"rubyLsp.rubyExecutablePath": ""
+```
+
+**✅ GOOD (alternatives for machine-specific paths):**
+
+- Leave empty - let Cursor/Copilot/Ruby LSP auto-detect the path
+- Users can override in Cursor's User Settings directly (per-machine customization)
+- Use relative paths or environment variables if supported by the extension
+
+**File Structure:**
+
+```text
+packages/cursor/
+├── .stow-local-ignore    # Stow ignore patterns (cursor not stow-managed)
+├── README.md             # User documentation
+├── settings.json         # Platform-agnostic settings (no hardcoded paths)
+└── keybindings.json      # Cross-platform keybindings (with when conditions)
+```
+
+Critical: Settings in `settings.json` must work across all machines. Never hardcode user paths:
+
+- User home directory paths (`/home/USERNAME/`, `/Users/USERNAME/`)
+- Machine-specific installation paths
+- Absolute local paths
+
+Use empty strings for auto-detection, let users override in Cursor, or use relative paths.
+
 **Cross-platform support:**
 
 - macOS: `~/Library/Application Support/Cursor/User/`
