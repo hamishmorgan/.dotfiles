@@ -9,7 +9,6 @@
   "cursor.cpp.enablePartialAccepts": true,
   "cursor.diffs.useCharacterLevelDiffs": true,
   "cursor.windowSwitcher.sidebarHoverCollapsed": true,
-
   // ============================================================================
   // Editor Appearance & Behavior
   // ============================================================================
@@ -18,7 +17,6 @@
   "workbench.editor.wrapTabs": true,
   "window.density.editorTabHeight": "compact",
   "editor.stickyTabStops": true,
-
   // Inline suggestions and autocomplete
   "editor.inlineSuggest.showToolbar": "always",
   "editor.quickSuggestions": {
@@ -29,7 +27,6 @@
   "editor.suggest.matchOnWordStartOnly": false,
   "editor.suggest.preview": true,
   "editor.suggest.showStatusBar": true,
-
   // ============================================================================
   // Git & Version Control
   // ============================================================================
@@ -37,11 +34,9 @@
   "git.openRepositoryInParentFolders": "always",
   "diffEditor.ignoreTrimWhitespace": true,
   "gitlens.rebaseEditor.ordering": "asc",
-
   // GitHub Pull Requests
   "githubPullRequests.pullBranch": "never",
   "githubPullRequests.terminalLinksHandler": "github",
-
   // ============================================================================
   // GitHub Copilot & AI Chat
   // ============================================================================
@@ -55,7 +50,6 @@
     "plaintext": true,
     "scminput": true
   },
-
   // Chat settings
   "chat.tools.autoApprove": true,
   "chat.agent.maxRequests": 1000,
@@ -76,13 +70,11 @@
       ]
     }
   },
-
   // ============================================================================
   // Terminal
   // ============================================================================
   "terminal.integrated.scrollback": 100000,
   "terminal.integrated.enableImages": true,
-
   // Terminal search highlighting
   "workbench.colorCustomizations": {
     "terminal.findMatchBackground": "#dddd00",
@@ -91,7 +83,6 @@
     "terminal.findMatchHighlightBorder": "#dddd00",
     "terminalOverviewRuler.findMatchForeground": "#dddd00"
   },
-
   // ============================================================================
   // File Explorer
   // ============================================================================
@@ -109,11 +100,9 @@
     "*.sdb": "${capture}.${extname}-*",
     "*.s3db": "${capture}.${extname}-*"
   },
-
   // ============================================================================
   // Language-Specific Settings
   // ============================================================================
-
   // Ruby
   "[ruby]": {
     "editor.defaultFormatter": "Shopify.ruby-lsp",
@@ -124,15 +113,15 @@
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
-    "editor.rulers": [120],
+    "editor.rulers": [
+      120
+    ],
     "editor.semanticHighlighting.enabled": true
   },
-
   // JSON
   "[json]": {
     "editor.defaultFormatter": "vscode.json-language-features"
   },
-
   // Docker Compose
   "[dockercompose]": {
     "editor.insertSpaces": true,
@@ -140,16 +129,13 @@
     "editor.autoIndent": "advanced",
     "editor.defaultFormatter": "redhat.vscode-yaml"
   },
-
   // GitHub Actions
   "[github-actions-workflow]": {
     "editor.defaultFormatter": "redhat.vscode-yaml"
   },
-
   // ============================================================================
   // Extensions
   // ============================================================================
-
   // Ruby LSP
   "rubyLsp.rubyVersionManager": {
     "identifier": "mise"
@@ -158,12 +144,12 @@
   "rubyLsp.featureFlags": {
     "tapiocaAddon": false
   },
-
   // Sorbet
   "sorbet.highlightUntyped": "everywhere",
-
   // Code Spell Checker
-  "cSpell.enableFiletypes": ["ruby"],
+  "cSpell.enableFiletypes": [
+    "ruby"
+  ],
   "cSpell.userWords": [
     "autorun",
     "autofetch",
@@ -176,20 +162,28 @@
     "coreutils",
     "curcontext",
     "dataclass",
+    "Datetime",
     "Deque",
     "dpkg",
     "esac",
     "extglob",
     "filemode",
+    "fulfillable",
     "gitmodules",
+    "Geolocator",
     "gsort",
     "Hamish",
     "hamishmorgan",
     "hexdigit",
     "indicatif",
+    "importmap",
     "inputrc",
+    "interruptible",
     "isospin",
     "Jsonify",
+    "kamal",
+    "killswitch",
+    "klass",
     "lrwxr",
     "macroquad",
     "mapfile",
@@ -202,6 +196,7 @@
     "ncols",
     "ndarray",
     "nodoc",
+    "normalised",
     "noreturn",
     "nrows",
     "nullglob",
@@ -246,26 +241,20 @@
     "zalgo",
     "zoneinfo"
   ],
-
   // Rust Analyzer
   "rust-analyzer.workspace.symbol.search.excludeImports": true,
   "rust-analyzer.showSyntaxTree": true,
   "rust-analyzer.testExplorer": true,
   "rust-analyzer.assist.emitMustUse": true,
   "rust-analyzer.check.command": "clippy",
-
   // VS Icons
   "vsicons.dontShowNewVersionMessage": true,
-
   // Red Hat telemetry
   "redhat.telemetry.enabled": false,
-
   // JavaScript/TypeScript
   "javascript.updateImportsOnFileMove.enabled": "always",
-
   // Telemetry
   "telemetry.editStats.enabled": false,
-
   // Comment highlighting (TODO, FIXME, etc)
   "highlight.regexes": {
     "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *TODO(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
@@ -329,11 +318,9 @@
       ]
     }
   },
-
   // ============================================================================
   // Remote Development
   // ============================================================================
   "remote.SSH.connectTimeout": 150,
   "window.commandCenter": true
 }
-
