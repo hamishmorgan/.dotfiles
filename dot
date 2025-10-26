@@ -1009,7 +1009,11 @@ validate_package() {
     IFS=',' read -ra file_array <<< "$files"
 
     for file in "${file_array[@]}"; do
-        if ! check_symlink "$file" ".dotfiles/$package"; then
+        # Check symlinks contain .dotfiles/packages/$package/ with trailing slash
+        # - .dotfiles/packages/ matches the packages/ directory structure
+        # - trailing slash prevents false positives with siblings like git-old/
+        # Note: Uses substring matching, not canonical path verification (Issue #100)
+        if ! check_symlink "$file" ".dotfiles/packages/$package/"; then
             ((errors++))
         fi
     done
@@ -3224,7 +3228,7 @@ is_valid_command() {
 
 # Parse verbosity flag and return level increment
 # Handles: -v (1), -vv (2), -vvv (3), --verbose (1)
-# Returns: verbosity increment via echo (accumulated by caller)
+# Returns: verbosity increment for a single flag via echo; caller accumulates total verbosity by summing results for each flag
 # Examples:
 #   -v           → 1
 #   -vv          → 2
