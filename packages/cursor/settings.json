@@ -3,7 +3,10 @@
   // Cursor-Specific Settings
   // ============================================================================
   "cursor.composer.shouldAllowCustomModes": true,
+  "cursor.composer.shouldChimeAfterChatFinishes": true,
+  "cursor.composer.queueMessageDefaultBehavior": "queue",
   "cursor.composer.usageSummaryDisplay": "always",
+  "cursor.cpp.enablePartialAccepts": true,
   "cursor.diffs.useCharacterLevelDiffs": true,
   "cursor.windowSwitcher.sidebarHoverCollapsed": true,
 
@@ -16,6 +19,17 @@
   "window.density.editorTabHeight": "compact",
   "editor.stickyTabStops": true,
 
+  // Inline suggestions and autocomplete
+  "editor.inlineSuggest.showToolbar": "always",
+  "editor.quickSuggestions": {
+    "comments": "on",
+    "strings": "on"
+  },
+  "editor.quickSuggestionsDelay": 0,
+  "editor.suggest.matchOnWordStartOnly": false,
+  "editor.suggest.preview": true,
+  "editor.suggest.showStatusBar": true,
+
   // ============================================================================
   // Git & Version Control
   // ============================================================================
@@ -27,6 +41,41 @@
   // GitHub Pull Requests
   "githubPullRequests.pullBranch": "never",
   "githubPullRequests.terminalLinksHandler": "github",
+
+  // ============================================================================
+  // GitHub Copilot & AI Chat
+  // ============================================================================
+  "github.copilot.selectedCompletionModel": "",
+  "github.copilot.chat.codesearch.enabled": true,
+  "github.copilot.chat.agent.thinkingTool": true,
+  "github.copilot.chat.generateTests.codeLens": true,
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "github.copilot.enable": {
+    "markdown": true,
+    "plaintext": true,
+    "scminput": true
+  },
+
+  // Chat settings
+  "chat.tools.autoApprove": true,
+  "chat.agent.maxRequests": 1000,
+  "chat.mcp.discovery.enabled": true,
+  "chat.mcp.serverSampling": {
+    "Global in Code: github": {
+      "allowedModels": [
+        "github.copilot-chat/claude-3.5-sonnet",
+        "github.copilot-chat/claude-3.7-sonnet",
+        "github.copilot-chat/claude-3.7-sonnet-thought",
+        "github.copilot-chat/claude-sonnet-4",
+        "github.copilot-chat/gemini-2.0-flash-001",
+        "github.copilot-chat/gemini-2.5-pro",
+        "github.copilot-chat/gpt-4.1",
+        "github.copilot-chat/gpt-4o",
+        "github.copilot-chat/o3-mini",
+        "github.copilot-chat/o4-mini"
+      ]
+    }
+  },
 
   // ============================================================================
   // Terminal
@@ -102,6 +151,10 @@
   // ============================================================================
 
   // Ruby LSP
+  "rubyLsp.rubyVersionManager": {
+    "identifier": "mise"
+  },
+  "rubyLsp.rubyExecutablePath": "/home/hamish/.local/share/mise/shims/ruby",
   "rubyLsp.featureFlags": {
     "tapiocaAddon": false
   },
@@ -112,42 +165,94 @@
   // Code Spell Checker
   "cSpell.enableFiletypes": ["ruby"],
   "cSpell.userWords": [
+    "autorun",
     "autofetch",
     "cadetgear",
-    "Datetime",
-    "fulfillable",
-    "Geolocator",
-    "importmap",
-    "interruptible",
+    "chacha",
+    "chebyshev",
+    "chsh",
+    "clippy",
+    "concatcp",
+    "coreutils",
+    "curcontext",
+    "dataclass",
+    "Deque",
+    "dpkg",
+    "esac",
+    "extglob",
+    "filemode",
+    "gitmodules",
+    "gsort",
+    "Hamish",
+    "hamishmorgan",
+    "hexdigit",
+    "indicatif",
+    "inputrc",
     "isospin",
     "Jsonify",
-    "kamal",
-    "killswitch",
-    "klass",
+    "lrwxr",
+    "macroquad",
+    "mapfile",
     "merch",
     "metafield",
     "metafields",
-    "normalised",
+    "metavar",
+    "multishape",
+    "multispace",
+    "ncols",
+    "ndarray",
+    "nodoc",
+    "noreturn",
+    "nrows",
+    "nullglob",
     "Omakase",
+    "OVERLINED",
+    "Parseable",
+    "pathfinding",
     "preorder",
     "propshaft",
+    "repr",
+    "restow",
+    "Rgba",
     "regexes",
+    "rsudoku",
     "rubocop",
+    "rustup",
     "scrollback",
+    "Seedable",
+    "seekable",
+    "shellcheck",
+    "shopt",
     "Shipify",
+    "signum",
     "Smush",
     "snowdevil",
     "snowdevils",
     "statsd",
+    "stowrc",
+    "thiserror",
+    "toolname",
+    "toptal",
+    "ulps",
     "unfulfill",
+    "uninlined",
+    "unmatch",
     "unranked",
     "unsplit",
     "unstock",
     "UNSUBMITTED",
     "xlarge",
     "Xpresspost",
+    "zalgo",
     "zoneinfo"
   ],
+
+  // Rust Analyzer
+  "rust-analyzer.workspace.symbol.search.excludeImports": true,
+  "rust-analyzer.showSyntaxTree": true,
+  "rust-analyzer.testExplorer": true,
+  "rust-analyzer.assist.emitMustUse": true,
+  "rust-analyzer.check.command": "clippy",
 
   // VS Icons
   "vsicons.dontShowNewVersionMessage": true,
@@ -157,6 +262,9 @@
 
   // JavaScript/TypeScript
   "javascript.updateImportsOnFileMove.enabled": "always",
+
+  // Telemetry
+  "telemetry.editStats.enabled": false,
 
   // Comment highlighting (TODO, FIXME, etc)
   "highlight.regexes": {
@@ -228,5 +336,4 @@
   "remote.SSH.connectTimeout": 150,
   "window.commandCenter": true
 }
-
 

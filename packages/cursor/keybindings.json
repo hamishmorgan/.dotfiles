@@ -2,11 +2,12 @@
 [
     {
         "key": "cmd+i",
-        "command": "composerMode.agent"
+        "command": "composerMode.agent",
+        "when": "isMac"
     },
     {
-        "key": "cmd+i",
-        "command": "composerMode.agent"
+        "key": "ctrl+i",
+        "command": "composerMode.agent",
+        "when": "!isMac"
     }
 ]
-
