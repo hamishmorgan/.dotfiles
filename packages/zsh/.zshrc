@@ -170,6 +170,16 @@ if [[ -x ~/.local/state/tec/profiles/base/current/global/init ]] && [[ $- == *i*
     eval "$(~/.local/state/tec/profiles/base/current/global/init zsh)"
 fi
 
+# Rust environment
+if command -v rustup &>/dev/null; then
+    source <(rustup completions zsh rustup)
+    source <(rustup completions zsh cargo)
+fi
+
+if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
+fi
+
 # Machine-specific configuration (not version-controlled)
 if [ -f ~/.zshrc.local ]; then
     source ~/.zshrc.local

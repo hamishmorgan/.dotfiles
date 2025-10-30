@@ -1,0 +1,9 @@
+# Machine-specific fish configuration
+# Copy to ~/.config/fish/config.local.fish and customize
+
+# Example: Machine-specific aliases
+# alias custom 'echo "custom alias"'
+
+# Example: Machine-specific environment variables
+# set -x CUSTOM_VAR "value"
+
