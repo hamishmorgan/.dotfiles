@@ -174,6 +174,16 @@ if [[ -x ~/.local/state/tec/profiles/base/current/global/init ]] && [[ $- == *i*
     eval "$(~/.local/state/tec/profiles/base/current/global/init bash)"
 fi
 
+# Rust environment
+if command -v rustup &>/dev/null; then
+    source <(rustup completions bash rustup)
+    source <(rustup completions bash cargo)
+fi
+
+if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
+fi
+
 # Machine-specific configuration (not version-controlled)
 if [ -f ~/.bashrc.local ]; then
     source ~/.bashrc.local

@@ -1,27 +1,11 @@
 # shellcheck shell=bash
-# Machine-specific bash configuration
-#
-# Copy this file to ~/.bashrc.local and customize for this machine
-# This file is git-ignored and won't be tracked in the repository
-#
-# Use for:
-# - Machine-specific aliases and functions
-# - Local environment variables
-# - Private API keys or tokens
-# - Tool configurations specific to this machine
-#
-# NOTE: Shopify dev tools (dev.sh, tec agent) will automatically append
-# their initialization code to ~/.bashrc. This is expected behavior.
-# The main .bashrc file pre-includes these integrations, so tool appends
-# will create duplicates that can be safely ignored or removed.
+# Machine-specific bashrc configuration
+# Copy to ~/.bashrc.local and customize
 
-# Example machine-specific aliases
-# alias work='cd ~/work'
-# alias home='cd ~/personal'
+# Example: Machine-specific aliases
+# alias custom='echo "custom alias"'
 
-# Example environment variables
-# export CUSTOM_VAR="value"
-
-# Example tool configuration
-# export EDITOR="code"
-
+# Example: Machine-specific functions
+# my_function() {
+#     echo "custom function"
+# }

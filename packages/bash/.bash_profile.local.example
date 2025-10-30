@@ -1,0 +1,10 @@
+# shellcheck shell=bash
+# Machine-specific bash profile configuration
+# Copy to ~/.bash_profile.local and customize
+
+# Example: Machine-specific PATH additions
+# export PATH="/custom/path/bin:$PATH"
+
+# Example: Machine-specific environment variables
+# export CUSTOM_VAR="value"
+

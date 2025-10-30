@@ -19,26 +19,26 @@ set -g fish_history_max 10000
 alias grep='grep --color=auto'
 
 # eza configuration (modern ls replacement)
-if command -v eza > /dev/null
-  alias ls='eza --icons --group-directories-first'
-  alias ll='eza --long --header --icons --group-directories-first --git'
-  alias la='eza --long --all --header --icons --group-directories-first --git'
-  alias lt='eza --tree --level=2 --icons'
-  alias lta='eza --tree --level=2 --all --icons'
+if command -v eza >/dev/null
+    alias ls='eza --icons --group-directories-first'
+    alias ll='eza --long --header --icons --group-directories-first --git'
+    alias la='eza --long --all --header --icons --group-directories-first --git'
+    alias lt='eza --tree --level=2 --icons'
+    alias lta='eza --tree --level=2 --all --icons'
 
-  # Git-enhanced listing
-  alias lg='eza --long --git --git-ignore --icons'
+    # Git-enhanced listing
+    alias lg='eza --long --git --git-ignore --icons'
 
-  # Time-sorted
-  alias lm='eza --long --sort=modified --reverse --icons'
+    # Time-sorted
+    alias lm='eza --long --sort=modified --reverse --icons'
 
-  # Size-sorted
-  alias lz='eza --long --sort=size --reverse --icons'
+    # Size-sorted
+    alias lz='eza --long --sort=size --reverse --icons'
 else
-  # Fallback to standard ls aliases if eza not installed
-  alias ll='ls -alF'
-  alias la='ls -A'
-  alias l='ls -CF'
+    # Fallback to standard ls aliases if eza not installed
+    alias ll='ls -alF'
+    alias la='ls -A'
+    alias l='ls -CF'
 end
 
 # Detect OS for conditional configuration loading
@@ -86,8 +86,16 @@ if test -x ~/.local/state/tec/profiles/base/current/global/init
     eval "$(~/.local/state/tec/profiles/base/current/global/init fish)"
 end
 
-# Load private/machine-specific configuration if it exists
-# Use this file for secrets, API keys, or machine-specific settings
-if test -f ~/.config/fish/config_private.fish
-    source ~/.config/fish/config_private.fish
+# Rust environment
+if type -q rustup
+    rustup completions fish rustup | source
+end
+
+if test -f "$HOME/.cargo/env.fish"
+    source "$HOME/.cargo/env.fish"
+end
+
+# Machine-specific configuration (not version-controlled)
+if test -f ~/.config/fish/config.local.fish
+    source ~/.config/fish/config.local.fish
 end
