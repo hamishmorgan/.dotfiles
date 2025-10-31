@@ -16,7 +16,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - Template-based secrets management
 - macOS and Linux support
 - Validation script for installation verification
-- Packages: git, zsh, tmux, gh, gnuplot, bash, fish
+- Packages: git, zsh, tmux, gh, gnuplot, bash, fish, wezterm, bat, rust
 - Oh My Zsh submodule
 - CI/CD validation with GitHub Actions
 
