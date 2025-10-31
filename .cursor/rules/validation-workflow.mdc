@@ -44,6 +44,7 @@ markdownlint "**/*.md" && shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.z
 - [ ] Fix all linting errors (zero errors required)
 - [ ] Run smoke tests
 - [ ] Verify changes work as expected
+- [ ] Update AGENTS.md if new patterns are added (see update-instructions-workflow.mdc for details)
 
 ## What gets validated
 
