@@ -1,8 +1,12 @@
-# Disk Cleanup Utility
+# Bin Directory
 
-Standalone disk space cleanup utility for developer caches and build artifacts.
+Standalone utilities independent of dotfiles management.
 
-## Key characteristics
+## disk-cleanup
+
+Disk space cleanup utility for developer caches and build artifacts.
+
+### Key characteristics
 
 - **Independent of dotfiles management**: Not tied to `./dot` script or stow
 - **Comprehensive tool coverage**: 25+ developer tools across 7 categories
@@ -11,7 +15,7 @@ Standalone disk space cleanup utility for developer caches and build artifacts.
 - **Bash 3.2 compatible**: No external dependencies
 - **Cross-platform**: macOS and Linux support
 
-## Implementation notes
+### Implementation notes
 
 - Uses same logging patterns as `./dot` script (symbols, colors, prefixed output)
 - Protected main() execution for testing (only runs when not sourced)
@@ -22,7 +26,7 @@ Standalone disk space cleanup utility for developer caches and build artifacts.
 - Git cleanup uses `--auto` by default (safe), `--prune-git`, or `--aggressive-git`
 - Comprehensive logging to `~/.cache/dev-cleanup/` with retention policy
 
-## Testing
+### Testing
 
 - Integration tests in `tests/integration/test_clean_basic.bats`
 - Tests use core bats only (no bats-assert dependency)
