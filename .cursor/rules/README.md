@@ -23,11 +23,19 @@ These files use frontmatter to control when they're loaded into the agent's cont
   - Load strategy: On-demand (`alwaysApply: false`)
   - Rationale: Reference material accessed when encountering specific problems
 
-### Meta-Documentation
+### Component-Specific Reference Material
 
-- **`update-instructions-workflow.mdc`** - How to maintain AGENTS.md and workflow files
-  - Load strategy: Context-based (`globs: ["AGENTS.md", ".cursor/rules/**/*"]`)
-  - Rationale: Only loads when editing documentation files
+- **`cursor-config.mdc`** - Cursor IDE configuration technical details and implementation patterns
+  - Load strategy: Context-based (`globs: ["packages/cursor/**"]`)
+  - Rationale: Loads when editing Cursor configuration files
+
+- **`ci-cd.mdc`** - CI/CD workflow structure and performance optimization patterns
+  - Load strategy: Context-based (`globs: [".github/workflows/**"]`)
+  - Rationale: Loads when editing GitHub Actions workflows
+
+- **`github-integration.mdc`** - GitHub integration patterns: MCP tools vs gh CLI usage
+  - Load strategy: On-demand (`alwaysApply: false`)
+  - Rationale: Referenced from pull request workflow, available when needed
 
 ## Frontmatter Strategy
 
@@ -61,6 +69,8 @@ Loads only when editing matching files.
 
 - `testing-workflow.mdc` - Test files and scripts needing tests
 - `update-instructions-workflow.mdc` - Documentation files
+- `cursor-config.mdc` - Cursor IDE configuration files
+- `ci-cd.mdc` - GitHub Actions workflow files
 
 ### On-Demand
 
@@ -77,6 +87,7 @@ Loaded only when explicitly requested by agent or when relevant to task.
 
 - `pull-request-workflow.mdc` - PR operations
 - `troubleshooting-workflow.mdc` - Problem resolution
+- `github-integration.mdc` - GitHub integration patterns (referenced from PR workflow)
 
 ## Workflows vs Reference Material
 
@@ -104,9 +115,7 @@ AGENTS.md contains comprehensive reference material:
 - File organization conventions
 - Logging and verbosity systems
 - Helper functions reference
-- CI/CD architecture
-- Testing strategy and categories
-- GitHub integration patterns
+- Component-specific documentation references (see Component-Specific Reference Material below)
 
 Workflows in this directory reference AGENTS.md for:
 
@@ -149,9 +158,11 @@ Workflows are separated from AGENTS.md to:
 
 Structure principles:
 
-- 6 files total (5 workflows + 1 README)
-- Each workflow covers a distinct procedural area
-- `*-workflow.mdc` naming convention for clarity
+- Workflows: 5 procedural files (pull-request, testing, validation, troubleshooting, update-instructions)
+- Component-specific: 3 reference files (cursor-config, ci-cd, github-integration)
+- Total: 8 workflow/reference files + 1 README
+- Each file covers a distinct area
+- `*-workflow.mdc` naming convention for workflows
 - Strategic loading: Only validation always loaded (critical enforcement)
 
 ## Common Patterns
@@ -171,6 +182,18 @@ Structure principles:
 ### Agent encounters issue
 
 - Requests troubleshooting-workflow.mdc on-demand
+
+### Agent editing Cursor config
+
+- Automatically loads cursor-config.mdc via globs
+
+### Agent editing GitHub workflows
+
+- Automatically loads ci-cd.mdc via globs
+
+### Agent needs GitHub integration info
+
+- Referenced from pull-request-workflow.mdc, or available on-demand
 
 ### Agent editing AGENTS.md
 

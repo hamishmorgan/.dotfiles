@@ -165,6 +165,9 @@ bats tests/contract/      # Output validation
 See AGENTS.md for:
 
 - Test Categories (taxonomy)
+
+See `tests/README.md` for:
+
 - Testing Strategy (philosophy)
 - Why This Matters (context)
 - Test Documentation (comprehensive framework docs)
