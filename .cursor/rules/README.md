@@ -23,6 +23,10 @@ These files use frontmatter to control when they're loaded into the agent's cont
   - Load strategy: On-demand (`alwaysApply: false`)
   - Rationale: Reference material accessed when encountering specific problems
 
+- **`update-instructions-workflow.mdc`** - How to maintain AGENTS.md and workflow files
+  - Load strategy: Context-based (`globs: ["AGENTS.md", ".cursor/rules/**/*"]`)
+  - Rationale: Only loads when editing documentation files
+
 ### Component-Specific Reference Material
 
 - **`ci-cd.mdc`** - CI/CD workflow structure and performance optimization patterns

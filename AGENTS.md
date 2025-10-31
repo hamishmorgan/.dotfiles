@@ -1374,6 +1374,9 @@ This documentation loads automatically when editing `.github/workflows/**` files
 
 ## Testing
 
+See `.cursor/rules/testing-workflow.mdc` for procedural testing workflow (when to write tests, TDD pattern,
+critical principles, running tests).
+
 ### Test Categories
 
 1. **Regression Tests** - One per bug, written BEFORE fix

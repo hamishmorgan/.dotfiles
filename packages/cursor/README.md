@@ -52,7 +52,7 @@ git pull                            # Get latest dotfiles
 
 ## Integration Notes
 
-- **Cursor is NOT in the `PACKAGES` array** (line 138 of `dot`) - it's excluded from stow-based package management
+- **Cursor is NOT in the `PACKAGES` array** (see `dot` script) - it's excluded from stow-based package management
 - **Cursor won't appear in `./dot packages` output** - it has its own commands instead
 - **DO NOT add cursor to `PACKAGES` array** - it uses copy-sync, not stow
 - `.stow-local-ignore` exists in `packages/cursor/` for consistency, but cursor is never stowed
