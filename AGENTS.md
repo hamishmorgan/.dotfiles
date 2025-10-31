@@ -57,7 +57,6 @@ Instructions for AI agents working with this dotfiles repository.
     - [User Workflow](#user-workflow)
     - [Development Workflow](#development-workflow)
   - [Testing](#testing)
-    - [Running Tests](#running-tests)
     - [Test Categories](#test-categories)
     - [Testing Strategy](#testing-strategy)
     - [Why This Matters](#why-this-matters)
@@ -1614,38 +1613,8 @@ Phase 2 optimizations (Issue #22) consolidated BATS tests:
 
 ## Testing
 
-See `.cursor/rules/testing-workflow.mdc` for procedural testing workflow (when to write tests, TDD pattern, critical principles).
-
-### Running Tests
-
-**Before committing:**
-
-```bash
-# Regression tests (fast, critical)
-bats tests/regression/
-
-# Smoke tests (30 seconds)
-./tests/smoke-test.sh
-```
-
-**During development:**
-
-```bash
-# Run all BATS tests
-./tests/run-bats.sh
-
-# Or specific suites
-bats tests/unit/          # Function-level tests
-bats tests/integration/   # Command-level tests
-bats tests/contract/      # Output validation
-```
-
-**Before pushing:**
-
-```bash
-# Full cross-platform tests (2-3 minutes, requires Docker or Podman)
-./tests/run-local-ci.sh
-```
+See `.cursor/rules/testing-workflow.mdc` for procedural testing workflow (when to write tests, TDD pattern,
+critical principles, running tests).
 
 ### Test Categories
 

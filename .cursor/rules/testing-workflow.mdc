@@ -1,5 +1,5 @@
 ---
-description: "Testing requirements and test-driven development workflow"
+description: "Testing requirements and test-driven development workflow. Loads when editing tests or scripts that need tests."
 globs: ["tests/**/*", "**/*.bats", "dot", "bin/*", "dev/*"]
 ---
 
@@ -129,11 +129,41 @@ After (correct):
 }
 ```
 
+## Running Tests
+
+**Before committing:**
+
+```bash
+# Regression tests (fast, critical)
+bats tests/regression/
+
+# Smoke tests (30 seconds)
+./tests/smoke-test.sh
+```
+
+**During development:**
+
+```bash
+# Run all BATS tests
+./tests/run-bats.sh
+
+# Or specific suites
+bats tests/unit/          # Function-level tests
+bats tests/integration/   # Command-level tests
+bats tests/contract/      # Output validation
+```
+
+**Before pushing:**
+
+```bash
+# Full cross-platform tests (2-3 minutes, requires Docker or Podman)
+./tests/run-local-ci.sh
+```
+
 ## Reference
 
 See AGENTS.md for:
 
-- Running Tests (command reference)
 - Test Categories (taxonomy)
 - Testing Strategy (philosophy)
 - Why This Matters (context)
