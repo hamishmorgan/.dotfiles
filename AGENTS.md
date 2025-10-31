@@ -1104,7 +1104,7 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 
 Component-specific documentation has been moved to co-located files for better discoverability and contextual loading:
 
-- **Cursor IDE Configuration**: `.cursor/rules/cursor-config.mdc` (loads when editing `packages/cursor/**`)
+- **Cursor IDE Configuration**: `packages/cursor/README.md`
 - **Disk Cleanup Utility**: `bin/README.md`
 - **Development Directory**: `dev/README.md`
 - **CI/CD**: `.cursor/rules/ci-cd.mdc` (loads when editing `.github/workflows/**`)
