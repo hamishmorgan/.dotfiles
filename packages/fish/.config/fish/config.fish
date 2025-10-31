@@ -15,32 +15,6 @@ set -g fish_history_max 10000
 # set -g fish_color_operator bryellow
 # set -g fish_color_quote green
 
-# Useful aliases
-alias grep='grep --color=auto'
-
-# eza configuration (modern ls replacement)
-if command -v eza >/dev/null
-    alias ls='eza --icons --group-directories-first'
-    alias ll='eza --long --header --icons --group-directories-first --git'
-    alias la='eza --long --all --header --icons --group-directories-first --git'
-    alias lt='eza --tree --level=2 --icons'
-    alias lta='eza --tree --level=2 --all --icons'
-
-    # Git-enhanced listing
-    alias lg='eza --long --git --git-ignore --icons'
-
-    # Time-sorted
-    alias lm='eza --long --sort=modified --reverse --icons'
-
-    # Size-sorted
-    alias lz='eza --long --sort=size --reverse --icons'
-else
-    # Fallback to standard ls aliases if eza not installed
-    alias ll='ls -alF'
-    alias la='ls -A'
-    alias l='ls -CF'
-end
-
 # Detect OS for conditional configuration loading
 set -gx FISH_HOST_OS (string lower (uname))
 
@@ -64,6 +38,7 @@ if command -q batcat
 else if command -q bat
     set -x BAT_CONFIG_PATH "$HOME/.config/bat/config"
 end
+
 # Optional: Uncomment to replace cat with bat everywhere
 # Note: This may break scripts that parse cat output
 # alias cat='bat --paging=never'
