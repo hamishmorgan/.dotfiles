@@ -1,0 +1,56 @@
+---
+description: "Pre-commit validation checklist"
+alwaysApply: true
+---
+
+# Validation Workflow
+
+**CRITICAL: Always run linting before every commit. Do not commit files with linting errors.**
+
+Before committing changes, verify in this order:
+
+## 1. Linting passes (MANDATORY)
+
+Run linting on all modified files before committing:
+
+```bash
+# Markdown files
+markdownlint "**/*.md"
+
+# Shell scripts
+shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh
+
+# Both together
+markdownlint "**/*.md" && shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh
+```
+
+**If linting fails, fix all errors before committing. Zero tolerance for linting errors.**
+
+## 2. Smoke tests pass (30 seconds)
+
+```bash
+./tests/smoke-test.sh
+```
+
+## 3. Full CI passes (2-3 minutes)
+
+```bash
+./tests/run-local-ci.sh
+```
+
+## Pre-commit checklist
+
+- [ ] Run linting on all modified files
+- [ ] Fix all linting errors (zero errors required)
+- [ ] Run smoke tests
+- [ ] Verify changes work as expected
+- [ ] Update AGENTS.md if new patterns added
+
+## What gets validated
+
+- Symlinks point to dotfiles repository (not copies)
+- Required dependencies are installed
+- Backup functionality works correctly
+- Cross-platform compatibility (Ubuntu, Alpine, macOS)
+- Bash 3.2 compatibility
+- Package stowing completes without errors
