@@ -1220,17 +1220,43 @@ pattern for tools that:
 Other tools that may need copy-sync: VSCode, certain IDE extensions, any tool
 that explicitly rejects symlinked configs.
 
-### Mixed Config+Data Directories (`packages/rust/` and similar)
+### Individual File Listing (Best Practice)
 
-Some directories contain both dotfiles-managed configs and user/runtime data. These require
-**individual file listing** in `get_package_files()` to avoid stow taking ownership of the
-entire directory.
+**Default approach:** List individual files in `get_package_files()`, not directory names.
 
-**Why individual file listing:**
+**Why this is the default:**
 
-Stow's "tree folding" behavior: when a package contains a directory, stow may create a single
-symlink to the entire directory. This is problematic when the directory also contains user data
-or runtime state that should not be managed by dotfiles.
+1. **Safety**: Prevents `backup_existing()` from removing entire directories with `rm -rf`
+2. **Precision**: Only manages files you explicitly specify
+3. **Coexistence**: Allows dotfiles-managed and user-generated files in same directory
+4. **Predictability**: Clear what's managed vs. what's not
+
+**Implementation:**
+
+```bash
+get_package_files() {
+    case "$package" in
+        # ✅ GOOD: Individual files listed
+        gh)   echo ".config/gh/config.yml,.config/gh/hosts.yml" ;;
+        bat)  echo ".config/bat/config" ;;
+        rust) echo ".cargo/config.toml,.rustfmt.toml" ;;
+        
+        # ⚠️ EXCEPTIONS: Directories (only when safe)
+        zsh)  echo ".zshrc,.zprofile,.oh-my-zsh" ;;  # .oh-my-zsh is submodule
+    esac
+}
+```
+
+**When directories are acceptable:**
+
+- Submodules (like `.oh-my-zsh`) - fully managed by git
+- Tool-specific directories where dotfiles owns ALL content
+- Directories that won't have user data mixed in
+
+**Critical for mixed config+data directories:**
+
+When a directory contains both dotfiles-managed configs AND user/runtime data,
+individual file listing is **required** to prevent data loss.
 
 **Example: `.cargo/` directory**
 
@@ -1239,55 +1265,23 @@ Contains both:
 - **Dotfiles-managed**: `.cargo/config.toml`, `~/.rustfmt.toml` (version-controlled)
 - **User data**: `.cargo/bin/`, `.cargo/credentials.toml`, `.cargo/env`, `.cargo/registry/` (machine-specific)
 
-**❌ WRONG (causes data loss):**
+Listing `.cargo` as a directory causes `backup_existing()` to `rm -rf ~/.cargo`, deleting all user data.
 
-```bash
-get_package_files() {
-    case "$package" in
-        rust) echo ".cargo,.rustfmt.toml" ;;  # Lists directory
-    esac
-}
-```
+### Mixed Config+Data Directories (`packages/rust/` and similar)
 
-Result: `backup_existing()` does `rm -rf ~/.cargo`, deleting all user data.
+**Packages updated to use individual file listing (PR #123):**
 
-**✅ CORRECT (preserves user data):**
+- `gh`: `.config/gh/config.yml,.config/gh/hosts.yml` (was `.config/gh`)
+- `fish`: Individual config files + functions directory (was `.config/fish`)
+- `wezterm`: `.wezterm.lua` (was `.config/wezterm`)
+- `bat`: `.config/bat/config` (was `.config/bat`)
+- `rust`: Individual `.cargo/` files (designed this way from start)
 
-```bash
-get_package_files() {
-    case "$package" in
-        rust) echo ".cargo/config.toml,.cargo/config.local.toml.example,.rustfmt.toml,.rustfmt.toml.example" ;;
-    esac
-}
-```
+**Historical context:**
 
-Result: Stow creates individual file symlinks, leaves other files untouched.
-
-**How it works:**
-
-With `--no-folding` in `.stowrc` and individual file paths:
-
-1. Stow encounters `.cargo/config.toml` in package
-2. Checks if `~/.cargo/` exists (yes, with user data)
-3. Creates file symlink: `~/.cargo/config.toml` → dotfiles
-4. Leaves other files alone: `~/.cargo/bin/`, `credentials.toml`, etc.
-
-**Pattern for other packages:**
-
-Apply this pattern when a directory contains:
-
-- Config files you want to manage (list individually in `get_package_files()`)
-- User data/state you must preserve (ignore in `.stow-local-ignore`)
-- Tool-generated files (document in README, don't stow)
-
-**Examples where this applies:**
-
-- `~/.cargo/` - Rust cargo directory with dotfiles-managed configs (config.toml) and user data
-  (bin/, credentials, caches)
-- Any directory where tools write runtime data alongside config files
-- Directories that multiple tools share with different ownership models
-
-**Related:** Issue #122 (rust package data loss), Cursor package copy-sync pattern.
+Previously discovered when rust package deleted `~/.cargo/bin/`, credentials, and caches.
+Listing `.cargo` as a directory caused `backup_existing()` to `rm -rf ~/.cargo`.
+Individual file listing prevents this by only backing up and removing specific files.
 
 ### Disk Cleanup Utility (`bin/disk-cleanup`)
 

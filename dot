@@ -149,12 +149,12 @@ get_package_files() {
         git)     echo ".gitconfig,.gitattributes,.gitignore-globals" ;;
         zsh)     echo ".zshrc,.zprofile,.oh-my-zsh" ;;
         tmux)    echo ".tmux.conf" ;;
-        gh)      echo ".config/gh" ;;
+        gh)      echo ".config/gh/config.yml,.config/gh/hosts.yml" ;;
         gnuplot) echo ".gnuplot" ;;
         bash)    echo ".bashrc,.bash_profile" ;;
-        fish)    echo ".config/fish" ;;
-        wezterm) echo ".config/wezterm" ;;
-        bat)     echo ".config/bat" ;;
+        fish)    echo ".config/fish/config.fish,.config/fish/config.osx.fish,.config/fish/config.linux.fish,.config/fish/config.local.fish.example,.config/fish/functions" ;;
+        wezterm) echo ".wezterm.lua" ;;
+        bat)     echo ".config/bat/config" ;;
         rust)    echo ".cargo/config.toml,.cargo/config.local.toml.example,.rustfmt.toml,.rustfmt.toml.example" ;;
         *)       echo "" ;;
     esac
