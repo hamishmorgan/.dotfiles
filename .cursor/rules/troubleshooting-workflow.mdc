@@ -1,0 +1,119 @@
+---
+description: "Common issues and resolution procedures"
+alwaysApply: false
+---
+
+# Troubleshooting Workflow
+
+## Symlink Issues
+
+**Broken or orphaned symlinks:**
+
+```bash
+./dot health           # Identify broken symlinks
+./dot health -v        # Detailed information
+
+# Remove broken symlinks
+find ~ -maxdepth 1 -type l ! -exec test -e {} \; -delete
+
+# Re-stow package
+stow --verbose --restow --dir=. --target=$HOME package_name
+```
+
+**Stow fails with "existing target is not owned by stow":**
+
+```bash
+# Back up conflicting file
+mv ~/.conflicting_file ~/.conflicting_file.backup
+
+# Re-run stow
+stow --verbose --restow --dir=. --target=$HOME package_name
+
+# Or use ./dot install which handles conflicts
+./dot install -vv
+```
+
+## Installation Problems
+
+**Missing dependencies:**
+
+```bash
+./dot status           # Lists missing dependencies
+```
+
+Install missing tools based on platform:
+
+```bash
+# macOS
+brew install stow git
+
+# Ubuntu/Debian
+sudo apt-get install stow git
+
+# Alpine
+apk add stow git
+```
+
+**Permission errors:**
+
+Ensure `$HOME` is writable. Stow creates symlinks in `$HOME` pointing to files in the dotfiles repository.
+
+## CI/CD Issues
+
+**CI fails on platform-specific commands:**
+
+1. Check Alpine test results (BSD-like coreutils compatibility)
+2. Verify short-form arguments used for coreutils (`-p`, `-r`)
+3. Test locally: `./tests/run-local-ci.sh alpine`
+
+**CI fails on macOS Bash compatibility:**
+
+1. Test Bash 3.2 compatibility: `./tests/run-local-ci.sh bash32`
+2. Avoid Bash 4.0+ features (associative arrays, mapfile, &>>)
+3. See Bash 3.2 Compatibility section for alternatives
+
+**CI caching issues:**
+
+Clear GitHub Actions cache if persistent failures occur:
+
+```bash
+# List caches
+gh cache list
+
+# Delete specific cache
+gh cache delete <CACHE_ID>
+```
+
+## Rollback Procedures
+
+**Restore from backup:**
+
+```bash
+# List available backups
+ls -lt backups/
+
+# Restore specific backup (replaces current symlinks)
+cp -r backups/dotfiles-backup-YYYYMMDD-HHMMSS/* ~/
+```
+
+**Undo stow operations:**
+
+```bash
+# Remove all symlinks for specific package
+stow --verbose --delete --dir=. --target=$HOME package_name
+
+# Remove all dotfiles symlinks
+for pkg in system git zsh tmux gh gnuplot bash fish; do
+    stow --verbose --delete --dir=. --target=$HOME "$pkg"
+done
+```
+
+**Restore repository to clean state:**
+
+```bash
+git status             # Check for uncommitted changes
+git stash              # Stash changes if needed
+git checkout main      # Return to main branch
+git pull               # Update to latest
+./dot update           # Re-apply dotfiles
+```

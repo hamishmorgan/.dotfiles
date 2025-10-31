@@ -1,0 +1,66 @@
+---
+description: "How to maintain AGENTS.md and workflow rules"
+globs: ["AGENTS.md", ".cursor/rules/**/*"]
+---
+
+# Update Instructions Workflow
+
+**This file must be updated whenever new guidance is provided during conversations.**
+
+## Triggers for Updates
+
+Update AGENTS.md when:
+
+- **New patterns emerge** from multi-iteration problem-solving (like CI optimization)
+- **Significant bugs fixed** that reveal broader lessons (dependency detection, caching)
+- **Performance optimizations** with measured results
+- **Tool/workflow discoveries** (like `gh` CLI for CI monitoring)
+- **Cross-platform issues resolved** (macOS vs Linux compatibility)
+- **New helper functions** or code patterns established
+- **Build/CI configuration changes** that set precedents
+
+## When Adding Instructions
+
+- Maintain the formal, minimal tone
+- Be technically precise
+- Include only essential information
+- **Include measured data** when available (performance improvements, timing)
+- **Document both what worked and what didn't** (negative results prevent repeated mistakes)
+- Reference the issue/PR that led to the guidance
+
+## Update Frequency
+
+Update AGENTS.md for both major and minor changes as they occur. Do not batch changes.
+
+Examples of minor updates:
+
+- Clarifications that prevent common mistakes
+- Tool usage tips discovered during work
+- Small workflow improvements
+- Command examples that prove useful
+
+Immediate updates ensure the document stays current and prevents repeated mistakes.
+
+## Updating Workflow Files
+
+When updating procedural workflows:
+
+1. **Determine scope**: Is this a workflow change or reference material?
+   - Workflows (step-by-step procedures) → Update `.cursor/rules/*.mdc` files
+   - Reference (standards, patterns, context) → Update `AGENTS.md`
+
+2. **Update workflow files** (`.cursor/rules/*.mdc`):
+   - Keep procedural and action-oriented
+   - Use enforcing language (must/never/always)
+   - Include complete examples and commands
+   - Maintain frontmatter accuracy (description, globs, alwaysApply)
+
+3. **Update AGENTS.md**:
+   - Keep reference material (standards, architecture, context)
+   - Link to workflow files where appropriate
+   - Maintain table of contents
+
+4. **Validate changes**:
+   - Run `markdownlint` on modified files
+   - Test that globs trigger correctly in Cursor
+   - Ensure no duplicate content between AGENTS.md and workflow files
