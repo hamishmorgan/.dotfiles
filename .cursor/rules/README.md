@@ -26,7 +26,7 @@ These files use frontmatter to control when they're loaded into the agent's cont
 ### Meta-Documentation
 
 - **`update-instructions-workflow.mdc`** - How to maintain AGENTS.md and workflow files
-  - Load strategy: Context-based (`globs: ["AGENTS.md", ".cursor/rules/**"]`)
+  - Load strategy: Context-based (`globs: ["AGENTS.md", ".cursor/rules/**/*"]`)
   - Rationale: Only loads when editing documentation files
 
 ## Frontmatter Strategy
@@ -149,8 +149,8 @@ Workflows are separated from AGENTS.md to:
 
 Structure principles:
 
-- 5 workflow files covering distinct procedural areas
-- Single README for central documentation
+- 6 files total (5 workflows + 1 README)
+- Each workflow covers a distinct procedural area
 - `*-workflow.mdc` naming convention for clarity
 - Strategic loading: Only validation always loaded (critical enforcement)
 
