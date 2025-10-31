@@ -155,7 +155,7 @@ get_package_files() {
         fish)    echo ".config/fish" ;;
         wezterm) echo ".config/wezterm" ;;
         bat)     echo ".config/bat" ;;
-        rust)    echo ".cargo,.rustfmt.toml" ;;
+        rust)    echo ".cargo/config.toml,.cargo/config.local.toml.example,.rustfmt.toml,.rustfmt.toml.example" ;;
         *)       echo "" ;;
     esac
 }
