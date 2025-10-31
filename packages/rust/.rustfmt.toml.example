@@ -1,0 +1,32 @@
+# Rustfmt configuration with unstable options
+# Copy to project root as rustfmt.toml and use with: rustfmt +nightly
+#
+# The global ~/.rustfmt.toml uses only stable options.
+# This example shows useful nightly-only formatting options.
+
+edition = "2021"
+max_width = 100
+hard_tabs = false
+tab_spaces = 4
+newline_style = "Unix"
+use_small_heuristics = "Default"
+
+# Nightly-only options (require rustfmt +nightly)
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+fn_single_line = false
+trailing_comma = "Vertical"
+normalize_comments = true
+normalize_doc_attributes = true
+wrap_comments = true
+comment_width = 80
+struct_lit_single_line = true
+control_brace_style = "AlwaysSameLine"
+where_single_line = false
+blank_lines_upper_bound = 1
+blank_lines_lower_bound = 0
+reorder_imports = true
+reorder_modules = true
+match_block_trailing_comma = true
+chain_width = 60
+
