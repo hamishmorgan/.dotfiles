@@ -1220,6 +1220,69 @@ pattern for tools that:
 Other tools that may need copy-sync: VSCode, certain IDE extensions, any tool
 that explicitly rejects symlinked configs.
 
+### Individual File Listing (Best Practice)
+
+**Default approach:** List individual files in `get_package_files()`, not directory names.
+
+**Why this is the default:**
+
+1. **Safety**: Prevents `backup_existing()` from removing entire directories with `rm -rf`
+2. **Precision**: Only manages files you explicitly specify
+3. **Coexistence**: Allows dotfiles-managed and user-generated files in same directory
+4. **Predictability**: Clear what's managed vs. what's not
+
+**Implementation:**
+
+```bash
+get_package_files() {
+    case "$package" in
+        # ✅ GOOD: Individual files listed
+        gh)   echo ".config/gh/config.yml,.config/gh/hosts.yml" ;;
+        bat)  echo ".config/bat/config" ;;
+        rust) echo ".cargo/config.toml,.rustfmt.toml" ;;
+        
+        # ⚠️ EXCEPTIONS: Directories (only when safe)
+        zsh)  echo ".zshrc,.zprofile,.oh-my-zsh" ;;  # .oh-my-zsh is submodule
+    esac
+}
+```
+
+**When directories are acceptable:**
+
+- Submodules (like `.oh-my-zsh`) - fully managed by git
+- Tool-specific directories where dotfiles owns ALL content
+- Directories that won't have user data mixed in
+
+**Critical for mixed config+data directories:**
+
+When a directory contains both dotfiles-managed configs AND user/runtime data,
+individual file listing is **required** to prevent data loss.
+
+**Example: `.cargo/` directory**
+
+Contains both:
+
+- **Dotfiles-managed**: `.cargo/config.toml`, `~/.rustfmt.toml` (version-controlled)
+- **User data**: `.cargo/bin/`, `.cargo/credentials.toml`, `.cargo/env`, `.cargo/registry/` (machine-specific)
+
+Listing `.cargo` as a directory causes `backup_existing()` to `rm -rf ~/.cargo`, deleting all user data.
+
+### Mixed Config+Data Directories (`packages/rust/` and similar)
+
+**Packages updated to use individual file listing (PR #123):**
+
+- `gh`: `.config/gh/config.yml,.config/gh/hosts.yml` (was `.config/gh`)
+- `fish`: Individual config files + functions directory (was `.config/fish`)
+- `wezterm`: `.wezterm.lua` (was `.config/wezterm`)
+- `bat`: `.config/bat/config` (was `.config/bat`)
+- `rust`: Individual `.cargo/` files (designed this way from start)
+
+**Historical context:**
+
+Previously discovered when rust package deleted `~/.cargo/bin/`, credentials, and caches.
+Listing `.cargo` as a directory caused `backup_existing()` to `rm -rf ~/.cargo`.
+Individual file listing prevents this by only backing up and removing specific files.
+
 ### Disk Cleanup Utility (`bin/disk-cleanup`)
 
 Standalone disk space cleanup utility for developer caches and build artifacts.
