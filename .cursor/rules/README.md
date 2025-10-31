@@ -1,6 +1,7 @@
 # Cursor Rules Directory
 
-This directory contains procedural workflow files for AI agents working in Cursor IDE. These files use frontmatter to control when they're loaded into the agent's context.
+This directory contains procedural workflow files for AI agents working in Cursor IDE.
+These files use frontmatter to control when they're loaded into the agent's context.
 
 ## File Structure
 
@@ -33,51 +34,61 @@ This directory contains procedural workflow files for AI agents working in Curso
 Each `.mdc` file uses YAML frontmatter to control loading behavior:
 
 ### Always Loaded
+
 ```yaml
 ---
 description: "Brief purpose"
 alwaysApply: true
 ---
 ```
+
 Use sparingly - increases context size for every conversation.
 
 **Current:** Only `validation-workflow.mdc` (critical pre-commit gates)
 
 ### Context-Based (Globs)
+
 ```yaml
 ---
 description: "Brief purpose"
 globs: ["pattern/**", "*.ext"]
 ---
 ```
+
 Loads only when editing matching files.
 
 **Current:**
+
 - `testing-workflow.mdc` - Test files and scripts needing tests
 - `update-instructions-workflow.mdc` - Documentation files
 
 ### On-Demand
+
 ```yaml
 ---
 description: "Brief purpose"
 alwaysApply: false
 ---
 ```
+
 Loaded only when explicitly requested by agent or when relevant to task.
 
 **Current:**
+
 - `pull-request-workflow.mdc` - PR operations
 - `troubleshooting-workflow.mdc` - Problem resolution
 
 ## Workflows vs Reference Material
 
 **Workflows (in this directory):**
+
 - Procedural, step-by-step instructions
 - Action-oriented with clear sequences
 - Use enforcing language (must/never/always)
 - Examples: PR checklist, TDD pattern, validation gates
 
 **Reference Material (in AGENTS.md):**
+
 - Standards, patterns, architecture
 - Context and rationale
 - Taxonomy and categorization
@@ -86,6 +97,7 @@ Loaded only when explicitly requested by agent or when relevant to task.
 ## Relationship to AGENTS.md
 
 AGENTS.md contains comprehensive reference material:
+
 - Project context and structure
 - Dependencies and requirements
 - Code standards and patterns
@@ -97,6 +109,7 @@ AGENTS.md contains comprehensive reference material:
 - GitHub integration patterns
 
 Workflows in this directory reference AGENTS.md for:
+
 - Detailed standards (e.g., "Check for anti-patterns documented in AGENTS.md")
 - Technical specifications (e.g., "See Bash 3.2 Compatibility section")
 - Command references (e.g., "See Test Categories taxonomy")
@@ -127,50 +140,38 @@ When adding or modifying workflows:
 
 ## Design Rationale
 
-### Why Separate Workflows from AGENTS.md?
+Workflows are separated from AGENTS.md to:
 
-**Benefits:**
-- **Focused context**: Load only relevant procedures
-- **Reduced cognitive load**: Smaller files easier to scan
-- **Contextual relevance**: Globs trigger workflows when needed
-- **Easier maintenance**: Update workflows without touching reference material
+- Load only relevant procedures into context
+- Reduce cognitive load with smaller, focused files
+- Trigger contextually via globs when editing matching files
+- Enable independent updates without modifying reference material
 
-**Tradeoffs:**
-- **Discoverability**: Content split across multiple files
-- **Context fragmentation**: Agent needs to know where to look
-- **Overhead**: Multiple files to maintain
+Structure principles:
 
-### Why This Structure?
-
-- **5 files total**: Manageable number without fragmentation
-- **Single README**: Central documentation for structure
-- **Clear naming**: `*-workflow.mdc` convention indicates procedural content
-- **Strategic loading**: Only validation always loaded (critical gates)
+- 5 workflow files covering distinct procedural areas
+- Single README for central documentation
+- `*-workflow.mdc` naming convention for clarity
+- Strategic loading: Only validation always loaded (critical enforcement)
 
 ## Common Patterns
 
 ### Agent needs validation rules
-- ✅ Always available (validation-workflow.mdc uses `alwaysApply: true`)
+
+- Always available (validation-workflow.mdc uses `alwaysApply: true`)
 
 ### Agent editing test file
-- ✅ Automatically loads testing-workflow.mdc via globs
+
+- Automatically loads testing-workflow.mdc via globs
 
 ### Agent creating PR
-- ✅ Requests pull-request-workflow.mdc on-demand
 
-### Agent encounters CI failure
-- ⚠️ May need to request troubleshooting-workflow.mdc
-- 💡 Consider: Should troubleshooting be in AGENTS.md for better accessibility?
+- Requests pull-request-workflow.mdc on-demand
+
+### Agent encounters issue
+
+- Requests troubleshooting-workflow.mdc on-demand
 
 ### Agent editing AGENTS.md
-- ✅ Automatically loads update-instructions-workflow.mdc via globs
 
-## Future Considerations
-
-Potential improvements based on usage:
-
-1. **Consolidation**: Merge multiple workflows into single file if overhead is too high
-2. **Troubleshooting placement**: Move troubleshooting back to AGENTS.md (reference material)
-3. **Visual aids**: Add flowcharts for complex workflows
-4. **Template standardization**: Establish consistent workflow template format
-
+- Automatically loads update-instructions-workflow.mdc via globs
