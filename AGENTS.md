@@ -91,7 +91,9 @@ This repository contains dotfiles managed with GNU Stow. Files are organized int
 - **gnuplot**: GNU Plot configuration
 - **bash**: Bash shell configuration
 - **fish**: Fish shell configuration
+- **wezterm**: WezTerm terminal emulator configuration
 - **bat**: Bat syntax highlighter configuration
+- **rust**: Rust toolchain configuration
 
 Template-based secrets management separates public templates from private secret configurations.
 The `system` package is stowed first to ensure `.stow-global-ignore` is in place before other packages.

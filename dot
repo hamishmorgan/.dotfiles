@@ -3553,6 +3553,7 @@ list_packages() {
             fish)    description="Fish shell configuration" ;;
             wezterm) description="WezTerm terminal emulator" ;;
             bat)     description="Bat syntax highlighter" ;;
+            rust)    description="Rust toolchain configuration" ;;
             *)       description="Unknown package" ;;
         esac
 
