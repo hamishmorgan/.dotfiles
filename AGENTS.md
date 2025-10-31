@@ -1220,6 +1220,75 @@ pattern for tools that:
 Other tools that may need copy-sync: VSCode, certain IDE extensions, any tool
 that explicitly rejects symlinked configs.
 
+### Mixed Config+Data Directories (`packages/rust/` and similar)
+
+Some directories contain both dotfiles-managed configs and user/runtime data. These require
+**individual file listing** in `get_package_files()` to avoid stow taking ownership of the
+entire directory.
+
+**Why individual file listing:**
+
+Stow's "tree folding" behavior: when a package contains a directory, stow may create a single
+symlink to the entire directory. This is problematic when the directory also contains user data
+or runtime state that should not be managed by dotfiles.
+
+**Example: `.cargo/` directory**
+
+Contains both:
+
+- **Dotfiles-managed**: `.cargo/config.toml`, `~/.rustfmt.toml` (version-controlled)
+- **User data**: `.cargo/bin/`, `.cargo/credentials.toml`, `.cargo/env`, `.cargo/registry/` (machine-specific)
+
+**❌ WRONG (causes data loss):**
+
+```bash
+get_package_files() {
+    case "$package" in
+        rust) echo ".cargo,.rustfmt.toml" ;;  # Lists directory
+    esac
+}
+```
+
+Result: `backup_existing()` does `rm -rf ~/.cargo`, deleting all user data.
+
+**✅ CORRECT (preserves user data):**
+
+```bash
+get_package_files() {
+    case "$package" in
+        rust) echo ".cargo/config.toml,.cargo/config.local.toml.example,.rustfmt.toml,.rustfmt.toml.example" ;;
+    esac
+}
+```
+
+Result: Stow creates individual file symlinks, leaves other files untouched.
+
+**How it works:**
+
+With `--no-folding` in `.stowrc` and individual file paths:
+
+1. Stow encounters `.cargo/config.toml` in package
+2. Checks if `~/.cargo/` exists (yes, with user data)
+3. Creates file symlink: `~/.cargo/config.toml` → dotfiles
+4. Leaves other files alone: `~/.cargo/bin/`, `credentials.toml`, etc.
+
+**Pattern for other packages:**
+
+Apply this pattern when a directory contains:
+
+- Config files you want to manage (list individually in `get_package_files()`)
+- User data/state you must preserve (ignore in `.stow-local-ignore`)
+- Tool-generated files (document in README, don't stow)
+
+**Examples where this applies:**
+
+- `~/.cargo/` - Rust cargo directory with dotfiles-managed configs (config.toml) and user data
+  (bin/, credentials, caches)
+- Any directory where tools write runtime data alongside config files
+- Directories that multiple tools share with different ownership models
+
+**Related:** Issue #122 (rust package data loss), Cursor package copy-sync pattern.
+
 ### Disk Cleanup Utility (`bin/disk-cleanup`)
 
 Standalone disk space cleanup utility for developer caches and build artifacts.
