@@ -35,9 +35,7 @@ Instructions for AI agents working with this dotfiles repository.
     - [Bash 3.2 Compatibility](#bash-32-compatibility)
   - [Git Commit Attribution](#git-commit-attribution)
   - [File Organization](#file-organization)
-    - [Cursor IDE Configuration (`packages/cursor/`)](#cursor-ide-configuration-packagescursor)
-    - [Disk Cleanup Utility (`bin/disk-cleanup`)](#disk-cleanup-utility-bindisk-cleanup)
-    - [Development Directory (`dev/`)](#development-directory-dev)
+    - [Component-Specific Documentation](#component-specific-documentation)
     - [Stow Ignore Files](#stow-ignore-files)
     - [Configuration Files](#configuration-files)
     - [Optional Enhancement Configs](#optional-enhancement-configs)
@@ -47,8 +45,6 @@ Instructions for AI agents working with this dotfiles repository.
   - [Helper Functions](#helper-functions)
   - [Code Quality](#code-quality)
   - [CI/CD](#cicd)
-    - [Workflow Structure](#workflow-structure)
-    - [CI Performance Optimization](#ci-performance-optimization)
   - [Quick Reference](#quick-reference)
     - [User Commands](#user-commands)
     - [Development Commands](#development-commands)
@@ -58,14 +54,8 @@ Instructions for AI agents working with this dotfiles repository.
     - [Development Workflow](#development-workflow)
   - [Testing](#testing)
     - [Test Categories](#test-categories)
-    - [Testing Strategy](#testing-strategy)
-    - [Why This Matters](#why-this-matters)
-    - [Test Documentation](#test-documentation)
+    - [Testing Documentation](#testing-documentation)
   - [GitHub Integration](#github-integration)
-    - [When to Use Each Tool](#when-to-use-each-tool)
-    - [MCP GitHub Tools](#mcp-github-tools)
-    - [GitHub CLI (`gh`)](#github-cli-gh)
-    - [Best Practice](#best-practice)
 
 ## Workflows
 
@@ -1110,114 +1100,16 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 - Always use `$PACKAGES_DIR` when referencing package directories in code
 - Example: `$PACKAGES_DIR/bat` not `$DOTFILES_DIR/bat`
 
-### Cursor IDE Configuration (`packages/cursor/`)
+### Component-Specific Documentation
 
-Cursor IDE configuration uses a **copy-sync approach** instead of symlinks.
+Component-specific documentation has been moved to co-located files for better discoverability and contextual loading:
 
-**Why not symlinks:**
-
-Cursor (VSCode-based) does not handle symlinked configuration files well:
-
-- Users report broken commands and CLI tools
-- Indexing failures occur with symlinked configs
-- Permission issues when configs are symlinks
-- Both directory-level and file-level symlinks fail
-
-**Research findings (Issue #104):**
-
-Comprehensive web research found:
-
-- **Zero successful examples** of symlinking entire Cursor User directory
-- **One claimed success** with file-level symlinks, but many failures reported
-- **Community consensus**: Copy-based sync is the only reliable approach
-- Cursor forum discussions confirm symlink issues disrupt functionality
-
-**Implementation:**
-
-Copy-sync commands in `dot` script:
-
-- `./dot sync-cursor`: Copy dotfiles → Cursor (apply configs)
-- `./dot pull-cursor`: Copy Cursor → dotfiles (save changes)
-
-**Workflow:**
-
-```bash
-# After making changes in Cursor
-./dot pull-cursor                   # Pull changes to dotfiles
-git diff packages/cursor            # Review changes
-git add packages/cursor             # Stage if satisfied
-git commit -m "update cursor settings"
-
-# On another machine
-git pull                            # Get latest dotfiles
-./dot sync-cursor                   # Apply to local Cursor
-# Restart Cursor to apply
-```
-
-**Integration Notes:**
-
-- **Cursor is NOT in the `PACKAGES` array** (line 138 of `dot`) - it's excluded from stow-based package management
-- **Cursor won't appear in `./dot packages` output** - it has its own commands instead
-- **DO NOT add cursor to `PACKAGES` array** - it uses copy-sync, not stow
-- `.stow-local-ignore` exists in `packages/cursor/` for consistency, but cursor is never stowed
-
-**Machine-Specific Settings Pattern:**
-
-To avoid hardcoded user paths in shared configs, use empty strings or platform detection:
-
-**❌ BAD (hardcoded path breaks other users):**
-
-```json
-"rubyLsp.rubyExecutablePath": "/home/hamish/.local/share/mise/shims/ruby"
-```
-
-**✅ GOOD (empty string enables auto-detection):**
-
-```json
-"rubyLsp.rubyExecutablePath": ""
-```
-
-**✅ GOOD (alternatives for machine-specific paths):**
-
-- Leave empty - let Cursor/Copilot/Ruby LSP auto-detect the path
-- Users can override in Cursor's User Settings directly (per-machine customization)
-- Use relative paths or environment variables if supported by the extension
-
-**File Structure:**
-
-```text
-packages/cursor/
-├── .stow-local-ignore    # Stow ignore patterns (cursor not stow-managed)
-├── README.md             # User documentation
-├── settings.json         # Platform-agnostic settings (no hardcoded paths)
-└── keybindings.json      # Cross-platform keybindings (with when conditions)
-```
-
-Critical: Settings in `settings.json` must work across all machines. Never hardcode user paths:
-
-- User home directory paths (`/home/USERNAME/`, `/Users/USERNAME/`)
-- Machine-specific installation paths
-- Absolute local paths
-
-Use empty strings for auto-detection, let users override in Cursor, or use relative paths.
-
-**Cross-platform support:**
-
-- macOS: `~/Library/Application Support/Cursor/User/`
-- Linux: `~/.config/Cursor/User/` (implemented, not tested)
-
-**Why this matters:**
-
-Not all tools integrate with symlink-based dotfiles. Copy-sync provides a fallback
-pattern for tools that:
-
-- Write to their own config locations
-- Check that config directories are real directories
-- Use file watchers that don't follow symlinks
-- Have permission/security checks that fail with symlinks
-
-Other tools that may need copy-sync: VSCode, certain IDE extensions, any tool
-that explicitly rejects symlinked configs.
+- **Cursor IDE Configuration**: `packages/cursor/README.md`
+- **Disk Cleanup Utility**: `bin/README.md`
+- **Development Directory**: `dev/README.md`
+- **CI/CD**: `.cursor/rules/ci-cd.mdc` (loads when editing `.github/workflows/**`)
+- **GitHub Integration**: `.cursor/rules/github-integration.mdc` (on-demand, referenced from PR workflow)
+- **Testing Strategy**: `tests/README.md` (see Testing section below for taxonomy)
 
 ### Individual File Listing (Best Practice)
 
@@ -1281,61 +1173,6 @@ Listing `.cargo` as a directory causes `backup_existing()` to `rm -rf ~/.cargo`,
 Previously discovered when rust package deleted `~/.cargo/bin/`, credentials, and caches.
 Listing `.cargo` as a directory caused `backup_existing()` to `rm -rf ~/.cargo`.
 Individual file listing prevents this by only backing up and removing specific files.
-
-### Disk Cleanup Utility (`bin/disk-cleanup`)
-
-Standalone disk space cleanup utility for developer caches and build artifacts.
-
-**Key characteristics:**
-
-- **Independent of dotfiles management**: Not tied to `./dot` script or stow
-- **Comprehensive tool coverage**: 25+ developer tools across 7 categories
-- **Safe defaults**: Non-destructive operations, confirmation prompts for risky actions
-- **Environment variable configuration**: All settings configurable via `CLEANUP_*` vars
-- **Bash 3.2 compatible**: No external dependencies
-- **Cross-platform**: macOS and Linux support
-
-**Implementation notes:**
-
-- Uses same logging patterns as `./dot` script (symbols, colors, prefixed output)
-- Protected main() execution for testing (only runs when not sourced)
-- All configuration via readonly variables with env var overrides
-- Helper functions for size conversion, directory measurement, git repo discovery
-- Categories can be filtered with `--only` and `--exclude` flags
-- Multiple aggression levels for Docker cleanup (default safe, --aggressive, --very-aggressive)
-- Git cleanup uses `--auto` by default (safe), `--prune-git`, or `--aggressive-git`
-- Comprehensive logging to `~/.cache/dev-cleanup/` with retention policy
-
-**Testing:**
-
-- Integration tests in `tests/integration/test_clean_basic.bats`
-- Tests use core bats only (no bats-assert dependency)
-- 26 test cases covering all major functionality
-- Includes bash 3.2 compatibility checks and shellcheck validation
-
-### Development Directory (`dev/`)
-
-Contains atomic and composite commands for development workflow:
-
-**Atomic commands** (single responsibility):
-
-- `dev/lint-markdown` - Markdown linting only
-- `dev/lint-shell` - Shell script linting only
-- `dev/smoke` - Smoke tests only
-- `dev/bats` - BATS tests only
-- `dev/ci` - Local CI only
-- `dev/setup` - Development environment setup
-- `dev/clean` - Clean temporary files
-
-**Composite commands** (orchestration):
-
-- `dev/lint` - All linting (calls lint-markdown && lint-shell)
-- `dev/test` - All tests (calls smoke && bats)
-- `dev/check` - Complete validation (calls lint && test && ci)
-- `dev/help` - Show available commands
-
-**Design principle**: Atomic commands do one thing, composite commands orchestrate multiple atomic commands.
-This enables flexible workflows: use atomic commands for fast iteration, composite for comprehensive checks.
 
 ### Stow Ignore Files
 
@@ -1449,86 +1286,8 @@ When modifying commands, prefer using these helpers over duplicating logic.
 
 ## CI/CD
 
-### Workflow Structure
-
-GitHub Actions workflow (`.github/workflows/validate.yml`) uses matrix strategy for efficient testing:
-
-**Job Overview:**
-
-- **lint**: Code quality (shellcheck + markdownlint) - prerequisite for all other jobs
-- **smoke-test**: Fast structural validation
-- **bats-tests**: All BATS test suites with OS matrix
-  - `[ubuntu-latest, macos-latest]` - validates test framework cross-platform
-  - Runs unit, integration, regression, and contract tests
-- **validate-platform**: Full installation with Bash version matrix
-  - Ubuntu + Bash 5.x (modern Linux)
-  - Ubuntu + Bash 3.2 (macOS compatibility)
-  - macOS + Bash 3.2 (actual macOS)
-- **test-summary**: Aggregates results and provides clear pass/fail summary
-
-**Matrix Benefits:**
-
-- Consolidates 4 separate BATS jobs into 1 (saves 6-8 min per run)
-- Validates test framework on both Ubuntu and macOS
-- Catches platform-specific issues in tests themselves
-- DRY approach reduces duplication
-
-### CI Performance Optimization
-
-Key learnings from CI optimization work (Issue #42, PR #58, Issue #22):
-
-**Caching Strategies:**
-
-- **Homebrew**: Don't cache. Bottles install faster than cache save/restore overhead.
-- **apt packages**: Use user-writable cache (`~/.apt-cache`) to avoid permission issues:
-
-  ```yaml
-  - name: Configure apt caching
-    run: |
-      mkdir -p ~/.apt-cache/archives/partial
-      sudo mkdir -p /etc/apt/apt.conf.d
-      echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
-  ```
-
-- **npm tools**: Use `npx` with version pinning instead of global install:
-
-  ```yaml
-  npx --yes markdownlint-cli@0.42.0 "**/*.md"
-  ```
-
-- **Stable cache keys**: Use package names, not file hashes to reduce cache churn.
-- **Clean up lock files**: Remove root-owned locks before cache save:
-
-  ```yaml
-  - name: Clean up apt cache lock files
-    if: always()
-    run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
-  ```
-
-**Performance Insights:**
-
-- `apt-get update` is the main bottleneck (~8-9s per job)
-- Separate into dedicated step for timing visibility
-- Skip installing pre-installed packages (shellcheck on GitHub runners)
-- Parallel job execution reduces wall-clock time
-- Verbose test output (`-vv`) aids debugging without performance cost
-
-**Measured Results:**
-
-Phase 1 optimizations (Issue #42, PR #58) reduced CI time from 8-12 minutes to ~1 minute (92% improvement):
-
-- Linting: 90s → 15s (83% faster)
-- Smoke: 30s → 6s (80% faster)
-- Ubuntu: 120s → 28s (77% faster)
-- Bash 3.2: 120s → 32s (73% faster, cache miss)
-- macOS: 180s → 26s (86% faster)
-
-Phase 2 optimizations (Issue #22) consolidated BATS tests:
-
-- **Before**: 4 separate BATS jobs × 2 min setup = 8 min overhead
-- **After**: 1 BATS job with OS matrix = 2 min overhead
-- **Savings**: 6 min per CI run (~25% additional improvement)
-- **Bonus**: BATS tests now validate on macOS (was Ubuntu-only)
+See `.cursor/rules/ci-cd.mdc` for CI/CD workflow structure and performance optimization patterns.
+This documentation loads automatically when editing `.github/workflows/**` files.
 
 ## Quick Reference
 
@@ -1626,134 +1385,13 @@ critical principles, running tests).
 4. **Contract Tests** - Validate output format
 5. **Smoke Tests** - Fast structural validation
 
-### Testing Strategy
+### Testing Documentation
 
-- **BATS tests**: Automated unit, integration, and regression testing
-- **Regression tests**: Write BEFORE fixing bug (TDD pattern)
-- **Smoke tests**: Fast validation of basic functionality and structure
-- **Container tests**: Full installation on Ubuntu and Alpine (BSD-like)
-- **GitHub Actions**: Final validation on real Ubuntu and macOS runners
-
-### Why This Matters
-
-**BATS tests catch logic bugs:**
-
-- Variable name typos (Issue #66: `$backup_size` vs `$backup_size_kb`)
-- Calculation errors
-- Output format changes
-- Function contract violations
-
-**Cross-platform tests catch compatibility issues:**
-
-1. Alpine tests (BusyBox = BSD-like coreutils)
-2. GitHub Actions macOS runner (actual macOS)
-
-Always run tests before committing. Regression tests are mandatory for bug fixes.
-
-### Test Documentation
-
-See DEVELOPMENT.md Testing section for comprehensive testing framework documentation.
+- **Procedural workflow**: See `.cursor/rules/testing-workflow.mdc` for when to write tests, TDD pattern, critical principles
+- **Testing strategy**: See `tests/README.md` for comprehensive testing strategy, test types, and framework documentation
+- **Comprehensive framework**: See DEVELOPMENT.md Testing section for detailed testing framework documentation
 
 ## GitHub Integration
 
-GitHub can be accessed through both MCP tools and `gh` CLI. Each has strengths for different tasks.
-
-### When to Use Each Tool
-
-**Use MCP GitHub tools for:**
-
-- Creating pull requests (`mcp_github_create_pull_request`)
-- Updating PRs and issues (`mcp_github_update_pull_request`)
-- Requesting reviews (`mcp_github_request_copilot_review`)
-- Managing PR comments and reviews
-- Creating and managing issues
-- Repository operations (fork, create, branches)
-- Searching code, issues, PRs across GitHub
-
-**Use `gh` CLI for:**
-
-- Monitoring CI status in real-time
-- Viewing workflow logs with formatting
-- Watching test runs as they execute
-- Re-running failed jobs
-- Quick status checks during iteration
-
-**Common mistake:** Attempting a task with only one tool. If MCP doesn't provide the needed
-output format or `gh` lacks the functionality, try the other tool. Both can read/write GitHub
-data but have different interfaces and capabilities.
-
-### MCP GitHub Tools
-
-**Create and manage PRs:**
-
-```bash
-# Use MCP functions in Cursor
-mcp_github_create_pull_request
-mcp_github_update_pull_request
-mcp_github_request_copilot_review
-mcp_github_merge_pull_request
-```
-
-**Search and explore:**
-
-```bash
-# Search across all of GitHub
-mcp_github_search_code         # Find code patterns
-mcp_github_search_issues       # Find relevant issues
-mcp_github_search_pull_requests # Find PRs by criteria
-```
-
-### GitHub CLI (`gh`)
-
-**Monitor CI status:**
-
-```bash
-# Quick status overview
-gh pr checks <PR_NUMBER>
-
-# View detailed check information with URLs
-gh pr view <PR_NUMBER> --json statusCheckRollup --jq '.statusCheckRollup[] | "\(.name)\t\(.conclusion)\t\(.detailsUrl)"'
-
-# Check overall PR status
-gh pr view <PR_NUMBER> --json statusCheckRollup,state
-```
-
-**View CI logs:**
-
-```bash
-# View logs for failed jobs only
-gh run view <RUN_ID> --log-failed
-
-# View logs for specific job
-gh run view <RUN_ID> --log --job <JOB_ID>
-
-# List recent workflow runs
-gh run list --workflow=validate.yml --limit 5
-
-# Watch run in real-time
-gh run watch <RUN_ID>
-```
-
-**Common patterns:**
-
-```bash
-# After pushing changes
-sleep 30 && gh pr checks <PR_NUMBER>
-gh run watch  # Watch latest run
-
-# When CI fails
-gh run view --log-failed
-gh run rerun <RUN_ID> --failed
-
-# Get run ID from PR (portable)
-gh pr view <PR_NUMBER> --json statusCheckRollup --jq '.statusCheckRollup[0].detailsUrl' | grep -oE '[0-9]+$'
-```
-
-### Best Practice
-
-Use both tools complementarily:
-
-- **MCP**: PR lifecycle management (create, update, review, merge)
-- **gh**: CI monitoring and debugging (status, logs, re-runs)
-
-When one tool doesn't provide what you need, try the other before concluding the task is impossible.
+See `.cursor/rules/github-integration.mdc` for GitHub integration patterns, MCP tools vs `gh` CLI usage, and best practices.
+This documentation is available on-demand and referenced from the pull request workflow.

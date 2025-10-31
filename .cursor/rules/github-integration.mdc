@@ -1,0 +1,108 @@
+---
+description: "GitHub integration patterns: MCP tools vs gh CLI usage"
+alwaysApply: false
+---
+
+# GitHub Integration
+
+GitHub can be accessed through both MCP tools and `gh` CLI. Each has strengths for different tasks.
+
+## When to Use Each Tool
+
+**Use MCP GitHub tools for:**
+
+- Creating pull requests (`mcp_github_create_pull_request`)
+- Updating PRs and issues (`mcp_github_update_pull_request`)
+- Requesting reviews (`mcp_github_request_copilot_review`)
+- Managing PR comments and reviews
+- Creating and managing issues
+- Repository operations (fork, create, branches)
+- Searching code, issues, PRs across GitHub
+
+**Use `gh` CLI for:**
+
+- Monitoring CI status in real-time
+- Viewing workflow logs with formatting
+- Watching test runs as they execute
+- Re-running failed jobs
+- Quick status checks during iteration
+
+**Common mistake:** Attempting a task with only one tool. If MCP doesn't provide the needed
+output format or `gh` lacks the functionality, try the other tool. Both can read/write GitHub
+data but have different interfaces and capabilities.
+
+## MCP GitHub Tools
+
+**Create and manage PRs:**
+
+```bash
+# Use MCP functions in Cursor
+mcp_github_create_pull_request
+mcp_github_update_pull_request
+mcp_github_request_copilot_review
+mcp_github_merge_pull_request
+```
+
+**Search and explore:**
+
+```bash
+# Search across all of GitHub
+mcp_github_search_code         # Find code patterns
+mcp_github_search_issues       # Find relevant issues
+mcp_github_search_pull_requests # Find PRs by criteria
+```
+
+## GitHub CLI (`gh`)
+
+**Monitor CI status:**
+
+```bash
+# Quick status overview
+gh pr checks <PR_NUMBER>
+
+# View detailed check information with URLs
+gh pr view <PR_NUMBER> --json statusCheckRollup --jq '.statusCheckRollup[] | "\(.name)\t\(.conclusion)\t\(.detailsUrl)"'
+
+# Check overall PR status
+gh pr view <PR_NUMBER> --json statusCheckRollup,state
+```
+
+**View CI logs:**
+
+```bash
+# View logs for failed jobs only
+gh run view <RUN_ID> --log-failed
+
+# View logs for specific job
+gh run view <RUN_ID> --log --job <JOB_ID>
+
+# List recent workflow runs
+gh run list --workflow=validate.yml --limit 5
+
+# Watch run in real-time
+gh run watch <RUN_ID>
+```
+
+**Common patterns:**
+
+```bash
+# After pushing changes
+sleep 30 && gh pr checks <PR_NUMBER>
+gh run watch  # Watch latest run
+
+# When CI fails
+gh run view --log-failed
+gh run rerun <RUN_ID> --failed
+
+# Get run ID from PR (portable)
+gh pr view <PR_NUMBER> --json statusCheckRollup --jq '.statusCheckRollup[0].detailsUrl' | grep -oE '[0-9]+$'
+```
+
+## Best Practice
+
+Use both tools complementarily:
+
+- **MCP**: PR lifecycle management (create, update, review, merge)
+- **gh**: CI monitoring and debugging (status, logs, re-runs)
+
+When one tool doesn't provide what you need, try the other before concluding the task is impossible.

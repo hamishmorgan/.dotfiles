@@ -12,6 +12,38 @@ Comprehensive testing framework for validating dotfiles installation across plat
 ./tests/run-local-ci.sh
 ```
 
+## Test Categories
+
+1. **Regression Tests** - One per bug, written BEFORE fix
+2. **Unit Tests** - Test functions in isolation
+3. **Integration Tests** - Test complete commands
+4. **Contract Tests** - Validate output format
+5. **Smoke Tests** - Fast structural validation
+
+## Testing Strategy
+
+- **BATS tests**: Automated unit, integration, and regression testing
+- **Regression tests**: Write BEFORE fixing bug (TDD pattern)
+- **Smoke tests**: Fast validation of basic functionality and structure
+- **Container tests**: Full installation on Ubuntu and Alpine (BSD-like)
+- **GitHub Actions**: Final validation on real Ubuntu and macOS runners
+
+### Why This Matters
+
+**BATS tests catch logic bugs:**
+
+- Variable name typos (Issue #66: `$backup_size` vs `$backup_size_kb`)
+- Calculation errors
+- Output format changes
+- Function contract violations
+
+**Cross-platform tests catch compatibility issues:**
+
+1. Alpine tests (BusyBox = BSD-like coreutils)
+2. GitHub Actions macOS runner (actual macOS)
+
+Always run tests before committing. Regression tests are mandatory for bug fixes.
+
 ## Test Types
 
 ### Smoke Tests
@@ -195,3 +227,10 @@ cd ~/.dotfiles
 - Test conflict handling
 - Test with existing dotfiles
 - Performance benchmarks
+
+## Reference
+
+For procedural testing workflow (when to write tests, TDD pattern, critical principles, running tests),
+see `.cursor/rules/testing-workflow.mdc`.
+
+For comprehensive testing framework documentation, see DEVELOPMENT.md Testing section.

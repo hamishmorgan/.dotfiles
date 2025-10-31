@@ -114,5 +114,4 @@ gh pr checks <PR_NUMBER>
 
 **Note:** The PR template includes an AGENTS.md update checklist to remind about documentation.
 
-**Post-merge routine:** Always rebase shopify branch on main after merging PRs to keep both branches in sync.
-Clean up feature branches locally and remotely to maintain a tidy repository.
+For GitHub integration patterns (MCP tools vs `gh` CLI, CI monitoring, etc.), see `.cursor/rules/github-integration.mdc`.
