@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Validate tmux configuration file
+# Usage: dev/validate-tmux <config-file>
+
+set -euo pipefail
+
+readonly SESSION_NAME="dotfiles-config-test"
+
+# Check if tmux is installed
+if ! command -v tmux >/dev/null 2>&1; then
+    echo "tmux not installed, skipping validation" >&2
+    exit 0
+fi
+
+# Check if config file argument provided
+if [[ $# -eq 0 ]]; then
+    echo "Usage: $0 <tmux-config-file>" >&2
+    exit 1
+fi
+
+readonly config_file="$1"
+
+# Check if config file exists
+if [[ ! -f "$config_file" ]]; then
+    echo "Config file not found: $config_file" >&2
+    exit 1
+fi
+
+# Validate config by creating a test session
+# -f: specify config file
+# -C: validate config without executing (still creates session)
+# new-session -d: create detached session
+# -s: session name
+if tmux -f "$config_file" -C new-session -d -s "$SESSION_NAME" >/dev/null 2>&1; then
+    # Cleanup: kill test session
+    tmux kill-session -t "$SESSION_NAME" >/dev/null 2>&1 || true
+    exit 0
+else
+    # Validation failed - ensure session doesn't exist
+    tmux kill-session -t "$SESSION_NAME" >/dev/null 2>&1 || true
+    exit 1
+fi
+
