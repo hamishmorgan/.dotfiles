@@ -7,3 +7,6 @@ target = "~"
 
 [validation]
 ".zshrc*" = { command = "zsh", args = ["-n", "file"] }
+
+[security]
+files = [".zshrc.local", ".zprofile.local"]

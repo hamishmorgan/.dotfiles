@@ -7,3 +7,6 @@ target = "~"
 
 [validation]
 ".bashrc*" = { command = "bash", args = ["-n", "file"] }
+
+[security]
+files = [".bashrc.local", ".bash_profile.local"]

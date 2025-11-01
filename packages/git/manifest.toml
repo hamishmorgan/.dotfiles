@@ -7,3 +7,6 @@ target = "~"
 
 [validation]
 ".gitconfig" = { command = "git", args = ["config", "--list"] }
+
+[security]
+files = [".gitconfig.local"]

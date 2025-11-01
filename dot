@@ -349,7 +349,9 @@ get_toml_array() {
         # Extract section content
         local escaped_section
         escaped_section=$(escape_regex_special_chars "$section")
-        section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file" | sed '$d')
+        # Get content from section header to next section or end of file
+        # Remove section header line itself, keep content lines
+        section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file" | sed -e '1d' -e '/^\[/,$d')
     fi
 
     # Find array declaration (key = [...] or key = [ ... ])
@@ -1593,24 +1595,46 @@ secure_secret_file() {
 }
 
 # Secure permissions on .local files (machine-specific configs)
+# Reads security files from package manifests
 secure_local_files() {
-    local local_files=(
-        "$HOME/.gitconfig.local"
-        "$HOME/.bashrc.local"
-        "$HOME/.bash_profile.local"
-        "$HOME/.zshrc.local"
-        "$HOME/.zprofile.local"
-        "$HOME/.config/fish/config_private.fish"
-    )
-
     local secured_count=0
 
-    for file in "${local_files[@]}"; do
-        if [[ -f "$file" ]]; then
-            if chmod 600 "$file" 2>/dev/null; then
-                ((secured_count++))
-            fi
+    # Iterate through all packages
+    for package in "${PACKAGES[@]}"; do
+        local manifest="$PACKAGES_DIR/$package/manifest.toml"
+
+        # Skip if manifest doesn't exist
+        if [[ ! -f "$manifest" ]]; then
+            continue
         fi
+
+        # Get security files array from [security] section
+        local security_files
+        if ! security_files=$(get_toml_array "$manifest" "security" "files"); then
+            # No [security] section or no files - skip this package
+            continue
+        fi
+
+        # Parse comma-separated array
+        IFS=',' read -ra files <<< "$security_files"
+        for file in "${files[@]}"; do
+            # Trim whitespace from file path
+            file=$(echo "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+            # Remove quotes if present
+            file="${file#\"}"
+            file="${file%\"}"
+            file="${file#\'}"
+            file="${file%\'}"
+
+            # Security files are relative to HOME (not package directory)
+            local full_path="$HOME/$file"
+
+            if [[ -f "$full_path" ]]; then
+                if chmod 600 "$full_path" 2>/dev/null; then
+                    ((secured_count++))
+                fi
+            fi
+        done
     done
 
     if [[ $secured_count -gt 0 ]]; then

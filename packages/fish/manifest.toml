@@ -13,3 +13,6 @@ target = "~"
 
 [validation]
 ".config/fish/*.fish" = { command = "fish", args = ["-n", "file"] }
+
+[security]
+files = [".config/fish/config_private.fish"]
