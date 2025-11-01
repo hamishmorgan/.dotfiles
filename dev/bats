@@ -15,6 +15,13 @@ if ! command -v bats >/dev/null 2>&1; then
     exit 1
 fi
 
+# Detect CI/non-terminal environment
+# CI environments typically set CI=true and don't have a proper terminal
+IS_CI=false
+if [[ -n "${CI:-}" ]] || [[ -z "${TERM:-}" ]] || [[ ! -t 1 ]]; then
+    IS_CI=true
+fi
+
 # Determine number of parallel jobs
 # Default to CPU count, but cap at 8 to avoid overwhelming the system
 # Tests create isolated temp directories, so parallel execution is safe
@@ -38,25 +45,38 @@ if command -v parallel >/dev/null 2>&1 || command -v rush >/dev/null 2>&1; then
 fi
 
 # Build bats command with optimal flags
-BATS_ARGS=(
-    --formatter pretty
-    --timing
-    --print-output-on-failure
-    --recursive
-)
-
-# Enable parallel execution if available
-if $HAS_PARALLEL; then
-    BATS_ARGS+=(--jobs "$JOBS")
+# Use TAP formatter in CI (no terminal required), pretty formatter locally
+if $IS_CI; then
+    # CI environment: use TAP formatter (works without terminal)
+    BATS_ARGS=(
+        --formatter tap
+        --timing
+        --print-output-on-failure
+        --recursive
+    )
+    # Disable parallel execution in CI to avoid broken pipe issues
+    # TAP formatter + parallel execution can cause pipe issues in CI
+else
+    # Local environment: use pretty formatter with parallel execution
+    BATS_ARGS=(
+        --formatter pretty
+        --timing
+        --print-output-on-failure
+        --recursive
+    )
+    # Enable parallel execution if available (works well locally)
+    if $HAS_PARALLEL; then
+        BATS_ARGS+=(--jobs "$JOBS")
+    fi
 fi
 
 # Run all test suites with timing and automatic failure output
 # Flags:
-#   --formatter pretty: Use bats' default pretty formatter (better than TAP)
+#   --formatter pretty/tap: Use appropriate formatter for environment
 #   --timing: Show timing information for each test
 #   --print-output-on-failure: Automatically show output when tests fail
 #   --recursive: Include tests in subdirectories
-#   --jobs: Run tests in parallel (if parallel binary available)
+#   --jobs: Run tests in parallel (local only, disabled in CI)
 bats "${BATS_ARGS[@]}" \
     "$TESTS_DIR/regression" \
     "$TESTS_DIR/unit" \
