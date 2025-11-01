@@ -3011,14 +3011,20 @@ cmd_install() {
         if [[ "$package_lower" == *"zsh"* ]] || [[ "$package_lower" == *"bash"* ]] || [[ "$package_lower" == *"fish"* ]]; then
             # Find primary config file (first file in files array)
             IFS=',' read -ra files <<< "$PACKAGE_FILES"
-            local primary_config="${files[0]}"
-            # Remove quotes and whitespace
-            primary_config=$(trim_quotes_and_whitespace "$primary_config")
+            
+            # Check array is non-empty before accessing first element (bash 3.2 compat)
+            if [[ ${#files[@]} -gt 0 ]]; then
+                local primary_config="${files[0]:-}"
+                if [[ -n "$primary_config" ]]; then
+                    # Remove quotes and whitespace
+                    primary_config=$(trim_quotes_and_whitespace "$primary_config")
 
-            if [[ "$primary_config" == .* ]]; then
-                # Remove leading dot and add ~ prefix
-                local config_path="~${primary_config}"
-                shell_tips+=("Restart your terminal or run: source $config_path")
+                    if [[ "$primary_config" == .* ]]; then
+                        # Remove leading dot and add ~ prefix
+                        local config_path="~${primary_config}"
+                        shell_tips+=("Restart your terminal or run: source $config_path")
+                    fi
+                fi
             fi
         fi
     done

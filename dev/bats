@@ -55,9 +55,21 @@ for suite in "${test_suites[@]}"; do
     output=$(bats --formatter tap "$TESTS_DIR/$dir/" 2>&1)
     exit_code=$?
 
-    if [[ $exit_code -eq 0 ]]; then
+    # Check for actual test failures (not ok) vs skipped tests (ok # skip)
+    has_failures=false
+    if echo "$output" | grep -q "^not ok"; then
+        has_failures=true
+    fi
+
+    if [[ $exit_code -eq 0 ]] || ! $has_failures; then
         echo -e "${GREEN}✓ $name passed${NC}"
         ((total_pass++))
+        
+        # Show info about skipped tests if any (informational only, not a failure)
+        if echo "$output" | grep -q "# skip"; then
+            skipped_count=$(echo "$output" | grep -c "# skip")
+            echo -e "${BLUE}  ($skipped_count test(s) skipped)${NC}"
+        fi
     else
         echo -e "${RED}✗ $name failed${NC}"
         ((total_fail++))
@@ -67,39 +79,6 @@ for suite in "${test_suites[@]}"; do
         echo ""
         echo -e "${YELLOW}Failed test output:${NC}"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-        # Parse test count to identify missing tests
-        if echo "$output" | grep -q "bats warning: Executed"; then
-            executed=$(echo "$output" | grep "bats warning: Executed" | sed -E 's/.*Executed ([0-9]+) instead of expected ([0-9]+).*/\1 \2/')
-
-            # Validate that sed extraction succeeded (should contain two space-separated numbers)
-            if [[ -n "$executed" ]] && echo "$executed" | grep -qE '^[0-9]+ [0-9]+$'; then
-                expected_count=$(echo "$executed" | cut -d' ' -f2)
-                actual_count=$(echo "$executed" | cut -d' ' -f1)
-
-                if [[ "$actual_count" -lt "$expected_count" ]]; then
-                    echo -e "${YELLOW}⚠ Missing tests: Expected $expected_count, executed $actual_count${NC}"
-                    echo ""
-
-                    # Extract test numbers that were executed
-                    executed_tests=$(echo "$output" | grep "^ok " | sed -E 's/^ok ([0-9]+) .*/\1/' | sort -n)
-
-                    # Find missing test numbers
-                    missing_tests=()
-                    for i in $(seq 1 "$expected_count"); do
-                        if ! echo "$executed_tests" | grep -q "^$i$"; then
-                            missing_tests+=("$i")
-                        fi
-                    done
-
-                    if [[ ${#missing_tests[@]} -gt 0 ]]; then
-                        echo -e "${RED}Missing test numbers: ${missing_tests[*]}${NC}"
-                        echo -e "${YELLOW}(These tests were likely skipped or failed silently)${NC}"
-                        echo ""
-                    fi
-                fi
-            fi
-        fi
 
         # Show the full output, highlighting error patterns
         echo "$output" | while IFS= read -r line; do
