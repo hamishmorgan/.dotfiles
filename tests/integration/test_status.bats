@@ -15,21 +15,15 @@ teardown() {
     teardown_test_dotfiles
 }
 
-@test "status command runs without crashing" {
+@test "status command works correctly" {
+    # Run status once and check all requirements
+    # This is faster than running status multiple times
     run ./dot status
     # Should complete without crashing (exit 0 is expected)
     assert_success
-}
 
-@test "status command shows installed files" {
-    run ./dot status
-    assert_success
+    # Check for required sections
     assert_output --partial "Installed Files"
-}
-
-@test "status command shows file count" {
-    run ./dot status
-    assert_success
     # Should show count like "16 of 16 files installed"
     assert_output --regexp "[0-9]+ of [0-9]+ files installed"
 }
@@ -42,12 +36,5 @@ teardown() {
     assert_success
     # Should show "Total: 5 backup(s)" or similar
     assert_output --regexp "[0-9]+ backup"
-}
-
-@test "status command completes without hanging" {
-    # Verify status command completes (no timeout)
-    # Removed timing assertion as it's flaky in CI
-    run ./dot status
-    assert_success
 }
 

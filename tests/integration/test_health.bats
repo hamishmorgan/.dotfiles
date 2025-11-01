@@ -3,22 +3,27 @@
 
 load ../test_helper/common
 
-setup() {
+# File-level setup: install once for tests that need it
+setup_file() {
     setup_test_dotfiles
-    # Isolate HOME to prevent modifying actual user directory
     export HOME="$TEST_DOTFILES_DIR/home"
     mkdir -p "$HOME"
     cd "$TEST_DOTFILES_DIR" || return 1
+    # Install dotfiles once for all tests (avoids redundant 3s installs)
+    ./dot install > /dev/null 2>&1 || true
 }
 
-teardown() {
+# File-level teardown
+teardown_file() {
     teardown_test_dotfiles
 }
 
-@test "health command completes successfully" {
-    # Test in isolation by installing dotfiles first
-    ./dot install > /dev/null 2>&1 || true
+# Per-test setup: ensure we're in the right directory
+setup() {
+    cd "$TEST_DOTFILES_DIR" || return 1
+}
 
+@test "health command completes successfully" {
     run ./dot health
     # Health command must either pass or fail cleanly (not crash)
     # Acceptable exit codes: 0 (healthy) or 1 (unhealthy)
@@ -32,9 +37,6 @@ teardown() {
 @test "health command shows backup information correctly" {
     # Create test backups
     create_mock_backups 15 1
-
-    # Install dotfiles for complete environment
-    ./dot install > /dev/null 2>&1 || true
 
     run ./dot health
     # With installation, health should now pass or be unhealthy
@@ -55,8 +57,6 @@ teardown() {
     # Create more than 10 backups to trigger maintenance warning
     create_mock_backups 12 1
 
-    ./dot install > /dev/null 2>&1 || true
-
     run ./dot health
     # Should complete (even if unhealthy due to backups)
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
@@ -66,8 +66,6 @@ teardown() {
 }
 
 @test "health command verbose mode works" {
-    ./dot install > /dev/null 2>&1 || true
-
     run ./dot health -v
     # Verbose mode must complete
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]

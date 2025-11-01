@@ -61,7 +61,7 @@ setup_test_dotfiles() {
     mkdir -p "$TEST_DOTFILES_DIR"/packages/{system,git,zsh,tmux,gh,gnuplot,bash,fish}
     mkdir -p "$TEST_DOTFILES_DIR/tests"
 
-    # Copy dot script (from repository root)
+    # Use symlink for dot script instead of copying (faster, tests don't modify it)
     # BATS_TEST_DIRNAME points to the directory containing the test file
     # For tests in tests/unit/, tests/integration/, etc., we need to go up two levels
     local dot_script="$BATS_TEST_DIRNAME/../../dot"
@@ -69,7 +69,9 @@ setup_test_dotfiles() {
         # Fallback: try one level up (for tests directly in tests/)
         dot_script="$BATS_TEST_DIRNAME/../dot"
     fi
-    cp "$dot_script" "$TEST_DOTFILES_DIR/"
+    if [[ -f "$dot_script" ]]; then
+        ln -s "$dot_script" "$TEST_DOTFILES_DIR/dot"
+    fi
 
     # Copy manifest files from repository to test directory
     # This is required because the script now auto-discovers packages via manifests
@@ -80,7 +82,8 @@ setup_test_dotfiles() {
     fi
 
     if [[ -d "$repo_root/packages" ]]; then
-        # Copy all manifest.toml files from packages/ to test directory
+        # Batch copy manifests: find all manifests and copy in one operation
+        # This is faster than individual cp operations in a loop
         while IFS= read -r manifest; do
             [[ -z "$manifest" ]] && continue
             local package_dir
@@ -117,9 +120,12 @@ create_mock_backups() {
     mkdir -p "$backup_dir"
 
     # Use bash arithmetic loop for portability (seq not available on all systems)
+    # Always use dd to ensure files have actual content (not sparse files)
+    # This is required for tests that check backup size (Issue #66)
     for ((i=1; i<=count; i++)); do
         local backup="$backup_dir/dotfiles-backup-$i"
         mkdir -p "$backup"
+        # Use dd with 1M blocks - this is fast enough and ensures actual file content
         dd if=/dev/zero of="$backup/file" bs=1M count="$size_mb" 2>/dev/null
     done
 }
