@@ -2,7 +2,7 @@ files = [
   ".cargo/config.toml",
   ".cargo/config.local.toml.example",
   ".rustfmt.toml",
-  ".rustfmt.toml.example",
+  ".rustfmt.toml.example"
 ]
 
 name = "Rust"

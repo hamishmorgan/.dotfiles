@@ -7,6 +7,7 @@ target = "~"
 
 [validation]
 ".zshrc*" = { command = "zsh", args = ["-n", "file"] }
+".zprofile" = { command = "zsh", args = ["-n", "file"] }
 
 [update]
 command = "omz"

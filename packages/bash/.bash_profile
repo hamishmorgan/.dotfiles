@@ -50,5 +50,3 @@ if [ -f ~/.bash_profile.local ]; then
     source ~/.bash_profile.local
 fi
 
-# Added by tec agent
-[[ -x /Users/hamish/.local/state/tec/profiles/base/current/global/init ]] && eval "$(/Users/hamish/.local/state/tec/profiles/base/current/global/init bash)"

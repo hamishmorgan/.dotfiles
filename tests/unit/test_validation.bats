@@ -400,5 +400,3 @@ EOF
     output=$(normalize_validation_output "$output")
     assert_equal "$output" "cmd|"
 }
-
-

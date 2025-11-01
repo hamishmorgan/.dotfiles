@@ -186,10 +186,6 @@ if ! PACKAGES_RAW=$(get_packages); then
     echo "Error: Failed to discover packages. Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
     exit 1
 fi
-if [[ -z "$PACKAGES_RAW" ]]; then
-    echo "Error: No packages found. Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
-    exit 1
-fi
 read -ra PACKAGES <<< "$PACKAGES_RAW"
 
 # Validate that PACKAGES array is not empty
@@ -283,7 +279,8 @@ get_toml_value() {
         escaped_section=$(escape_regex_special_chars "$section")
 
         # Extract section content
-        section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file" | sed '$d')
+        # Only remove last line if it starts with [ (next section), not if it's content
+        section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file" | sed -e '1d' -e '/^\[/,$d')
     fi
 
     # Check if key exists at all (even if empty)
@@ -2154,7 +2151,7 @@ show_status() {
         fi
 
         ((copy_sync_count++))
-        
+
         # Capture manifest values immediately after load to avoid stale values
         local package_dotfiles="$PACKAGES_DIR/$package"
         local package_system="$PACKAGE_TARGET"

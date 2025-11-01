@@ -9,5 +9,3 @@ target.linux = "~/.config/Cursor/User"
 
 [validation]
 "*.json" = { command = "python3", args = ["-m", "json.tool", "file"] }
-
-

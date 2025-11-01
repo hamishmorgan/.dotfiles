@@ -185,5 +185,3 @@ if [ -f ~/.zshrc.local ]; then
     source ~/.zshrc.local
 fi
 
-# Added by tec agent
-[[ -x /Users/hamish/.local/state/tec/profiles/base/current/global/init ]] && eval "$(/Users/hamish/.local/state/tec/profiles/base/current/global/init zsh)"
