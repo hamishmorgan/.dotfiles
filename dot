@@ -3060,55 +3060,40 @@ cmd_install() {
 
     show_command_summary "success" "INSTALLED" "$duration"
 
-    # Generate generic tips based on installed shell packages
-    local shell_tips=()
+    # Generate generic shell restart tip (avoid array operations in Bash 3.2)
+    # Find first shell package and use it for tip
+    local shell_restart_tip=""
     for package in "${PACKAGES[@]}"; do
         if ! load_package_manifest "$package" true; then
             continue
         fi
 
-        # Check if this is a shell package (name contains "shell" or known shell names)
+        # Check if this is a shell package
         local package_lower
         package_lower=$(echo "$PACKAGE_NAME" | tr '[:upper:]' '[:lower:]')
         if [[ "$package_lower" == *"zsh"* ]] || [[ "$package_lower" == *"bash"* ]] || [[ "$package_lower" == *"fish"* ]]; then
             # Find primary config file (first file in files array)
-            IFS=',' read -ra files <<< "$PACKAGE_FILES"
+            local files_csv="$PACKAGE_FILES"
+            # Get first file by extracting everything before first comma
+            local primary_config="${files_csv%%,*}"
+            
+            # Remove quotes and whitespace
+            primary_config=$(trim_quotes_and_whitespace "$primary_config")
 
-            # Check array is non-empty before accessing first element (bash 3.2 compat)
-            if [[ ${#files[@]} -gt 0 ]]; then
-                local primary_config="${files[0]:-}"
-                if [[ -n "$primary_config" ]]; then
-                    # Remove quotes and whitespace
-                    primary_config=$(trim_quotes_and_whitespace "$primary_config")
-
-                    if [[ "$primary_config" == .* ]]; then
-                        # Remove leading dot and add ~ prefix
-                        local config_path="~${primary_config}"
-                        shell_tips+=("Restart your terminal or run: source $config_path")
-                    fi
-                fi
+            if [[ -n "$primary_config" ]] && [[ "$primary_config" == .* ]]; then
+                # Remove leading dot and add ~ prefix
+                local config_path="~${primary_config}"
+                shell_restart_tip="Restart your terminal or run: source $config_path"
+                break  # Use first shell package found
             fi
         fi
     done
 
     # Show tips
-    if [[ ${#shell_tips[@]} -gt 0 ]]; then
-        # Safely access first element (bash 3.2 compatible)
-        # Store in variable before using to avoid core dump
-        local first_tip=""
-        if [[ ${#shell_tips[@]} -ge 1 ]]; then
-            first_tip="${shell_tips[0]:-}"
-        fi
-
-        if [[ -n "$first_tip" ]]; then
-            show_tips "Next steps" \
-                "$first_tip" \
-                "Verify installation: $0 health"
-        else
-            show_tips "Next steps" \
-                "Restart your terminal to apply changes" \
-                "Verify installation: $0 health"
-        fi
+    if [[ -n "$shell_restart_tip" ]]; then
+        show_tips "Next steps" \
+            "$shell_restart_tip" \
+            "Verify installation: $0 health"
     else
         show_tips "Next steps" \
             "Restart your terminal to apply changes" \
