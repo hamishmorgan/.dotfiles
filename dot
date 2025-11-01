@@ -2184,6 +2184,8 @@ show_status() {
         IFS=',' read -ra file_array <<< "$files"
 
         for file in "${file_array[@]}"; do
+            # Trim whitespace from file path (handles leading/trailing spaces from TOML parsing)
+            file=$(echo "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
             ((total_files++))
             if [[ -L "$HOME/$file" ]]; then
                 local target
