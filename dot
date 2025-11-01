@@ -1190,8 +1190,6 @@ get_min_version() {
     case "$tool" in
         git)  echo "2.0.0" ;;
         stow) echo "2.3" ;;
-        zsh)  echo "5.0" ;;
-        bash) echo "3.2" ;;  # Already enforced by our script
         *)    echo "" ;;  # No minimum version requirement
     esac
 }
@@ -1269,13 +1267,6 @@ check_tool_version() {
             ;;
         stow)
             current_version=$(stow --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
-            ;;
-        zsh)
-            current_version=$(zsh --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
-            ;;
-        bash)
-            # BASH_VERSION contains extra text - extract just the version
-            current_version=$(echo "$BASH_VERSION" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
             ;;
     esac
 
