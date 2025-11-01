@@ -4,6 +4,18 @@
 
 load '../test_helper/common'
 
+setup() {
+    # Isolate HOME to prevent modifying actual user directory
+    export HOME="$BATS_TEST_TMPDIR/home"
+    mkdir -p "$HOME"
+}
+
+teardown() {
+    # Cleanup is handled by BATS automatically for BATS_TEST_TMPDIR
+    # but we ensure HOME is reset
+    unset HOME
+}
+
 @test "remove_mispointed_symlinks removes broken symlinks" {
     # Source the dot script to get the function
     source_dot_script
