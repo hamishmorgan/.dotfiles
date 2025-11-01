@@ -2868,7 +2868,7 @@ validate_config_syntax() {
         if [[ "$PACKAGE_METHOD" == "copy-sync" ]]; then
             target_dir="$PACKAGE_TARGET"  # e.g., ~/.config/Cursor/User
         else
-            target_dir="$HOME"  # Default for stow packages
+            target_dir="$PACKAGE_TARGET"  # Use PACKAGE_TARGET which includes platform-specific overrides
         fi
         # Normalize trailing slash
         target_dir="${target_dir%/}"
@@ -4507,25 +4507,33 @@ cmd_update() {
 
         # Replace "file" placeholder in args array
         # For update commands, "file" gets replaced with the file being updated
-        # Example: git package updates .gitignore-globals
+        # Uses update_target from manifest if set, otherwise first file in files array
         local expanded_args=()
         for arg in "${update_args[@]}"; do
             if [[ "$arg" == "file" ]]; then
-                # Load manifest to get files list
+                # Load manifest to get files list and update_target
                 if load_package_manifest "$package"; then
-                    local files_string="$PACKAGE_FILES"
-                    IFS=',' read -ra files <<< "$files_string"
-                    # Find the file that matches the update (e.g., .gitignore-globals for git)
                     local file_to_update=""
-                    for file in "${files[@]}"; do
-                        # Remove quotes and whitespace
-                        file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
-                        # Look for common update targets
-                        if [[ "$file" == *".gitignore-globals"* ]]; then
-                            file_to_update="$file"
-                            break
+                    local manifest="$PACKAGES_DIR/$package/manifest.toml"
+                    
+                    # Check for update_target field in [update] section
+                    local update_target
+                    if update_target=$(get_toml_value "$manifest" "update" "update_target" 2>/dev/null); then
+                        if [[ -n "$update_target" ]]; then
+                            file_to_update="$update_target"
                         fi
-                    done
+                    fi
+                    
+                    # Fallback: use first file in files array if update_target not set
+                    if [[ -z "$file_to_update" ]]; then
+                        local files_string="$PACKAGE_FILES"
+                        IFS=',' read -ra files <<< "$files_string"
+                        if [[ ${#files[@]} -gt 0 ]]; then
+                            # Remove quotes and whitespace from the first file
+                            file_to_update=$(echo "${files[0]}" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+                        fi
+                    fi
+                    
                     if [[ -n "$file_to_update" ]]; then
                         expanded_args+=("$PACKAGES_DIR/$package/$file_to_update")
                     else
