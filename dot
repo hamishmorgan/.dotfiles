@@ -2136,69 +2136,92 @@ show_status() {
     done
 
     echo ""
-    show_section_separator "Cursor Configuration"
+    show_section_separator "Copy-Sync Packages"
     echo ""
 
-    # Check if cursor package exists and supports sync
-    local cursor_package="cursor"
-    local cursor_dotfiles="$PACKAGES_DIR/$cursor_package"
-    local cursor_system=""
+    # Check all copy-sync packages for sync status
+    local copy_sync_count=0
+    for package in "${PACKAGES[@]}"; do
+        if ! load_package_manifest "$package" 2>/dev/null; then
+            continue
+        fi
 
-    if ! load_package_manifest "$cursor_package" 2>/dev/null; then
-        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor package not found in dotfiles"
-    elif [[ "$PACKAGE_METHOD" != "copy-sync" ]]; then
-        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor package does not support sync"
-    else
-        # Get platform-specific target
-        cursor_system="$PACKAGE_TARGET"
+        if [[ "$PACKAGE_METHOD" != "copy-sync" ]]; then
+            continue
+        fi
 
-        if [[ ! -d "$cursor_dotfiles" ]]; then
-            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor package directory not found"
-        elif [[ -z "$cursor_system" ]]; then
-            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Unsupported platform for Cursor sync"
-        elif [[ ! -d "$cursor_system" ]]; then
-            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor not installed on system"
-            echo -e "   ${BLUE}💡${NC} Run './dot sync cursor' to create config directory"
+        ((copy_sync_count++))
+        local package_dotfiles="$PACKAGES_DIR/$package"
+        local package_system="$PACKAGE_TARGET"
+        local package_name="${PACKAGE_NAME:-$package}"
+
+        if [[ -z "$package_system" ]]; then
+            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $package_name ${BLUE}(unsupported platform)${NC}"
+            continue
+        fi
+
+        if [[ ! -d "$package_dotfiles" ]]; then
+            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $package_name ${BLUE}(package directory not found)${NC}"
+            continue
+        fi
+
+        if [[ ! -d "$package_system" ]]; then
+            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $package_name ${BLUE}(not installed on system)${NC}"
+            echo -e "   ${BLUE}💡${NC} Run './dot sync $package' to create config directory"
+            continue
+        fi
+
+        # Check sync status for each file in the package
+        local files_string="$PACKAGE_FILES"
+        IFS=',' read -ra files <<< "$files_string"
+        local all_synced=true
+        local synced_files=()
+        local unsynced_files=()
+
+        for file in "${files[@]}"; do
+            # Remove quotes and whitespace
+            file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+
+            local dotfile_path="$package_dotfiles/$file"
+            local system_path="$package_system/$file"
+
+            if [[ -f "$dotfile_path" ]] && [[ -f "$system_path" ]]; then
+                if diff -q "$dotfile_path" "$system_path" >/dev/null 2>&1; then
+                    synced_files+=("$file")
+                else
+                    unsynced_files+=("$file")
+                    all_synced=false
+                fi
+            elif [[ -f "$system_path" ]]; then
+                # File exists in system but not in dotfiles
+                unsynced_files+=("$file")
+                all_synced=false
+            elif [[ -f "$dotfile_path" ]]; then
+                # File exists in dotfiles but not in system
+                unsynced_files+=("$file")
+                all_synced=false
+            fi
+        done
+
+        if [[ $all_synced == true ]] && [[ ${#synced_files[@]} -gt 0 ]]; then
+            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $package_name ${BLUE}(all files synced)${NC}"
         else
-            # Check if settings are in sync
-            local settings_synced=false
-            local keybindings_synced=false
-
-            if [[ -f "$cursor_dotfiles/settings.json" ]] && [[ -f "$cursor_system/settings.json" ]]; then
-                if diff -q "$cursor_dotfiles/settings.json" "$cursor_system/settings.json" >/dev/null 2>&1; then
-                    settings_synced=true
-                fi
-            fi
-
-            if [[ -f "$cursor_dotfiles/keybindings.json" ]] && [[ -f "$cursor_system/keybindings.json" ]]; then
-                if diff -q "$cursor_dotfiles/keybindings.json" "$cursor_system/keybindings.json" >/dev/null 2>&1; then
-                    keybindings_synced=true
-                fi
-            fi
-
-            if [[ "$settings_synced" == true ]] && [[ "$keybindings_synced" == true ]]; then
-                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} settings.json ${BLUE}(synced)${NC}"
-                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} keybindings.json ${BLUE}(synced)${NC}"
-            else
-                if [[ "$settings_synced" == true ]]; then
-                    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} settings.json ${BLUE}(synced)${NC}"
-                else
-                    echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} settings.json ${BLUE}(out of sync)${NC}"
-                fi
-
-                if [[ "$keybindings_synced" == true ]]; then
-                    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} keybindings.json ${BLUE}(synced)${NC}"
-                else
-                    echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} keybindings.json ${BLUE}(out of sync)${NC}"
-                fi
-
-                echo ""
+            for file in "${synced_files[@]}"; do
+                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $package_name/$file ${BLUE}(synced)${NC}"
+            done
+            for file in "${unsynced_files[@]}"; do
+                echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $package_name/$file ${BLUE}(out of sync)${NC}"
+            done
+            if [[ ${#unsynced_files[@]} -gt 0 ]]; then
                 show_tips \
-                    "Copy-sync approach" \
-                    "Sync to system: ./dot sync cursor" \
-                    "Pull from system: ./dot pull cursor"
+                    "Sync to system: ./dot sync $package" \
+                    "Pull from system: ./dot pull $package"
             fi
         fi
+    done
+
+    if [[ $copy_sync_count -eq 0 ]]; then
+        echo -e "   ${BLUE}${SYMBOL_INFO}${NC} No copy-sync packages configured"
     fi
 
     echo ""
@@ -4106,7 +4129,7 @@ sync_package_to_system() {
     fi
 
     log_success "Synced $synced_count file(s) successfully"
-    show_tip "Restart Cursor to apply changes"
+    # Note: Package-specific tips should be added to package manifests if needed
     return 0
 }
 
