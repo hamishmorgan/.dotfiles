@@ -26,8 +26,7 @@ teardown() {
     run get_package_files "git"
 
     assert_output --partial ".gitconfig"
-    # Note: Currently parsing .gitattributes as .gitattribute (known issue)
-    assert_output --partial ".gitattribute"
+    assert_output --partial ".gitattributes"
     assert_output --partial ".gitignore-globals"
 }
 

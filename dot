@@ -180,24 +180,27 @@ get_packages() {
     local packages_array=()
     read -ra packages_array <<< "$discovered"
 
-    local result=""
+    local non_system_packages=()
     local has_system=false
 
-    # Build result array with system first
+    # Collect non-system packages and track if system is present
     for package in "${packages_array[@]}"; do
         if [[ "$package" == "system" ]]; then
             has_system=true
-            if [[ -z "$result" ]]; then
-                result="system"
-            else
-                result="system $result"
-            fi
         else
-            if [[ -z "$result" ]]; then
-                result="$package"
-            else
-                result="$result $package"
-            fi
+            non_system_packages+=("$package")
+        fi
+    done
+
+    local result=""
+    if [[ "$has_system" == true ]]; then
+        result="system"
+    fi
+    for pkg in "${non_system_packages[@]}"; do
+        if [[ -z "$result" ]]; then
+            result="$pkg"
+        else
+            result="$result $pkg"
         fi
     done
 
@@ -314,11 +317,6 @@ get_toml_value() {
     # Check if key exists at all (even if empty)
     local key_exists
     key_exists=$(echo "$section_content" | grep -c "^$key\s*=" 2>/dev/null || echo "0")
-
-    # Ensure we have a clean numeric value (handle any trailing newlines)
-    # Use parameter expansion to remove any non-digit characters
-    key_exists="${key_exists//[!0-9]/}"
-    key_exists="${key_exists:-0}"
 
     if [[ "$key_exists" -eq 0 ]]; then
         return 1  # Key doesn't exist - use default
@@ -527,6 +525,35 @@ get_toml_array() {
     return 0
 }
 
+# Apply platform-specific target override from manifest
+# Bash 3.2 compatible
+apply_platform_target_override() {
+    local manifest="$1"
+    local platform="$2"
+    
+    if [[ "$platform" == "linux" ]]; then
+        local linux_target
+        linux_target=$(get_toml_value "$manifest" "linux" "target")
+        if [[ -n "$linux_target" ]]; then
+            # Expand ~ to $HOME if present
+            if [[ "$linux_target" == ~* ]]; then
+                linux_target="${linux_target/#\~/$HOME}"
+            fi
+            PACKAGE_TARGET="$linux_target"
+        fi
+    elif [[ "$platform" == "macos" ]]; then
+        local macos_target
+        macos_target=$(get_toml_value "$manifest" "macos" "target")
+        if [[ -n "$macos_target" ]]; then
+            # Expand ~ to $HOME if present
+            if [[ "$macos_target" == ~* ]]; then
+                macos_target="${macos_target/#\~/$HOME}"
+            fi
+            PACKAGE_TARGET="$macos_target"
+        fi
+    fi
+}
+
 # Load package manifest (manifest.toml)
 # Sets global variables: PACKAGE_NAME, PACKAGE_DESCRIPTION, PACKAGE_METHOD, PACKAGE_TARGET, PACKAGE_FILES
 load_package_manifest() {
@@ -537,27 +564,35 @@ load_package_manifest() {
         return 1  # No manifest, use defaults
     fi
 
-    # Extract values from top-level keys (check return codes to distinguish missing vs empty)
-    if get_toml_value "$manifest" "" "name" >/dev/null; then
-        PACKAGE_NAME=$(get_toml_value "$manifest" "" "name")
+    # Extract values from top-level keys (store results to avoid double calls)
+    local name_value
+    name_value=$(get_toml_value "$manifest" "" "name")
+    if [[ -n "$name_value" ]]; then
+        PACKAGE_NAME="$name_value"
     else
         PACKAGE_NAME="$package"  # Default: directory name
     fi
 
-    if get_toml_value "$manifest" "" "description" >/dev/null; then
-        PACKAGE_DESCRIPTION=$(get_toml_value "$manifest" "" "description")
+    local description_value
+    description_value=$(get_toml_value "$manifest" "" "description")
+    if [[ -n "$description_value" ]]; then
+        PACKAGE_DESCRIPTION="$description_value"
     else
         PACKAGE_DESCRIPTION=""  # Default: empty
     fi
 
-    if get_toml_value "$manifest" "" "method" >/dev/null; then
-        PACKAGE_METHOD=$(get_toml_value "$manifest" "" "method")
+    local method_value
+    method_value=$(get_toml_value "$manifest" "" "method")
+    if [[ -n "$method_value" ]]; then
+        PACKAGE_METHOD="$method_value"
     else
         PACKAGE_METHOD="stow"  # Default: stow
     fi
 
-    if get_toml_value "$manifest" "" "target" >/dev/null; then
-        PACKAGE_TARGET=$(get_toml_value "$manifest" "" "target")
+    local target_value
+    target_value=$(get_toml_value "$manifest" "" "target")
+    if [[ -n "$target_value" ]]; then
+        PACKAGE_TARGET="$target_value"
         # Expand ~ to $HOME if present
         if [[ "$PACKAGE_TARGET" == ~* ]]; then
             PACKAGE_TARGET="${PACKAGE_TARGET/#\~/$HOME}"
@@ -577,35 +612,12 @@ load_package_manifest() {
     # Check for platform-specific target overrides
     local platform
     platform=$(detect_platform)  # Function that returns "linux", "macos", or "unknown"
-    if [[ "$platform" == "linux" ]]; then
-        local linux_target
-        if get_toml_value "$manifest" "linux" "target" >/dev/null; then
-            linux_target=$(get_toml_value "$manifest" "linux" "target")
-            if [[ -n "$linux_target" ]]; then
-                # Expand ~ to $HOME if present
-                if [[ "$linux_target" == ~* ]]; then
-                    linux_target="${linux_target/#\~/$HOME}"
-                fi
-                PACKAGE_TARGET="$linux_target"
-            fi
-        fi
-    elif [[ "$platform" == "macos" ]]; then
-        local macos_target
-        if get_toml_value "$manifest" "macos" "target" >/dev/null; then
-            macos_target=$(get_toml_value "$manifest" "macos" "target")
-            if [[ -n "$macos_target" ]]; then
-                # Expand ~ to $HOME if present
-                if [[ "$macos_target" == ~* ]]; then
-                    macos_target="${macos_target/#\~/$HOME}"
-                fi
-                PACKAGE_TARGET="$macos_target"
-            fi
-        fi
-    fi
+    apply_platform_target_override "$manifest" "$platform"
     # Unknown platform → uses default target (no override)
 
     # Files array is required - convert to comma-separated for compatibility
     if [[ -z "$PACKAGE_FILES" ]]; then
+        log_error "Manifest missing required 'files' array: $manifest"
         return 1  # Invalid manifest - files required
     fi
 
@@ -974,7 +986,7 @@ get_validation_patterns() {
     local escaped_section
     escaped_section=$(escape_regex_special_chars "validation")
     local section_content
-    section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$manifest" | sed '$d' | sed 's/#.*$//')
+    section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$manifest" | sed -e '/^\[/,$d' | sed 's/#.*$//')
 
     # Extract all keys (lines matching "key" = { ... })
     # Handle both quoted and unquoted keys
@@ -1051,7 +1063,9 @@ run_validator() {
                 fi
             done
             if [[ -z "$file_path" ]]; then
-                file_path="${args[-1]}"
+                # Bash 3.2 compatible: get last element of array
+                local last_idx=$((${#args[@]} - 1))
+                file_path="${args[$last_idx]}"
             fi
             log_warning "$command not found, skipping validation for ${file_path#"$HOME"/}"
             return 0  # Continue, not an error
@@ -1069,7 +1083,9 @@ run_validator() {
             fi
         done
         if [[ -z "$file_path" ]]; then
-            file_path="${args[-1]}"
+            # Bash 3.2 compatible: get last element of array
+            local last_idx=$((${#args[@]} - 1))
+            file_path="${args[$last_idx]}"
         fi
         log_warning "$command not installed, skipping validation for ${file_path#"$HOME"/}"
         return 0  # Continue, not an error
