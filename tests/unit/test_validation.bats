@@ -34,6 +34,10 @@ teardown() {
 }
 
 # Helper function to normalize validation output
+# Normalize validation output for comparison in tests
+# Removes whitespace, quotes, and brackets from TOML parser output
+# Handles variations in TOML formatting (quotes, spacing, etc.)
+# Output format: "command|arg1,arg2,arg3"
 normalize_validation_output() {
     local output="$1"
     # Trim whitespace
