@@ -3025,9 +3025,17 @@ cmd_install() {
 
     # Show tips
     if [[ ${#shell_tips[@]} -gt 0 ]]; then
-        show_tips "Next steps" \
-            "${shell_tips[0]}" \
-            "Verify installation: $0 health"
+        # Safely access first element (bash 3.2 compatible)
+        local first_tip="${shell_tips[0]}"
+        if [[ -n "$first_tip" ]]; then
+            show_tips "Next steps" \
+                "$first_tip" \
+                "Verify installation: $0 health"
+        else
+            show_tips "Next steps" \
+                "Restart your terminal to apply changes" \
+                "Verify installation: $0 health"
+        fi
     else
         show_tips "Next steps" \
             "Restart your terminal to apply changes" \
