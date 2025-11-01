@@ -1954,11 +1954,28 @@ install_dotfiles() {
         # shellcheck disable=SC2086
         if [[ $verbosity -ge 2 ]]; then
             # Level 2: Show all stow file operations
+            # Try --restow first, but if it fails due to conflicts, try --adopt
             if stow_output=$(stow $stow_flags "$package" 2>&1); then
                 echo "$stow_output" | prefix_output "│ "
                 INSTALLED_PACKAGES+=("$package")
                 log_success "Installed $package"
                 stow_result=0
+            elif echo "$stow_output" | grep -q "existing target is neither a link nor a directory"; then
+                # Files exist but aren't symlinks - use --adopt to take ownership
+                log_info "Adopting existing files for $package..."
+                local adopt_output
+                if adopt_output=$(stow --adopt $stow_flags "$package" 2>&1); then
+                    echo "$adopt_output" | prefix_output "│ "
+                    INSTALLED_PACKAGES+=("$package")
+                    log_success "Installed $package (adopted existing files)"
+                    stow_result=0
+                else
+                    # Show stow error output to stderr so it's visible even when piped
+                    echo "$adopt_output" | prefix_output "│ " >&2
+                    log_error "Failed to install package: $package"
+                    suggest_fixes "stow" "$package"
+                    return 1
+                fi
             else
                 # Show stow error output to stderr so it's visible even when piped
                 echo "$stow_output" | prefix_output "│ " >&2
