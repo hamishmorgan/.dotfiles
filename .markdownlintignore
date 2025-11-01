@@ -8,3 +8,7 @@ node_modules/
 # Backups directory (contains old files from previous installations)
 backups/
 
+
+# Proposal files (not part of final documentation)
+AGENTS_REORGANIZATION_PROPOSAL.md
+MANIFEST_PROPOSAL.md
