@@ -269,7 +269,10 @@ apk add stow git bash
   - Use LF line endings
   - Insert final newline
   - Use 2-space indentation for shell scripts
-- **Package Independence**: The `dot` script MUST be package-independent. It MUST NOT contain package-specific logic (e.g., hardcoded references to Oh My Zsh, tmux, zsh, etc.). If package-specific logic is needed, it MUST be defined in the package's `manifest.toml` file. Extend the manifest format if needed (e.g., add `[health]` section for health check messages, `[submodule]` section for submodule-specific checks, etc.).
+- **Package Independence**: The `dot` script MUST be package-independent. It MUST NOT contain package-specific logic
+  (e.g., hardcoded references to Oh My Zsh, tmux, zsh, etc.). If package-specific logic is needed, it MUST be defined
+  in the package's `manifest.toml` file. Extend the manifest format if needed (e.g., add `[health]` section for health
+  check messages, `[submodule]` section for submodule-specific checks, etc.).
 
 ### Environment Variables
 
