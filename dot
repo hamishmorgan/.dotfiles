@@ -532,7 +532,12 @@ load_package_manifest() {
     fi
 
     # Extract files array (top-level)
-    PACKAGE_FILES=$(get_toml_array "$manifest" "" "files")
+    # Check return code explicitly since command substitution loses exit code
+    local files_result
+    if ! files_result=$(get_toml_array "$manifest" "" "files"); then
+        return 1  # Array doesn't exist or parsing failed
+    fi
+    PACKAGE_FILES="$files_result"
 
     # Check for platform-specific target overrides
     local platform
