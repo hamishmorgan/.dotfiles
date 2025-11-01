@@ -844,6 +844,67 @@ get_validation_entry() {
     get_toml_inline_table "$manifest" "validation" "$key"
 }
 
+# Get update command from [update] section in manifest
+# Returns: "command|arg1,arg2,arg3" format (pipe-separated, args comma-separated)
+# Returns empty string if no [update] section exists
+get_toml_update_command() {
+    local manifest="$1"
+
+    if [[ ! -f "$manifest" ]]; then
+        return 1
+    fi
+
+    # Extract [update] section content
+    local escaped_section
+    escaped_section=$(escape_regex_special_chars "update")
+    local section_content
+    section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$manifest")
+    # Remove first line ([update]) and last line if it starts with [ (next section)
+    section_content=$(echo "$section_content" | sed -e '1d' -e '/^\[/,$d')
+
+    if [[ -z "$section_content" ]]; then
+        return 1
+    fi
+
+    # Look for command = "..." and args = [...]
+    local command_value=""
+    local args_array=""
+
+    # Parse command field
+    local command_line
+    command_line=$(echo "$section_content" | grep -E '^\s*command\s*=' | head -1)
+    if [[ -n "$command_line" ]]; then
+        command_value=$(echo "$command_line" | sed 's/.*=\s*//' | sed 's/^["'\'']//; s/["'\'']$//' | sed 's/^\s*//; s/\s*$//')
+    fi
+
+    # Parse args array (handle single-line and multi-line)
+    if args_array=$(get_toml_array "$manifest" "update" "args" 2>/dev/null); then
+        # args_array is already comma-separated from get_toml_array
+        :
+    else
+        # Fallback: try to extract from single line
+        local args_line
+        args_line=$(echo "$section_content" | grep -E '^\s*args\s*=' | head -1)
+        if [[ -n "$args_line" ]] && echo "$args_line" | grep -q '\[.*\]'; then
+            # Single-line array
+            args_array=$(echo "$args_line" | sed 's/.*=\s*\[//; s/\]\s*$//' | sed 's/^["'\'']//g; s/["'\'']\s*$//g' | sed 's/["'\'']\s*,\s*["'\'']/,/g' | sed 's/^\s*//; s/\s*$//')
+        fi
+    fi
+
+    if [[ -z "$command_value" ]]; then
+        return 1
+    fi
+
+    # Return in format: "command|arg1,arg2,arg3"
+    if [[ -n "$args_array" ]]; then
+        echo "$command_value|$args_array"
+    else
+        echo "$command_value|"
+    fi
+
+    return 0
+}
+
 # Get all validation pattern keys from [validation] section
 # Returns: One pattern per line
 get_validation_patterns() {
@@ -960,6 +1021,37 @@ run_validator() {
 
     # Execute validator (array expansion preserves spaces/quotes)
     if "$command" "${args[@]}" >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Run package update command
+# Similar to run_validator but for update commands
+run_package_update() {
+    local command="$1"
+    shift
+    local args=("$@")
+
+    # Resolve relative paths (e.g., "dev/update-something") relative to DOTFILES_DIR
+    if [[ "$command" == */* ]] && [[ ! "$command" == /* ]]; then
+        # Relative path - resolve relative to DOTFILES_DIR
+        local resolved_command="$DOTFILES_DIR/$command"
+        if [[ -f "$resolved_command" ]] && [[ -x "$resolved_command" ]]; then
+            command="$resolved_command"
+        fi
+    fi
+
+    # Check if command exists
+    if ! command_exists "$command"; then
+        log_warning "$command not installed, skipping update"
+        return 0  # Continue, not an error
+    fi
+
+    # Execute update command (array expansion preserves spaces/quotes)
+    # Output goes to stdout/stderr (not suppressed like validators)
+    if "$command" "${args[@]}" 2>&1 | prefix_output "│ "; then
         return 0
     else
         return 1
@@ -3954,21 +4046,6 @@ update_gitignore() {
     fi
 }
 
-# Update Oh My Zsh
-update_oh_my_zsh() {
-    log_info "Checking for Oh My Zsh updates..."
-
-    if command_exists omz; then
-        if omz update 2>&1 | prefix_output "│ "; then
-            log_success "Oh My Zsh updated successfully"
-        else
-            log_warning "Oh My Zsh update failed or no updates available"
-        fi
-    else
-        log_warning "Oh My Zsh not available for update"
-    fi
-}
-
 # Remove broken or mispointed dotfile symlinks
 # This handles cases where packages were moved (e.g., bash/ -> packages/bash/)
 remove_mispointed_symlinks() {
@@ -4073,17 +4150,67 @@ cmd_update() {
     fi
     echo ""
 
-    # Step 2: Update Oh My Zsh
-    show_numbered_section "2" "Update Oh My Zsh"
-    if run_with_verbosity "$verbosity" 2 "" update_oh_my_zsh; then
-        # Success - show result for level 0-1
-        if [[ $verbosity -lt 2 ]]; then
-            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Oh My Zsh updated"
+    # Step 2: Update packages (from manifests)
+    show_numbered_section "2" "Update Packages"
+    local update_count=0
+    local updated_packages=()
+    local skipped_packages=()
+
+    for package in "${PACKAGES[@]}"; do
+        local manifest="$PACKAGES_DIR/$package/manifest.toml"
+
+        if [[ ! -f "$manifest" ]]; then
+            continue
         fi
-    else
-        # Failed or skipped - could be up to date
+
+        # Get update command from manifest
+        local update_cmd
+        if ! update_cmd=$(get_toml_update_command "$manifest" 2>/dev/null); then
+            # No [update] section - skip this package
+            continue
+        fi
+
+        # Extract command and args from update_cmd (format: "cmd|arg1,arg2,arg3")
+        local cmd args_string
+        cmd="${update_cmd%%|*}"
+        args_string="${update_cmd#*|}"
+
+        # Convert args string to array
+        local update_args=()
+        if [[ -n "$args_string" ]]; then
+            IFS=',' read -ra update_args <<< "$args_string"
+        fi
+
+        # Load package name for display
+        if load_package_manifest "$package"; then
+            local display_name="$PACKAGE_NAME"
+        else
+            local display_name="$package"
+        fi
+
+        # Show package update
+        if [[ $verbosity -ge 1 ]]; then
+            log_info "Updating $display_name..."
+        fi
+
+        # Execute update command
+        if run_package_update "$cmd" "${update_args[@]}"; then
+            ((update_count++))
+            updated_packages+=("$display_name")
+            if [[ $verbosity -lt 2 ]]; then
+                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $display_name updated"
+            fi
+        else
+            skipped_packages+=("$display_name")
+            if [[ $verbosity -lt 2 ]]; then
+                echo -e "   ${BLUE}${SYMBOL_INFO}${NC} $display_name already up to date"
+            fi
+        fi
+    done
+
+    if [[ $update_count -eq 0 && ${#updated_packages[@]} -eq 0 && ${#skipped_packages[@]} -eq 0 ]]; then
         if [[ $verbosity -lt 2 ]]; then
-            echo -e "   ${BLUE}${SYMBOL_INFO}${NC} Oh My Zsh already up to date"
+            echo -e "   ${BLUE}${SYMBOL_INFO}${NC} No packages with update commands"
         fi
     fi
     echo ""

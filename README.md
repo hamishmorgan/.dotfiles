@@ -549,13 +549,13 @@ git commit -am "WIP: changes"
 
 ```bash
 cd ~/.dotfiles
-./dot update       # Update configs, Oh My Zsh, and reinstall
+./dot update       # Update configs, packages, and reinstall
 ```
 
 The `update` command automatically:
 
 1. Updates global gitignore patterns
-2. Updates Oh My Zsh to latest version
+2. Updates packages (e.g., Oh My Zsh) that define update commands in their manifests
 3. Pulls submodule updates
 4. Reinstalls all packages
 
