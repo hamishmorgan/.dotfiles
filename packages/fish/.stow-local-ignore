@@ -12,3 +12,4 @@
 # Machine-specific configuration (not stowed)
 ^\.config/fish/config\.local\.fish$
 
+^manifest\.toml$
