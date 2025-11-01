@@ -40,8 +40,8 @@ echo -n "Test 3: All packages defined... "
 # Check that we have manifests or the auto-discovery function exists
 if grep -q 'discover_packages\|get_packages' "$DOTFILES_DIR/dot"; then
     # Verify expected packages exist via manifests
-    local expected_packages=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm" "bat" "rust")
-    local found=0
+    expected_packages=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm" "bat" "rust")
+    found=0
     for pkg in "${expected_packages[@]}"; do
         if [[ -f "$DOTFILES_DIR/packages/$pkg/manifest.toml" ]]; then
             ((found++))
