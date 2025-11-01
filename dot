@@ -308,8 +308,10 @@ get_toml_value() {
     local key_exists
     key_exists=$(echo "$section_content" | grep -c "^$key\s*=" 2>/dev/null || echo "0")
     
-    # Ensure we have a clean numeric value (strip any whitespace/newlines)
-    key_exists=$((key_exists + 0))
+    # Ensure we have a clean numeric value (handle any trailing newlines)
+    # Use parameter expansion to remove any non-digit characters
+    key_exists="${key_exists//[!0-9]/}"
+    key_exists="${key_exists:-0}"
     
     if [[ "$key_exists" -eq 0 ]]; then
         return 1  # Key doesn't exist - use default
