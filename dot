@@ -2283,27 +2283,36 @@ auto_cleanup_backups() {
 clean_backups_silent() {
     local keep_count="${1:-$MAX_BACKUPS_TO_KEEP}"
 
-    local backup_dirs=()
+    # Avoid array operations in Bash 3.2 - use counter instead
+    local total_backups=0
+    local backup_list=""
     while IFS= read -r dir; do
-        backup_dirs+=("$dir")
+        if [[ -n "$dir" ]]; then
+            if [[ -z "$backup_list" ]]; then
+                backup_list="$dir"
+            else
+                backup_list="$backup_list"$'\n'"$dir"
+            fi
+            ((total_backups++))
+        fi
     done < <(get_backup_dirs | sort -r)
-
-    local total_backups=${#backup_dirs[@]}
 
     if [[ $total_backups -eq 0 ]]; then
         return 0
     fi
 
     local removed_count=0
+    local index=0
 
-    for i in "${!backup_dirs[@]}"; do
-        if [[ $i -ge $keep_count ]]; then
-            local backup="${backup_dirs[$i]}"
+    while IFS= read -r backup; do
+        [[ -z "$backup" ]] && continue
+        if [[ $index -ge $keep_count ]]; then
             if rm -rf "$backup" 2>/dev/null; then
                 ((removed_count++))
             fi
         fi
-    done
+        ((index++))
+    done <<< "$backup_list"
 
     if [[ $removed_count -gt 0 ]]; then
         log_success "Removed $removed_count old backup(s)"
