@@ -2777,10 +2777,41 @@ cmd_install() {
 
     show_command_summary "success" "INSTALLED" "$duration"
 
-    show_tips "Next steps" \
-        "1. Restart your terminal or run: source ~/.zshrc" \
-        "2. Set zsh as default shell: chsh -s \$(which zsh)" \
-        "3. Verify installation: $0 health"
+    # Generate generic tips based on installed shell packages
+    local shell_tips=()
+    for package in "${PACKAGES[@]}"; do
+        if ! load_package_manifest "$package" 2>/dev/null; then
+            continue
+        fi
+        
+        # Check if this is a shell package (name contains "shell" or known shell names)
+        local package_lower
+        package_lower=$(echo "$PACKAGE_NAME" | tr '[:upper:]' '[:lower:]')
+        if [[ "$package_lower" == *"zsh"* ]] || [[ "$package_lower" == *"bash"* ]] || [[ "$package_lower" == *"fish"* ]]; then
+            # Find primary config file (first file in files array)
+            IFS=',' read -ra files <<< "$PACKAGE_FILES"
+            local primary_config="${files[0]}"
+            # Remove quotes and whitespace
+            primary_config=$(echo "$primary_config" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+            
+            if [[ "$primary_config" == .* ]]; then
+                # Remove leading dot and add ~ prefix
+                local config_path="~${primary_config}"
+                shell_tips+=("Restart your terminal or run: source $config_path")
+            fi
+        fi
+    done
+
+    # Show tips
+    if [[ ${#shell_tips[@]} -gt 0 ]]; then
+        show_tips "Next steps" \
+            "${shell_tips[0]}" \
+            "Verify installation: $0 health"
+    else
+        show_tips "Next steps" \
+            "Restart your terminal to apply changes" \
+            "Verify installation: $0 health"
+    fi
     echo ""
 
     auto_cleanup_backups
@@ -3185,35 +3216,83 @@ check_shell_integration() {
 
     local issues=0
 
-    # Check if we're actually using our shell configs
+    # Detect current shell from environment
+    local current_shell=""
+    local shell_config_file=""
+    
     if [[ -n "$ZSH_VERSION" ]]; then
-        if [[ -L "$HOME/.zshrc" ]]; then
-            local target
-            target=$(readlink "$HOME/.zshrc")
-            if [[ "$target" == *".dotfiles"* ]]; then
-                log_success "Using dotfiles .zshrc"
-            else
-                log_warning "Shell config symlink points elsewhere: $target"
-                ((issues++))
-            fi
-        else
-            log_error ".zshrc is not a symlink to dotfiles"
-            ((issues++))
-        fi
+        current_shell="zsh"
     elif [[ -n "$BASH_VERSION" ]]; then
-        if [[ -L "$HOME/.bashrc" ]]; then
-            local target
-            target=$(readlink "$HOME/.bashrc")
-            if [[ "$target" == *".dotfiles"* ]]; then
-                log_success "Using dotfiles .bashrc"
-            else
-                log_warning "Shell config symlink points elsewhere: $target"
+        current_shell="bash"
+    elif [[ -n "$FISH_VERSION" ]]; then
+        current_shell="fish"
+    fi
+
+    # If we know the current shell, find its package and check config files
+    if [[ -n "$current_shell" ]]; then
+        # Try to find matching shell package (case-insensitive match)
+        local shell_package=""
+        for package in "${PACKAGES[@]}"; do
+            if ! load_package_manifest "$package" 2>/dev/null; then
+                continue
+            fi
+            
+            local package_lower
+            package_lower=$(echo "$PACKAGE_NAME" | tr '[:upper:]' '[:lower:]')
+            if [[ "$package_lower" == *"$current_shell"* ]]; then
+                shell_package="$package"
+                break
+            fi
+        done
+
+        # If we found a shell package, check its config files
+        if [[ -n "$shell_package" ]]; then
+            if ! load_package_manifest "$shell_package"; then
+                log_warning "Shell package '$shell_package' manifest not found"
                 ((issues++))
+            else
+                # Check each config file in the package
+                IFS=',' read -ra files <<< "$PACKAGE_FILES"
+                local found_config=false
+                
+                for file in "${files[@]}"; do
+                    # Remove quotes and whitespace
+                    file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+                    
+                    # Skip directories and non-config files
+                    if [[ "$file" == */ ]] || [[ "$file" == *".example"* ]] || [[ "$file" == *"/functions"* ]]; then
+                        continue
+                    fi
+                    
+                    # Resolve config file path
+                    local config_path="$HOME/$file"
+                    
+                    if [[ -L "$config_path" ]]; then
+                        found_config=true
+                        local target
+                        target=$(readlink "$config_path")
+                        if [[ "$target" == *".dotfiles"* ]]; then
+                            log_success "Using dotfiles $file"
+                        else
+                            log_warning "Shell config symlink points elsewhere: $target"
+                            ((issues++))
+                        fi
+                    elif [[ -f "$config_path" ]]; then
+                        found_config=true
+                        log_error "$file is not a symlink to dotfiles"
+                        ((issues++))
+                    fi
+                done
+                
+                if [[ "$found_config" == false ]]; then
+                    log_warning "No shell config files found for $current_shell package"
+                fi
             fi
         else
-            log_error ".bashrc is not a symlink to dotfiles"
-            ((issues++))
+            log_info "No package found for current shell: $current_shell"
         fi
+    else
+        log_info "Current shell not detected (ZSH_VERSION/BASH_VERSION/FISH_VERSION not set)"
     fi
 
     # Check PATH includes our custom directories
@@ -3595,11 +3674,48 @@ cmd_health() {
     show_health_check_spinner "7" "Shell Integration"
     output=$(check_shell_integration 2>&1)
     result=$?
+    
+    # Detect shell name from current environment and installed packages
     local shell_name=""
     if [[ -n "$ZSH_VERSION" ]]; then
-        shell_name="Zsh"
+        # Try to find zsh package name from manifest
+        for package in "${PACKAGES[@]}"; do
+            if load_package_manifest "$package" 2>/dev/null; then
+                local package_lower
+                package_lower=$(echo "$PACKAGE_NAME" | tr '[:upper:]' '[:lower:]')
+                if [[ "$package_lower" == *"zsh"* ]]; then
+                    shell_name="$PACKAGE_NAME"
+                    break
+                fi
+            fi
+        done
+        [[ -z "$shell_name" ]] && shell_name="Zsh"
     elif [[ -n "$BASH_VERSION" ]]; then
-        shell_name="Bash"
+        # Try to find bash package name from manifest
+        for package in "${PACKAGES[@]}"; do
+            if load_package_manifest "$package" 2>/dev/null; then
+                local package_lower
+                package_lower=$(echo "$PACKAGE_NAME" | tr '[:upper:]' '[:lower:]')
+                if [[ "$package_lower" == *"bash"* ]]; then
+                    shell_name="$PACKAGE_NAME"
+                    break
+                fi
+            fi
+        done
+        [[ -z "$shell_name" ]] && shell_name="Bash"
+    elif [[ -n "$FISH_VERSION" ]]; then
+        # Try to find fish package name from manifest
+        for package in "${PACKAGES[@]}"; do
+            if load_package_manifest "$package" 2>/dev/null; then
+                local package_lower
+                package_lower=$(echo "$PACKAGE_NAME" | tr '[:upper:]' '[:lower:]')
+                if [[ "$package_lower" == *"fish"* ]]; then
+                    shell_name="$PACKAGE_NAME"
+                    break
+                fi
+            fi
+        done
+        [[ -z "$shell_name" ]] && shell_name="Fish"
     fi
 
     if [[ $result -ne 0 ]]; then
@@ -3610,9 +3726,17 @@ cmd_health() {
         show_health_table_row "7" "Shell Integration" "warn" "Issues detected"
     else
         check_statuses+=("pass")
-        check_details+=("$shell_name active")
+        if [[ -n "$shell_name" ]]; then
+            check_details+=("$shell_name active")
+        else
+            check_details+=("Shell active")
+        fi
         check_outputs+=("")
-        show_health_table_row "7" "Shell Integration" "pass" "$shell_name active"
+        if [[ -n "$shell_name" ]]; then
+            show_health_table_row "7" "Shell Integration" "pass" "$shell_name active"
+        else
+            show_health_table_row "7" "Shell Integration" "pass" "Shell active"
+        fi
     fi
 
     # 8. Stow conflicts
