@@ -238,6 +238,46 @@ initialize_packages() {
         echo "Debug: DOTFILES_DIR=$DOTFILES_DIR" >&2
         return 1
     fi
+
+    # Validate that all discovered packages have valid, parseable manifests
+    local validation_errors=0
+    for package in "${PACKAGES[@]}"; do
+        local manifest="$PACKAGES_DIR/$package/manifest.toml"
+        
+        # Check manifest file exists
+        if [[ ! -f "$manifest" ]]; then
+            echo "Error: Package '$package' missing manifest file: $manifest" >&2
+            ((validation_errors++))
+            continue
+        fi
+        
+        # Check manifest is readable
+        if [[ ! -r "$manifest" ]]; then
+            echo "Error: Package '$package' manifest not readable: $manifest" >&2
+            ((validation_errors++))
+            continue
+        fi
+        
+        # Validate manifest can be parsed (load with error reporting)
+        if ! load_package_manifest "$package" false 2>&1 | grep -q "Error"; then
+            : # Manifest loaded successfully
+        else
+            # Capture and display the actual error
+            local error_output
+            error_output=$(load_package_manifest "$package" false 2>&1)
+            echo "Error: Package '$package' has invalid manifest:" >&2
+            echo "$error_output" >&2
+            ((validation_errors++))
+        fi
+    done
+
+    if [[ $validation_errors -gt 0 ]]; then
+        echo "" >&2
+        echo "Error: Found $validation_errors package(s) with missing or invalid manifests" >&2
+        echo "All packages require a valid manifest.toml file" >&2
+        return 1
+    fi
+
     return 0
 }
 
@@ -3200,20 +3240,45 @@ validate_all_manifests() {
     for package in "${PACKAGES[@]}"; do
         local manifest="$PACKAGES_DIR/$package/manifest.toml"
 
-        # Require manifest for all packages
+        # Require manifest for all packages (MANDATORY - no fallback)
         if [[ ! -f "$manifest" ]]; then
-            log_error "Package '$package' missing manifest: $manifest"
+            log_error "Package '$package' missing required manifest: $manifest" >&2
+            log_error "All packages must have a manifest.toml file" >&2
             ((errors++))
             continue
         fi
 
-        # Validate syntax
-        if ! validate_manifest_syntax "$manifest" 2>/dev/null; then
+        # Check manifest is readable
+        if [[ ! -r "$manifest" ]]; then
+            log_error "Package '$package' manifest not readable: $manifest" >&2
+            ((errors++))
+            continue
+        fi
+
+        # Validate manifest can be loaded and parsed
+        if ! load_package_manifest "$package" false >/dev/null 2>&1; then
+            # Capture error for display
+            local load_error
+            load_error=$(load_package_manifest "$package" false 2>&1)
+            log_error "Package '$package' has invalid manifest:" >&2
+            echo "$load_error" | grep -E "Error|error|ERROR" >&2
+            ((errors++))
+            continue
+        fi
+
+        # Validate syntax (TOML structure)
+        local syntax_error
+        if ! syntax_error=$(validate_manifest_syntax "$manifest" 2>&1); then
+            log_error "Package '$package' manifest has syntax errors:" >&2
+            echo "$syntax_error" | head -5 >&2
             ((errors++))
         fi
 
         # Validate semantics (file existence, method validity)
-        if ! validate_manifest_semantic "$package" 2>/dev/null; then
+        local semantic_error
+        if ! semantic_error=$(validate_manifest_semantic "$package" 2>&1); then
+            log_error "Package '$package' manifest has semantic errors:" >&2
+            echo "$semantic_error" | head -5 >&2
             ((errors++))
         fi
     done
@@ -3221,7 +3286,7 @@ validate_all_manifests() {
     if [[ $errors -eq 0 ]]; then
         return 0
     else
-        return 1
+        return "$errors"
     fi
 }
 
