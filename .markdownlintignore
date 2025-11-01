@@ -8,3 +8,5 @@ node_modules/
 # Backups directory (contains old files from previous installations)
 backups/
 
+# Temporary files and proposals
+tmp/

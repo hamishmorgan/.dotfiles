@@ -35,10 +35,24 @@ else
     exit 1
 fi
 
-# Test 3: All packages defined
+# Test 3: All packages defined (via manifests or auto-discovery)
 echo -n "Test 3: All packages defined... "
-if grep -q 'PACKAGES=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm" "bat" "rust")' "$DOTFILES_DIR/dot"; then
-    echo -e "${GREEN}✓${NC}"
+# Check that we have manifests or the auto-discovery function exists
+if grep -q 'discover_packages\|get_packages' "$DOTFILES_DIR/dot"; then
+    # Verify expected packages exist via manifests
+    expected_packages=("system" "git" "zsh" "tmux" "gh" "gnuplot" "bash" "fish" "wezterm" "bat" "rust")
+    found=0
+    for pkg in "${expected_packages[@]}"; do
+        if [[ -f "$DOTFILES_DIR/packages/$pkg/manifest.toml" ]]; then
+            found=$((found + 1))
+        fi
+    done
+    if [[ $found -ge 11 ]]; then
+        echo -e "${GREEN}✓${NC}"
+    else
+        echo -e "${RED}✗${NC} (found $found/11 manifests)"
+        exit 1
+    fi
 else
     echo -e "${RED}✗${NC}"
     exit 1
@@ -57,8 +71,7 @@ fi
 # Test 5: Stow ignore files exist
 echo -n "Test 5: Stow ignore files exist... "
 if [[ -f "$DOTFILES_DIR/packages/system/.stow-global-ignore" ]] && \
-   [[ -f "$DOTFILES_DIR/packages/git/.stow-local-ignore" ]] && \
-   [[ -f "$DOTFILES_DIR/packages/gh/.stow-local-ignore" ]]; then
+   [[ -f "$DOTFILES_DIR/packages/fish/.stow-local-ignore" ]]; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"

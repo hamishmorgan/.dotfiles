@@ -86,7 +86,7 @@ This repository contains dotfiles managed with GNU Stow. Files are organized int
 - **rust**: Rust toolchain configuration
 
 Template-based secrets management separates public templates from private secret configurations.
-The `system` package is stowed first to ensure `.stow-global-ignore` is in place before other packages.
+Packages are discovered automatically via manifests and can be stowed in any order.
 
 **Repository Structure:**
 
@@ -94,6 +94,7 @@ The `system` package is stowed first to ensure `.stow-global-ignore` is in place
 - `dev/`: Development tools (linting, testing, CI)
 - `tests/`: Test infrastructure (BATS, smoke tests, CI)
 - `dot`: Main user-facing script
+- `tmp/`: Temporary files and proposals (git-ignored, not committed)
 
 **Documentation Structure:**
 
@@ -199,6 +200,7 @@ Alternative: Migrate to chezmoi later if git noise becomes unmanageable.
 - **docker** or **podman**: Container runtime for local CI testing
 - **markdownlint-cli**: Markdown linting (or use `npx`)
 - **shellcheck**: Bash script linting
+- **python3**: Python 3.x (for validation: TOML validation requires `tomli`, YAML validation requires `PyYAML`)
 
 ### Version Requirements
 
@@ -268,6 +270,10 @@ apk add stow git bash
   - Use LF line endings
   - Insert final newline
   - Use 2-space indentation for shell scripts
+- **Package Independence**: The `dot` script MUST be package-independent. It MUST NOT contain package-specific logic
+  (e.g., hardcoded references to Oh My Zsh, tmux, zsh, etc.). If package-specific logic is needed, it MUST be defined
+  in the package's `manifest.toml` file. Extend the manifest format if needed (e.g., add `[health]` section for health
+  check messages, `[submodule]` section for submodule-specific checks, etc.).
 
 ### Environment Variables
 
@@ -1091,6 +1097,7 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 - **Package files**: `packages/` directory (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/, fish/, bat/, cursor/)
 - **Test suites**: `tests/` directory (BATS tests, test helpers, CI infrastructure)
 - **Configuration**: Dot-prefixed names (`.gitconfig`, `.zshrc`, etc.)
+- **Temporary files**: `tmp/` directory (git-ignored, for proposals and temporary docs)
 - `.gitignore` is project-specific, not managed by stow
 
 **Important Path Variables:**
@@ -1099,6 +1106,80 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 - `PACKAGES_DIR`: Package directory (`$DOTFILES_DIR/packages`)
 - Always use `$PACKAGES_DIR` when referencing package directories in code
 - Example: `$PACKAGES_DIR/bat` not `$DOTFILES_DIR/bat`
+
+### Package Manifests
+
+**MANDATORY:** All packages require a `manifest.toml` file. No fallback mechanism exists.
+
+**Validation Strategy:**
+
+1. **Discovery**: Only packages with `manifest.toml` are discovered
+2. **Initialization**: All manifests validated before any operations
+3. **Operations**: Each function requires valid manifest
+4. **Health Check**: Comprehensive manifest validation (#12)
+
+**Manifest Format (TOML):**
+
+```toml
+# Required fields
+files = [".config/file1", ".config/file2"]
+
+# Optional fields with defaults
+name = "Package Name"           # Default: directory name
+description = "Description"     # Default: empty
+method = "stow"                 # Default: "stow" (or "copy-sync")
+target = "~"                    # Default: "~"
+
+# Platform-specific overrides (optional)
+target.macos = "~/Library/Application Support/App"
+target.linux = "~/.config/app"
+
+# Validation rules (optional)
+[validation]
+".gitconfig" = { command = "git", args = ["config", "--list"] }
+"*.json" = { command = "python3", args = ["-m", "json.tool", "file"] }
+
+# Update commands (optional)
+[update]
+command = "dev/update-script"
+args = ["file"]
+```
+
+**TOML Parser Limitations:**
+
+The `dot` script uses custom bash-based TOML parsing (Bash 3.2 compatible).
+Supported features:
+
+- ✅ Simple key-value pairs: `name = "value"`
+- ✅ Arrays: `files = ["a", "b", "c"]`
+- ✅ Multi-line arrays
+- ✅ Inline tables: `validation = { command = "cmd", args = ["arg"] }`
+- ✅ Sections: `[validation]`, `[update]`
+- ✅ Comments: `# comment` and inline `key = "value"  # comment`
+- ✅ Quoted keys: `"target.macos" = "~/Library"`
+- ✅ Single and double quotes
+- ✅ Trailing commas in arrays
+
+**Known Limitations:**
+
+- ❌ Escaped quotes within values (`"value with \"quotes\""`)
+- ❌ Multi-line strings (TOML `"""..."""`)
+- ❌ TOML tables (only inline tables supported)
+- ❌ Arrays of tables
+- ❌ Dates, numbers as types (treated as strings)
+- ❌ Dotted table names (`[section.subsection]`)
+
+**Performance:**
+
+- Character-by-character parsing (~6 instances)
+- Current manifests: 123 total lines (negligible impact)
+- Parsing overhead: ~50ms for all 11 manifests
+- Acceptable for current scale, may need optimization if manifests grow
+
+**When to use external parser:**
+
+If manifests become complex (>100 lines each) or require advanced TOML features,
+consider using `dasel`, `toml-cli`, or `yj` with graceful fallback to bash parser.
 
 ### Component-Specific Documentation
 
@@ -1188,7 +1269,6 @@ Individual file listing prevents this by only backing up and removing specific f
 - Example files (`.example` files) show format for machine-specific configs
 - Machine-specific configs (`.local` files) override defaults per-machine
 - **`.local` files are NOT stowed** - ignored via package `.stow-local-ignore` files
-- **`.local` files are secured** - automatically set to mode 600 during installation
 
 ### Optional Enhancement Configs
 

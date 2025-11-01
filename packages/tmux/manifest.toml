@@ -1,0 +1,9 @@
+files = [".tmux.conf"]
+
+name = "Tmux"
+description = "Tmux terminal multiplexer"
+method = "stow"
+target = "~"
+
+[validation]
+".tmux.conf" = { command = "dev/validate-tmux", args = ["file"] }

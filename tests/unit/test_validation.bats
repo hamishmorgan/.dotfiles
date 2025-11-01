@@ -33,3 +33,384 @@ teardown() {
     assert_output --regexp "^[0-9]+$"
 }
 
+# Helper function to normalize validation output
+# Normalize validation output for comparison in tests
+# Removes whitespace, quotes, and brackets from TOML parser output
+# Handles variations in TOML formatting (quotes, spacing, etc.)
+# Output format: "command|arg1,arg2,arg3"
+normalize_validation_output() {
+    local output="$1"
+    # Trim whitespace
+    output=$(echo "$output" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+    # Extract command (before |)
+    local cmd="${output%%|*}"
+    # Trim whitespace first, then remove quotes
+    cmd=$(echo "$cmd" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+    cmd=$(echo "$cmd" | sed 's/^"//; s/"$//; s/^'\''//; s/'\''$//')
+    cmd=$(echo "$cmd" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+    # Extract args (after |)
+    local args="${output#*|}"
+    # Remove all brackets (handles nested cases)
+    args=$(echo "$args" | sed 's/\[//g; s/\]//g')
+    # Remove quotes
+    args=$(echo "$args" | sed 's/["'\'']//g')
+    # Remove all whitespace (including spaces within arguments)
+    # This is intentional for comparison - tests should use normalized format
+    args=$(echo "$args" | tr -d '[:space:]')
+    echo "$cmd|$args"
+}
+
+# Validation metadata function tests
+
+@test "get_toml_inline_table extracts command and args correctly" {
+    local manifest="$PACKAGES_DIR/git/manifest.toml"
+
+    # First verify function exists and runs
+    run get_toml_inline_table "$manifest" "validation" ".gitconfig"
+    assert_success
+
+    # Normalize output for comparison
+    local output
+    output=$(get_toml_inline_table "$manifest" "validation" ".gitconfig") || return 1
+    output=$(normalize_validation_output "$output")
+
+    assert_equal "$output" "git|config,--list"
+}
+
+@test "get_toml_inline_table handles command without args" {
+    # Create a test manifest with validator without args
+    local test_manifest="$TEST_DOTFILES_DIR/test_manifest.toml"
+    cat > "$test_manifest" <<EOF
+[validation]
+"test.txt" = { command = "cat" }
+EOF
+
+    # First verify function runs
+    run get_toml_inline_table "$test_manifest" "validation" "test.txt"
+    assert_success
+
+    # Should return command with empty args
+    run get_toml_inline_table "$test_manifest" "validation" "test.txt"
+    assert_success
+    local normalized_output
+    normalized_output=$(normalize_validation_output "$output")
+    assert_equal "$normalized_output" "cat|"
+}
+
+@test "get_toml_inline_table handles multi-arg arrays" {
+    local manifest="$PACKAGES_DIR/git/manifest.toml"
+
+    # First verify function runs
+    run get_toml_inline_table "$manifest" "validation" ".gitconfig"
+    assert_success
+
+    # Verify args are comma-separated
+    local output
+    output=$(get_toml_inline_table "$manifest" "validation" ".gitconfig") || return 1
+    output=$(normalize_validation_output "$output")
+    local args="${output#*|}"
+
+    assert_equal "$args" "config,--list"
+}
+
+@test "get_toml_inline_table returns failure for non-existent key" {
+    local manifest="$PACKAGES_DIR/git/manifest.toml"
+    run get_toml_inline_table "$manifest" "validation" ".nonexistent"
+
+    assert_failure
+}
+
+@test "get_toml_inline_table returns failure for non-existent section" {
+    local manifest="$PACKAGES_DIR/git/manifest.toml"
+    run get_toml_inline_table "$manifest" "nonexistent" ".gitconfig"
+
+    assert_failure
+}
+
+@test "get_toml_inline_table handles quoted keys" {
+    local manifest="$PACKAGES_DIR/git/manifest.toml"
+
+    # First verify function runs
+    run get_toml_inline_table "$manifest" "validation" ".gitconfig"
+    assert_success
+
+    # Should successfully extract regardless of quoted key
+    local output
+    output=$(get_toml_inline_table "$manifest" "validation" ".gitconfig") || return 1
+    output=$(normalize_validation_output "$output")
+    assert_equal "$output" "git|config,--list"
+}
+
+@test "get_validation_entry retrieves correct validator" {
+    local manifest="$PACKAGES_DIR/git/manifest.toml"
+
+    # First verify function runs
+    run get_validation_entry "$manifest" ".gitconfig"
+    assert_success
+
+    # Output format: "command|arg1,arg2,arg3" (may have whitespace)
+    local output
+    output=$(get_validation_entry "$manifest" ".gitconfig") || return 1
+    output=$(normalize_validation_output "$output")
+    assert_equal "$output" "git|config,--list"
+}
+
+@test "get_validation_entry returns failure for non-existent key" {
+    local manifest="$PACKAGES_DIR/git/manifest.toml"
+    run get_validation_entry "$manifest" ".nonexistent"
+
+    assert_failure
+}
+
+@test "get_validation_patterns extracts all patterns" {
+    local manifest="$PACKAGES_DIR/git/manifest.toml"
+    run get_validation_patterns "$manifest"
+
+    assert_success
+    assert_output ".gitconfig"
+}
+
+@test "get_validation_patterns extracts wildcard patterns" {
+    local manifest="$PACKAGES_DIR/zsh/manifest.toml"
+    run get_validation_patterns "$manifest"
+
+    assert_success
+    assert_output --partial ".zshrc*"
+}
+
+@test "get_validation_patterns handles multiple patterns" {
+    # Create a test manifest with multiple validation patterns
+    local test_manifest="$TEST_DOTFILES_DIR/test_manifest.toml"
+    cat > "$test_manifest" <<EOF
+[validation]
+"file1.txt" = { command = "cat", args = ["file"] }
+"*.txt" = { command = "cat", args = ["file"] }
+".config/file.json" = { command = "python3", args = ["-m", "json.tool", "file"] }
+EOF
+
+    run get_validation_patterns "$test_manifest"
+
+    assert_success
+    # Should return all three patterns (order may vary)
+    assert_output --partial "file1.txt"
+    assert_output --partial "*.txt"
+    assert_output --partial ".config/file.json"
+}
+
+@test "get_validation_patterns returns empty for no validation section" {
+    # Create a test manifest without validation section
+    local test_manifest="$TEST_DOTFILES_DIR/test_manifest.toml"
+    cat > "$test_manifest" <<EOF
+files = ["test.txt"]
+name = "Test"
+EOF
+
+    run get_validation_patterns "$test_manifest"
+
+    assert_failure
+}
+
+@test "get_validator_for_file matches exact file path" {
+    # First verify function runs
+    run get_validator_for_file ".gitconfig" "git"
+    assert_success
+
+    # Output format: "command|arg1,arg2,arg3" (may have whitespace)
+    local output
+    output=$(get_validator_for_file ".gitconfig" "git") || return 1
+    output=$(normalize_validation_output "$output")
+    assert_equal "$output" "git|config,--list"
+}
+
+@test "get_validator_for_file matches wildcard pattern" {
+    # First verify function runs
+    run get_validator_for_file ".zshrc" "zsh"
+    assert_success
+
+    # Output format: "command|arg1,arg2,arg3" (may have whitespace)
+    local output
+    output=$(get_validator_for_file ".zshrc" "zsh") || return 1
+    output=$(normalize_validation_output "$output")
+    assert_equal "$output" "zsh|-n,file"
+}
+
+@test "get_validator_for_file matches exact pattern for .zprofile" {
+    # First verify function runs
+    run get_validator_for_file ".zprofile" "zsh"
+    assert_success
+
+    # Should match .zprofile exact pattern (not .zshrc* wildcard)
+    # Output format: "command|arg1,arg2,arg3" (may have whitespace)
+    local output
+    output=$(get_validator_for_file ".zprofile" "zsh") || return 1
+    output=$(normalize_validation_output "$output")
+    assert_equal "$output" "zsh|-n,file"
+}
+
+@test "get_validator_for_file prefers exact match over wildcard" {
+    # Create a test manifest with both exact and wildcard matches
+    local test_manifest="$TEST_DOTFILES_DIR/packages/test/manifest.toml"
+    mkdir -p "$TEST_DOTFILES_DIR/packages/test"
+    cat > "$test_manifest" <<EOF
+files = ["file.txt"]
+name = "Test"
+[validation]
+"file.txt" = { command = "exact", args = ["match"] }
+"*.txt" = { command = "wildcard", args = ["match"] }
+EOF
+
+    # First verify function runs
+    run get_validator_for_file "file.txt" "test"
+    assert_success
+
+    # Should return exact match, not wildcard
+    local output
+    output=$(get_validator_for_file "file.txt" "test") || return 1
+    output=$(normalize_validation_output "$output")
+    assert_equal "$output" "exact|match"
+}
+
+@test "get_validator_for_file returns failure for no match" {
+    run get_validator_for_file ".nonexistent" "git"
+
+    assert_failure
+}
+
+@test "get_validator_for_file returns failure for non-existent package" {
+    run get_validator_for_file ".gitconfig" "nonexistent"
+
+    assert_failure
+}
+
+@test "run_validator executes command successfully" {
+    # Test with a simple command that always succeeds
+    run run_validator "true"
+
+    assert_success
+}
+
+@test "run_validator handles missing command gracefully" {
+    run run_validator "this-command-does-not-exist-12345" "arg1"
+
+    assert_success  # Should continue, not fail
+    # Should output warning (check stderr)
+}
+
+@test "run_validator replaces 'file' placeholder in args" {
+    # Skip if cat not available
+    if ! command_exists "cat"; then
+        skip "cat command not available"
+    fi
+
+    # Create a test file
+    local test_file="$TEST_DOTFILES_DIR/test_file.txt"
+    echo "test content" > "$test_file"
+
+    # Test that run_validator can execute with file path argument
+    # Note: 'file' placeholder replacement happens in validate_config_syntax, not run_validator
+    # This test verifies run_validator can handle file paths correctly
+    run run_validator "cat" "$test_file"
+    assert_success
+}
+
+@test "run_validator handles tmux validation with cleanup" {
+    # Skip if tmux not available - must be at top of test block for BATS to recognize skip
+    if ! command_exists "tmux"; then
+        skip "tmux not available"
+    fi
+
+    # Test tmux validation using dev/validate-tmux script
+    local test_file="$TEST_DOTFILES_DIR/test_tmux.conf"
+    echo "set -g default-terminal \"screen-256color\"" > "$test_file"
+
+    run run_validator "dev/validate-tmux" "$test_file"
+
+    # Should clean up test session
+    # Verify no test session remains
+    run tmux list-sessions 2>/dev/null || true
+    refute_output --partial "dotfiles-config-test"
+}
+
+@test "run_validator preserves spaces in arguments" {
+    # Skip if echo not available
+    if ! command_exists "echo"; then
+        skip "echo command not available"
+    fi
+
+    # Test that arguments with spaces are preserved correctly
+    # Note: run_validator redirects output to /dev/null, so we can only test success
+    run run_validator "echo" "arg with spaces"
+
+    assert_success
+    # Output is redirected to /dev/null in run_validator, so we can't assert output
+}
+
+@test "get_toml_inline_table handles array with single element" {
+    local test_manifest="$TEST_DOTFILES_DIR/test_manifest.toml"
+    cat > "$test_manifest" <<EOF
+[validation]
+"test.txt" = { command = "cat", args = ["single"] }
+EOF
+
+    # First verify function runs
+    run get_toml_inline_table "$test_manifest" "validation" "test.txt"
+    assert_success
+
+    local output
+    output=$(get_toml_inline_table "$test_manifest" "validation" "test.txt") || return 1
+    output=$(normalize_validation_output "$output")
+    assert_equal "$output" "cat|single"
+}
+
+@test "get_toml_inline_table handles array with multiple elements" {
+    local test_manifest="$TEST_DOTFILES_DIR/test_manifest.toml"
+    cat > "$test_manifest" <<EOF
+[validation]
+"test.txt" = { command = "cmd", args = ["arg1", "arg2", "arg3"] }
+EOF
+
+    # First verify function runs
+    run get_toml_inline_table "$test_manifest" "validation" "test.txt"
+    assert_success
+
+    local output
+    output=$(get_toml_inline_table "$test_manifest" "validation" "test.txt") || return 1
+    output=$(normalize_validation_output "$output")
+    assert_equal "$output" "cmd|arg1,arg2,arg3"
+}
+
+@test "get_toml_inline_table handles quotes in array elements" {
+    local test_manifest="$TEST_DOTFILES_DIR/test_manifest.toml"
+    cat > "$test_manifest" <<EOF
+[validation]
+"test.txt" = { command = "cmd", args = ["arg with spaces", "normal"] }
+EOF
+
+    # First verify function runs
+    run get_toml_inline_table "$test_manifest" "validation" "test.txt"
+    assert_success
+
+    # Verify quotes are stripped (spaces within args are normalized away)
+    local output
+    output=$(get_toml_inline_table "$test_manifest" "validation" "test.txt") || return 1
+    output=$(normalize_validation_output "$output")
+    assert_equal "$output" "cmd|argwithspaces,normal"
+}
+
+@test "get_toml_inline_table handles empty args array" {
+    local test_manifest="$TEST_DOTFILES_DIR/test_manifest.toml"
+    cat > "$test_manifest" <<EOF
+[validation]
+"test.txt" = { command = "cmd", args = [] }
+EOF
+
+    # First verify function runs
+    run get_toml_inline_table "$test_manifest" "validation" "test.txt"
+    assert_success
+
+    # Should return command with empty args
+    local output
+    output=$(get_toml_inline_table "$test_manifest" "validation" "test.txt") || return 1
+    output=$(normalize_validation_output "$output")
+    assert_equal "$output" "cmd|"
+}

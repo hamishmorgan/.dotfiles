@@ -68,6 +68,31 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 └── README.md      # This file
 ```
 
+Each package directory contains a `manifest.toml` file that defines:
+
+- Files managed by the package
+- Package metadata (name, description)
+- Installation method (stow or copy-sync)
+- Platform-specific target directories
+- Validation rules for configuration syntax
+- Update commands for package-specific updates
+
+Example manifest:
+
+```toml
+files = [".gitconfig", ".gitattributes", ".gitignore-globals"]
+name = "Git"
+description = "Git configuration and aliases"
+method = "stow"
+target = "~"
+
+[validation]
+".gitconfig" = { command = "git", args = ["config", "--list"] }
+```
+
+**Manifest Requirement:** All packages must have a valid `manifest.toml` file. The installation
+script auto-discovers packages by scanning for manifests and validates them before any operations.
+
 ## Prerequisites
 
 ### macOS
@@ -317,11 +342,8 @@ nano ~/.config/fish/config_private.fish
 #### 3. Install Packages with Stow
 
 ```bash
-# Install system package first (provides .stow-global-ignore)
-stow --verbose --restow --dir=packages --target=$HOME system
-
-# Install other packages
-stow --verbose --restow --dir=packages --target=$HOME git zsh tmux gh gnuplot bash fish
+# Install packages (order doesn't matter)
+stow --verbose --restow --dir=packages --target=$HOME system git zsh tmux gh gnuplot bash fish
 
 # Or install selectively
 stow --verbose --restow --dir=packages --target=$HOME git zsh
@@ -387,7 +409,6 @@ stow --verbose --delete --dir=packages --target=$HOME git
 
 - You want automated setup with backups
 - You want health checks and validation
-- You want automatic .local file permission setting
 - You prefer a guided installation experience
 
 ## Verification
@@ -418,7 +439,7 @@ The health check performs 10 categories of checks:
 2. **Configuration Syntax**: Validates git, tmux, zsh, and bash configuration syntax
 3. **Submodule Health**: Checks Oh My Zsh submodule status and initialization
 4. **Git Repository Status**: Reports uncommitted changes, branch status, and sync with origin
-5. **File Permissions**: Ensures .local files have secure permissions (chmod 600)
+5. **File Permissions**: Checks secret config files have secure permissions
 6. **Shell Integration**: Verifies shell configs are active and PATH is properly configured
 7. **Stow Conflicts**: Detects unmanaged files that would conflict with stow
 8. **Orphaned Symlinks**: Finds broken symlinks in home and .config directories
@@ -549,31 +570,17 @@ git commit -m "Your changes"
 git commit -am "WIP: changes"
 ```
 
-## Secure File Permissions
-
-Machine-specific `.local` files contain sensitive information and are automatically
-secured with `chmod 600` (owner read/write only) during installation.
-
-**Files secured:**
-
-- `~/.gitconfig.local` - User identity and git signing keys
-- `~/.bashrc.local` - May contain API keys or tokens
-- `~/.zshrc.local` - May contain private environment variables
-- `~/.config/fish/config_private.fish` - Private fish configuration
-
-The installation script automatically sets secure permissions on these files if they exist.
-
 ### Update
 
 ```bash
 cd ~/.dotfiles
-./dot update       # Update configs, Oh My Zsh, and reinstall
+./dot update       # Update configs, packages, and reinstall
 ```
 
 The `update` command automatically:
 
 1. Updates global gitignore patterns
-2. Updates Oh My Zsh to latest version
+2. Updates packages (e.g., Oh My Zsh) that define update commands in their manifests
 3. Pulls submodule updates
 4. Reinstalls all packages
 

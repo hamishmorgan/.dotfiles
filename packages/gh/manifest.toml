@@ -1,0 +1,9 @@
+files = [".config/gh/config.yml", ".config/gh/hosts.yml"]
+
+name = "GitHub CLI"
+description = "GitHub CLI configuration"
+method = "stow"
+target = "~"
+
+[validation]
+"*.yml" = { command = "python3", args = ["-c", "import yaml; yaml.safe_load(open('file'))"] }

@@ -1,6 +1,9 @@
 # Backup directories
 backups/
 
+# Temporary files and proposals (not committed to git)
+tmp/
+
 # Machine-specific configuration files (contain sensitive/private information)
 *.local
 .gitconfig.local

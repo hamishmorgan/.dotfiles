@@ -902,6 +902,8 @@ Manual changelog updates in release notes:
 │       ├── Dockerfile.bash32
 │       └── test-in-container.sh
 ├── backups/              # Installation backups (git-ignored)
+├── tmp/                  # Temporary files and proposals (git-ignored)
+│   └── *PROPOSAL*.md     # Development proposals (not committed)
 ├── system/               # System-wide configs
 │   └── .stow-global-ignore
 ├── git/                  # Git configuration package

@@ -1,0 +1,14 @@
+files = [".zshrc", ".zprofile", ".oh-my-zsh"]
+
+name = "Zsh"
+description = "Zsh shell with Oh My Zsh"
+method = "stow"
+target = "~"
+
+[validation]
+".zshrc*" = { command = "zsh", args = ["-n", "file"] }
+".zprofile" = { command = "zsh", args = ["-n", "file"] }
+
+[update]
+command = "omz"
+args = ["update"]

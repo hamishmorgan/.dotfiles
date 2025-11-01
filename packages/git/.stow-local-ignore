@@ -3,3 +3,6 @@
 \.example$
 \.local$
 ^\.gitconfig\.template$
+
+# Package metadata (not stowed)
+^manifest\.toml$

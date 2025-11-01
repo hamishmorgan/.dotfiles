@@ -14,7 +14,10 @@ else
 fi
 
 # Try to load bats-support from various locations
-if [[ -f "/usr/lib/bats/bats-support/load.bash" ]]; then
+# Check Nix store paths first (for nix develop shell)
+if [[ -n "${BATS_SUPPORT_PATH:-}" ]] && [[ -f "$BATS_SUPPORT_PATH/load.bash" ]]; then
+    load "$BATS_SUPPORT_PATH/load"
+elif [[ -f "/usr/lib/bats/bats-support/load.bash" ]]; then
     load "/usr/lib/bats/bats-support/load"
 elif [[ -f "$BREW_PREFIX/lib/bats-support/load.bash" ]]; then
     load "$BREW_PREFIX/lib/bats-support/load"
@@ -23,7 +26,10 @@ elif [[ -f "/usr/local/lib/bats-support/load.bash" ]]; then
 fi
 
 # Try to load bats-assert
-if [[ -f "/usr/lib/bats/bats-assert/load.bash" ]]; then
+# Check Nix store paths first (for nix develop shell)
+if [[ -n "${BATS_ASSERT_PATH:-}" ]] && [[ -f "$BATS_ASSERT_PATH/load.bash" ]]; then
+    load "$BATS_ASSERT_PATH/load"
+elif [[ -f "/usr/lib/bats/bats-assert/load.bash" ]]; then
     load "/usr/lib/bats/bats-assert/load"
 elif [[ -f "$BREW_PREFIX/lib/bats-assert/load.bash" ]]; then
     load "$BREW_PREFIX/lib/bats-assert/load"
@@ -32,7 +38,10 @@ elif [[ -f "/usr/local/lib/bats-assert/load.bash" ]]; then
 fi
 
 # Try to load bats-file
-if [[ -f "/usr/lib/bats/bats-file/load.bash" ]]; then
+# Check Nix store paths first (for nix develop shell)
+if [[ -n "${BATS_FILE_PATH:-}" ]] && [[ -f "$BATS_FILE_PATH/load.bash" ]]; then
+    load "$BATS_FILE_PATH/load"
+elif [[ -f "/usr/lib/bats/bats-file/load.bash" ]]; then
     load "/usr/lib/bats/bats-file/load"
 elif [[ -f "$BREW_PREFIX/lib/bats-file/load.bash" ]]; then
     load "$BREW_PREFIX/lib/bats-file/load"
@@ -61,6 +70,32 @@ setup_test_dotfiles() {
         dot_script="$BATS_TEST_DIRNAME/../dot"
     fi
     cp "$dot_script" "$TEST_DOTFILES_DIR/"
+
+    # Copy manifest files from repository to test directory
+    # This is required because the script now auto-discovers packages via manifests
+    local repo_root="$BATS_TEST_DIRNAME/../.."
+    if [[ ! -d "$repo_root/packages" ]]; then
+        # Fallback: try one level up (for tests directly in tests/)
+        repo_root="$BATS_TEST_DIRNAME/.."
+    fi
+
+    if [[ -d "$repo_root/packages" ]]; then
+        # Copy all manifest.toml files from packages/ to test directory
+        while IFS= read -r manifest; do
+            [[ -z "$manifest" ]] && continue
+            local package_dir
+            package_dir=$(dirname "$manifest")
+            local package_name
+            package_name=$(basename "$package_dir")
+            local test_package_dir="$TEST_DOTFILES_DIR/packages/$package_name"
+
+            # Create package directory if it doesn't exist
+            mkdir -p "$test_package_dir"
+
+            # Copy manifest file
+            cp "$manifest" "$test_package_dir/manifest.toml"
+        done < <(find "$repo_root/packages" -name "manifest.toml" -type f 2>/dev/null)
+    fi
 }
 
 # Clean up test dotfiles directory

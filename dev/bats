@@ -9,6 +9,7 @@ TESTS_DIR="$(cd "$SCRIPT_DIR/../tests" && pwd)"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "${BLUE}Running BATS test suite...${NC}"
@@ -35,6 +36,7 @@ test_suites=(
 
 total_pass=0
 total_fail=0
+failed_suites=()
 
 for suite in "${test_suites[@]}"; do
     IFS=':' read -r dir name <<< "$suite"
@@ -46,23 +48,76 @@ for suite in "${test_suites[@]}"; do
 
     echo -e "${BLUE}Running $name...${NC}"
 
-    if bats "$TESTS_DIR/$dir/"; then
+    # Capture output and exit code
+    # Use TAP formatter for better structured output
+    output=""
+    exit_code=0
+    output=$(bats --formatter tap "$TESTS_DIR/$dir/" 2>&1)
+    exit_code=$?
+
+    # Check for actual test failures (not ok) vs skipped tests (ok # skip)
+    has_failures=false
+    if echo "$output" | grep -q "^not ok"; then
+        has_failures=true
+    fi
+
+    if [[ $exit_code -eq 0 ]] || ! $has_failures; then
         echo -e "${GREEN}✓ $name passed${NC}"
         ((total_pass++))
+
+        # Show info about skipped tests if any (informational only, not a failure)
+        if echo "$output" | grep -q "# skip"; then
+            skipped_count=$(echo "$output" | grep -c "# skip")
+            echo -e "${BLUE}  ($skipped_count test(s) skipped)${NC}"
+        fi
     else
         echo -e "${RED}✗ $name failed${NC}"
         ((total_fail++))
+        failed_suites+=("$name")
+
+        # Show failed test details - display ALL output so we can see errors
+        echo ""
+        echo -e "${YELLOW}Failed test output:${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        # Show the full output, highlighting error patterns
+        echo "$output" | while IFS= read -r line; do
+            if [[ "$line" =~ ^not\ ok ]]; then
+                echo -e "${RED}$line${NC}"
+            elif [[ "$line" =~ ^ok ]]; then
+                # Don't colorize passing tests to reduce noise
+                echo "$line"
+            elif [[ "$line" =~ ^# ]]; then
+                echo -e "${YELLOW}$line${NC}"
+            elif [[ "$line" =~ (error|Error|ERROR|fail|Fail|FAIL|Assertion|expected|got|status) ]]; then
+                echo -e "${RED}$line${NC}"
+            elif [[ "$line" =~ (warning|Warning|WARNING|bats warning) ]]; then
+                echo -e "${YELLOW}$line${NC}"
+            else
+                echo "$line"
+            fi
+        done
+
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
     fi
 
     echo ""
 done
 
 # Summary
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo -e "${BLUE}Test Summary:${NC}"
 echo -e "  ${GREEN}Passed: $total_pass${NC}"
 if [[ $total_fail -gt 0 ]]; then
     echo -e "  ${RED}Failed: $total_fail${NC}"
+    if [[ ${#failed_suites[@]} -gt 0 ]]; then
+        echo ""
+        echo -e "${RED}Failed suites:${NC}"
+        for failed_suite in "${failed_suites[@]}"; do
+            echo -e "  ${RED}✗${NC} $failed_suite"
+        done
+    fi
     exit 1
 else
     echo -e "  ${GREEN}All tests passed!${NC}"

@@ -55,7 +55,6 @@ git pull                            # Get latest dotfiles
 - **Cursor is NOT in the `PACKAGES` array** (see `dot` script) - it's excluded from stow-based package management
 - **Cursor won't appear in `./dot packages` output** - it has its own commands instead
 - **DO NOT add cursor to `PACKAGES` array** - it uses copy-sync, not stow
-- `.stow-local-ignore` exists in `packages/cursor/` for consistency, but cursor is never stowed
 
 ## Machine-Specific Settings Pattern
 
@@ -103,7 +102,6 @@ Use empty strings for auto-detection, let users override in Cursor, or use relat
 
 ```text
 packages/cursor/
-├── .stow-local-ignore    # Stow ignore patterns (cursor not stow-managed)
 ├── README.md             # Documentation (this file)
 ├── settings.json         # Platform-agnostic settings (no hardcoded paths)
 └── keybindings.json      # Cross-platform keybindings (with when conditions)

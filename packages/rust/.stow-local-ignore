@@ -1,6 +1,5 @@
-# Rust package stow ignore patterns
-# Machine-specific configuration files (git-ignored)
-\.local\.toml$
-\.example$
-^README\.md$
+# Package metadata (not stowed)
+^manifest\.toml$
 
+# Documentation files (not stowed)
+^README\.md$

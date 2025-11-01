@@ -1,0 +1,13 @@
+files = [".gitconfig", ".gitattributes", ".gitignore-globals"]
+
+name = "Git"
+description = "Git configuration and aliases"
+method = "stow"
+target = "~"
+
+[validation]
+".gitconfig" = { command = "git", args = ["config", "--list"] }
+
+[update]
+command = "dev/update-gitignore"
+args = ["file"]

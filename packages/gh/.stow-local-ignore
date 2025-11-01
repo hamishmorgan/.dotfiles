@@ -2,3 +2,6 @@
 # Example files and machine-specific files are not stowed
 \.example$
 \.local$
+
+# Package metadata (not stowed)
+^manifest\.toml$

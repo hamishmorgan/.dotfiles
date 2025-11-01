@@ -1,5 +1,2 @@
-# Zsh package stow ignore patterns
-# Machine-specific configuration files (git-ignored)
-\.local$
-\.example$
-
+# Package metadata (not stowed)
+^manifest\.toml$

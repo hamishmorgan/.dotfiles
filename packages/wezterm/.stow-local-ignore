@@ -1,3 +1,2 @@
-README.md
-install-terminfo.sh
-
+# Package metadata (not stowed)
+^manifest\.toml$
