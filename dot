@@ -3094,7 +3094,12 @@ cmd_install() {
     # Show tips
     if [[ ${#shell_tips[@]} -gt 0 ]]; then
         # Safely access first element (bash 3.2 compatible)
-        local first_tip="${shell_tips[0]}"
+        # Store in variable before using to avoid core dump
+        local first_tip=""
+        if [[ ${#shell_tips[@]} -ge 1 ]]; then
+            first_tip="${shell_tips[0]:-}"
+        fi
+        
         if [[ -n "$first_tip" ]]; then
             show_tips "Next steps" \
                 "$first_tip" \
