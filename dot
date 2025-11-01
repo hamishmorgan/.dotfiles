@@ -388,8 +388,9 @@ get_toml_array() {
     fi
 
     # Extract lines starting from array declaration
+    # Stop at closing bracket to avoid processing subsequent lines
     local array_lines
-    array_lines=$(echo "$section_content" | sed -n "${array_start_line},\$p")
+    array_lines=$(echo "$section_content" | sed -n "${array_start_line},\$p" | sed "/\]/q")
 
     # Parse array using balanced bracket matching
     local result_value=""
@@ -445,7 +446,10 @@ get_toml_array() {
                                 fi
                             fi
                             # Remove quotes and return
-                            echo "$result_value" | sed "s/[\"']//g; s/\s*,\s*/,/g"
+                            # Use parameter expansion to avoid sed character class issues
+                            result_value="${result_value//\"/}"
+                            result_value="${result_value//\'/}"
+                            echo "$result_value" | sed "s/[[:space:]]*,[[:space:]]*/,/g"
                             return 0
                         fi
                     else
@@ -520,7 +524,10 @@ get_toml_array() {
 
     # Output result (even if empty array [])
     if [[ -n "$result_value" ]]; then
-        echo "$result_value" | sed "s/[\"']//g; s/\s*,\s*/,/g"
+        # Use parameter expansion to avoid sed character class issues
+        result_value="${result_value//\"/}"
+        result_value="${result_value//\'/}"
+        echo "$result_value" | sed "s/[[:space:]]*,[[:space:]]*/,/g"
     else
         echo ""  # Empty array
     fi
