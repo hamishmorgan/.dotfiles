@@ -183,14 +183,14 @@ get_packages() {
 # Use read to populate array correctly and handle spaces
 # Validate that packages were discovered successfully
 if ! PACKAGES_RAW=$(get_packages); then
-    echo "Error: Failed to discover packages. Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
+    echo "Error: Failed to discover packages (get_packages command failed). Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
     exit 1
 fi
 read -ra PACKAGES <<< "$PACKAGES_RAW"
 
 # Validate that PACKAGES array is not empty
 if [[ ${#PACKAGES[@]} -eq 0 ]]; then
-    echo "Error: No packages found. Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
+    echo "Error: No packages found (get_packages returned empty). Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
     exit 1
 fi
 
@@ -470,7 +470,26 @@ get_toml_array() {
         return 1
     fi
 
-    return 1
+    # Handle final element if array was properly closed
+    # (in case array ends without trailing comma: [ "a", "b" ])
+    if [[ -n "$current_element" ]]; then
+        current_element=$(echo "$current_element" | sed 's/^\s*//; s/\s*$//')
+        if [[ -n "$current_element" ]]; then
+            if [[ -n "$result_value" ]]; then
+                result_value="$result_value,$current_element"
+            else
+                result_value="$current_element"
+            fi
+        fi
+    fi
+
+    # Output result (even if empty array [])
+    if [[ -n "$result_value" ]]; then
+        echo "$result_value" | sed "s/[\"']//g; s/\s*,\s*/,/g"
+    else
+        echo ""  # Empty array
+    fi
+    return 0
 }
 
 # Load package manifest (manifest.toml)
