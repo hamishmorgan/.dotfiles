@@ -72,7 +72,6 @@ setup_test_dotfiles() {
 
     if [[ -d "$repo_root/packages" ]]; then
         # Copy all manifest.toml files from packages/ to test directory
-        # This is required because the script now auto-discovers packages via manifests
         while IFS= read -r manifest; do
             [[ -z "$manifest" ]] && continue
             local package_dir
