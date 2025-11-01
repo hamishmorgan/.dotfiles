@@ -3533,9 +3533,9 @@ cmd_health() {
         show_health_table_row "3" "Submodule Health" "fail" "Issues found"
     else
         check_statuses+=("pass")
-        check_details+=("Oh My Zsh clean")
+        check_details+=("All submodules clean")
         check_outputs+=("")
-        show_health_table_row "3" "Submodule Health" "pass" "Oh My Zsh clean"
+        show_health_table_row "3" "Submodule Health" "pass" "All submodules clean"
     fi
 
     # 4. Git repository status
