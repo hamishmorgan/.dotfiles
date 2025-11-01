@@ -1960,7 +1960,8 @@ install_dotfiles() {
                 log_success "Installed $package"
                 stow_result=0
             else
-                echo "$stow_output" | prefix_output "│ "
+                # Show stow error output to stderr so it's visible even when piped
+                echo "$stow_output" | prefix_output "│ " >&2
                 log_error "Failed to install package: $package"
                 suggest_fixes "stow" "$package"
                 return 1
@@ -1972,6 +1973,9 @@ install_dotfiles() {
                 log_success "Installed $package"
                 stow_result=0
             else
+                # Capture and show stow error output
+                stow_output=$(stow $stow_flags "$package" 2>&1) || true
+                echo "$stow_output" | prefix_output "│ " >&2
                 log_error "Failed to install package: $package"
                 suggest_fixes "stow" "$package"
                 return 1
@@ -1982,6 +1986,9 @@ install_dotfiles() {
                 INSTALLED_PACKAGES+=("$package")
                 stow_result=0
             else
+                # Capture and show stow error output even at verbosity 0
+                stow_output=$(stow $stow_flags "$package" 2>&1) || true
+                echo "$stow_output" | prefix_output "│ " >&2
                 log_error "Failed to install package: $package"
                 suggest_fixes "stow" "$package"
                 return 1
