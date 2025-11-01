@@ -61,6 +61,33 @@ setup_test_dotfiles() {
         dot_script="$BATS_TEST_DIRNAME/../dot"
     fi
     cp "$dot_script" "$TEST_DOTFILES_DIR/"
+
+    # Copy manifest files from repository to test directory
+    # This is required because the script now auto-discovers packages via manifests
+    local repo_root="$BATS_TEST_DIRNAME/../.."
+    if [[ ! -d "$repo_root/packages" ]]; then
+        # Fallback: try one level up (for tests directly in tests/)
+        repo_root="$BATS_TEST_DIRNAME/.."
+    fi
+
+    if [[ -d "$repo_root/packages" ]]; then
+        # Copy all manifest.toml files from packages/ to test directory
+        # This is required because the script now auto-discovers packages via manifests
+        while IFS= read -r manifest; do
+            [[ -z "$manifest" ]] && continue
+            local package_dir
+            package_dir=$(dirname "$manifest")
+            local package_name
+            package_name=$(basename "$package_dir")
+            local test_package_dir="$TEST_DOTFILES_DIR/packages/$package_name"
+            
+            # Create package directory if it doesn't exist
+            mkdir -p "$test_package_dir"
+            
+            # Copy manifest file
+            cp "$manifest" "$test_package_dir/manifest.toml"
+        done < <(find "$repo_root/packages" -name "manifest.toml" -type f 2>/dev/null)
+    fi
 }
 
 # Clean up test dotfiles directory
