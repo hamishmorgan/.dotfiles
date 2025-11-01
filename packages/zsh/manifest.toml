@@ -1,0 +1,11 @@
+files = [
+  ".zshrc",
+  ".zprofile",
+  ".oh-my-zsh"
+]
+
+name = "Zsh"
+description = "Zsh shell with Oh My Zsh"
+method = "stow"
+target = "~"
+

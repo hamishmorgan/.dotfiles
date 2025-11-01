@@ -1,0 +1,10 @@
+files = [
+  ".bashrc",
+  ".bash_profile"
+]
+
+name = "Bash"
+description = "Bash shell configuration"
+method = "stow"
+target = "~"
+

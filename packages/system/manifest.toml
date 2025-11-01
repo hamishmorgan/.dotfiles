@@ -1,0 +1,12 @@
+files = [
+  ".stow-global-ignore",
+  ".stowrc",
+  ".editorconfig",
+  ".inputrc"
+]
+
+name = "System"
+description = "System-wide configuration"
+method = "stow"
+target = "~"
+

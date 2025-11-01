@@ -1,0 +1,11 @@
+files = [
+  ".gitconfig",
+  ".gitattributes",
+  ".gitignore-globals"
+]
+
+name = "Git"
+description = "Git configuration and aliases"
+method = "stow"
+target = "~"
+

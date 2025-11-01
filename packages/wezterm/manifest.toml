@@ -1,0 +1,9 @@
+files = [
+  ".wezterm.lua"
+]
+
+name = "WezTerm"
+description = "WezTerm terminal emulator"
+method = "stow"
+target = "~"
+

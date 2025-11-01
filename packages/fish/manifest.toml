@@ -1,0 +1,13 @@
+files = [
+  ".config/fish/config.fish",
+  ".config/fish/config.osx.fish",
+  ".config/fish/config.linux.fish",
+  ".config/fish/config.local.fish.example",
+  ".config/fish/functions"
+]
+
+name = "Fish"
+description = "Fish shell configuration"
+method = "stow"
+target = "~"
+
