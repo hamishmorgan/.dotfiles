@@ -276,7 +276,8 @@ mutation {
 - You've addressed all comments (either fixed code or replied with reasoning)
 - The review is still pending (state: COMMENTED or CHANGES_REQUESTED)
 
-**CRITICAL:** Only dismiss a review if ALL threads are resolved. Dismissing a review hides it from the PR, so ensure all concerns are addressed.
+**CRITICAL:** Only dismiss a review if ALL threads are resolved. Dismissing a review hides it from the PR,
+so ensure all concerns are addressed.
 
 **Implementation:**
 
