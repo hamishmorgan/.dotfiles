@@ -7,3 +7,7 @@ target = "~"
 
 [validation]
 ".gitconfig" = { command = "git", args = ["config", "--list"] }
+
+[update]
+command = "dev/update-gitignore"
+args = ["file"]

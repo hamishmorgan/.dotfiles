@@ -4019,33 +4019,6 @@ cmd_health_verbose() {
     fi
 }
 
-# Update gitignore globals from gitignore.io
-update_gitignore() {
-    log_info "Updating .gitignore-globals from toptal.com..."
-
-    local types="linux,osx,windows"
-    local url="https://www.toptal.com/developers/gitignore/api/$types"
-    local gitignore_file="$PACKAGES_DIR/git/.gitignore-globals"
-
-    # Add timeout to prevent hanging
-    if portable_timeout "$CURL_TIMEOUT" curl -s "$url" > "$gitignore_file.tmp" 2>&1; then
-        if [[ -s "$gitignore_file.tmp" ]]; then
-            mv "$gitignore_file.tmp" "$gitignore_file"
-            log_success "Updated .gitignore-globals with latest patterns"
-            return 0
-        else
-            rm -f "$gitignore_file.tmp"
-            log_error "Downloaded file is empty"
-            return 1
-        fi
-    else
-        rm -f "$gitignore_file.tmp"
-        log_error "Failed to download .gitignore-globals (timeout or network error)"
-        suggest_fixes "network" "$url"
-        return 1
-    fi
-}
-
 # Remove broken or mispointed dotfile symlinks
 # This handles cases where packages were moved (e.g., bash/ -> packages/bash/)
 remove_mispointed_symlinks() {
@@ -4135,23 +4108,8 @@ cmd_update() {
 
     show_command_header "Dotfiles Update"
 
-    # Step 1: Update global configs
-    show_numbered_section "1" "Update Global Configurations"
-    if run_with_verbosity "$verbosity" 2 "" update_gitignore; then
-        # Success - show result for level 0-1
-        if [[ $verbosity -lt 2 ]]; then
-            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} Global gitignore updated"
-        fi
-    else
-        # Failed or skipped - show warning
-        if [[ $verbosity -lt 2 ]]; then
-            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Global gitignore update failed or skipped"
-        fi
-    fi
-    echo ""
-
-    # Step 2: Update packages (from manifests)
-    show_numbered_section "2" "Update Packages"
+    # Step 1: Update packages (from manifests)
+    show_numbered_section "1" "Update Packages"
     local update_count=0
     local updated_packages=()
     local skipped_packages=()
@@ -4181,6 +4139,42 @@ cmd_update() {
             IFS=',' read -ra update_args <<< "$args_string"
         fi
 
+        # Replace "file" placeholder in args array
+        # For update commands, "file" gets replaced with the file being updated
+        # Example: git package updates .gitignore-globals
+        local expanded_args=()
+        for arg in "${update_args[@]}"; do
+            if [[ "$arg" == "file" ]]; then
+                # Load manifest to get files list
+                if load_package_manifest "$package"; then
+                    local files_string="$PACKAGE_FILES"
+                    IFS=',' read -ra files <<< "$files_string"
+                    # Find the file that matches the update (e.g., .gitignore-globals for git)
+                    local file_to_update=""
+                    for file in "${files[@]}"; do
+                        # Remove quotes and whitespace
+                        file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+                        # Look for common update targets
+                        if [[ "$file" == *".gitignore-globals"* ]]; then
+                            file_to_update="$file"
+                            break
+                        fi
+                    done
+                    if [[ -n "$file_to_update" ]]; then
+                        expanded_args+=("$PACKAGES_DIR/$package/$file_to_update")
+                    else
+                        # Fallback: use package directory
+                        expanded_args+=("$PACKAGES_DIR/$package")
+                    fi
+                else
+                    # Fallback: use package directory
+                    expanded_args+=("$PACKAGES_DIR/$package")
+                fi
+            else
+                expanded_args+=("$arg")
+            fi
+        done
+
         # Load package name for display
         if load_package_manifest "$package"; then
             local display_name="$PACKAGE_NAME"
@@ -4194,7 +4188,7 @@ cmd_update() {
         fi
 
         # Execute update command
-        if run_package_update "$cmd" "${update_args[@]}"; then
+        if run_package_update "$cmd" "${expanded_args[@]}"; then
             ((update_count++))
             updated_packages+=("$display_name")
             if [[ $verbosity -lt 2 ]]; then
@@ -4215,9 +4209,9 @@ cmd_update() {
     fi
     echo ""
 
-    # Step 3: Clean up outdated symlinks
+    # Step 2: Clean up outdated symlinks
     if [[ $verbosity -ge 1 ]]; then
-        show_numbered_section "3" "Clean Up Outdated Symlinks"
+        show_numbered_section "2" "Clean Up Outdated Symlinks"
         remove_mispointed_symlinks "$verbosity"
         echo ""
     else

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Update gitignore globals from gitignore.io
+# Usage: dev/update-gitignore <gitignore-file-path>
+
+set -euo pipefail
+
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Get gitignore file path from argument or use default
+readonly GITIGNORE_FILE="${1:-$DOTFILES_DIR/packages/git/.gitignore-globals}"
+
+# Configuration
+readonly TYPES="linux,osx,windows"
+readonly URL="https://www.toptal.com/developers/gitignore/api/$TYPES"
+readonly CURL_TIMEOUT="${DOTFILES_CURL_TIMEOUT:-30}"
+
+# Download gitignore patterns
+if curl -s --max-time "$CURL_TIMEOUT" "$URL" > "$GITIGNORE_FILE.tmp" 2>&1; then
+    if [[ -s "$GITIGNORE_FILE.tmp" ]]; then
+        mv "$GITIGNORE_FILE.tmp" "$GITIGNORE_FILE"
+        echo "Updated .gitignore-globals with latest patterns"
+        exit 0
+    else
+        rm -f "$GITIGNORE_FILE.tmp"
+        echo "Downloaded file is empty" >&2
+        exit 1
+    fi
+else
+    rm -f "$GITIGNORE_FILE.tmp"
+    echo "Failed to download .gitignore-globals (timeout or network error)" >&2
+    exit 1
+fi
+
