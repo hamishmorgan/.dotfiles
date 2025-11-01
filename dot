@@ -175,55 +175,81 @@ get_packages() {
         return 1
     fi
 
-    # Ensure system package is always first
-    # Split discovered packages into array to check for system
+    # Ensure system package is always first (if present), using simple array filtering
     local packages_array=()
     read -ra packages_array <<< "$discovered"
 
-    local non_system_packages=()
-    local has_system=false
+    # Print 'system' first if present, then the rest, space-separated
+    local result=""
+    local first=true
 
-    # Collect non-system packages and track if system is present
+    # Add system first if present
     for package in "${packages_array[@]}"; do
         if [[ "$package" == "system" ]]; then
-            has_system=true
-        else
-            non_system_packages+=("$package")
+            result="system"
+            first=false
+            break
         fi
     done
 
-    local result=""
-    if [[ "$has_system" == true ]]; then
-        result="system"
-    fi
-    for pkg in "${non_system_packages[@]}"; do
-        if [[ -z "$result" ]]; then
-            result="$pkg"
-        else
-            result="$result $pkg"
+    # Add remaining packages
+    for package in "${packages_array[@]}"; do
+        if [[ "$package" != "system" ]]; then
+            if [[ "$first" == true ]]; then
+                result="$package"
+                first=false
+            else
+                result="$result $package"
+            fi
         fi
     done
-
-    # If system wasn't found, it will be missing from the list
-    # (this is fine - validate_packages will catch missing system package)
 
     echo "$result"
 }
 
 # Initialize PACKAGES array (auto-discovery via manifests)
-# Use read to populate array correctly and handle spaces
-# Validate that packages were discovered successfully
-if ! PACKAGES_RAW=$(get_packages); then
-    echo "Error: Failed to discover packages. Check that manifest files exist in $PACKAGES_DIR/*/manifest.toml" >&2
-    exit 1
-fi
-read -ra PACKAGES <<< "$PACKAGES_RAW"
+# Package discovery is deferred until after argument parsing to allow --help to work
+# without requiring packages to exist
+PACKAGES=()
 
-# Validate that PACKAGES array is not empty
-if [[ ${#PACKAGES[@]} -eq 0 ]]; then
-    echo "Error: No packages found. Ensure manifest files exist in $PACKAGES_DIR/*/manifest.toml" >&2
-    exit 1
-fi
+# Initialize packages array (called after argument parsing for commands that need packages)
+initialize_packages() {
+    # Use read to populate array correctly and handle spaces
+    # Validate that packages were discovered successfully
+    local get_packages_output
+    local get_packages_exit_code
+    get_packages_output=$(get_packages 2>&1)
+    get_packages_exit_code=$?
+
+    if [[ $get_packages_exit_code -ne 0 ]]; then
+        echo "Error: Failed to execute package discovery (get_packages command failed). Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
+        echo "Debug: PACKAGES_DIR=$PACKAGES_DIR" >&2
+        echo "Debug: DOTFILES_DIR=$DOTFILES_DIR" >&2
+        [[ -n "$get_packages_output" ]] && echo "Debug: get_packages output: $get_packages_output" >&2
+        return 1
+    fi
+
+    read -ra PACKAGES <<< "$get_packages_output"
+
+    # Validate that PACKAGES array is not empty
+    if [[ ${#PACKAGES[@]} -eq 0 ]]; then
+        echo "Error: Package discovery succeeded but found no packages. Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
+        echo "Debug: PACKAGES_DIR=$PACKAGES_DIR" >&2
+        echo "Debug: DOTFILES_DIR=$DOTFILES_DIR" >&2
+        return 1
+    fi
+    return 0
+}
+
+# Helper function to remove quotes and whitespace from strings
+# Used for cleaning file paths extracted from TOML arrays
+# Note: This removes ALL quotes, including quotes that might be part of the value
+# For TOML values, use get_toml_value() which handles quotes correctly
+trim_quotes_and_whitespace() {
+    local input="$1"
+    # Remove leading/trailing whitespace, single quotes, and double quotes
+    echo "$input" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//'
+}
 
 # Get package files (manifest-only)
 # Get files/directories for each package (for status display)
@@ -320,17 +346,13 @@ get_toml_value() {
     escaped_key=$(escape_regex_special_chars "$key")
     local key_exists
     key_exists=$(echo "$section_content" | grep -c "^$escaped_key\s*=" 2>/dev/null || echo "0")
-    # Strip any trailing newline from grep -c output
-    key_exists="${key_exists//$'\n'/}"
 
     if [[ "$key_exists" -eq 0 ]]; then
         return 1  # Key doesn't exist - use default
     fi
 
     # Extract key value, strip comments and trim whitespace
-    # Use escaped key for safe pattern matching
-    local escaped_key
-    escaped_key=$(escape_regex_special_chars "$key")
+    # Use escaped key for safe pattern matching (already computed above)
     local value_line
     value_line=$(echo "$section_content" | \
         grep "^$escaped_key\s*=" | \
@@ -348,9 +370,12 @@ get_toml_value() {
     # Trim leading whitespace (handles spaces, tabs, etc.)
     value="${value#"${value%%[![:space:]]*}"}"
 
-    # Remove quotes if present
+    # Remove quotes if present (handles both single and double quotes)
+    # Note: This does not handle escaped quotes within values - document limitation if needed
     if [[ "$value" =~ ^[\"'].*[\"']$ ]]; then
-        value=$(echo "$value" | sed "s/^[\"']//; s/[\"']$//")
+        # Remove leading and trailing quotes (both single and double)
+        value="${value#[\"']}"
+        value="${value%[\"']}"
     fi
 
     # Return empty string if key exists but value is empty (explicit empty)
@@ -386,8 +411,11 @@ get_toml_array() {
     fi
 
     # Find array declaration (key = [...] or key = [ ... ])
+    # Escape key for safe regex matching
+    local escaped_key
+    escaped_key=$(escape_regex_special_chars "$key")
     local array_start_line
-    array_start_line=$(echo "$section_content" | grep -n "^$key\s*=" | cut -d: -f1 | head -1)
+    array_start_line=$(echo "$section_content" | grep -n "^$escaped_key\s*=" | cut -d: -f1 | head -1)
 
     if [[ -z "$array_start_line" ]]; then
         return 1
@@ -520,7 +548,7 @@ get_toml_array() {
 
     # Array not closed properly
     if [[ $bracket_depth -ne 0 ]]; then
-        log_error "Unbalanced brackets in array: $file (section: $section, key: $key)"
+        log_error "Unbalanced brackets in array (manifest: $file, section: $section, key: $key)"
         return 1
     fi
 
@@ -1071,7 +1099,8 @@ get_validator_for_file() {
     while IFS= read -r pattern; do
         [[ -z "$pattern" ]] && continue
 
-        # Unquoted pattern enables bash glob matching (intentional)
+        # Unquoted pattern enables bash glob matching (intentional for wildcard support)
+        # Patterns come from trusted manifest files (part of repository), so glob expansion is safe
         # shellcheck disable=SC2053
         if [[ "$file" == $pattern ]]; then
             cmd=$(get_validation_entry "$manifest" "$pattern")
@@ -2307,7 +2336,7 @@ show_status() {
 
         for file in "${files[@]}"; do
             # Remove quotes and whitespace
-            file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+            file=$(trim_quotes_and_whitespace "$file")
 
             local dotfile_path="$package_dotfiles/$file"
             local system_path="$package_system/$file"
@@ -2917,7 +2946,7 @@ cmd_install() {
             IFS=',' read -ra files <<< "$PACKAGE_FILES"
             local primary_config="${files[0]}"
             # Remove quotes and whitespace
-            primary_config=$(echo "$primary_config" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+            primary_config=$(trim_quotes_and_whitespace "$primary_config")
 
             if [[ "$primary_config" == .* ]]; then
                 # Remove leading dot and add ~ prefix
@@ -3391,7 +3420,7 @@ check_shell_integration() {
 
                 for file in "${files[@]}"; do
                     # Remove quotes and whitespace
-                    file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+                    file=$(trim_quotes_and_whitespace "$file")
 
                     # Skip directories and non-config files
                     if [[ "$file" == */ ]] || [[ "$file" == *".example"* ]] || [[ "$file" == *"/functions"* ]]; then
@@ -4348,7 +4377,7 @@ sync_package_to_system() {
 
     for file in "${files[@]}"; do
         # Remove quotes and whitespace
-        file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+        file=$(trim_quotes_and_whitespace "$file")
 
         local source_file="$source_dir/$file"
         local target_file="$target_dir/$file"
@@ -4442,7 +4471,7 @@ pull_package_from_system() {
 
     for file in "${files[@]}"; do
         # Remove quotes and whitespace
-        file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+        file=$(trim_quotes_and_whitespace "$file")
 
         local source_file="$source_dir/$file"
         local target_file="$target_dir/$file"
@@ -4621,11 +4650,12 @@ cmd_update() {
                     local manifest="$PACKAGES_DIR/$package/manifest.toml"
 
                     # Check for update_target field in [update] section
+                    # Optional: specifies which file to update when "file" placeholder is used
+                    # Format: [update] update_target = ".zshrc"
+                    # If not set, falls back to first file in files array
                     local update_target
-                    if update_target=$(get_toml_value "$manifest" "update" "update_target" 2>/dev/null); then
-                        if [[ -n "$update_target" ]]; then
-                            file_to_update="$update_target"
-                        fi
+                    if update_target=$(get_toml_value "$manifest" "update" "update_target" 2>/dev/null) && [[ -n "$update_target" ]]; then
+                        file_to_update="$update_target"
                     fi
 
                     # Fallback: use first file in files array if update_target not set
@@ -4634,7 +4664,7 @@ cmd_update() {
                         IFS=',' read -ra files <<< "$files_string"
                         if [[ ${#files[@]} -gt 0 ]]; then
                             # Remove quotes and whitespace from the first file
-                            file_to_update=$(echo "${files[0]}" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+                            file_to_update=$(trim_quotes_and_whitespace "${files[0]}")
                         fi
                     fi
 
@@ -5298,6 +5328,12 @@ handle_completion() {
 main() {
     # Parse command-line arguments into global COMMAND, VERBOSITY, and COMMAND_ARGS
     parse_arguments "$@"
+
+    # Initialize packages for commands that need them (all except help/completion)
+    # This is deferred until after argument parsing to allow --help to work without packages
+    if ! initialize_packages; then
+        exit 1
+    fi
 
     # Execute command with verbosity level
     case $COMMAND in

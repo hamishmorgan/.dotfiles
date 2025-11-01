@@ -234,12 +234,12 @@ EOF
     assert_equal "$output" "zsh|-n,file"
 }
 
-@test "get_validator_for_file matches wildcard pattern for .zprofile" {
+@test "get_validator_for_file matches exact pattern for .zprofile" {
     # First verify function runs
     run get_validator_for_file ".zprofile" "zsh"
     assert_success
 
-    # Should match .zshrc* pattern
+    # Should match .zprofile exact pattern (not .zshrc* wildcard)
     # Output format: "command|arg1,arg2,arg3" (may have whitespace)
     local output
     output=$(get_validator_for_file ".zprofile" "zsh") || return 1
@@ -314,7 +314,7 @@ EOF
 }
 
 @test "run_validator handles tmux validation with cleanup" {
-    # Skip if tmux not available
+    # Skip if tmux not available - must be at top of test block for BATS to recognize skip
     if ! command_exists "tmux"; then
         skip "tmux not available"
     fi
