@@ -3099,7 +3099,7 @@ cmd_install() {
         if [[ ${#shell_tips[@]} -ge 1 ]]; then
             first_tip="${shell_tips[0]:-}"
         fi
-        
+
         if [[ -n "$first_tip" ]]; then
             show_tips "Next steps" \
                 "$first_tip" \
