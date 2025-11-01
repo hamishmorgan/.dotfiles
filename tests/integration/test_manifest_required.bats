@@ -42,10 +42,10 @@ EOF
 
     # Now remove the manifest and try to initialize
     rm "$test_package/manifest.toml"
-    
+
     # Initialize should fail because manifest is missing
     run initialize_packages
-    
+
     assert_failure
     assert_output --partial "missing manifest"
 }
@@ -60,7 +60,7 @@ name = "Bad"
 EOF
 
     run initialize_packages
-    
+
     assert_failure
     assert_output --partial "invalid manifest"
 }
@@ -68,9 +68,9 @@ EOF
 @test "validate_all_manifests detects missing manifest" {
     # Manually populate PACKAGES with a non-existent package
     PACKAGES=("system" "nonexistent")
-    
+
     run validate_all_manifests
-    
+
     assert_failure
     assert_output --partial "missing required manifest"
     assert_output --partial "nonexistent"
@@ -85,15 +85,15 @@ files = ["test.txt"]
 name = "Unreadable"
 EOF
     chmod 000 "$test_package/manifest.toml"
-    
+
     # Add to PACKAGES array
     PACKAGES=("unreadable")
-    
+
     run validate_all_manifests
-    
+
     assert_failure
     assert_output --partial "not readable"
-    
+
     # Cleanup
     chmod 644 "$test_package/manifest.toml"
 }
@@ -106,11 +106,11 @@ EOF
 name = "No Files"
 description = "Missing files array"
 EOF
-    
+
     PACKAGES=("no-files-pkg")
-    
+
     run validate_all_manifests
-    
+
     assert_failure
     assert_output --partial "invalid manifest"
 }
@@ -118,14 +118,14 @@ EOF
 @test "validate_all_manifests succeeds for valid manifests" {
     # Use real packages from test setup (system, git, etc.)
     run validate_all_manifests
-    
+
     assert_success
 }
 
 @test "get_package_files fails immediately without manifest" {
     # Package without manifest should fail fast
     run get_package_files "nonexistent-package"
-    
+
     assert_failure
 }
 
@@ -133,13 +133,13 @@ EOF
     # Create package directory without manifest
     local test_package="$PACKAGES_DIR/test-no-manifest"
     mkdir -p "$test_package"
-    
+
     # Try to use package - should fail
     run get_package_files "test-no-manifest"
-    
+
     assert_failure
     assert_output --partial "missing manifest"
-    
+
     # Cleanup
     rm -rf "$test_package"
 }

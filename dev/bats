@@ -64,7 +64,7 @@ for suite in "${test_suites[@]}"; do
     if [[ $exit_code -eq 0 ]] || ! $has_failures; then
         echo -e "${GREEN}✓ $name passed${NC}"
         ((total_pass++))
-        
+
         # Show info about skipped tests if any (informational only, not a failure)
         if echo "$output" | grep -q "# skip"; then
             skipped_count=$(echo "$output" | grep -c "# skip")

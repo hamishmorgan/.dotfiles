@@ -243,21 +243,21 @@ initialize_packages() {
     local validation_errors=0
     for package in "${PACKAGES[@]}"; do
         local manifest="$PACKAGES_DIR/$package/manifest.toml"
-        
+
         # Check manifest file exists
         if [[ ! -f "$manifest" ]]; then
             echo "Error: Package '$package' missing manifest file: $manifest" >&2
             ((validation_errors++))
             continue
         fi
-        
+
         # Check manifest is readable
         if [[ ! -r "$manifest" ]]; then
             echo "Error: Package '$package' manifest not readable: $manifest" >&2
             ((validation_errors++))
             continue
         fi
-        
+
         # Validate manifest can be parsed (load with error reporting)
         if ! load_package_manifest "$package" false 2>&1 | grep -q "Error"; then
             : # Manifest loaded successfully
