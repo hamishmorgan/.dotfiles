@@ -244,7 +244,8 @@ gh api graphql -f query="..." && gh api graphql -f query="..."
 1. Make code changes addressing the comment
 2. Commit and push changes
 3. Reply to thread explaining what was fixed
-4. Resolve the thread (optional, but recommended)
+4. **Add emoji reaction** (👍 or 🚀) to acknowledge helpful feedback
+5. Resolve the thread (optional, but recommended)
 
 ### Unresolving Threads
 
@@ -520,8 +521,9 @@ mutation {
 **When to use reactions vs replies:**
 
 - **Reaction only:** Simple acknowledgment, agreement, quick thanks
-- **Reply + reaction:** Explaining disagreement, providing context, asking questions
+- **Reply + reaction:** Explaining disagreement, providing context, asking questions, **acknowledging helpful feedback**
 - **Disagreements:** Always reply with reasoning; use 👎 reaction sparingly (prefer just reply)
+- **Helpful suggestions:** Reply explaining what was done + 👍 reaction to acknowledge
 
 ## Continuing Conversations
 
