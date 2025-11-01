@@ -2016,6 +2016,8 @@ validate_package() {
     IFS=',' read -ra file_array <<< "$files"
 
     for file in "${file_array[@]}"; do
+        # Trim whitespace from file path (handles leading/trailing spaces from TOML parsing)
+        file=$(echo "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
         # Check symlinks contain .dotfiles/packages/$package/ with trailing slash
         # - .dotfiles/packages/ matches the packages/ directory structure
         # - trailing slash prevents false positives with siblings like git-old/
@@ -3096,14 +3098,21 @@ check_submodule_health() {
 
     # Check all submodules defined in .gitmodules
     if [[ -f "$DOTFILES_DIR/.gitmodules" ]]; then
-        while IFS= read -r submodule_path; do
-            [[ -z "$submodule_path" ]] && continue
-
-            # Extract submodule path from .gitmodules format: [submodule "path/to/submodule"]
-            if [[ "$submodule_path" =~ submodule\ \"([^\"]+)\" ]]; then
+        # Parse .gitmodules file to extract submodule paths
+        # Format: [submodule "name"] ... path = actual/path
+        local current_submodule=""
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            
+            # Extract submodule name from [submodule "name"]
+            if [[ "$line" =~ ^\s*\[submodule\ \"([^\"]+)\" ]]; then
+                current_submodule="${BASH_REMATCH[1]}"
+            # Extract path from "path = actual/path"
+            elif [[ -n "$current_submodule" && "$line" =~ ^\s*path\s*=\s*(.+)$ ]]; then
                 local submodule_rel_path="${BASH_REMATCH[1]}"
+                submodule_rel_path=$(echo "$submodule_rel_path" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
                 local submodule_full_path="$DOTFILES_DIR/$submodule_rel_path"
-
+                
                 if [[ -d "$submodule_full_path" ]]; then
                     # Check if submodule is initialized
                     if [[ -f "$submodule_full_path/.git" ]] || [[ -d "$submodule_full_path/.git" ]]; then
@@ -3113,7 +3122,7 @@ check_submodule_health() {
                         else
                             log_warning "Submodule $submodule_rel_path has uncommitted changes"
                         fi
-
+                        
                         # Check if submodule is detached
                         if git -C "$submodule_full_path" symbolic-ref -q HEAD >/dev/null 2>&1; then
                             log_success "Submodule $submodule_rel_path on branch"
@@ -3129,8 +3138,11 @@ check_submodule_health() {
                     log_error "Submodule directory missing: $submodule_rel_path"
                     ((issues++))
                 fi
+                
+                # Reset for next submodule
+                current_submodule=""
             fi
-        done < <(grep -E '^\s*\[submodule' "$DOTFILES_DIR/.gitmodules" 2>/dev/null)
+        done < "$DOTFILES_DIR/.gitmodules"
     fi
 
     return $issues
