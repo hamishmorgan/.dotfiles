@@ -3069,45 +3069,10 @@ cmd_install() {
 
     show_command_summary "success" "INSTALLED" "$duration"
 
-    # Generate generic shell restart tip (avoid array operations in Bash 3.2)
-    # Find first shell package and use it for tip
-    local shell_restart_tip=""
-    for package in "${PACKAGES[@]}"; do
-        if ! load_package_manifest "$package" true; then
-            continue
-        fi
-
-        # Check if this is a shell package
-        local package_lower
-        package_lower=$(echo "$PACKAGE_NAME" | tr '[:upper:]' '[:lower:]')
-        if [[ "$package_lower" == *"zsh"* ]] || [[ "$package_lower" == *"bash"* ]] || [[ "$package_lower" == *"fish"* ]]; then
-            # Find primary config file (first file in files array)
-            local files_csv="$PACKAGE_FILES"
-            # Get first file by extracting everything before first comma
-            local primary_config="${files_csv%%,*}"
-            
-            # Remove quotes and whitespace
-            primary_config=$(trim_quotes_and_whitespace "$primary_config")
-
-            if [[ -n "$primary_config" ]] && [[ "$primary_config" == .* ]]; then
-                # Remove leading dot and add ~ prefix
-                local config_path="~${primary_config}"
-                shell_restart_tip="Restart your terminal or run: source $config_path"
-                break  # Use first shell package found
-            fi
-        fi
-    done
-
-    # Show tips
-    if [[ -n "$shell_restart_tip" ]]; then
-        show_tips "Next steps" \
-            "$shell_restart_tip" \
-            "Verify installation: $0 health"
-    else
-        show_tips "Next steps" \
-            "Restart your terminal to apply changes" \
-            "Verify installation: $0 health"
-    fi
+    # Show tips (simple version to avoid Bash 3.2 array iteration issues)
+    show_tips "Next steps" \
+        "Restart your terminal to apply changes" \
+        "Verify installation: $0 health"
     echo ""
 
     auto_cleanup_backups
