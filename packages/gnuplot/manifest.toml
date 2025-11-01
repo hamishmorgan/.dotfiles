@@ -1,9 +1,9 @@
-files = [
-  ".gnuplot"
-]
+files = [".gnuplot"]
 
 name = "GNU Plot"
 description = "Gnuplot configuration"
 method = "stow"
 target = "~"
 
+[validation]
+".gnuplot" = { command = "gnuplot", args = ["-e", "load 'file'"] }

@@ -10,3 +10,6 @@ name = "Fish"
 description = "Fish shell configuration"
 method = "stow"
 target = "~"
+
+[validation]
+".config/fish/*.fish" = { command = "fish", args = ["-n", "file"] }

@@ -188,3 +188,6 @@ fi
 if [ -f ~/.bashrc.local ]; then
     source ~/.bashrc.local
 fi
+
+# Added by tec agent
+[[ -x /Users/hamish/.local/state/tec/profiles/base/current/global/init ]] && [[ $- == *i* ]] && eval "$(/Users/hamish/.local/state/tec/profiles/base/current/global/init bash)"

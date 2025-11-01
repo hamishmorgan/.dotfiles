@@ -1,9 +1,9 @@
-files = [
-  ".wezterm.lua"
-]
+files = [".wezterm.lua"]
 
 name = "WezTerm"
 description = "WezTerm terminal emulator"
 method = "stow"
 target = "~"
 
+[validation]
+".wezterm.lua" = { command = "lua", args = ["-l", "file"] }

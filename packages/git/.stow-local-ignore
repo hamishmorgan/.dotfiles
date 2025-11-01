@@ -1,5 +1,0 @@
-# Git package stow ignore patterns
-# Example files and machine-specific files are not stowed
-\.example$
-\.local$
-^\.gitconfig\.template$

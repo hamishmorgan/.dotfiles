@@ -9,3 +9,6 @@ name = "Rust"
 description = "Rust toolchain configuration"
 method = "stow"
 target = "~"
+
+[validation]
+"*.toml" = { command = "python3", args = ["-c", "import tomli; tomli.load(open('file', 'rb'))"] }

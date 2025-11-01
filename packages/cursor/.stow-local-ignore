@@ -1,5 +1,0 @@
-# Cursor package local ignore patterns
-# Note: This is a copy-sync package, not stow-managed
-# The .stow-local-ignore is kept for consistency with other packages
-README.md
-

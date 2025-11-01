@@ -1,9 +1,9 @@
-files = [
-  ".tmux.conf"
-]
+files = [".tmux.conf"]
 
 name = "Tmux"
 description = "Tmux terminal multiplexer"
 method = "stow"
 target = "~"
 
+[validation]
+".tmux.conf" = { command = "tmux", args = ["-f", "file", "-C", "new-session", "-d", "-s", "dotfiles-config-test"] }

@@ -94,6 +94,7 @@ The `system` package is stowed first to ensure `.stow-global-ignore` is in place
 - `dev/`: Development tools (linting, testing, CI)
 - `tests/`: Test infrastructure (BATS, smoke tests, CI)
 - `dot`: Main user-facing script
+- `tmp/`: Temporary files and proposals (git-ignored, not committed)
 
 **Documentation Structure:**
 
@@ -1091,6 +1092,7 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 - **Package files**: `packages/` directory (system/, git/, zsh/, tmux/, gh/, gnuplot/, bash/, fish/, bat/, cursor/)
 - **Test suites**: `tests/` directory (BATS tests, test helpers, CI infrastructure)
 - **Configuration**: Dot-prefixed names (`.gitconfig`, `.zshrc`, etc.)
+- **Temporary files**: `tmp/` directory (git-ignored, for proposals and temporary docs)
 - `.gitignore` is project-specific, not managed by stow
 
 **Important Path Variables:**

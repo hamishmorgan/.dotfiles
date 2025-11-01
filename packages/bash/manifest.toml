@@ -1,10 +1,9 @@
-files = [
-  ".bashrc",
-  ".bash_profile"
-]
+files = [".bashrc", ".bash_profile"]
 
 name = "Bash"
 description = "Bash shell configuration"
 method = "stow"
 target = "~"
 
+[validation]
+".bashrc*" = { command = "bash", args = ["-n", "file"] }

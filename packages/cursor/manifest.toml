@@ -1,0 +1,11 @@
+files = ["settings.json", "keybindings.json"]
+
+name = "Cursor IDE"
+description = "Cursor IDE configuration"
+method = "copy-sync"
+target = "~/.config/Cursor/User"
+
+[validation]
+"*.json" = { command = "python3", args = ["-m", "json.tool", "file"] }
+
+

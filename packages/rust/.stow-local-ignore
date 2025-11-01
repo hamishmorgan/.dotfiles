@@ -1,6 +1,0 @@
-# Rust package stow ignore patterns
-# Machine-specific configuration files (git-ignored)
-\.local\.toml$
-\.example$
-^README\.md$
-

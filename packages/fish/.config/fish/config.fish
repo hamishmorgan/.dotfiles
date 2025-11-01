@@ -74,3 +74,6 @@ end
 if test -f ~/.config/fish/config.local.fish
     source ~/.config/fish/config.local.fish
 end
+
+# Added by tec agent
+test -x /Users/hamish/.local/state/tec/profiles/base/current/global/init && /Users/hamish/.local/state/tec/profiles/base/current/global/init fish | source

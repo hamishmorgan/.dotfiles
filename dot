@@ -135,37 +135,67 @@ trap handle_interrupt INT TERM
 
 # Package definitions
 # Note: system package is stowed first to ensure .stow-global-ignore is in place
-# Phase 4: Auto-discovery replaces static PACKAGES array
+# Auto-discovery via manifests replaces static PACKAGES array
+
+# Discover packages by scanning for manifests
+discover_packages() {
+    local packages=()
+
+    if [[ ! -d "$PACKAGES_DIR" ]]; then
+        return 1
+    fi
+
+    # Find manifest.toml files only in direct package directories (maxdepth 2)
+    # This is fast: only ~11 directories to check
+    while IFS= read -r manifest; do
+        # Extract package name from path
+        local package_dir
+        package_dir=$(dirname "$manifest")
+        local package
+        package=$(basename "$package_dir")
+
+        # Validate manifest exists and is readable
+        if [[ -f "$manifest" ]] && [[ -r "$manifest" ]]; then
+            packages+=("$package")
+        fi
+    done < <(find "$PACKAGES_DIR" -maxdepth 2 -name "manifest.toml" -type f 2>/dev/null)
+
+    # Output space-separated list (bash 3.2 compatible)
+    # Array expansion creates space-separated output which is what we need
+    echo "${packages[@]}"
+}
+
 get_packages() {
-    # Phase 4: Use auto-discovery if available, fallback to static array for backward compatibility
+    # Auto-discovery via manifest scanning
     local discovered
     discovered=$(discover_packages 2>/dev/null)
 
-    if [[ -n "$discovered" ]]; then
-        # Read discovered packages into array
-        read -ra packages <<< "$discovered"
-
-        # Ensure system package is first
-        local result=("system")
-        for pkg in "${packages[@]}"; do
-            if [[ "$pkg" != "system" ]]; then
-                result+=("$pkg")
-            fi
-        done
-
-        # Output space-separated (for array initialization)
-        echo "${result[@]}"
-    else
-        # Fallback to static array (for backward compatibility during migration)
-        echo "system git zsh tmux gh gnuplot bash fish wezterm bat rust"
+    if [[ -z "$discovered" ]]; then
+        # Error handling - log functions may not be defined yet
+        echo "Error: No packages found. Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
+        return 1
     fi
+
+    # Read discovered packages into array
+    read -ra packages <<< "$discovered"
+
+    # Ensure system package is first
+    local result=("system")
+    for pkg in "${packages[@]}"; do
+        if [[ "$pkg" != "system" ]]; then
+            result+=("$pkg")
+        fi
+    done
+
+    # Output space-separated (for array initialization)
+    echo "${result[@]}"
 }
 
-# Initialize PACKAGES array (Phase 4: auto-discovery)
+# Initialize PACKAGES array (auto-discovery via manifests)
 # Use read to populate array correctly and handle spaces
 read -ra PACKAGES <<< "$(get_packages)"
 
-# Get package files (manifest-aware with fallback)
+# Get package files (manifest-only)
 # Get files/directories for each package (for status display)
 # Note: Returns macOS-specific paths for cross-platform packages (cursor).
 # This function is used for display/validation purposes only.
@@ -173,96 +203,40 @@ read -ra PACKAGES <<< "$(get_packages)"
 get_package_files() {
     local package="$1"
 
-    # Try manifest first
-    if load_package_manifest "$package"; then
-        echo "$PACKAGE_FILES"
-        return 0
-    fi
-
-    # Phase 3: Require manifest (if enabled)
-    if [[ "${REQUIRE_MANIFESTS:-false}" == "true" ]]; then
+    if ! load_package_manifest "$package"; then
         log_error "Package '$package' missing manifest: $PACKAGES_DIR/$package/manifest.toml"
         log_info "Create a minimal manifest:"
         log_info "  files = [\"file1\", \"file2\"]"
         return 1
     fi
 
-    # Phase 1-2: Fallback to case statement (backward compatibility)
-    case "$package" in
-        system)  echo ".stow-global-ignore,.stowrc,.editorconfig,.inputrc" ;;
-        git)     echo ".gitconfig,.gitattributes,.gitignore-globals" ;;
-        zsh)     echo ".zshrc,.zprofile,.oh-my-zsh" ;;
-        tmux)    echo ".tmux.conf" ;;
-        gh)      echo ".config/gh/config.yml,.config/gh/hosts.yml" ;;
-        gnuplot) echo ".gnuplot" ;;
-        bash)    echo ".bashrc,.bash_profile" ;;
-        fish)    echo ".config/fish/config.fish,.config/fish/config.osx.fish,.config/fish/config.linux.fish,.config/fish/config.local.fish.example,.config/fish/functions" ;;
-        wezterm) echo ".wezterm.lua" ;;
-        bat)     echo ".config/bat/config" ;;
-        rust)    echo ".cargo/config.toml,.cargo/config.local.toml.example,.rustfmt.toml,.rustfmt.toml.example" ;;
-        *)       echo "" ;;
-    esac
+    echo "$PACKAGE_FILES"
 }
 
-# Get package display name (manifest-aware with fallback)
-get_package_name() {
-    local package="$1"
-
-    if load_package_manifest "$package"; then
-        echo "$PACKAGE_NAME"
-    else
-        # Fallback (Phase 1-2 only)
-        case "$package" in
-            system)  echo "System" ;;
-            git)     echo "Git" ;;
-            zsh)     echo "Zsh" ;;
-            tmux)    echo "Tmux" ;;
-            gh)      echo "GitHub CLI" ;;
-            gnuplot) echo "GNU Plot" ;;
-            bash)    echo "Bash" ;;
-            fish)    echo "Fish" ;;
-            wezterm) echo "WezTerm" ;;
-            bat)     echo "Bat" ;;
-            rust)    echo "Rust" ;;
-            *)       echo "$package" ;;
-        esac
-    fi
-}
-
-# Get package description (manifest-aware with fallback)
+# Get package description (manifest-only)
 get_package_description() {
     local package="$1"
 
-    if load_package_manifest "$package"; then
-        echo "$PACKAGE_DESCRIPTION"
-    else
-        # Fallback (Phase 1-2 only)
-        case "$package" in
-            system)  echo "System-wide configuration" ;;
-            git)     echo "Git configuration and aliases" ;;
-            zsh)     echo "Zsh shell with Oh My Zsh" ;;
-            tmux)    echo "Tmux terminal multiplexer" ;;
-            gh)      echo "GitHub CLI configuration" ;;
-            gnuplot) echo "Gnuplot configuration" ;;
-            bash)    echo "Bash shell configuration" ;;
-            fish)    echo "Fish shell configuration" ;;
-            wezterm) echo "WezTerm terminal emulator" ;;
-            bat)     echo "Bat syntax highlighter" ;;
-            rust)    echo "Rust toolchain configuration" ;;
-            *)       echo "" ;;
-        esac
+    if ! load_package_manifest "$package"; then
+        log_error "Package '$package' missing manifest: $PACKAGES_DIR/$package/manifest.toml"
+        echo ""  # Return empty string on error
+        return 1
     fi
+
+    echo "$PACKAGE_DESCRIPTION"
 }
 
-# Get installation method
+# Get installation method (manifest-only)
 get_package_method() {
     local package="$1"
 
-    if load_package_manifest "$package"; then
-        echo "$PACKAGE_METHOD"
-    else
-        echo "stow"  # Default
+    if ! load_package_manifest "$package"; then
+        log_error "Package '$package' missing manifest: $PACKAGES_DIR/$package/manifest.toml"
+        echo "stow"  # Return default on error
+        return 1
     fi
+
+    echo "$PACKAGE_METHOD"
 }
 
 # Get required dependencies (bash 3.2 compatible - no associative arrays)
@@ -278,6 +252,12 @@ get_required_deps() {
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Package Manifest Functions (TOML parsing)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Helper function to escape regex special characters in section names
+escape_regex_special_chars() {
+    local input="$1"
+    echo "$input" | sed 's/\[/\\[/g; s/\]/\\]/g; s/\./\\./g; s/\*/\\*/g; s/\+/\\+/g; s/\?/\\?/g; s/\^/\\^/g; s/\$/\\$/g'
+}
 
 # Get TOML value from section (empty string for top-level)
 # Checks for key existence to distinguish missing vs empty
@@ -298,7 +278,7 @@ get_toml_value() {
     else
         # Escape regex special characters in section name for safe matching
         local escaped_section
-        escaped_section=$(echo "$section" | sed 's/\[/\\[/g; s/\]/\\]/g; s/\./\\./g; s/\*/\\*/g; s/\+/\\+/g; s/\?/\\?/g; s/\^/\\^/g; s/\$/\\$/g')
+        escaped_section=$(escape_regex_special_chars "$section")
 
         # Extract section content
         section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file" | sed '$d')
@@ -307,21 +287,21 @@ get_toml_value() {
     # Check if key exists at all (even if empty)
     local key_exists
     key_exists=$(echo "$section_content" | grep -c "^$key\s*=" 2>/dev/null || echo "0")
-    
+
     # Ensure we have a clean numeric value (handle any trailing newlines)
     # Use parameter expansion to remove any non-digit characters
     key_exists="${key_exists//[!0-9]/}"
     key_exists="${key_exists:-0}"
-    
+
     if [[ "$key_exists" -eq 0 ]]; then
         return 1  # Key doesn't exist - use default
     fi
 
-    # Extract key value, strip comments
+    # Extract key value, strip comments and trim whitespace
     local value_line
     value_line=$(echo "$section_content" | \
         grep "^$key\s*=" | \
-        sed 's/#.*$//' | \
+        sed 's/#.*$//; s/^\s*//; s/\s*$//' | \
         head -1)
 
     if [[ -z "$value_line" ]]; then
@@ -330,9 +310,7 @@ get_toml_value() {
 
     # Extract value (handle quoted and unquoted)
     local value
-    value=$(echo "$value_line" | \
-        sed 's/.*=\s*//' | \
-        sed 's/^\s*//; s/\s*$//')  # Trim whitespace
+    value=$(echo "$value_line" | sed 's/.*=\s*//')
 
     # Remove quotes if present
     if [[ "$value" =~ ^[\"'].*[\"']$ ]]; then
@@ -365,7 +343,7 @@ get_toml_array() {
     else
         # Extract section content
         local escaped_section
-        escaped_section=$(echo "$section" | sed 's/\[/\\[/g' | sed 's/\]/\\]/g' | sed 's/\./\\./g' | sed 's/\*/\\*/g' | sed 's/\+/\\+/g' | sed 's/\?/\\?/g' | sed 's/\^/\\^/g' | sed 's/\$/\\$/g')
+        escaped_section=$(escape_regex_special_chars "$section")
         section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file" | sed '$d')
     fi
 
@@ -399,12 +377,14 @@ get_toml_array() {
             continue
         fi
 
-        # Strip inline comments
-        line="${line%%#*}"
-
-        # Process each character
+        # Process each character (inline comments handled within loop to respect quotes)
         for ((i=0; i<${#line}; i++)); do
             local char="${line:$i:1}"
+
+            # If we see a '#' outside of quotes, treat as comment and break
+            if [[ "$char" == "#" && "$in_quotes" == false ]]; then
+                break
+            fi
 
             case "$char" in
                 '[')
@@ -433,7 +413,7 @@ get_toml_array() {
                                 fi
                             fi
                             # Remove quotes and return
-                            echo "$result_value" | sed "s/[\"']//g" | sed 's/\s*,\s*/,/g'
+                            echo "$result_value" | sed "s/[\"']//g; s/\s*,\s*/,/g"
                             return 0
                         fi
                     else
@@ -569,6 +549,404 @@ load_package_manifest() {
     return 0
 }
 
+# Get TOML inline table (parses { command = "...", args = [...] })
+# Returns: "command|arg1,arg2,arg3" format (pipe-separated, args comma-separated)
+# Bash 3.2 compatible character-by-character parsing
+get_toml_inline_table() {
+    local file="$1"
+    local section="$2"  # Empty string for top-level
+    local key="$3"
+
+    if [[ ! -f "$file" ]]; then
+        return 1
+    fi
+
+    # Extract section content
+    local section_content
+    if [[ -z "$section" ]]; then
+        section_content=$(sed '/^\[/,$d' "$file")
+    else
+        local escaped_section
+        escaped_section=$(escape_regex_special_chars "$section")
+        # Extract from [section] to next [ or end of file
+        section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file")
+        # Remove first line ([section]) and last line if it starts with [ (next section)
+        section_content=$(echo "$section_content" | sed '1d')
+        if echo "$section_content" | grep -q '^\['; then
+            section_content=$(echo "$section_content" | sed '$d')
+        fi
+    fi
+
+    # Find inline table declaration (key = { ... })
+    # Handle quoted keys like ".gitconfig" - match with quotes in the file
+    local table_start_line
+    # The key comes in as ".gitconfig" (without quotes from get_validation_patterns)
+    # Match it with quotes in the file: "key" = { ... }
+    # Escape special regex chars in the key for grep, then wrap in quotes
+    local escaped_key
+    escaped_key=$(escape_regex_special_chars "$key")
+    # Try with quotes first (most common case)
+    table_start_line=$(echo "$section_content" | grep -n "^\"$escaped_key\"\s*=" | cut -d: -f1 | head -1)
+    # If not found, try without quotes (for unquoted keys)
+    if [[ -z "$table_start_line" ]]; then
+        table_start_line=$(echo "$section_content" | grep -n "^$escaped_key\s*=" | cut -d: -f1 | head -1)
+    fi
+
+    if [[ -z "$table_start_line" ]]; then
+        return 1
+    fi
+
+    # Extract line with inline table
+    local table_line
+    table_line=$(echo "$section_content" | sed -n "${table_start_line}p" | sed 's/#.*$//')
+    # Extract everything after the first = sign (key = { ... })
+    # Use awk to split on first = and get everything after it
+    table_line=$(echo "$table_line" | awk -F'=' '{if (NF>1) {s=""; for(i=2;i<=NF;i++) {if(i>2) s=s"="; s=s$i}; print s}}')
+    # Trim leading/trailing whitespace (handle any whitespace characters)
+    table_line=$(echo "$table_line" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+
+    # Handle multi-line inline tables (they shouldn't exist in our simplified TOML, but handle just in case)
+    # Check if table closes on same line
+    local open_braces
+    open_braces=$(echo "$table_line" | grep -o '{' | wc -l | tr -d ' ')
+    local close_braces
+    close_braces=$(echo "$table_line" | grep -o '}' | wc -l | tr -d ' ')
+
+    if [[ -z "$open_braces" ]]; then
+        open_braces=0
+    fi
+    if [[ -z "$close_braces" ]]; then
+        close_braces=0
+    fi
+
+    # If braces don't match, read more lines (shouldn't happen in our simplified TOML)
+    if [[ $open_braces -gt $close_braces ]]; then
+        local line_count=$((table_start_line + 1))
+        while IFS= read -r next_line; do
+            table_line="$table_line$next_line"
+            open_braces=$(echo "$table_line" | grep -o '{' | wc -l | tr -d ' ')
+            close_braces=$(echo "$table_line" | grep -o '}' | wc -l | tr -d ' ')
+            if [[ -z "$open_braces" ]]; then
+                open_braces=0
+            fi
+            if [[ -z "$close_braces" ]]; then
+                close_braces=0
+            fi
+            if [[ $open_braces -eq $close_braces ]]; then
+                break
+            fi
+            ((line_count++))
+        done < <(echo "$section_content" | sed -n "$((table_start_line + 1)),\$p")
+    fi
+
+    # Parse inline table: { command = "value", args = [...] }
+    local in_quotes=false
+    local quote_char=""
+    local bracket_depth=0
+    local in_table=false
+    local current_field=""
+    local field_name=""
+    local command_value=""
+    local args_array=""
+    local in_array=false
+    local array_bracket_depth=0
+
+    # Process character by character
+    for ((i=0; i<${#table_line}; i++)); do
+        local char="${table_line:$i:1}"
+
+        case "$char" in
+            '{')
+                if [[ "$in_quotes" == false ]]; then
+                    in_table=true
+                    ((bracket_depth++))
+                    # Don't add { to current_field - it's not part of field name/value
+                else
+                    current_field="$current_field$char"
+                fi
+                ;;
+            '}')
+                if [[ "$in_quotes" == false ]]; then
+                    ((bracket_depth--))
+                    if [[ $bracket_depth -eq 0 ]]; then
+                        # End of table - process last field (if any)
+                        # Don't add } to current_field - it's not part of field value
+                        if [[ -n "$field_name" && -n "$current_field" ]]; then
+                            local trimmed_field_name
+                            trimmed_field_name=$(echo "$field_name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                            if [[ "$trimmed_field_name" == "command" ]]; then
+                                command_value=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+                            elif [[ "$trimmed_field_name" == "args" ]]; then
+                                args_array=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//')
+                            fi
+                        elif [[ -z "$field_name" && -n "$current_field" ]]; then
+                            # Handle case where last field wasn't processed yet (no trailing comma)
+                            # Try to determine field type from context - if current_field looks like an array, it's args
+                            if echo "$current_field" | grep -q '^\['; then
+                                args_array=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//')
+                            fi
+                        fi
+                        break
+                    else
+                        current_field="$current_field$char"
+                    fi
+                else
+                    current_field="$current_field$char"
+                fi
+                ;;
+            '[')
+                if [[ "$in_quotes" == false && "$in_table" == true ]]; then
+                    in_array=true
+                    ((array_bracket_depth++))
+                fi
+                current_field="$current_field$char"
+                ;;
+            ']')
+                if [[ "$in_quotes" == false && "$in_array" == true ]]; then
+                    ((array_bracket_depth--))
+                    if [[ $array_bracket_depth -eq 0 ]]; then
+                        in_array=false
+                    fi
+                fi
+                current_field="$current_field$char"
+                ;;
+            '=')
+                if [[ "$in_quotes" == false && "$in_table" == true && "$in_array" == false ]]; then
+                    # Field name before '=' (only if not inside array)
+                    field_name=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//')
+                    current_field=""
+                else
+                    current_field="$current_field$char"
+                fi
+                ;;
+            ',')
+                if [[ "$in_quotes" == false && "$in_table" == true && "$in_array" == false ]]; then
+                    # Field separator (only if not inside array)
+                            local trimmed_field_name
+                            trimmed_field_name=$(echo "$field_name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                            if [[ "$trimmed_field_name" == "command" ]]; then
+                                command_value=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+                            elif [[ "$trimmed_field_name" == "args" ]]; then
+                                args_array=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//')
+                            fi
+                            field_name=""
+                            current_field=""
+                else
+                    current_field="$current_field$char"
+                fi
+                ;;
+            '"'|"'")
+                if [[ "$in_quotes" == false ]]; then
+                    in_quotes=true
+                    quote_char="$char"
+                elif [[ "$char" == "$quote_char" ]]; then
+                    in_quotes=false
+                    quote_char=""
+                fi
+                current_field="$current_field$char"
+                ;;
+            *)
+                current_field="$current_field$char"
+                ;;
+        esac
+    done
+
+    # Parse args array if present
+    if [[ -n "$args_array" ]]; then
+        # Extract array content (remove brackets)
+        local args_content
+        args_content=$(echo "$args_array" | sed 's/^\[//; s/\]$//')
+
+        # Parse array elements (handle quoted strings)
+        local args_list=""
+        local in_quotes=false
+        local quote_char=""
+        local current_arg=""
+
+        for ((i=0; i<${#args_content}; i++)); do
+            local char="${args_content:$i:1}"
+
+            case "$char" in
+                ',')
+                    if [[ "$in_quotes" == false ]]; then
+                        # Arg separator
+                        current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+                        if [[ -n "$args_list" ]]; then
+                            args_list="$args_list,$current_arg"
+                        else
+                            args_list="$current_arg"
+                        fi
+                        current_arg=""
+                    else
+                        current_arg="$current_arg$char"
+                    fi
+                    ;;
+                '"'|"'")
+                    if [[ "$in_quotes" == false ]]; then
+                        in_quotes=true
+                        quote_char="$char"
+                    elif [[ "$char" == "$quote_char" ]]; then
+                        in_quotes=false
+                        quote_char=""
+                    fi
+                    current_arg="$current_arg$char"
+                    ;;
+                *)
+                    current_arg="$current_arg$char"
+                    ;;
+            esac
+        done
+
+        # Add last arg
+        if [[ -n "$current_arg" ]]; then
+            current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+            if [[ -n "$args_list" ]]; then
+                args_list="$args_list,$current_arg"
+            else
+                args_list="$current_arg"
+            fi
+        fi
+
+        args_array="$args_list"
+    fi
+
+    if [[ -z "$command_value" ]]; then
+        return 1
+    fi
+
+    # Return format: "command|arg1,arg2,arg3"
+    if [[ -n "$args_array" ]]; then
+        echo "$command_value|$args_array"
+    else
+        echo "$command_value|"
+    fi
+    return 0
+}
+
+# Get validation entry for a specific key (file path/pattern)
+# Returns: "command|arg1,arg2,arg3" format
+get_validation_entry() {
+    local manifest="$1"
+    local key="$2"
+
+    if [[ ! -f "$manifest" ]]; then
+        return 1
+    fi
+
+    # Use get_toml_inline_table to parse validation entry
+    get_toml_inline_table "$manifest" "validation" "$key"
+}
+
+# Get all validation pattern keys from [validation] section
+# Returns: One pattern per line
+get_validation_patterns() {
+    local manifest="$1"
+
+    if [[ ! -f "$manifest" ]]; then
+        return 1
+    fi
+
+    # Extract [validation] section
+    local escaped_section
+    escaped_section=$(escape_regex_special_chars "validation")
+    local section_content
+    section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$manifest" | sed '$d' | sed 's/#.*$//')
+
+    # Extract all keys (lines matching "key" = { ... })
+    # Handle both quoted and unquoted keys
+    echo "$section_content" | grep -E '^\s*"[^"]+"\s*=' | sed 's/^\s*"\([^"]*\)".*/\1/'
+}
+
+# Get validator for a file (exact match first, then glob patterns)
+# Returns: "command|arg1,arg2,arg3" format via stdout
+# Bash 3.2 compatible (no nameref)
+get_validator_for_file() {
+    local file="$1"
+    local package="$2"
+
+    local manifest="$PACKAGES_DIR/$package/manifest.toml"
+
+    if [[ ! -f "$manifest" ]]; then
+        return 1
+    fi
+
+    # First try exact match
+    local cmd
+    cmd=$(get_validation_entry "$manifest" "$file")
+    if [[ -n "$cmd" ]]; then
+        echo "$cmd"
+        return 0
+    fi
+
+    # Then try glob patterns (in order from manifest)
+    local patterns
+    patterns=$(get_validation_patterns "$manifest")
+
+    if [[ -z "$patterns" ]]; then
+        return 1
+    fi
+
+    while IFS= read -r pattern; do
+        [[ -z "$pattern" ]] && continue
+
+        # Unquoted pattern enables bash glob matching (intentional)
+        # shellcheck disable=SC2053
+        if [[ "$file" == $pattern ]]; then
+            cmd=$(get_validation_entry "$manifest" "$pattern")
+            if [[ -n "$cmd" ]]; then
+                echo "$cmd"
+                return 0
+            fi
+        fi
+    done <<< "$patterns"
+
+    return 1
+}
+
+# Run validator with command and args array
+# CRITICAL: Uses array expansion to preserve spaces/quotes correctly
+run_validator() {
+    local command="$1"
+    shift
+    local args=("$@")
+
+    # Check if command exists
+    if ! command_exists "$command"; then
+        local file_path=""
+        # Find file path in args (usually last arg or contains "file")
+        for arg in "${args[@]}"; do
+            if [[ -f "$arg" ]]; then
+                file_path="$arg"
+                break
+            fi
+        done
+        if [[ -z "$file_path" ]]; then
+            file_path="${args[-1]}"
+        fi
+        log_warning "$command not installed, skipping validation for ${file_path#"$HOME"/}"
+        return 0  # Continue, not an error
+    fi
+
+    # Special handling for tmux (requires cleanup)
+    if [[ "$command" == "tmux" ]]; then
+        local session="dotfiles-config-test"
+        if "$command" "${args[@]}" >/dev/null 2>&1; then
+            # Cleanup: kill test session
+            "$command" kill-session -t "$session" >/dev/null 2>&1 || true
+            return 0
+        else
+            return 1
+        fi
+    fi
+
+    # Execute validator (array expansion preserves spaces/quotes)
+    if "$command" "${args[@]}" >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Validate manifest syntax
 validate_manifest_syntax() {
     local manifest="$1"
@@ -636,34 +1014,6 @@ validate_manifest_semantic() {
     done
 
     return $errors
-}
-
-# Discover packages by scanning for manifests (Phase 4)
-discover_packages() {
-    local packages=()
-
-    if [[ ! -d "$PACKAGES_DIR" ]]; then
-        return 1
-    fi
-
-    # Find manifest.toml files only in direct package directories (maxdepth 2)
-    # This is fast: only ~11 directories to check
-    while IFS= read -r manifest; do
-        # Extract package name from path
-        local package_dir
-        package_dir=$(dirname "$manifest")
-        local package
-        package=$(basename "$package_dir")
-
-        # Validate manifest exists and is readable
-        if [[ -f "$manifest" ]] && [[ -r "$manifest" ]]; then
-            packages+=("$package")
-        fi
-    done < <(find "$PACKAGES_DIR" -maxdepth 2 -name "manifest.toml" -type f 2>/dev/null)
-
-    # Output space-separated list (bash 3.2 compatible)
-    # Array expansion creates space-separated output which is what we need
-    echo "${packages[@]}"
 }
 
 # Auto-discovery functions for templates and secret configs
@@ -1517,10 +1867,14 @@ check_symlink() {
 # Generic package validation function
 validate_package() {
     local package="$1"
-    local display_name
-    display_name=$(get_package_name "$package")
-    local files
-    files=$(get_package_files "$package")
+
+    if ! load_package_manifest "$package"; then
+        log_error "Package '$package' missing manifest: $PACKAGES_DIR/$package/manifest.toml"
+        return 1
+    fi
+
+    local display_name="${PACKAGE_NAME:-$package}"
+    local files="$PACKAGE_FILES"
 
     log_info "Validating $display_name configuration..."
 
@@ -2359,62 +2713,85 @@ cmd_install() {
 }
 
 
-# Validate configuration syntax
+# Validate configuration syntax (manifest-based)
 validate_config_syntax() {
     log_info "Validating configuration syntax..."
 
     local errors=0
 
-    # Validate git config
-    if [[ -f "$HOME/.gitconfig" ]]; then
-        if git config --list >/dev/null 2>&1; then
-            log_success "Git configuration syntax valid"
-        else
-            log_error "Git configuration syntax error"
-            ((errors++))
+    # Iterate through all packages
+    for package in "${PACKAGES[@]}"; do
+        if ! load_package_manifest "$package"; then
+            continue
         fi
-    fi
 
-    # Validate tmux config
-    if [[ -f "$HOME/.tmux.conf" ]]; then
-        if command_exists tmux; then
-            local tmux_test_session="dotfiles-config-test"
-            if tmux -f "$HOME/.tmux.conf" -C new-session -d -s "$tmux_test_session" >/dev/null 2>&1; then
-                log_success "Tmux configuration syntax valid"
-                # Kill the test session
-                tmux kill-session -t "$tmux_test_session" >/dev/null 2>&1 || true
-            else
-                log_error "Tmux configuration syntax error"
-                ((errors++))
+        # Resolve target directory based on method
+        local target_dir
+        if [[ "$PACKAGE_METHOD" == "copy-sync" ]]; then
+            target_dir="$PACKAGE_TARGET"  # e.g., ~/.config/Cursor/User
+        else
+            target_dir="$HOME"  # Default for stow packages
+        fi
+        # Normalize trailing slash
+        target_dir="${target_dir%/}"
+
+        # Skip packages without validation entries
+        if ! get_validation_patterns "$PACKAGES_DIR/$package/manifest.toml" >/dev/null 2>&1; then
+            continue
+        fi
+
+        # For each file in files array
+        IFS=',' read -ra file_array <<< "$PACKAGE_FILES"
+        for file in "${file_array[@]}"; do
+            # Skip directories (only validate files)
+            if [[ "$file" == */ ]]; then
+                continue
             fi
-        else
-            log_info "Tmux not installed, skipping syntax check"
-        fi
-    fi
 
-    # Validate zsh config
-    if [[ -f "$HOME/.zshrc" ]]; then
-        if command_exists zsh; then
-            if zsh -n "$HOME/.zshrc" 2>/dev/null; then
-                log_success "Zsh configuration syntax valid"
-            else
-                log_error "Zsh configuration syntax error"
-                ((errors++))
+            # Resolve full file path based on target_dir
+            local full_path="$target_dir/$file"
+
+            # Check if file exists
+            if [[ ! -f "$full_path" ]]; then
+                continue  # Skip if not installed
             fi
-        else
-            log_info "Zsh not installed, skipping syntax check"
-        fi
-    fi
 
-    # Validate bash config
-    if [[ -f "$HOME/.bashrc" ]]; then
-        if bash -n "$HOME/.bashrc" 2>/dev/null; then
-            log_success "Bash configuration syntax valid"
-        else
-            log_error "Bash configuration syntax error"
-            ((errors++))
-        fi
-    fi
+            # Find matching validator (exact match first, then glob patterns)
+            local validator_cmd
+            validator_cmd=$(get_validator_for_file "$file" "$package")
+            if [[ -n "$validator_cmd" ]]; then
+                # Extract command and args from validator_cmd (format: "cmd|arg1,arg2,arg3")
+                local cmd args_string
+                cmd="${validator_cmd%%|*}"
+                args_string="${validator_cmd#*|}"
+
+                # Convert args string to array
+                local validator_args=()
+                if [[ -n "$args_string" ]]; then
+                    IFS=',' read -ra validator_args <<< "$args_string"
+                fi
+
+                # Replace "file" placeholder in args array
+                local expanded_args=()
+                for arg in "${validator_args[@]}"; do
+                    if [[ "$arg" == "file" ]]; then
+                        expanded_args+=("$full_path")
+                    else
+                        expanded_args+=("$arg")
+                    fi
+                done
+
+                # Execute validator
+                if ! run_validator "$cmd" "${expanded_args[@]}"; then
+                    log_error "Validation failed: $file"
+                    ((errors++))
+                else
+                    log_success "Validation passed: $file"
+                fi
+            fi
+            # No validator found = skip (opt-in)
+        done
+    done
 
     return $errors
 }
@@ -2459,13 +2836,10 @@ validate_all_manifests() {
     for package in "${PACKAGES[@]}"; do
         local manifest="$PACKAGES_DIR/$package/manifest.toml"
 
-        # Skip if manifest doesn't exist (Phase 1-2: optional)
+        # Require manifest for all packages
         if [[ ! -f "$manifest" ]]; then
-            # Phase 3: Require manifests (if enabled)
-            if [[ "${REQUIRE_MANIFESTS:-false}" == "true" ]]; then
-                log_error "Package '$package' missing manifest: $manifest"
-                ((errors++))
-            fi
+            log_error "Package '$package' missing manifest: $manifest"
+            ((errors++))
             continue
         fi
 
@@ -2527,32 +2901,43 @@ check_submodule_health() {
         return 0
     fi
 
-    # Check Oh My Zsh submodule
-    local omz_path="$PACKAGES_DIR/zsh/.oh-my-zsh"
-    if [[ -d "$omz_path" ]]; then
-        # Check if submodule is initialized
-        if [[ -f "$omz_path/.git" ]] || [[ -d "$omz_path/.git" ]]; then
-            # Check for uncommitted changes in submodule
-            if git -C "$omz_path" diff-index --quiet HEAD -- 2>/dev/null; then
-                log_success "Oh My Zsh submodule is clean"
-            else
-                log_warning "Oh My Zsh submodule has uncommitted changes"
-            fi
+    # Check all submodules defined in .gitmodules
+    if [[ -f "$DOTFILES_DIR/.gitmodules" ]]; then
+        while IFS= read -r submodule_path; do
+            [[ -z "$submodule_path" ]] && continue
 
-            # Check if submodule is detached
-            if git -C "$omz_path" symbolic-ref -q HEAD >/dev/null 2>&1; then
-                log_success "Oh My Zsh submodule on branch"
-            else
-                log_info "Oh My Zsh submodule in detached HEAD state (normal)"
+            # Extract submodule path from .gitmodules format: [submodule "path/to/submodule"]
+            if [[ "$submodule_path" =~ submodule\ \"([^\"]+)\" ]]; then
+                local submodule_rel_path="${BASH_REMATCH[1]}"
+                local submodule_full_path="$DOTFILES_DIR/$submodule_rel_path"
+
+                if [[ -d "$submodule_full_path" ]]; then
+                    # Check if submodule is initialized
+                    if [[ -f "$submodule_full_path/.git" ]] || [[ -d "$submodule_full_path/.git" ]]; then
+                        # Check for uncommitted changes in submodule
+                        if git -C "$submodule_full_path" diff-index --quiet HEAD -- 2>/dev/null; then
+                            log_success "Submodule $submodule_rel_path is clean"
+                        else
+                            log_warning "Submodule $submodule_rel_path has uncommitted changes"
+                        fi
+
+                        # Check if submodule is detached
+                        if git -C "$submodule_full_path" symbolic-ref -q HEAD >/dev/null 2>&1; then
+                            log_success "Submodule $submodule_rel_path on branch"
+                        else
+                            log_info "Submodule $submodule_rel_path in detached HEAD state (normal)"
+                        fi
+                    else
+                        log_error "Submodule $submodule_rel_path not initialized"
+                        log_info "Run: git submodule update --init --recursive"
+                        ((issues++))
+                    fi
+                else
+                    log_error "Submodule directory missing: $submodule_rel_path"
+                    ((issues++))
+                fi
             fi
-        else
-            log_error "Oh My Zsh submodule not initialized"
-            log_info "Run: git submodule update --init --recursive"
-            ((issues++))
-        fi
-    else
-        log_error "Oh My Zsh directory missing"
-        ((issues++))
+        done < <(grep -E '^\s*\[submodule' "$DOTFILES_DIR/.gitmodules" 2>/dev/null)
     fi
 
     return $issues
@@ -2696,14 +3081,19 @@ check_file_permissions() {
     done < <(discover_secret_configs)
 
     # Check for accidentally committed secrets (this is an ERROR not a warning)
-    if [[ -f "$PACKAGES_DIR/git/.gitconfig.secret" ]]; then
-        if git -C "$DOTFILES_DIR" ls-files --error-unmatch "packages/git/.gitconfig.secret" >/dev/null 2>&1; then
-            log_error "Secret git config is tracked by git (potential secrets leak)"
-            log_info "  Run: git rm --cached packages/git/.gitconfig.secret"
+    while IFS= read -r secret; do
+        [[ -z "$secret" ]] && continue
+        [[ ! -f "$secret" ]] && continue
+
+        if git -C "$DOTFILES_DIR" ls-files --error-unmatch "$secret" >/dev/null 2>&1; then
+            log_error "Secret config is tracked by git (potential secrets leak): ${secret#"$DOTFILES_DIR"/}"
+            log_info "  Run: git rm --cached ${secret#"$DOTFILES_DIR"/}"
             ((errors++))
-        else
-            log_success "Secret configs properly ignored by git"
         fi
+    done < <(discover_secret_configs)
+
+    if [[ $errors -eq 0 ]] && [[ -n "$(discover_secret_configs)" ]]; then
+        log_success "Secret configs properly ignored by git"
     fi
 
     if [[ $warnings -gt 0 ]]; then
@@ -3497,7 +3887,7 @@ cmd_health_verbose() {
         show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)"
     fi
 
-    # 12. Manifest validation (Phase 2)
+    # 12. Manifest validation
     show_health_check_spinner "12" "Manifest Validation"
     output=$(validate_all_manifests 2>&1)
     result=$?
@@ -4552,7 +4942,11 @@ _dot_completion() {
                 done < <(compgen -W "$flags" -- "$cur")
                 ;;
             enable|disable)
-                local packages="system git zsh tmux gh gnuplot bash fish bat"
+                # Generate package list from manifests dynamically
+                local packages=""
+                for pkg in "${PACKAGES[@]}"; do
+                    packages="$packages $pkg"
+                done
                 COMPREPLY=()
                 while IFS= read -r word; do
                     COMPREPLY+=("$word")
@@ -4658,19 +5052,18 @@ _dot_completion() {
                         '-vv[Very verbose output]'
                     ;;
                 enable|disable)
-                    # Complete with package names
+                    # Complete with package names from manifests
                     local -a packages
-                    packages=(
-                        'system:System-wide configuration'
-                        'git:Git configuration and aliases'
-                        'zsh:Zsh shell with Oh My Zsh'
-                        'tmux:Tmux terminal multiplexer'
-                        'gh:GitHub CLI configuration'
-                        'gnuplot:Gnuplot configuration'
-                        'bash:Bash shell configuration'
-                        'fish:Fish shell configuration'
-                        'bat:Bat syntax highlighter'
-                    )
+                    packages=()
+                    for pkg in "${PACKAGES[@]}"; do
+                        local desc
+                        desc=$(get_package_description "$pkg" 2>/dev/null || echo "")
+                        if [[ -n "$desc" ]]; then
+                            packages+=("$pkg:$desc")
+                        else
+                            packages+=("$pkg")
+                        fi
+                    done
                     _describe 'package' packages
                     ;;
                 restore)
@@ -4745,7 +5138,7 @@ EOF
 }
 
 show_fish_completion() {
-    cat << 'EOF'
+    cat << EOF
 # Fish completion for dot command
 complete -c dot -f
 complete -c dot -s h -l help -d "Show help message"
@@ -4770,16 +5163,23 @@ complete -c dot -n "__fish_use_subcommand" -a "packages" -d "List all packages a
 complete -c dot -n "__fish_seen_subcommand_from install update health" -s v -l verbose -d "Verbose output"
 complete -c dot -n "__fish_seen_subcommand_from install update health" -o vv -d "Very verbose output"
 
-# Package completions for enable/disable
-complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "system" -d "System-wide configuration"
-complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "git" -d "Git configuration and aliases"
-complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "zsh" -d "Zsh shell with Oh My Zsh"
-complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "tmux" -d "Tmux terminal multiplexer"
-complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "gh" -d "GitHub CLI configuration"
-complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "gnuplot" -d "Gnuplot configuration"
-complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "bash" -d "Bash shell configuration"
-complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "fish" -d "Fish shell configuration"
-complete -c dot -n "__fish_seen_subcommand_from enable disable" -a "bat" -d "Bat syntax highlighter"
+# Package completions for enable/disable (generated from manifests)
+EOF
+
+    # Generate package completions dynamically from manifests
+    for pkg in "${PACKAGES[@]}"; do
+        local desc
+        desc=$(get_package_description "$pkg" 2>/dev/null || echo "")
+        if [[ -n "$desc" ]]; then
+            # Escape quotes in description for fish completion
+            desc=$(echo "$desc" | sed "s/\"/\\\\\"/g")
+            echo "complete -c dot -n \"__fish_seen_subcommand_from enable disable\" -a \"$pkg\" -d \"$desc\""
+        else
+            echo "complete -c dot -n \"__fish_seen_subcommand_from enable disable\" -a \"$pkg\""
+        fi
+    done
+
+    cat << 'EOF'
 
 # Fish completion for d function wrapper
 complete -c d -f

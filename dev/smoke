@@ -47,7 +47,7 @@ if grep -q 'discover_packages\|get_packages' "$DOTFILES_DIR/dot"; then
             found=$((found + 1))
         fi
     done
-    if [[ $found -ge 10 ]]; then
+    if [[ $found -ge 11 ]]; then
         echo -e "${GREEN}✓${NC}"
     else
         echo -e "${RED}✗${NC} (found $found/11 manifests)"
@@ -71,8 +71,7 @@ fi
 # Test 5: Stow ignore files exist
 echo -n "Test 5: Stow ignore files exist... "
 if [[ -f "$DOTFILES_DIR/packages/system/.stow-global-ignore" ]] && \
-   [[ -f "$DOTFILES_DIR/packages/git/.stow-local-ignore" ]] && \
-   [[ -f "$DOTFILES_DIR/packages/gh/.stow-local-ignore" ]]; then
+   [[ -f "$DOTFILES_DIR/packages/fish/.stow-local-ignore" ]]; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
