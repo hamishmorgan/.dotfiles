@@ -17,6 +17,7 @@ Use GraphQL API for PR comment interactions when:
 - Resolving/unresolving review threads
 - Adding emoji reactions to comments
 - Reading review thread conversations
+- Dismissing reviews when all comments are addressed
 
 **Note:** For general PR comments (conversation tab), use `gh pr view --comments` or
 `gh pr view --json comments`. For inline review comments (code review threads), use GraphQL
@@ -265,6 +266,197 @@ mutation {
 }"
 ```
 
+## Dismissing Reviews
+
+### Dismiss Review When All Comments Are Addressed
+
+**When to dismiss:**
+
+- All review threads from a review have been resolved
+- You've addressed all comments (either fixed code or replied with reasoning)
+- The review is still pending (state: COMMENTED or CHANGES_REQUESTED)
+
+**CRITICAL:** Only dismiss a review if ALL threads are resolved. Dismissing a review hides it from the PR, so ensure all concerns are addressed.
+
+**Implementation:**
+
+```bash
+REPO_OWNER="hamishmorgan"
+REPO_NAME=".dotfiles"
+PR_NUMBER=$(gh pr view --json number -q '.number')
+
+# Step 1: Query all reviews and their threads
+REVIEWS_DATA=$(gh api graphql -f query="
+{
+  repository(owner: \"$REPO_OWNER\", name: \"$REPO_NAME\") {
+    pullRequest(number: $PR_NUMBER) {
+      reviews(first: 100) {
+        nodes {
+          id
+          state
+          author { login }
+          comments(first: 100) {
+            nodes {
+              id
+              body
+            }
+          }
+        }
+      }
+      reviewThreads(first: 100) {
+        nodes {
+          id
+          isResolved
+          comments(first: 50) {
+            nodes {
+              id
+              pullRequestReview {
+                id
+                state
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}")
+
+# Step 2: Check each review - are all its threads resolved?
+echo "$REVIEWS_DATA" | jq -r '.data.repository.pullRequest.reviews.nodes[]' | while read -r review; do
+  REVIEW_ID=$(echo "$review" | jq -r '.id')
+  REVIEW_STATE=$(echo "$review" | jq -r '.state')
+  REVIEW_AUTHOR=$(echo "$review" | jq -r '.author.login')
+
+  # Only dismiss COMMENTED or CHANGES_REQUESTED reviews
+  if [[ "$REVIEW_STATE" != "COMMENTED" ]] && [[ "$REVIEW_STATE" != "CHANGES_REQUESTED" ]]; then
+    continue
+  fi
+
+  # Get all threads for this review
+  # Note: This requires checking which threads belong to this review
+  # For simplicity, we'll check if ALL threads are resolved
+  
+  # Count unresolved threads for this review
+  UNRESOLVED_COUNT=$(echo "$REVIEWS_DATA" | jq -r "
+    .data.repository.pullRequest.reviewThreads.nodes[] |
+    select(.comments.nodes[].pullRequestReview.id == \"$REVIEW_ID\") |
+    select(.isResolved == false) | .id" | wc -l | tr -d ' ')
+
+  if [[ "$UNRESOLVED_COUNT" -eq 0 ]]; then
+    # All threads resolved - dismiss the review
+    DISMISS_MESSAGE="All comments have been addressed. Fixed issues in code and replied to design discussions."
+    
+    gh api graphql -f query="
+    mutation {
+      dismissPullRequestReview(
+        input: {
+          pullRequestReviewId: \"$REVIEW_ID\"
+          message: \"$DISMISS_MESSAGE\"
+        }
+      ) {
+        pullRequestReview {
+          id
+          state
+          dismissedAt
+        }
+      }
+    }"
+    
+    echo "Dismissed review from $REVIEW_AUTHOR"
+  fi
+done
+```
+
+**Simplified workflow (check all threads first):**
+
+```bash
+REPO_OWNER="hamishmorgan"
+REPO_NAME=".dotfiles"
+PR_NUMBER=$(gh pr view --json number -q '.number')
+
+# Get all review threads
+THREADS=$(gh api graphql -f query="
+{
+  repository(owner: \"$REPO_OWNER\", name: \"$REPO_NAME\") {
+    pullRequest(number: $PR_NUMBER) {
+      reviewThreads(first: 100) {
+        nodes {
+          id
+          isResolved
+          comments(first: 50) {
+            nodes {
+              pullRequestReview {
+                id
+                state
+                author { login }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}")
+
+# Get all reviews
+REVIEWS=$(gh api graphql -f query="
+{
+  repository(owner: \"$REPO_OWNER\", name: \"$REPO_NAME\") {
+    pullRequest(number: $PR_NUMBER) {
+      reviews(first: 100) {
+        nodes {
+          id
+          state
+          author { login }
+        }
+      }
+    }
+  }
+}")
+
+# For each COMMENTED or CHANGES_REQUESTED review, check if all threads are resolved
+echo "$REVIEWS" | jq -r '.data.repository.pullRequest.reviews.nodes[] | select(.state == "COMMENTED" or .state == "CHANGES_REQUESTED") | .id' | while read -r review_id; do
+  # Check if this review has any unresolved threads
+  HAS_UNRESOLVED=$(echo "$THREADS" | jq -r "
+    .data.repository.pullRequest.reviewThreads.nodes[] |
+    select(.comments.nodes[].pullRequestReview.id == \"$review_id\") |
+    select(.isResolved == false) | .id" | head -1)
+  
+  if [[ -z "$HAS_UNRESOLVED" ]]; then
+    # All threads resolved - dismiss the review
+    REVIEW_AUTHOR=$(echo "$REVIEWS" | jq -r ".data.repository.pullRequest.reviews.nodes[] | select(.id == \"$review_id\") | .author.login")
+    
+    DISMISS_MESSAGE="All comments have been addressed. Fixed issues in code and replied to design discussions."
+    
+    gh api graphql -f query="
+    mutation {
+      dismissPullRequestReview(
+        input: {
+          pullRequestReviewId: \"$review_id\"
+          message: \"$DISMISS_MESSAGE\"
+        }
+      ) {
+        pullRequestReview {
+          id
+          state
+        }
+      }
+    }"
+    
+    echo "Dismissed review from $REVIEW_AUTHOR"
+  fi
+done
+```
+
+**Dismissal message guidelines:**
+
+- Be concise but informative
+- Mention that all comments were addressed
+- Reference if fixes were made or explanations provided
+- Example: "All comments have been addressed. Fixed linting issues and replied to design questions."
+- Example: "All review comments resolved. Code changes made in commits abc123, def456."
+
 ## Emoji Reactions
 
 ### Add Reactions Based on Intent
@@ -441,14 +633,16 @@ done
 **When checking PR for comments:**
 
 1. **Query all review threads** - Get unresolved and recently updated threads
-2. **Identify actions needed**:
+2. **Query all reviews** - Get pending reviews (COMMENTED, CHANGES_REQUESTED)
+3. **Identify actions needed**:
    - Threads with questions → Answer
    - Threads you disagree with → Reply with reasoning
    - Threads addressed in code → Reply + resolve
    - Threads with new replies → Continue conversation
    - Threads needing acknowledgment → Emoji reaction
-3. **Take actions** - Reply, resolve, or react as appropriate
-4. **Update last check timestamp** - Track when you last checked
+   - Reviews with all threads resolved → Dismiss with reason
+4. **Take actions** - Reply, resolve, react, or dismiss as appropriate
+5. **Update last check timestamp** - Track when you last checked
 
 **Example complete script:**
 
@@ -458,7 +652,7 @@ done
 
 PR_NUMBER="${1:-$(gh pr view --json number -q '.number')}"
 REPO_OWNER="hamishmorgan"
-REPO_NAME="dotfiles"
+REPO_NAME=".dotfiles"
 LAST_CHECK_FILE="/tmp/pr_${PR_NUMBER}_last_check"
 
 # Get last check time
@@ -558,6 +752,68 @@ echo "$THREADS" | jq -r '.data.repository.pullRequest.reviewThreads.nodes[]' | w
   fi
 done
 
+# Check for reviews to dismiss (all threads resolved)
+REVIEWS=$(gh api graphql -f query="
+{
+  repository(owner: \"$REPO_OWNER\", name: \"$REPO_NAME\") {
+    pullRequest(number: $PR_NUMBER) {
+      reviews(first: 100) {
+        nodes {
+          id
+          state
+          author { login }
+        }
+      }
+      reviewThreads(first: 100) {
+        nodes {
+          id
+          isResolved
+          comments(first: 50) {
+            nodes {
+              pullRequestReview {
+                id
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}")
+
+# For each COMMENTED or CHANGES_REQUESTED review, check if all threads are resolved
+echo "$REVIEWS" | jq -r '.data.repository.pullRequest.reviews.nodes[] | select(.state == "COMMENTED" or .state == "CHANGES_REQUESTED") | .id' | while read -r review_id; do
+  # Check if this review has any unresolved threads
+  HAS_UNRESOLVED=$(echo "$REVIEWS" | jq -r "
+    .data.repository.pullRequest.reviewThreads.nodes[] |
+    select(.comments.nodes[].pullRequestReview.id == \"$review_id\") |
+    select(.isResolved == false) | .id" | head -1)
+  
+  if [[ -z "$HAS_UNRESOLVED" ]]; then
+    # All threads resolved - dismiss the review
+    REVIEW_AUTHOR=$(echo "$REVIEWS" | jq -r ".data.repository.pullRequest.reviews.nodes[] | select(.id == \"$review_id\") | .author.login")
+    
+    DISMISS_MESSAGE="All comments have been addressed. Fixed issues in code and replied to design discussions."
+    
+    gh api graphql -f query="
+    mutation {
+      dismissPullRequestReview(
+        input: {
+          pullRequestReviewId: \"$review_id\"
+          message: \"$DISMISS_MESSAGE\"
+        }
+      ) {
+        pullRequestReview {
+          id
+          state
+        }
+      }
+    }"
+    
+    echo "Dismissed review from $REVIEW_AUTHOR"
+  fi
+done
+
 # Update last check time
 date -u +"%Y-%m-%dT%H:%M:%SZ" > "$LAST_CHECK_FILE"
 ```
@@ -574,6 +830,8 @@ date -u +"%Y-%m-%dT%H:%M:%SZ" > "$LAST_CHECK_FILE"
 8. **Use single quotes for complex strings** - Prevents shell variable expansion issues
 9. **Escape special characters** - Use single quotes or escape `$`, `` ` ``, `"`, `\` in reply bodies
 10. **Always include commit hash** - When resolving, mention the commit that fixed the issue
+11. **Dismiss reviews only when all threads resolved** - Ensure all comments are addressed before dismissing
+12. **Provide clear dismissal messages** - Explain what was done to address all comments
 
 ## Common Patterns
 
