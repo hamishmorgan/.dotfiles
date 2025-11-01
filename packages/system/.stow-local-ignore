@@ -1,0 +1,3 @@
+# System package stow ignore patterns
+# Package metadata (not stowed)
+^manifest\.toml$
