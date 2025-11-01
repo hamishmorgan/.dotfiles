@@ -68,6 +68,31 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 └── README.md      # This file
 ```
 
+Each package directory contains a `manifest.toml` file that defines:
+
+- Files managed by the package
+- Package metadata (name, description)
+- Installation method (stow or copy-sync)
+- Platform-specific target directories
+- Validation rules for configuration syntax
+- Update commands for package-specific updates
+
+Example manifest:
+
+```toml
+files = [".gitconfig", ".gitattributes", ".gitignore-globals"]
+name = "Git"
+description = "Git configuration and aliases"
+method = "stow"
+target = "~"
+
+[validation]
+".gitconfig" = { command = "git", args = ["config", "--list"] }
+```
+
+**Manifest Requirement:** All packages must have a valid `manifest.toml` file. The installation
+script auto-discovers packages by scanning for manifests and validates them before any operations.
+
 ## Prerequisites
 
 ### macOS

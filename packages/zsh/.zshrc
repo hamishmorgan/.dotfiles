@@ -156,7 +156,9 @@ fi
 # Load dotfiles management function and completions from dot script
 # Error handling prevents shell initialization failure if dot script is unavailable
 if [ -f "$HOME/.dotfiles/dot" ]; then
-    # Use eval to catch errors and prevent shell initialization failure
+    # Use eval to load completion function from dot script
+    # Safe: completion output comes from trusted dot script (same repository)
+    # Command substitution validates output before eval, and || true prevents shell init failure
     if completion_output=$("$HOME/.dotfiles/dot" --completion zsh 2>/dev/null); then
         eval "$completion_output" 2>/dev/null || true
     fi

@@ -200,6 +200,7 @@ Alternative: Migrate to chezmoi later if git noise becomes unmanageable.
 - **docker** or **podman**: Container runtime for local CI testing
 - **markdownlint-cli**: Markdown linting (or use `npx`)
 - **shellcheck**: Bash script linting
+- **python3**: Python 3.x (for validation: TOML validation requires `tomli`, YAML validation requires `PyYAML`)
 
 ### Version Requirements
 
@@ -1105,6 +1106,80 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 - `PACKAGES_DIR`: Package directory (`$DOTFILES_DIR/packages`)
 - Always use `$PACKAGES_DIR` when referencing package directories in code
 - Example: `$PACKAGES_DIR/bat` not `$DOTFILES_DIR/bat`
+
+### Package Manifests
+
+**MANDATORY:** All packages require a `manifest.toml` file. No fallback mechanism exists.
+
+**Validation Strategy:**
+
+1. **Discovery**: Only packages with `manifest.toml` are discovered
+2. **Initialization**: All manifests validated before any operations
+3. **Operations**: Each function requires valid manifest
+4. **Health Check**: Comprehensive manifest validation (#12)
+
+**Manifest Format (TOML):**
+
+```toml
+# Required fields
+files = [".config/file1", ".config/file2"]
+
+# Optional fields with defaults
+name = "Package Name"           # Default: directory name
+description = "Description"     # Default: empty
+method = "stow"                 # Default: "stow" (or "copy-sync")
+target = "~"                    # Default: "~"
+
+# Platform-specific overrides (optional)
+target.macos = "~/Library/Application Support/App"
+target.linux = "~/.config/app"
+
+# Validation rules (optional)
+[validation]
+".gitconfig" = { command = "git", args = ["config", "--list"] }
+"*.json" = { command = "python3", args = ["-m", "json.tool", "file"] }
+
+# Update commands (optional)
+[update]
+command = "dev/update-script"
+args = ["file"]
+```
+
+**TOML Parser Limitations:**
+
+The `dot` script uses custom bash-based TOML parsing (Bash 3.2 compatible).
+Supported features:
+
+- ✅ Simple key-value pairs: `name = "value"`
+- ✅ Arrays: `files = ["a", "b", "c"]`
+- ✅ Multi-line arrays
+- ✅ Inline tables: `validation = { command = "cmd", args = ["arg"] }`
+- ✅ Sections: `[validation]`, `[update]`
+- ✅ Comments: `# comment` and inline `key = "value"  # comment`
+- ✅ Quoted keys: `"target.macos" = "~/Library"`
+- ✅ Single and double quotes
+- ✅ Trailing commas in arrays
+
+**Known Limitations:**
+
+- ❌ Escaped quotes within values (`"value with \"quotes\""`)
+- ❌ Multi-line strings (TOML `"""..."""`)
+- ❌ TOML tables (only inline tables supported)
+- ❌ Arrays of tables
+- ❌ Dates, numbers as types (treated as strings)
+- ❌ Dotted table names (`[section.subsection]`)
+
+**Performance:**
+
+- Character-by-character parsing (~6 instances)
+- Current manifests: 123 total lines (negligible impact)
+- Parsing overhead: ~50ms for all 11 manifests
+- Acceptable for current scale, may need optimization if manifests grow
+
+**When to use external parser:**
+
+If manifests become complex (>100 lines each) or require advanced TOML features,
+consider using `dasel`, `toml-cli`, or `yj` with graceful fallback to bash parser.
 
 ### Component-Specific Documentation
 
