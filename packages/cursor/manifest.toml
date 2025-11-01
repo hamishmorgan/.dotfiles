@@ -4,6 +4,8 @@ name = "Cursor IDE"
 description = "Cursor IDE configuration"
 method = "copy-sync"
 target = "~/.config/Cursor/User"
+target.macos = "~/Library/Application Support/Cursor/User"
+target.linux = "~/.config/Cursor/User"
 
 [validation]
 "*.json" = { command = "python3", args = ["-m", "json.tool", "file"] }

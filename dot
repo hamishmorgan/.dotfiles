@@ -1214,8 +1214,8 @@ show_usage() {
     echo "  enable        Enable (install) a specific package"
     echo "  disable       Disable (uninstall) a specific package"
     echo "  security      Run security audit on dotfiles"
-    echo "  sync-cursor   Sync Cursor config from dotfiles to system"
-    echo "  pull-cursor   Pull Cursor config from system to dotfiles"
+    echo "  sync PACKAGE   Sync package files to system (for copy-sync packages)"
+    echo "  pull PACKAGE   Pull package files from system (for copy-sync packages)"
     echo ""
     echo "Options:"
     echo "  -h, --help           Show this help message"
@@ -2139,67 +2139,65 @@ show_status() {
     show_section_separator "Cursor Configuration"
     echo ""
 
-    # Check if cursor config exists in dotfiles and system
-    local cursor_dotfiles="$DOTFILES_DIR/packages/cursor"
-    local cursor_system
+    # Check if cursor package exists and supports sync
+    local cursor_package="cursor"
+    local cursor_dotfiles="$PACKAGES_DIR/$cursor_package"
+    local cursor_system=""
 
-    case "$(uname -s)" in
-        Darwin)
-            cursor_system="$HOME/Library/Application Support/Cursor/User"
-            ;;
-        Linux)
-            cursor_system="$HOME/.config/Cursor/User"
-            ;;
-        *)
-            cursor_system=""
-            ;;
-    esac
-
-    if [[ ! -d "$cursor_dotfiles" ]]; then
+    if ! load_package_manifest "$cursor_package" 2>/dev/null; then
         echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor package not found in dotfiles"
-    elif [[ -z "$cursor_system" ]]; then
-        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Unsupported platform for Cursor sync"
-    elif [[ ! -d "$cursor_system" ]]; then
-        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor not installed on system"
-        echo -e "   ${BLUE}💡${NC} Run './dot sync-cursor' to create config directory"
+    elif [[ "$PACKAGE_METHOD" != "copy-sync" ]]; then
+        echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor package does not support sync"
     else
-        # Check if settings are in sync
-        local settings_synced=false
-        local keybindings_synced=false
+        # Get platform-specific target
+        cursor_system="$PACKAGE_TARGET"
 
-        if [[ -f "$cursor_dotfiles/settings.json" ]] && [[ -f "$cursor_system/settings.json" ]]; then
-            if diff -q "$cursor_dotfiles/settings.json" "$cursor_system/settings.json" >/dev/null 2>&1; then
-                settings_synced=true
-            fi
-        fi
-
-        if [[ -f "$cursor_dotfiles/keybindings.json" ]] && [[ -f "$cursor_system/keybindings.json" ]]; then
-            if diff -q "$cursor_dotfiles/keybindings.json" "$cursor_system/keybindings.json" >/dev/null 2>&1; then
-                keybindings_synced=true
-            fi
-        fi
-
-        if [[ "$settings_synced" == true ]] && [[ "$keybindings_synced" == true ]]; then
-            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} settings.json ${BLUE}(synced)${NC}"
-            echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} keybindings.json ${BLUE}(synced)${NC}"
+        if [[ ! -d "$cursor_dotfiles" ]]; then
+            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor package directory not found"
+        elif [[ -z "$cursor_system" ]]; then
+            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Unsupported platform for Cursor sync"
+        elif [[ ! -d "$cursor_system" ]]; then
+            echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} Cursor not installed on system"
+            echo -e "   ${BLUE}💡${NC} Run './dot sync cursor' to create config directory"
         else
-            if [[ "$settings_synced" == true ]]; then
-                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} settings.json ${BLUE}(synced)${NC}"
-            else
-                echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} settings.json ${BLUE}(out of sync)${NC}"
+            # Check if settings are in sync
+            local settings_synced=false
+            local keybindings_synced=false
+
+            if [[ -f "$cursor_dotfiles/settings.json" ]] && [[ -f "$cursor_system/settings.json" ]]; then
+                if diff -q "$cursor_dotfiles/settings.json" "$cursor_system/settings.json" >/dev/null 2>&1; then
+                    settings_synced=true
+                fi
             fi
 
-            if [[ "$keybindings_synced" == true ]]; then
+            if [[ -f "$cursor_dotfiles/keybindings.json" ]] && [[ -f "$cursor_system/keybindings.json" ]]; then
+                if diff -q "$cursor_dotfiles/keybindings.json" "$cursor_system/keybindings.json" >/dev/null 2>&1; then
+                    keybindings_synced=true
+                fi
+            fi
+
+            if [[ "$settings_synced" == true ]] && [[ "$keybindings_synced" == true ]]; then
+                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} settings.json ${BLUE}(synced)${NC}"
                 echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} keybindings.json ${BLUE}(synced)${NC}"
             else
-                echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} keybindings.json ${BLUE}(out of sync)${NC}"
-            fi
+                if [[ "$settings_synced" == true ]]; then
+                    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} settings.json ${BLUE}(synced)${NC}"
+                else
+                    echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} settings.json ${BLUE}(out of sync)${NC}"
+                fi
 
-            echo ""
-            show_tips \
-                "Copy-sync approach" \
-                "Sync to system: ./dot sync-cursor" \
-                "Pull from system: ./dot pull-cursor"
+                if [[ "$keybindings_synced" == true ]]; then
+                    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} keybindings.json ${BLUE}(synced)${NC}"
+                else
+                    echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} keybindings.json ${BLUE}(out of sync)${NC}"
+                fi
+
+                echo ""
+                show_tips \
+                    "Copy-sync approach" \
+                    "Sync to system: ./dot sync cursor" \
+                    "Pull from system: ./dot pull cursor"
+            fi
         fi
     fi
 
@@ -4019,6 +4017,195 @@ cmd_health_verbose() {
     fi
 }
 
+# Sync package files to system (for copy-sync packages)
+# Generic function that works for any package with method = "copy-sync"
+sync_package_to_system() {
+    local package="$1"
+
+    if [[ -z "$package" ]]; then
+        log_error "Package name required"
+        return 1
+    fi
+
+    if ! load_package_manifest "$package"; then
+        log_error "Package '$package' missing manifest: $PACKAGES_DIR/$package/manifest.toml"
+        return 1
+    fi
+
+    # Only copy-sync packages support sync
+    if [[ "$PACKAGE_METHOD" != "copy-sync" ]]; then
+        log_error "Package '$package' does not support sync (method: $PACKAGE_METHOD)"
+        log_info "Only packages with method = 'copy-sync' support sync operations"
+        return 1
+    fi
+
+    local source_dir="$PACKAGES_DIR/$package"
+    local target_dir="$PACKAGE_TARGET"
+
+    if [[ ! -d "$source_dir" ]]; then
+        log_error "Package directory not found: $source_dir"
+        return 1
+    fi
+
+    # Create target directory if it doesn't exist
+    if [[ ! -d "$target_dir" ]]; then
+        log_warning "Target directory not found, creating: $target_dir"
+        mkdir -p "$target_dir" || {
+            log_error "Failed to create target directory: $target_dir"
+            return 1
+        }
+    fi
+
+    # Parse files array
+    local files_string="$PACKAGE_FILES"
+    IFS=',' read -ra files <<< "$files_string"
+
+    local synced_count=0
+    local failed_count=0
+
+    for file in "${files[@]}"; do
+        # Remove quotes and whitespace
+        file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+
+        local source_file="$source_dir/$file"
+        local target_file="$target_dir/$file"
+
+        if [[ ! -f "$source_file" ]]; then
+            log_warning "Source file not found: $file (skipping)"
+            continue
+        fi
+
+        # Create target directory structure if needed
+        local target_file_dir
+        target_file_dir=$(dirname "$target_file")
+        if [[ ! -d "$target_file_dir" ]]; then
+            mkdir -p "$target_file_dir" || {
+                log_error "Failed to create directory: $target_file_dir"
+                ((failed_count++))
+                continue
+            }
+        fi
+
+        if cp "$source_file" "$target_file" 2>/dev/null; then
+            log_success "Synced $file"
+            ((synced_count++))
+        else
+            log_error "Failed to sync $file"
+            ((failed_count++))
+        fi
+    done
+
+    if [[ $failed_count -gt 0 ]]; then
+        log_error "Failed to sync $failed_count file(s)"
+        return 1
+    fi
+
+    if [[ $synced_count -eq 0 ]]; then
+        log_warning "No files synced"
+        return 1
+    fi
+
+    log_success "Synced $synced_count file(s) successfully"
+    show_tip "Restart Cursor to apply changes"
+    return 0
+}
+
+# Pull package files from system (for copy-sync packages)
+# Generic function that works for any package with method = "copy-sync"
+pull_package_from_system() {
+    local package="$1"
+
+    if [[ -z "$package" ]]; then
+        log_error "Package name required"
+        return 1
+    fi
+
+    if ! load_package_manifest "$package"; then
+        log_error "Package '$package' missing manifest: $PACKAGES_DIR/$package/manifest.toml"
+        return 1
+    fi
+
+    # Only copy-sync packages support pull
+    if [[ "$PACKAGE_METHOD" != "copy-sync" ]]; then
+        log_error "Package '$package' does not support pull (method: $PACKAGE_METHOD)"
+        log_info "Only packages with method = 'copy-sync' support pull operations"
+        return 1
+    fi
+
+    local source_dir="$PACKAGE_TARGET"
+    local target_dir="$PACKAGES_DIR/$package"
+
+    if [[ ! -d "$source_dir" ]]; then
+        log_error "Source directory not found: $source_dir"
+        log_info "Expected location: $source_dir"
+        return 1
+    fi
+
+    # Create target directory if it doesn't exist
+    if [[ ! -d "$target_dir" ]]; then
+        log_info "Creating package directory: $target_dir"
+        mkdir -p "$target_dir" || {
+            log_error "Failed to create package directory: $target_dir"
+            return 1
+        }
+    fi
+
+    # Parse files array
+    local files_string="$PACKAGE_FILES"
+    IFS=',' read -ra files <<< "$files_string"
+
+    local pulled_count=0
+    local failed_count=0
+
+    for file in "${files[@]}"; do
+        # Remove quotes and whitespace
+        file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
+
+        local source_file="$source_dir/$file"
+        local target_file="$target_dir/$file"
+
+        if [[ ! -f "$source_file" ]]; then
+            log_warning "Source file not found: $file (skipping)"
+            continue
+        fi
+
+        # Create target directory structure if needed
+        local target_file_dir
+        target_file_dir=$(dirname "$target_file")
+        if [[ ! -d "$target_file_dir" ]]; then
+            mkdir -p "$target_file_dir" || {
+                log_error "Failed to create directory: $target_file_dir"
+                ((failed_count++))
+                continue
+            }
+        fi
+
+        if cp "$source_file" "$target_file" 2>/dev/null; then
+            log_success "Pulled $file"
+            ((pulled_count++))
+        else
+            log_error "Failed to pull $file"
+            ((failed_count++))
+        fi
+    done
+
+    if [[ $failed_count -gt 0 ]]; then
+        log_error "Failed to pull $failed_count file(s)"
+        return 1
+    fi
+
+    if [[ $pulled_count -eq 0 ]]; then
+        log_warning "No files pulled"
+        return 1
+    fi
+
+    log_success "Pulled $pulled_count file(s) successfully"
+    show_tips \
+        "Review changes: git diff packages/$package" \
+        "Commit if satisfied: git add packages/$package && git commit"
+    return 0
+}
+
 # Remove broken or mispointed dotfile symlinks
 # This handles cases where packages were moved (e.g., bash/ -> packages/bash/)
 remove_mispointed_symlinks() {
@@ -4291,132 +4478,49 @@ cmd_security() {
     security_audit
 }
 
-cmd_sync_cursor() {
-    sync_cursor_to_system
+cmd_sync() {
+    local package="${COMMAND_ARGS[0]:-}"
+
+    if [[ -z "$package" ]]; then
+        log_error "Package name required"
+        log_info "Usage: ./dot sync <package>"
+        log_info "Example: ./dot sync cursor"
+        log_info ""
+        log_info "Packages that support sync:"
+        for pkg in "${PACKAGES[@]}"; do
+            if load_package_manifest "$pkg" 2>/dev/null && [[ "$PACKAGE_METHOD" == "copy-sync" ]]; then
+                log_info "  - $pkg"
+            fi
+        done
+        exit 1
+    fi
+
+    sync_package_to_system "$package"
 }
 
-cmd_pull_cursor() {
-    pull_cursor_from_system
+cmd_pull() {
+    local package="${COMMAND_ARGS[0]:-}"
+
+    if [[ -z "$package" ]]; then
+        log_error "Package name required"
+        log_info "Usage: ./dot pull <package>"
+        log_info "Example: ./dot pull cursor"
+        log_info ""
+        log_info "Packages that support pull:"
+        for pkg in "${PACKAGES[@]}"; do
+            if load_package_manifest "$pkg" 2>/dev/null && [[ "$PACKAGE_METHOD" == "copy-sync" ]]; then
+                log_info "  - $pkg"
+            fi
+        done
+        exit 1
+    fi
+
+    pull_package_from_system "$package"
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Cursor Configuration Sync Functions
+# Main Command Router
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-sync_cursor_to_system() {
-    local source="$DOTFILES_DIR/packages/cursor"
-    local target
-
-    case "$(uname -s)" in
-        Darwin)
-            target="$HOME/Library/Application Support/Cursor/User"
-            ;;
-        Linux)
-            target="$HOME/.config/Cursor/User"
-            ;;
-        *)
-            log_error "Unsupported operating system for Cursor sync"
-            return 1
-            ;;
-    esac
-
-    if [[ ! -d "$source" ]]; then
-        log_error "Cursor package not found in dotfiles"
-        log_info "Expected location: $source"
-        return 1
-    fi
-
-    if [[ ! -d "$target" ]]; then
-        log_warning "Cursor config directory not found"
-        log_info "Creating directory: $target"
-        mkdir -p "$target"
-    fi
-
-    log_info "Syncing Cursor configs to system..."
-
-    if [[ -f "$source/settings.json" ]]; then
-        if cp "$source/settings.json" "$target/settings.json" 2>/dev/null; then
-            log_success "Synced settings.json"
-        else
-            log_error "Failed to sync settings.json"
-            return 1
-        fi
-    else
-        log_warning "settings.json not found in dotfiles"
-    fi
-
-    if [[ -f "$source/keybindings.json" ]]; then
-        if cp "$source/keybindings.json" "$target/keybindings.json" 2>/dev/null; then
-            log_success "Synced keybindings.json"
-        else
-            log_error "Failed to sync keybindings.json"
-            return 1
-        fi
-    else
-        log_warning "keybindings.json not found in dotfiles"
-    fi
-
-    log_success "Cursor configuration synced successfully"
-    show_tip "Restart Cursor to apply changes"
-}
-
-pull_cursor_from_system() {
-    local source
-    local target="$DOTFILES_DIR/packages/cursor"
-
-    case "$(uname -s)" in
-        Darwin)
-            source="$HOME/Library/Application Support/Cursor/User"
-            ;;
-        Linux)
-            source="$HOME/.config/Cursor/User"
-            ;;
-        *)
-            log_error "Unsupported operating system for Cursor sync"
-            return 1
-            ;;
-    esac
-
-    if [[ ! -d "$source" ]]; then
-        log_error "Cursor config directory not found"
-        log_info "Expected location: $source"
-        return 1
-    fi
-
-    if [[ ! -d "$target" ]]; then
-        log_info "Creating dotfiles cursor directory: $target"
-        mkdir -p "$target"
-    fi
-
-    log_info "Pulling Cursor configs from system..."
-
-    if [[ -f "$source/settings.json" ]]; then
-        if cp "$source/settings.json" "$target/settings.json" 2>/dev/null; then
-            log_success "Pulled settings.json"
-        else
-            log_error "Failed to pull settings.json"
-            return 1
-        fi
-    else
-        log_warning "settings.json not found in Cursor"
-    fi
-
-    if [[ -f "$source/keybindings.json" ]]; then
-        if cp "$source/keybindings.json" "$target/keybindings.json" 2>/dev/null; then
-            log_success "Pulled keybindings.json"
-        else
-            log_error "Failed to pull keybindings.json"
-            return 1
-        fi
-    else
-        log_warning "keybindings.json not found in Cursor"
-    fi
-
-    log_success "Cursor configuration pulled successfully"
-    show_tips \
-        "Review changes: git diff packages/cursor" \
-        "Commit if satisfied: git add packages/cursor && git commit"
-}
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Package Management Functions
@@ -4773,7 +4877,7 @@ is_flag() {
 # Check if argument is a valid command
 is_valid_command() {
     local cmd="$1"
-    [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync-cursor|pull-cursor)$ ]]
+    [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync|pull)$ ]]
 }
 
 # Parse verbosity flag and return level increment
@@ -4850,7 +4954,7 @@ parse_arguments() {
                 ;;
 
             # Valid commands
-            install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync-cursor|pull-cursor)
+            install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync|pull)
                 if [[ -n "$COMMAND" ]]; then
                     die "Multiple commands specified: '$COMMAND' and '$1'"
                 fi
@@ -4956,11 +5060,11 @@ main() {
         security)
             cmd_security
             ;;
-        sync-cursor)
-            cmd_sync_cursor
+        sync)
+            cmd_sync
             ;;
-        pull-cursor)
-            cmd_pull_cursor
+        pull)
+            cmd_pull
             ;;
         *)
             die "Unknown command: $COMMAND"
@@ -5002,7 +5106,7 @@ _dot_completion() {
 
     # Complete commands
     if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
-        local commands="install status health update diff backup backups restore clean uninstall enable disable packages security sync-cursor pull-cursor"
+        local commands="install status health update diff backup backups restore clean uninstall enable disable packages security sync pull"
         local flags="-h --help -v --verbose -vv"
         # Bash 3.2 compatible (no mapfile)
         COMPREPLY=()
