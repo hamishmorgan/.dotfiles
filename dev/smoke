@@ -44,7 +44,7 @@ if grep -q 'discover_packages\|get_packages' "$DOTFILES_DIR/dot"; then
     found=0
     for pkg in "${expected_packages[@]}"; do
         if [[ -f "$DOTFILES_DIR/packages/$pkg/manifest.toml" ]]; then
-            ((found++))
+            found=$((found + 1))
         fi
     done
     if [[ $found -ge 10 ]]; then
