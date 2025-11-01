@@ -2142,18 +2142,24 @@ show_status() {
     # Check all copy-sync packages for sync status
     local copy_sync_count=0
     for package in "${PACKAGES[@]}"; do
+        # Load manifest - capture return code
         if ! load_package_manifest "$package" 2>/dev/null; then
             continue
         fi
 
-        if [[ "$PACKAGE_METHOD" != "copy-sync" ]]; then
+        # Capture method immediately after load to avoid stale values
+        local package_method="$PACKAGE_METHOD"
+        if [[ "$package_method" != "copy-sync" ]]; then
             continue
         fi
 
         ((copy_sync_count++))
+        
+        # Capture manifest values immediately after load to avoid stale values
         local package_dotfiles="$PACKAGES_DIR/$package"
         local package_system="$PACKAGE_TARGET"
         local package_name="${PACKAGE_NAME:-$package}"
+        local package_files="$PACKAGE_FILES"
 
         if [[ -z "$package_system" ]]; then
             echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $package_name ${BLUE}(unsupported platform)${NC}"
@@ -2172,8 +2178,7 @@ show_status() {
         fi
 
         # Check sync status for each file in the package
-        local files_string="$PACKAGE_FILES"
-        IFS=',' read -ra files <<< "$files_string"
+        IFS=',' read -ra files <<< "$package_files"
         local all_synced=true
         local synced_files=()
         local unsynced_files=()
