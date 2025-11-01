@@ -26,13 +26,6 @@ if ! command -v bats >/dev/null 2>&1; then
     exit 1
 fi
 
-# Check for BATS flags support
-BATS_FLAGS=""
-if bats --version | grep -q "bats-core"; then
-    # bats-core supports --tap and --pretty
-    BATS_FLAGS="--tap"
-fi
-
 # Run each test suite
 test_suites=(
     "regression:Regression Tests"
@@ -56,15 +49,11 @@ for suite in "${test_suites[@]}"; do
     echo -e "${BLUE}Running $name...${NC}"
 
     # Capture output and exit code
+    # Use TAP formatter for better structured output
     output=""
     exit_code=0
-    if [[ -n "$BATS_FLAGS" ]]; then
-        output=$(bats $BATS_FLAGS "$TESTS_DIR/$dir/" 2>&1)
-        exit_code=$?
-    else
-        output=$(bats "$TESTS_DIR/$dir/" 2>&1)
-        exit_code=$?
-    fi
+    output=$(bats --formatter tap "$TESTS_DIR/$dir/" 2>&1)
+    exit_code=$?
 
     if [[ $exit_code -eq 0 ]]; then
         echo -e "${GREEN}✓ $name passed${NC}"
@@ -74,32 +63,57 @@ for suite in "${test_suites[@]}"; do
         ((total_fail++))
         failed_suites+=("$name")
 
-        # Show failed test details
+        # Show failed test details - display ALL output so we can see errors
         echo ""
-        echo -e "${YELLOW}Failed test details:${NC}"
+        echo -e "${YELLOW}Failed test output:${NC}"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-        # Extract failed tests from output
-        # Look for "not ok" lines in TAP format or test failure patterns
-        if echo "$output" | grep -q "not ok"; then
-            # TAP format - show failed tests with context
-            echo "$output" | grep -E "(not ok|#)" | while IFS= read -r line; do
-                if [[ "$line" =~ ^not\ ok ]]; then
-                    echo -e "${RED}$line${NC}"
-                elif [[ "$line" =~ ^# ]]; then
-                    echo -e "${YELLOW}$line${NC}"
+        
+        # Parse test count to identify missing tests
+        if echo "$output" | grep -q "bats warning: Executed"; then
+            executed=$(echo "$output" | grep "bats warning: Executed" | sed -E 's/.*Executed ([0-9]+) instead of expected ([0-9]+).*/\1 \2/')
+            expected_count=$(echo "$executed" | cut -d' ' -f2)
+            actual_count=$(echo "$executed" | cut -d' ' -f1)
+            
+            if [[ -n "$executed" && "$actual_count" -lt "$expected_count" ]]; then
+                echo -e "${YELLOW}⚠ Missing tests: Expected $expected_count, executed $actual_count${NC}"
+                echo ""
+                
+                # Extract test numbers that were executed
+                executed_tests=$(echo "$output" | grep "^ok " | sed -E 's/^ok ([0-9]+) .*/\1/' | sort -n)
+                
+                # Find missing test numbers
+                missing_tests=()
+                for i in $(seq 1 "$expected_count"); do
+                    if ! echo "$executed_tests" | grep -q "^$i$"; then
+                        missing_tests+=("$i")
+                    fi
+                done
+                
+                if [[ ${#missing_tests[@]} -gt 0 ]]; then
+                    echo -e "${RED}Missing test numbers: ${missing_tests[*]}${NC}"
+                    echo -e "${YELLOW}(These tests were likely skipped or failed silently)${NC}"
+                    echo ""
                 fi
-            done
-        else
-            # Fallback: show last 40 lines of output which usually contain errors
-            echo "$output" | tail -40 | while IFS= read -r line; do
-                if [[ "$line" =~ (error|Error|ERROR|fail|Fail|FAIL|✗|not ok|warning|Warning|WARNING) ]]; then
-                    echo -e "${RED}$line${NC}"
-                else
-                    echo "$line"
-                fi
-            done
+            fi
         fi
+        
+        # Show the full output, highlighting error patterns
+        echo "$output" | while IFS= read -r line; do
+            if [[ "$line" =~ ^not\ ok ]]; then
+                echo -e "${RED}$line${NC}"
+            elif [[ "$line" =~ ^ok ]]; then
+                # Don't colorize passing tests to reduce noise
+                echo "$line"
+            elif [[ "$line" =~ ^# ]]; then
+                echo -e "${YELLOW}$line${NC}"
+            elif [[ "$line" =~ (error|Error|ERROR|fail|Fail|FAIL|Assertion|expected|got|status) ]]; then
+                echo -e "${RED}$line${NC}"
+            elif [[ "$line" =~ (warning|Warning|WARNING|bats warning) ]]; then
+                echo -e "${YELLOW}$line${NC}"
+            else
+                echo "$line"
+            fi
+        done
 
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
