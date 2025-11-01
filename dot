@@ -317,6 +317,8 @@ get_toml_value() {
     # Check if key exists at all (even if empty)
     local key_exists
     key_exists=$(echo "$section_content" | grep -c "^$key\s*=" 2>/dev/null || echo "0")
+    # Strip any trailing newline from grep -c output
+    key_exists="${key_exists//$'\n'/}"
 
     if [[ "$key_exists" -eq 0 ]]; then
         return 1  # Key doesn't exist - use default
@@ -530,7 +532,7 @@ get_toml_array() {
 apply_platform_target_override() {
     local manifest="$1"
     local platform="$2"
-    
+
     if [[ "$platform" == "linux" ]]; then
         local linux_target
         linux_target=$(get_toml_value "$manifest" "linux" "target")
