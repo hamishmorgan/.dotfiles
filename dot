@@ -428,11 +428,16 @@ get_toml_array() {
                     if [[ "$in_quotes" == false ]]; then
                         in_quotes=true
                         quote_char="$char"
+                        current_element="$current_element$char"
                     elif [[ "$char" == "$quote_char" ]]; then
+                        # Closing quote - add to current_element BEFORE toggling in_quotes
+                        current_element="$current_element$char"
                         in_quotes=false
                         quote_char=""
+                    else
+                        # Different quote type (single vs double) - treat as regular character
+                        current_element="$current_element$char"
                     fi
-                    current_element="$current_element$char"
                     ;;
                 ',')
                     if [[ "$in_quotes" == false && "$array_started" == true && $bracket_depth -eq 1 ]]; then
@@ -451,7 +456,9 @@ get_toml_array() {
                     fi
                     ;;
                 *)
-                    if [[ "$array_started" == true ]]; then
+                    # Add character if we're inside the array (started) OR if we're inside quotes
+                    # This ensures characters inside quoted strings are captured even before array_started is set
+                    if [[ "$array_started" == true || "$in_quotes" == true ]]; then
                         current_element="$current_element$char"
                     fi
                     ;;
