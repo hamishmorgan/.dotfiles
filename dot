@@ -2783,7 +2783,7 @@ cmd_install() {
         if ! load_package_manifest "$package" 2>/dev/null; then
             continue
         fi
-        
+
         # Check if this is a shell package (name contains "shell" or known shell names)
         local package_lower
         package_lower=$(echo "$PACKAGE_NAME" | tr '[:upper:]' '[:lower:]')
@@ -2793,7 +2793,7 @@ cmd_install() {
             local primary_config="${files[0]}"
             # Remove quotes and whitespace
             primary_config=$(echo "$primary_config" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
-            
+
             if [[ "$primary_config" == .* ]]; then
                 # Remove leading dot and add ~ prefix
                 local config_path="~${primary_config}"
@@ -3218,7 +3218,6 @@ check_shell_integration() {
 
     # Detect current shell from environment
     local current_shell=""
-    local shell_config_file=""
     
     if [[ -n "$ZSH_VERSION" ]]; then
         current_shell="zsh"
@@ -3236,7 +3235,7 @@ check_shell_integration() {
             if ! load_package_manifest "$package" 2>/dev/null; then
                 continue
             fi
-            
+
             local package_lower
             package_lower=$(echo "$PACKAGE_NAME" | tr '[:upper:]' '[:lower:]')
             if [[ "$package_lower" == *"$current_shell"* ]]; then
@@ -3254,19 +3253,19 @@ check_shell_integration() {
                 # Check each config file in the package
                 IFS=',' read -ra files <<< "$PACKAGE_FILES"
                 local found_config=false
-                
+
                 for file in "${files[@]}"; do
                     # Remove quotes and whitespace
                     file=$(echo "$file" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
-                    
+
                     # Skip directories and non-config files
                     if [[ "$file" == */ ]] || [[ "$file" == *".example"* ]] || [[ "$file" == *"/functions"* ]]; then
                         continue
                     fi
-                    
+
                     # Resolve config file path
                     local config_path="$HOME/$file"
-                    
+
                     if [[ -L "$config_path" ]]; then
                         found_config=true
                         local target
@@ -3283,7 +3282,7 @@ check_shell_integration() {
                         ((issues++))
                     fi
                 done
-                
+
                 if [[ "$found_config" == false ]]; then
                     log_warning "No shell config files found for $current_shell package"
                 fi
@@ -3674,7 +3673,7 @@ cmd_health() {
     show_health_check_spinner "7" "Shell Integration"
     output=$(check_shell_integration 2>&1)
     result=$?
-    
+
     # Detect shell name from current environment and installed packages
     local shell_name=""
     if [[ -n "$ZSH_VERSION" ]]; then
