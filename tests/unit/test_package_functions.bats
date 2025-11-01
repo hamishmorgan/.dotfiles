@@ -44,20 +44,20 @@ teardown() {
 }
 
 @test "load_package_manifest sets PACKAGE_NAME correctly" {
-    load_package_manifest "system"
+    load_package_manifest "system" || return 1
     # Remove quotes if present
     PACKAGE_NAME="${PACKAGE_NAME//\"/}"
     assert_equal "$PACKAGE_NAME" "System"
 
-    load_package_manifest "git"
+    load_package_manifest "git" || return 1
     PACKAGE_NAME="${PACKAGE_NAME//\"/}"
     assert_equal "$PACKAGE_NAME" "Git"
 
-    load_package_manifest "zsh"
+    load_package_manifest "zsh" || return 1
     PACKAGE_NAME="${PACKAGE_NAME//\"/}"
     assert_equal "$PACKAGE_NAME" "Zsh"
 
-    load_package_manifest "fish"
+    load_package_manifest "fish" || return 1
     PACKAGE_NAME="${PACKAGE_NAME//\"/}"
     assert_equal "$PACKAGE_NAME" "Fish"
 }

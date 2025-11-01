@@ -128,7 +128,7 @@ teardown() {
 
     # Run validate_package for tmux package - should succeed with packages/ path
     run validate_package "tmux"
-    
+
     # Check it succeeded (exit code 0)
     [ "$status" -eq 0 ]
 }

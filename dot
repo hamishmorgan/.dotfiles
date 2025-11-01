@@ -455,7 +455,16 @@ get_toml_array() {
                             # Use parameter expansion to avoid sed character class issues
                             result_value="${result_value//\"/}"
                             result_value="${result_value//\'/}"
-                            echo "$result_value" | sed "s/[[:space:]]*,[[:space:]]*/,/g"
+                            # Remove spaces around commas using parameter expansion (bash 3.2 compatible)
+                            local previous_value
+                            while true; do
+                                previous_value="$result_value"
+                                result_value="${result_value// ,/,}"
+                                result_value="${result_value//, /,}"
+                                # Stop if no changes were made
+                                [[ "$result_value" == "$previous_value" ]] && break
+                            done
+                            echo "$result_value"
                             return 0
                         fi
                     else
@@ -533,7 +542,16 @@ get_toml_array() {
         # Use parameter expansion to avoid sed character class issues
         result_value="${result_value//\"/}"
         result_value="${result_value//\'/}"
-        echo "$result_value" | sed "s/[[:space:]]*,[[:space:]]*/,/g"
+        # Remove spaces around commas using parameter expansion (bash 3.2 compatible)
+        local previous_value
+        while true; do
+            previous_value="$result_value"
+            result_value="${result_value// ,/,}"
+            result_value="${result_value//, /,}"
+            # Stop if no changes were made
+            [[ "$result_value" == "$previous_value" ]] && break
+        done
+        echo "$result_value"
     else
         echo ""  # Empty array
     fi
@@ -1001,11 +1019,24 @@ get_validation_patterns() {
     local escaped_section
     escaped_section=$(escape_regex_special_chars "validation")
     local section_content
-    section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$manifest" | sed -e '/^\[/,$d' | sed 's/#.*$//')
+    section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$manifest" | sed -e '1d' -e '/^\[/,$d' | sed 's/#.*$//')
+
+    # Check if validation section exists
+    if [[ -z "$section_content" ]]; then
+        return 1  # No validation section
+    fi
 
     # Extract all keys (lines matching "key" = { ... })
     # Handle both quoted and unquoted keys
-    echo "$section_content" | grep -E '^\s*"[^"]+"\s*=' | sed 's/^\s*"\([^"]*\)".*/\1/'
+    local patterns
+    patterns=$(echo "$section_content" | grep -E '^\s*"[^"]+"\s*=' | sed 's/^\s*"\([^"]*\)".*/\1/')
+
+    # Return failure if no patterns found
+    if [[ -z "$patterns" ]]; then
+        return 1
+    fi
+
+    echo "$patterns"
 }
 
 # Get validator for a file (exact match first, then glob patterns)

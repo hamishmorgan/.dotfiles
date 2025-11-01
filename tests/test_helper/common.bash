@@ -14,7 +14,10 @@ else
 fi
 
 # Try to load bats-support from various locations
-if [[ -f "/usr/lib/bats/bats-support/load.bash" ]]; then
+# Check Nix store paths first (for nix develop shell)
+if [[ -n "${BATS_SUPPORT_PATH:-}" ]] && [[ -f "$BATS_SUPPORT_PATH/load.bash" ]]; then
+    load "$BATS_SUPPORT_PATH/load"
+elif [[ -f "/usr/lib/bats/bats-support/load.bash" ]]; then
     load "/usr/lib/bats/bats-support/load"
 elif [[ -f "$BREW_PREFIX/lib/bats-support/load.bash" ]]; then
     load "$BREW_PREFIX/lib/bats-support/load"
@@ -23,7 +26,10 @@ elif [[ -f "/usr/local/lib/bats-support/load.bash" ]]; then
 fi
 
 # Try to load bats-assert
-if [[ -f "/usr/lib/bats/bats-assert/load.bash" ]]; then
+# Check Nix store paths first (for nix develop shell)
+if [[ -n "${BATS_ASSERT_PATH:-}" ]] && [[ -f "$BATS_ASSERT_PATH/load.bash" ]]; then
+    load "$BATS_ASSERT_PATH/load"
+elif [[ -f "/usr/lib/bats/bats-assert/load.bash" ]]; then
     load "/usr/lib/bats/bats-assert/load"
 elif [[ -f "$BREW_PREFIX/lib/bats-assert/load.bash" ]]; then
     load "$BREW_PREFIX/lib/bats-assert/load"
@@ -32,7 +38,10 @@ elif [[ -f "/usr/local/lib/bats-assert/load.bash" ]]; then
 fi
 
 # Try to load bats-file
-if [[ -f "/usr/lib/bats/bats-file/load.bash" ]]; then
+# Check Nix store paths first (for nix develop shell)
+if [[ -n "${BATS_FILE_PATH:-}" ]] && [[ -f "$BATS_FILE_PATH/load.bash" ]]; then
+    load "$BATS_FILE_PATH/load"
+elif [[ -f "/usr/lib/bats/bats-file/load.bash" ]]; then
     load "/usr/lib/bats/bats-file/load"
 elif [[ -f "$BREW_PREFIX/lib/bats-file/load.bash" ]]; then
     load "$BREW_PREFIX/lib/bats-file/load"
