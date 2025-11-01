@@ -1594,56 +1594,6 @@ secure_secret_file() {
     return 0
 }
 
-# Secure permissions on .local files (machine-specific configs)
-# Reads security files from package manifests
-secure_local_files() {
-    local secured_count=0
-
-    # Iterate through all packages
-    for package in "${PACKAGES[@]}"; do
-        local manifest="$PACKAGES_DIR/$package/manifest.toml"
-
-        # Skip if manifest doesn't exist
-        if [[ ! -f "$manifest" ]]; then
-            continue
-        fi
-
-        # Get security files array from [security] section
-        local security_files
-        if ! security_files=$(get_toml_array "$manifest" "security" "files"); then
-            # No [security] section or no files - skip this package
-            continue
-        fi
-
-        # Parse comma-separated array
-        IFS=',' read -ra files <<< "$security_files"
-        for file in "${files[@]}"; do
-            # Trim whitespace from file path
-            file=$(echo "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-            # Remove quotes if present
-            file="${file#\"}"
-            file="${file%\"}"
-            file="${file#\'}"
-            file="${file%\'}"
-
-            # Security files are relative to HOME (not package directory)
-            local full_path="$HOME/$file"
-
-            if [[ -f "$full_path" ]]; then
-                if chmod 600 "$full_path" 2>/dev/null; then
-                    ((secured_count++))
-                fi
-            fi
-        done
-    done
-
-    if [[ $secured_count -gt 0 ]]; then
-        log_info "Secured $secured_count .local file(s) with mode 600"
-    fi
-
-    return 0
-}
-
 # Merge secret configurations with templates (auto-discovered)
 # NOTE: Legacy function - retained for backward compatibility but dormant
 # (no .secret files exist after consolidation to .local pattern)
@@ -4096,10 +4046,6 @@ run_installation_pipeline() {
     if ! install_dotfiles "$verbosity"; then
         log_error "Stow installation failed"
         return 1
-    fi
-
-    if ! secure_local_files; then
-        log_warning "Failed to set secure permissions on some .local files"
     fi
 
     return 0

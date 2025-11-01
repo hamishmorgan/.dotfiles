@@ -384,7 +384,6 @@ stow --verbose --delete --dir=packages --target=$HOME git
 
 - You want automated setup with backups
 - You want health checks and validation
-- You want automatic .local file permission setting
 - You prefer a guided installation experience
 
 ## Verification
@@ -415,7 +414,7 @@ The health check performs 10 categories of checks:
 2. **Configuration Syntax**: Validates git, tmux, zsh, and bash configuration syntax
 3. **Submodule Health**: Checks Oh My Zsh submodule status and initialization
 4. **Git Repository Status**: Reports uncommitted changes, branch status, and sync with origin
-5. **File Permissions**: Ensures .local files have secure permissions (chmod 600)
+5. **File Permissions**: Checks secret config files have secure permissions
 6. **Shell Integration**: Verifies shell configs are active and PATH is properly configured
 7. **Stow Conflicts**: Detects unmanaged files that would conflict with stow
 8. **Orphaned Symlinks**: Finds broken symlinks in home and .config directories
@@ -545,20 +544,6 @@ git commit -m "Your changes"
 # Option C: Commit everything, clean up duplicates later
 git commit -am "WIP: changes"
 ```
-
-## Secure File Permissions
-
-Machine-specific `.local` files contain sensitive information and are automatically
-secured with `chmod 600` (owner read/write only) during installation.
-
-**Files secured:**
-
-- `~/.gitconfig.local` - User identity and git signing keys
-- `~/.bashrc.local` - May contain API keys or tokens
-- `~/.zshrc.local` - May contain private environment variables
-- `~/.config/fish/config_private.fish` - Private fish configuration
-
-The installation script automatically sets secure permissions on these files if they exist.
 
 ### Update
 

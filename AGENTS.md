@@ -1190,7 +1190,6 @@ Individual file listing prevents this by only backing up and removing specific f
 - Example files (`.example` files) show format for machine-specific configs
 - Machine-specific configs (`.local` files) override defaults per-machine
 - **`.local` files are NOT stowed** - ignored via package `.stow-local-ignore` files
-- **`.local` files are secured** - automatically set to mode 600 during installation
 
 ### Optional Enhancement Configs
 
