@@ -142,11 +142,8 @@ get_packages() {
     discovered=$(discover_packages 2>/dev/null)
 
     if [[ -n "$discovered" ]]; then
-        # Convert space-separated to array
-        local packages=()
-        for pkg in $discovered; do
-            packages+=("$pkg")
-        done
+        # Read discovered packages into array
+        read -ra packages <<< "$discovered"
 
         # Ensure system package is first
         local result=("system")
@@ -165,12 +162,8 @@ get_packages() {
 }
 
 # Initialize PACKAGES array (Phase 4: auto-discovery)
-PACKAGES=()
-# Use process substitution to populate array correctly
-packages_output=$(get_packages)
-for pkg in $packages_output; do
-    [[ -n "$pkg" ]] && PACKAGES+=("$pkg")
-done
+# Use read to populate array correctly and handle spaces
+read -ra PACKAGES <<< "$(get_packages)"
 
 # Get package files (manifest-aware with fallback)
 # Get files/directories for each package (for status display)
@@ -305,7 +298,7 @@ get_toml_value() {
     else
         # Escape regex special characters in section name for safe matching
         local escaped_section
-        escaped_section=$(echo "$section" | sed 's/\[/\\[/g' | sed 's/\]/\\]/g' | sed 's/\./\\./g' | sed 's/\*/\\*/g' | sed 's/\+/\\+/g' | sed 's/\?/\\?/g' | sed 's/\^/\\^/g' | sed 's/\$/\\$/g')
+        escaped_section=$(echo "$section" | sed 's/\[/\\[/g; s/\]/\\]/g; s/\./\\./g; s/\*/\\*/g; s/\+/\\+/g; s/\?/\\?/g; s/\^/\\^/g; s/\$/\\$/g')
 
         # Extract section content
         section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file" | sed '$d')
@@ -314,10 +307,11 @@ get_toml_value() {
     # Check if key exists at all (even if empty)
     local key_exists
     key_exists=$(echo "$section_content" | grep -c "^$key\s*=" 2>/dev/null || echo "0")
-
-    # Strip newlines and ensure numeric value for comparison
-    key_exists=$(echo "$key_exists" | tr -d '\n' | tr -d ' ')
-    if [[ -z "$key_exists" ]] || [[ "$key_exists" -eq 0 ]]; then
+    
+    # Ensure we have a clean numeric value (strip any whitespace/newlines)
+    key_exists=$((key_exists + 0))
+    
+    if [[ "$key_exists" -eq 0 ]]; then
         return 1  # Key doesn't exist - use default
     fi
 
@@ -504,8 +498,6 @@ load_package_manifest() {
     fi
 
     # Extract values from top-level keys (check return codes to distinguish missing vs empty)
-    local name_value method_value target_value desc_value
-
     if get_toml_value "$manifest" "" "name" >/dev/null; then
         PACKAGE_NAME=$(get_toml_value "$manifest" "" "name")
     else
@@ -668,16 +660,8 @@ discover_packages() {
     done < <(find "$PACKAGES_DIR" -maxdepth 2 -name "manifest.toml" -type f 2>/dev/null)
 
     # Output space-separated list (bash 3.2 compatible)
-    local result_str=""
-    for pkg in "${packages[@]}"; do
-        if [[ -n "$result_str" ]]; then
-            result_str="$result_str $pkg"
-        else
-            result_str="$pkg"
-        fi
-    done
-
-    echo "$result_str"
+    # Array expansion creates space-separated output which is what we need
+    echo "${packages[@]}"
 }
 
 # Auto-discovery functions for templates and secret configs
