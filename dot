@@ -4112,16 +4112,31 @@ run_with_verbosity() {
 
     if [[ $verbosity -ge $threshold ]]; then
         # Show detailed output (indented)
-        "$@" 2>&1 | indent_section_output
-        return $?
+        # Use pipefail to ensure command exit code is preserved
+        local output
+        local exit_code
+        set -o pipefail
+        output=$("$@" 2>&1 | indent_section_output)
+        exit_code=$?
+        set +o pipefail
+        echo "$output"
+        return $exit_code
     else
-        # Run silently and show summary
-        if "$@" >/dev/null 2>&1; then
+        # Run silently but capture errors for display on failure
+        local output
+        local exit_code
+        set -o pipefail
+        output=$("$@" 2>&1)
+        exit_code=$?
+        set +o pipefail
+        if [[ $exit_code -eq 0 ]]; then
             if [[ -n "$success_msg" ]]; then
                 echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $success_msg"
             fi
             return 0
         else
+            # Show error output even at verbosity 0
+            echo "$output" | indent_section_output >&2
             return 1
         fi
     fi
