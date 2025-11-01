@@ -154,8 +154,12 @@ fi
 # alias cat='bat --paging=never'
 
 # Load dotfiles management function and completions from dot script
+# Error handling prevents shell initialization failure if dot script is unavailable
 if [ -f "$HOME/.dotfiles/dot" ]; then
-    source <("$HOME/.dotfiles/dot" --completion zsh)
+    # Use eval to catch errors and prevent shell initialization failure
+    if completion_output=$("$HOME/.dotfiles/dot" --completion zsh 2>/dev/null); then
+        eval "$completion_output" 2>/dev/null || true
+    fi
 fi
 
 # Shopify development environment (conditional - safe on all machines)

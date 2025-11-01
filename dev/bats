@@ -67,20 +67,20 @@ for suite in "${test_suites[@]}"; do
         echo ""
         echo -e "${YELLOW}Failed test output:${NC}"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        
+
         # Parse test count to identify missing tests
         if echo "$output" | grep -q "bats warning: Executed"; then
             executed=$(echo "$output" | grep "bats warning: Executed" | sed -E 's/.*Executed ([0-9]+) instead of expected ([0-9]+).*/\1 \2/')
             expected_count=$(echo "$executed" | cut -d' ' -f2)
             actual_count=$(echo "$executed" | cut -d' ' -f1)
-            
+
             if [[ -n "$executed" && "$actual_count" -lt "$expected_count" ]]; then
                 echo -e "${YELLOW}⚠ Missing tests: Expected $expected_count, executed $actual_count${NC}"
                 echo ""
-                
+
                 # Extract test numbers that were executed
                 executed_tests=$(echo "$output" | grep "^ok " | sed -E 's/^ok ([0-9]+) .*/\1/' | sort -n)
-                
+
                 # Find missing test numbers
                 missing_tests=()
                 for i in $(seq 1 "$expected_count"); do
@@ -88,7 +88,7 @@ for suite in "${test_suites[@]}"; do
                         missing_tests+=("$i")
                     fi
                 done
-                
+
                 if [[ ${#missing_tests[@]} -gt 0 ]]; then
                     echo -e "${RED}Missing test numbers: ${missing_tests[*]}${NC}"
                     echo -e "${YELLOW}(These tests were likely skipped or failed silently)${NC}"
@@ -96,7 +96,7 @@ for suite in "${test_suites[@]}"; do
                 fi
             fi
         fi
-        
+
         # Show the full output, highlighting error patterns
         echo "$output" | while IFS= read -r line; do
             if [[ "$line" =~ ^not\ ok ]]; then

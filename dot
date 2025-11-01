@@ -214,14 +214,14 @@ get_packages() {
 # Use read to populate array correctly and handle spaces
 # Validate that packages were discovered successfully
 if ! PACKAGES_RAW=$(get_packages); then
-    echo "Error: Failed to discover packages (get_packages command failed). Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
+    echo "Error: Failed to discover packages. Check that manifest files exist in $PACKAGES_DIR/*/manifest.toml" >&2
     exit 1
 fi
 read -ra PACKAGES <<< "$PACKAGES_RAW"
 
 # Validate that PACKAGES array is not empty
 if [[ ${#PACKAGES[@]} -eq 0 ]]; then
-    echo "Error: No packages found (get_packages returned empty). Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
+    echo "Error: No packages found. Ensure manifest files exist in $PACKAGES_DIR/*/manifest.toml" >&2
     exit 1
 fi
 
@@ -315,8 +315,11 @@ get_toml_value() {
     fi
 
     # Check if key exists at all (even if empty)
+    # Escape regex special characters in key for safe matching
+    local escaped_key
+    escaped_key=$(escape_regex_special_chars "$key")
     local key_exists
-    key_exists=$(echo "$section_content" | grep -c "^$key\s*=" 2>/dev/null || echo "0")
+    key_exists=$(echo "$section_content" | grep -c "^$escaped_key\s*=" 2>/dev/null || echo "0")
     # Strip any trailing newline from grep -c output
     key_exists="${key_exists//$'\n'/}"
 
@@ -325,9 +328,12 @@ get_toml_value() {
     fi
 
     # Extract key value, strip comments and trim whitespace
+    # Use escaped key for safe pattern matching
+    local escaped_key
+    escaped_key=$(escape_regex_special_chars "$key")
     local value_line
     value_line=$(echo "$section_content" | \
-        grep "^$key\s*=" | \
+        grep "^$escaped_key\s*=" | \
         sed 's/#.*$//; s/^\s*//; s/\s*$//' | \
         head -1)
 
@@ -3103,7 +3109,7 @@ check_submodule_health() {
         local current_submodule=""
         while IFS= read -r line; do
             [[ -z "$line" ]] && continue
-            
+
             # Extract submodule name from [submodule "name"]
             if [[ "$line" =~ ^\s*\[submodule\ \"([^\"]+)\" ]]; then
                 current_submodule="${BASH_REMATCH[1]}"
@@ -3112,7 +3118,7 @@ check_submodule_health() {
                 local submodule_rel_path="${BASH_REMATCH[1]}"
                 submodule_rel_path=$(echo "$submodule_rel_path" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
                 local submodule_full_path="$DOTFILES_DIR/$submodule_rel_path"
-                
+
                 if [[ -d "$submodule_full_path" ]]; then
                     # Check if submodule is initialized
                     if [[ -f "$submodule_full_path/.git" ]] || [[ -d "$submodule_full_path/.git" ]]; then
@@ -3122,7 +3128,7 @@ check_submodule_health() {
                         else
                             log_warning "Submodule $submodule_rel_path has uncommitted changes"
                         fi
-                        
+
                         # Check if submodule is detached
                         if git -C "$submodule_full_path" symbolic-ref -q HEAD >/dev/null 2>&1; then
                             log_success "Submodule $submodule_rel_path on branch"
@@ -3138,7 +3144,7 @@ check_submodule_health() {
                     log_error "Submodule directory missing: $submodule_rel_path"
                     ((issues++))
                 fi
-                
+
                 # Reset for next submodule
                 current_submodule=""
             fi
