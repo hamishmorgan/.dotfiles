@@ -4515,7 +4515,7 @@ cmd_update() {
                 if load_package_manifest "$package"; then
                     local file_to_update=""
                     local manifest="$PACKAGES_DIR/$package/manifest.toml"
-                    
+
                     # Check for update_target field in [update] section
                     local update_target
                     if update_target=$(get_toml_value "$manifest" "update" "update_target" 2>/dev/null); then
@@ -4523,7 +4523,7 @@ cmd_update() {
                             file_to_update="$update_target"
                         fi
                     fi
-                    
+
                     # Fallback: use first file in files array if update_target not set
                     if [[ -z "$file_to_update" ]]; then
                         local files_string="$PACKAGE_FILES"
@@ -4533,7 +4533,7 @@ cmd_update() {
                             file_to_update=$(echo "${files[0]}" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//')
                         fi
                     fi
-                    
+
                     if [[ -n "$file_to_update" ]]; then
                         expanded_args+=("$PACKAGES_DIR/$package/$file_to_update")
                     else
