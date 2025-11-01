@@ -374,8 +374,14 @@ get_toml_value() {
     # Note: This does not handle escaped quotes within values - document limitation if needed
     if [[ "$value" =~ ^[\"'].*[\"']$ ]]; then
         # Remove leading and trailing quotes (both single and double)
-        value="${value#[\"']}"
-        value="${value%[\"']}"
+        # Use separate checks for each quote type to avoid shellcheck issues
+        if [[ "$value" =~ ^\".*\"$ ]]; then
+            value="${value#\"}"
+            value="${value%\"}"
+        elif [[ "$value" =~ ^\'.*\'$ ]]; then
+            value="${value#\'}"
+            value="${value%\'}"
+        fi
     fi
 
     # Return empty string if key exists but value is empty (explicit empty)
