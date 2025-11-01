@@ -134,7 +134,6 @@ trap cleanup_on_exit EXIT
 trap handle_interrupt INT TERM
 
 # Package definitions
-# Note: system package is stowed first to ensure .stow-global-ignore is in place
 # Auto-discovery via manifests replaces static PACKAGES array
 
 # Discover packages by scanning for manifests
@@ -176,24 +175,28 @@ get_packages() {
         return 1
     fi
 
-    # Read discovered packages into array
-    read -ra packages <<< "$discovered"
-
-    # Ensure system package is first
-    local result=("system")
-    for pkg in "${packages[@]}"; do
-        if [[ "$pkg" != "system" ]]; then
-            result+=("$pkg")
-        fi
-    done
-
-    # Output space-separated (for array initialization)
-    echo "${result[@]}"
+    # Output discovered packages as-is (no special ordering required)
+    echo "$discovered"
 }
 
 # Initialize PACKAGES array (auto-discovery via manifests)
 # Use read to populate array correctly and handle spaces
-read -ra PACKAGES <<< "$(get_packages)"
+# Validate that packages were discovered successfully
+if ! PACKAGES_RAW=$(get_packages); then
+    echo "Error: Failed to discover packages. Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
+    exit 1
+fi
+if [[ -z "$PACKAGES_RAW" ]]; then
+    echo "Error: No packages found. Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
+    exit 1
+fi
+read -ra PACKAGES <<< "$PACKAGES_RAW"
+
+# Validate that PACKAGES array is not empty
+if [[ ${#PACKAGES[@]} -eq 0 ]]; then
+    echo "Error: No packages found. Ensure manifests exist in $PACKAGES_DIR/*/manifest.toml" >&2
+    exit 1
+fi
 
 # Get package files (manifest-only)
 # Get files/directories for each package (for status display)
@@ -244,7 +247,6 @@ get_required_deps() {
     local type="$1"
     case "$type" in
         common)   echo "stow git" ;;
-        optional) echo "tmux zsh fish bat batcat" ;;
         *)        echo "" ;;
     esac
 }
@@ -310,7 +312,10 @@ get_toml_value() {
 
     # Extract value (handle quoted and unquoted)
     local value
-    value=$(echo "$value_line" | sed 's/.*=\s*//')
+    # Extract everything after first = sign, then trim leading whitespace
+    value="${value_line#*=}"
+    # Trim leading whitespace (handles spaces, tabs, etc.)
+    value="${value#"${value%%[![:space:]]*}"}"
 
     # Remove quotes if present
     if [[ "$value" =~ ^[\"'].*[\"']$ ]]; then
@@ -910,6 +915,30 @@ run_validator() {
     shift
     local args=("$@")
 
+    # Resolve relative paths (e.g., "dev/validate-tmux") relative to DOTFILES_DIR
+    if [[ "$command" == */* ]] && [[ ! "$command" == /* ]]; then
+        # Relative path - resolve relative to DOTFILES_DIR
+        local resolved_command="$DOTFILES_DIR/$command"
+        if [[ -f "$resolved_command" ]] && [[ -x "$resolved_command" ]]; then
+            command="$resolved_command"
+        elif [[ ! -f "$command" ]]; then
+            # Command doesn't exist as relative path either
+            local file_path=""
+            # Find file path in args (usually last arg or contains "file")
+            for arg in "${args[@]}"; do
+                if [[ -f "$arg" ]]; then
+                    file_path="$arg"
+                    break
+                fi
+            done
+            if [[ -z "$file_path" ]]; then
+                file_path="${args[-1]}"
+            fi
+            log_warning "$command not found, skipping validation for ${file_path#"$HOME"/}"
+            return 0  # Continue, not an error
+        fi
+    fi
+
     # Check if command exists
     if ! command_exists "$command"; then
         local file_path=""
@@ -925,18 +954,6 @@ run_validator() {
         fi
         log_warning "$command not installed, skipping validation for ${file_path#"$HOME"/}"
         return 0  # Continue, not an error
-    fi
-
-    # Special handling for tmux (requires cleanup)
-    if [[ "$command" == "tmux" ]]; then
-        local session="dotfiles-config-test"
-        if "$command" "${args[@]}" >/dev/null 2>&1; then
-            # Cleanup: kill test session
-            "$command" kill-session -t "$session" >/dev/null 2>&1 || true
-            return 0
-        else
-            return 1
-        fi
     fi
 
     # Execute validator (array expansion preserves spaces/quotes)
@@ -1175,7 +1192,6 @@ get_min_version() {
         stow) echo "2.3" ;;
         zsh)  echo "5.0" ;;
         bash) echo "3.2" ;;  # Already enforced by our script
-        tmux) echo "2.0" ;;
         *)    echo "" ;;  # No minimum version requirement
     esac
 }
@@ -1261,10 +1277,6 @@ check_tool_version() {
             # BASH_VERSION contains extra text - extract just the version
             current_version=$(echo "$BASH_VERSION" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
             ;;
-        tmux)
-            # Use * instead of ? to handle optional letters properly
-            current_version=$(tmux -V 2>/dev/null | grep -oE '[0-9]+\.[0-9]+[a-z]*' | head -n 1)
-            ;;
     esac
 
     # Output current version for caller
@@ -1292,25 +1304,15 @@ check_dependencies() {
     log_info "Checking dependencies..."
 
     local missing_deps=()
-    local missing_optional=()
     local outdated_deps=()
     local satisfied_deps=()
     local common_deps
-    local optional_deps
     common_deps="$(get_required_deps common)"
-    optional_deps="$(get_required_deps optional)"
-    local all_deps="$common_deps $optional_deps"
 
-    for dep in $all_deps; do
+    for dep in $common_deps; do
         if ! command_exists "$dep"; then
-            # Check if this is a required (common) or optional dependency
-            if [[ " $common_deps " =~ \ $dep\  ]]; then
-                missing_deps+=("$dep")
-                [[ $verbosity -ge 1 ]] && log_error "Checking $dep... not found"
-            else
-                missing_optional+=("$dep")
-                [[ $verbosity -ge 1 ]] && log_warning "Checking $dep... not found"
-            fi
+            missing_deps+=("$dep")
+            [[ $verbosity -ge 1 ]] && log_error "Checking $dep... not found"
         else
             # Check version if minimum is specified
             local min_version
@@ -1366,12 +1368,6 @@ check_dependencies() {
         echo "  macOS: brew install ${missing_deps[*]}"
         echo "  CentOS/RHEL: sudo yum install ${missing_deps[*]}"
         echo "  Fedora: sudo dnf install ${missing_deps[*]}"
-        echo ""
-    fi
-
-    if [[ ${#missing_optional[@]} -gt 0 ]]; then
-        log_warning "Missing optional dependencies: ${missing_optional[*]}"
-        echo "  Installation will continue, but some features may be unavailable"
         echo ""
     fi
 
@@ -5172,7 +5168,7 @@ EOF
         desc=$(get_package_description "$pkg" 2>/dev/null || echo "")
         if [[ -n "$desc" ]]; then
             # Escape quotes in description for fish completion
-            desc=$(echo "$desc" | sed "s/\"/\\\\\"/g")
+            desc="${desc//\"/\\\"}"
             echo "complete -c dot -n \"__fish_seen_subcommand_from enable disable\" -a \"$pkg\" -d \"$desc\""
         else
             echo "complete -c dot -n \"__fish_seen_subcommand_from enable disable\" -a \"$pkg\""
