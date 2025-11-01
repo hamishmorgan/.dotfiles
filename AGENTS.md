@@ -86,7 +86,7 @@ This repository contains dotfiles managed with GNU Stow. Files are organized int
 - **rust**: Rust toolchain configuration
 
 Template-based secrets management separates public templates from private secret configurations.
-The `system` package is stowed first to ensure `.stow-global-ignore` is in place before other packages.
+Packages are discovered automatically via manifests and can be stowed in any order.
 
 **Repository Structure:**
 

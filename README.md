@@ -317,11 +317,8 @@ nano ~/.config/fish/config_private.fish
 #### 3. Install Packages with Stow
 
 ```bash
-# Install system package first (provides .stow-global-ignore)
-stow --verbose --restow --dir=packages --target=$HOME system
-
-# Install other packages
-stow --verbose --restow --dir=packages --target=$HOME git zsh tmux gh gnuplot bash fish
+# Install packages (order doesn't matter)
+stow --verbose --restow --dir=packages --target=$HOME system git zsh tmux gh gnuplot bash fish
 
 # Or install selectively
 stow --verbose --restow --dir=packages --target=$HOME git zsh
