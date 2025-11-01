@@ -337,7 +337,7 @@ echo "$REVIEWS_DATA" | jq -r '.data.repository.pullRequest.reviews.nodes[]' | wh
   # Get all threads for this review
   # Note: This requires checking which threads belong to this review
   # For simplicity, we'll check if ALL threads are resolved
-  
+
   # Count unresolved threads for this review
   UNRESOLVED_COUNT=$(echo "$REVIEWS_DATA" | jq -r "
     .data.repository.pullRequest.reviewThreads.nodes[] |
@@ -347,7 +347,7 @@ echo "$REVIEWS_DATA" | jq -r '.data.repository.pullRequest.reviews.nodes[]' | wh
   if [[ "$UNRESOLVED_COUNT" -eq 0 ]]; then
     # All threads resolved - dismiss the review
     DISMISS_MESSAGE="All comments have been addressed. Fixed issues in code and replied to design discussions."
-    
+
     gh api graphql -f query="
     mutation {
       dismissPullRequestReview(
@@ -363,7 +363,7 @@ echo "$REVIEWS_DATA" | jq -r '.data.repository.pullRequest.reviews.nodes[]' | wh
         }
       }
     }"
-    
+
     echo "Dismissed review from $REVIEW_AUTHOR"
   fi
 done
@@ -423,13 +423,13 @@ echo "$REVIEWS" | jq -r '.data.repository.pullRequest.reviews.nodes[] | select(.
     .data.repository.pullRequest.reviewThreads.nodes[] |
     select(.comments.nodes[].pullRequestReview.id == \"$review_id\") |
     select(.isResolved == false) | .id" | head -1)
-  
+
   if [[ -z "$HAS_UNRESOLVED" ]]; then
     # All threads resolved - dismiss the review
     REVIEW_AUTHOR=$(echo "$REVIEWS" | jq -r ".data.repository.pullRequest.reviews.nodes[] | select(.id == \"$review_id\") | .author.login")
-    
+
     DISMISS_MESSAGE="All comments have been addressed. Fixed issues in code and replied to design discussions."
-    
+
     gh api graphql -f query="
     mutation {
       dismissPullRequestReview(
@@ -444,7 +444,7 @@ echo "$REVIEWS" | jq -r '.data.repository.pullRequest.reviews.nodes[] | select(.
         }
       }
     }"
-    
+
     echo "Dismissed review from $REVIEW_AUTHOR"
   fi
 done
@@ -789,13 +789,13 @@ echo "$REVIEWS" | jq -r '.data.repository.pullRequest.reviews.nodes[] | select(.
     .data.repository.pullRequest.reviewThreads.nodes[] |
     select(.comments.nodes[].pullRequestReview.id == \"$review_id\") |
     select(.isResolved == false) | .id" | head -1)
-  
+
   if [[ -z "$HAS_UNRESOLVED" ]]; then
     # All threads resolved - dismiss the review
     REVIEW_AUTHOR=$(echo "$REVIEWS" | jq -r ".data.repository.pullRequest.reviews.nodes[] | select(.id == \"$review_id\") | .author.login")
-    
+
     DISMISS_MESSAGE="All comments have been addressed. Fixed issues in code and replied to design discussions."
-    
+
     gh api graphql -f query="
     mutation {
       dismissPullRequestReview(
@@ -810,7 +810,7 @@ echo "$REVIEWS" | jq -r '.data.repository.pullRequest.reviews.nodes[] | select(.
         }
       }
     }"
-    
+
     echo "Dismissed review from $REVIEW_AUTHOR"
   fi
 done
