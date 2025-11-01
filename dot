@@ -175,8 +175,36 @@ get_packages() {
         return 1
     fi
 
-    # Output discovered packages as-is (no special ordering required)
-    echo "$discovered"
+    # Ensure system package is always first
+    # Split discovered packages into array to check for system
+    local packages_array=()
+    read -ra packages_array <<< "$discovered"
+
+    local result=""
+    local has_system=false
+
+    # Build result array with system first
+    for package in "${packages_array[@]}"; do
+        if [[ "$package" == "system" ]]; then
+            has_system=true
+            if [[ -z "$result" ]]; then
+                result="system"
+            else
+                result="system $result"
+            fi
+        else
+            if [[ -z "$result" ]]; then
+                result="$package"
+            else
+                result="$result $package"
+            fi
+        fi
+    done
+
+    # If system wasn't found, it will be missing from the list
+    # (this is fine - validate_packages will catch missing system package)
+
+    echo "$result"
 }
 
 # Initialize PACKAGES array (auto-discovery via manifests)
