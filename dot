@@ -333,7 +333,7 @@ expand_file_patterns() {
             shopt -s nullglob
             while IFS= read -r -d '' file; do
                 # Convert absolute path to relative path from package dir
-                local rel_path="${file#$package_dir/}"
+                local rel_path="${file#"$package_dir"/}"
                 matches+=("$rel_path")
             done < <(find "$package_dir" -path "$package_dir/$pattern" -print0 2>/dev/null)
             shopt -u nullglob
