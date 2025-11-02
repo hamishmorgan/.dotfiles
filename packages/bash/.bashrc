@@ -1,96 +1,50 @@
 # shellcheck shell=bash
-# ~/.bashrc: executed by bash(1) for non-login shells.
-# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
-# for examples
+# Bash shell configuration
+# ~/.bashrc
 
 # If not running interactively, don't do anything
-case $- in
-    *i*) ;;
-      *) return;;
-esac
+[[ $- != *i* ]] && return
 
-# don't put duplicate lines or lines starting with space in the history.
-# See bash(1) for more options
-HISTCONTROL=ignoreboth
+# ━━━ History Configuration ━━━
+HISTCONTROL=ignoreboth        # Ignore duplicates and space-prefixed
+HISTSIZE=10000
+HISTFILESIZE=10000
+shopt -s histappend           # Append to history file
+shopt -s checkwinsize         # Update LINES and COLUMNS after each command
 
-# append to the history file, don't overwrite it
-shopt -s histappend
+# ━━━ Bash Options ━━━
+shopt -s globstar 2>/dev/null # Enable ** globbing (bash 4+, optional)
 
-# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
-
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
-shopt -s checkwinsize
-
-# If set, the pattern "**" used in a pathname expansion context will
-# match all files and zero or more directories and subdirectories.
-#shopt -s globstar
-
-# make less more friendly for non-text input files, see lesspipe(1)
-[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
-
-# set variable identifying the chroot you work in (used in the prompt below)
-if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
-    debian_chroot=$(cat /etc/debian_chroot)
+# ━━━ Completion ━━━
+if ! shopt -oq posix; then
+  if [[ -f /usr/share/bash-completion/bash_completion ]]; then
+    source /usr/share/bash-completion/bash_completion
+  elif [[ -f /etc/bash_completion ]]; then
+    source /etc/bash_completion
+  fi
 fi
 
-# set a fancy prompt (non-color, unless we know we "want" color)
-case "$TERM" in
-    xterm-color|*-256color) color_prompt=yes;;
-esac
+# ━━━ Prompt ━━━
+# Simple, git-aware prompt (branch only, no dirty check for performance)
+git_branch_prompt() {
+    local branch
+    branch=$(git branch --show-current 2>/dev/null)
+    [[ -n "$branch" ]] && echo " ($branch)"
+}
 
-# uncomment for a colored prompt, if the terminal has the capability; turned
-# off by default to not distract the user: the focus in a terminal window
-# should be on the output of commands, not on the prompt
-#force_color_prompt=yes
+PS1='\[\033[34m\]\w\[\033[33m\]$(git_branch_prompt)\[\033[00m\] \[\033[32m\]❯\[\033[00m\] '
 
-if [ -n "$force_color_prompt" ]; then
-    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-	# We have color support; assume it's compliant with Ecma-48
-	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-	# a case would tend to support setf rather than setaf.)
-	color_prompt=yes
-    else
-	color_prompt=
-    fi
-fi
+# ━━━ Detect OS ━━━
+export BASH_HOST_OS=$(uname | tr '[:upper:]' '[:lower:]')
 
-if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-fi
-unset color_prompt force_color_prompt
+# ━━━ Platform-Specific Configuration ━━━
+[[ "$BASH_HOST_OS" == "darwin" ]] && [[ -f ~/.bashrc.osx ]] && source ~/.bashrc.osx
+[[ "$BASH_HOST_OS" == "linux" ]] && [[ -f ~/.bashrc.linux ]] && source ~/.bashrc.linux
 
-# If this is an xterm set the title to user@host:dir
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
-esac
+# ━━━ Tool Integrations ━━━
 
-# enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
-
-# colored GCC warnings and errors
-#export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
-
-# ls aliases - use eza if available, otherwise standard ls
+# eza (modern ls)
 if command -v eza &>/dev/null; then
-  # eza (modern ls replacement) aliases
   alias ls='eza --icons --group-directories-first'
   alias ll='eza --long --header --icons --group-directories-first --git'
   alias la='eza --long --all --header --icons --group-directories-first --git'
@@ -100,92 +54,98 @@ if command -v eza &>/dev/null; then
   alias lm='eza --long --sort=modified --reverse --icons'
   alias lz='eza --long --sort=size --reverse --icons'
 else
-  # Standard ls aliases
   alias ll='ls -alF'
   alias la='ls -A'
-  alias l='ls -CF'
 fi
 
-# Add an "alert" alias for long running commands.  Use like so:
-#   sleep 10; alert
-alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
-
-# Alias definitions.
-# You may want to put all your additions into a separate file like
-# ~/.bash_aliases, instead of adding them here directly.
-# See /usr/share/doc/bash-doc/examples in the bash-doc package.
-
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
-
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
-if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
-fi
-
-# Detect OS for conditional configuration loading
-export BASH_HOST_OS=$(uname | awk '{print tolower($0)}')
-
-# Load configs for MacOS
-if [ "$BASH_HOST_OS" = "darwin" ]; then
-  . "$HOME/.bashrc.osx"
-fi
-
-# Load configs for Linux
-if [ "$BASH_HOST_OS" = "linux" ]; then
-  . "$HOME/.bashrc.linux"
-fi
-
-# Custom aliases
-
-# bat (modern cat replacement with syntax highlighting)
-# Ubuntu/Debian name the binary 'batcat' to avoid conflict with bacula-console-qt
+# bat (syntax highlighting cat)
 if command -v batcat &>/dev/null; then
     alias bat='batcat'
     export BAT_CONFIG_PATH="$HOME/.config/bat/config"
 elif command -v bat &>/dev/null; then
     export BAT_CONFIG_PATH="$HOME/.config/bat/config"
 fi
-# Optional: Uncomment to replace cat with bat everywhere
-# Note: This may break scripts that parse cat output
-# alias cat='bat --paging=never'
 
-# Load dotfiles management function and completions from dot script
-if [ -f "$HOME/.dotfiles/dot" ]; then
-    source <("$HOME/.dotfiles/dot" --completion bash)
+# fzf (fuzzy finder)
+if command -v fzf &>/dev/null; then
+    if command -v fd &>/dev/null; then
+        export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+        export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+        export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+    fi
+    export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
+
+    # Load key bindings if available
+    for fzf_bindings in \
+        /usr/share/doc/fzf/examples/key-bindings.bash \
+        /opt/homebrew/opt/fzf/shell/key-bindings.bash \
+        /usr/local/opt/fzf/shell/key-bindings.bash \
+        ~/.fzf/shell/key-bindings.bash; do
+        [[ -f "$fzf_bindings" ]] && source "$fzf_bindings" && break
+    done
 fi
 
-# Shopify development environment (conditional - safe on all machines)
-# dev.sh provides: chruby, nvm, PATH setup, autocomplete
-if [[ -f /opt/dev/dev.sh ]] && [[ $- == *i* ]]; then
-    source /opt/dev/dev.sh
+# zoxide (smart cd)
+command -v zoxide &>/dev/null && eval "$(zoxide init bash)"
+
+# Graphite (stacked PRs)
+if command -v gt &>/dev/null; then
+    gt_completion=$(gt bash 2>/dev/null)
+    [[ -n "$gt_completion" ]] && source <(echo "$gt_completion")
 fi
 
-# Tec agent integration (Shopify's managed Nix environment)
-# Note: eval is required - tec init outputs shell-specific code
-if [[ -x ~/.local/state/tec/profiles/base/current/global/init ]] && [[ $- == *i* ]]; then
+# shadowenv (directory environments)
+command -v shadowenv &>/dev/null && eval "$(shadowenv init bash)"
+
+# Dotfiles completions
+[[ -f ~/.dotfiles/dot ]] && source <(~/.dotfiles/dot --completion bash 2>/dev/null)
+
+# Shopify dev
+[[ -f /opt/dev/dev.sh ]] && [[ $- == *i* ]] && source /opt/dev/dev.sh
+
+# Tec agent (Shopify Nix)
+[[ -x ~/.local/state/tec/profiles/base/current/global/init ]] && [[ $- == *i* ]] && \
     eval "$(~/.local/state/tec/profiles/base/current/global/init bash)"
-fi
 
-# Rust environment
+# Rust
 if command -v rustup &>/dev/null; then
-    source <(rustup completions bash rustup)
-    source <(rustup completions bash cargo)
+    source <(rustup completions bash rustup 2>/dev/null)
+    source <(rustup completions bash cargo 2>/dev/null)
 fi
+[[ -f ~/.cargo/env ]] && source ~/.cargo/env
 
-if [ -f "$HOME/.cargo/env" ]; then
-    source "$HOME/.cargo/env"
-fi
+# ━━━ Aliases ━━━
 
-# Machine-specific configuration (not version-controlled)
-if [ -f ~/.bashrc.local ]; then
-    source ~/.bashrc.local
-fi
+# Navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
 
+# Editor
+alias e='${EDITOR:-nvim}'
+alias v='${EDITOR:-nvim}'
+
+# Git
+alias g='git'
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git pull'
+alias gd='git diff'
+alias glog='git log --oneline --graph --decorate'
+
+# Git worktree
+alias gwt='git worktree'
+alias gwta='git worktree add'
+alias gwtl='git worktree list'
+alias gwtr='git worktree remove'
+
+# Shopify dev
+alias d='dev'
+
+# Common
+alias c='clear'
+
+# ━━━ Machine-Specific Configuration ━━━
+[[ -f ~/.bashrc.local ]] && source ~/.bashrc.local

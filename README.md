@@ -17,7 +17,6 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - macOS and Linux support
 - Validation script for installation verification
 - Packages: git, zsh, tmux, gh, gnuplot, bash, fish, wezterm, bat, rust
-- Oh My Zsh submodule
 - CI/CD validation with GitHub Actions
 
 ## Compatibility
@@ -38,13 +37,12 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 │   ├── git/           # Git configuration and aliases
 │   │   ├── .gitconfig              # Git config (tracked)
 │   │   └── .gitconfig.local.example  # Example for ~/.gitconfig.local
-│   ├── zsh/           # Zsh configuration with Oh My Zsh
+│   ├── zsh/           # Zsh shell configuration
 │   │   ├── .zshrc
 │   │   ├── .zprofile
 │   │   ├── .zshrc.osx
 │   │   ├── .zshrc.linux
-│   │   ├── .zshrc.local.example    # Example for ~/.zshrc.local
-│   │   └── .oh-my-zsh/  # Oh My Zsh submodule
+│   │   └── .zshrc.local.example    # Example for ~/.zshrc.local
 │   ├── tmux/          # Tmux configuration
 │   ├── gh/            # GitHub CLI configuration
 │   │   └── .config/gh/
@@ -128,7 +126,7 @@ cd ~/.dotfiles
 ./dot install
 ```
 
-The installer verifies dependencies, backs up existing files, initializes submodules, and creates symlinks.
+The installer verifies dependencies, backs up existing files, and creates symlinks.
 
 ### Verbosity Levels
 
@@ -306,7 +304,6 @@ The `dot` script is optional. These dotfiles are standard GNU Stow packages and 
 ```bash
 git clone git@github.com:hamishmorgan/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
-git submodule update --init --recursive
 ```
 
 #### 2. Create Machine-Specific Configuration
@@ -378,9 +375,6 @@ cd ~/.dotfiles
 # Pull latest changes
 git pull origin main
 
-# Update submodules
-git submodule update --remote --merge
-
 # Reinstall packages (picks up changes)
 stow --verbose --restow --dir=packages --target=$HOME git zsh tmux gh gnuplot bash fish
 ```
@@ -433,18 +427,17 @@ The health check performs comprehensive diagnostics in a clean, scannable table 
 The table format shows all checks at a glance with Pass/Fail/Warn status and identifies
 maintenance items that need attention.
 
-The health check performs 10 categories of checks:
+The health check performs 9 categories of checks:
 
 1. **Symlink Integrity**: Verifies all configuration symlinks point to correct files
 2. **Configuration Syntax**: Validates git, tmux, zsh, and bash configuration syntax
-3. **Submodule Health**: Checks Oh My Zsh submodule status and initialization
-4. **Git Repository Status**: Reports uncommitted changes, branch status, and sync with origin
-5. **File Permissions**: Checks secret config files have secure permissions
-6. **Shell Integration**: Verifies shell configs are active and PATH is properly configured
-7. **Stow Conflicts**: Detects unmanaged files that would conflict with stow
-8. **Orphaned Symlinks**: Finds broken symlinks in home and .config directories
-9. **Dependencies**: Checks all required tools are installed
-10. **Backup Health**: Reports backup directory status and suggests cleanup if needed
+3. **Git Repository Status**: Reports uncommitted changes, branch status, and sync with origin
+4. **File Permissions**: Checks secret config files have secure permissions
+5. **Shell Integration**: Verifies shell configs are active and PATH is properly configured
+6. **Stow Conflicts**: Detects unmanaged files that would conflict with stow
+7. **Orphaned Symlinks**: Finds broken symlinks in home and .config directories
+8. **Dependencies**: Checks all required tools are installed
+9. **Backup Health**: Reports backup directory status and suggests cleanup if needed
 
 ## What gets installed
 
@@ -459,7 +452,7 @@ The health check performs 10 categories of checks:
 
 - Login shell environment (`.zprofile`)
 - Interactive shell configuration (`.zshrc`)
-- Oh My Zsh integration with plugins
+- Modern shell features with native completion systems
 - Platform-specific settings (`.zshrc.osx`, `.zshrc.linux`)
 - Custom aliases and functions
 
@@ -580,9 +573,8 @@ cd ~/.dotfiles
 The `update` command automatically:
 
 1. Updates global gitignore patterns
-2. Updates packages (e.g., Oh My Zsh) that define update commands in their manifests
-3. Pulls submodule updates
-4. Reinstalls all packages
+2. Updates packages that define update commands in their manifests (if any)
+3. Reinstalls all packages
 
 Like `install`, the `update` command supports verbosity flags:
 

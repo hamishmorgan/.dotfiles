@@ -1,8 +1,7 @@
 # shellcheck shell=bash
 case $ZSH_HOST_OS in
 	darwin*)
-	# macOS-specific aliases
-	alias ls='gls --color=auto'
+	# macOS-specific configuration
 
 	# Faster keyboard repeat rate. The defaults available are so slow and it takes ages to delete a lot of text.
 	defaults write NSGlobalDomain KeyRepeat -int 1

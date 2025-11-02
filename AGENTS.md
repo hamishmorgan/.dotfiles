@@ -75,7 +75,7 @@ This repository contains dotfiles managed with GNU Stow. Files are organized int
 
 - **system**: System-wide configuration files (`.stow-global-ignore`)
 - **git**: Git configuration and global ignore patterns
-- **zsh**: Zsh shell configuration (includes Oh My Zsh as submodule)
+- **zsh**: Zsh shell configuration
 - **tmux**: Terminal multiplexer configuration
 - **gh**: GitHub CLI configuration
 - **gnuplot**: GNU Plot configuration
@@ -271,7 +271,7 @@ apk add stow git bash
   - Insert final newline
   - Use 2-space indentation for shell scripts
 - **Package Independence**: The `dot` script MUST be package-independent. It MUST NOT contain package-specific logic
-  (e.g., hardcoded references to Oh My Zsh, tmux, zsh, etc.). If package-specific logic is needed, it MUST be defined
+  (e.g., hardcoded references to tmux, zsh, etc.). If package-specific logic is needed, it MUST be defined
   in the package's `manifest.toml` file. Extend the manifest format if needed (e.g., add `[health]` section for health
   check messages, `[submodule]` section for submodule-specific checks, etc.).
 
@@ -1212,16 +1212,14 @@ get_package_files() {
         gh)   echo ".config/gh/config.yml,.config/gh/hosts.yml" ;;
         bat)  echo ".config/bat/config" ;;
         rust) echo ".cargo/config.toml,.rustfmt.toml" ;;
-        
-        # ⚠️ EXCEPTIONS: Directories (only when safe)
-        zsh)  echo ".zshrc,.zprofile,.oh-my-zsh" ;;  # .oh-my-zsh is submodule
+        zsh)  echo ".zshrc,.zprofile" ;;
     esac
 }
 ```
 
 **When directories are acceptable:**
 
-- Submodules (like `.oh-my-zsh`) - fully managed by git
+- Submodules - fully managed by git
 - Tool-specific directories where dotfiles owns ALL content
 - Directories that won't have user data mixed in
 

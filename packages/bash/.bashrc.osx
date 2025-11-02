@@ -3,8 +3,7 @@
 
 case $BASH_HOST_OS in
 	darwin*)
-		# macOS-specific aliases
-		alias ls='gls --color=auto'
+		# macOS-specific configuration
 
 		# Faster keyboard repeat rate
 		defaults write NSGlobalDomain KeyRepeat -int 1
