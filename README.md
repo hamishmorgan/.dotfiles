@@ -29,67 +29,53 @@ The `dot` script is compatible with Bash 3.2, ensuring it works seamlessly with 
 bash installation without requiring Homebrew bash. This compatibility is enforced through automated
 testing on all platforms, including explicit Bash 3.2 validation in CI.
 
-## Package Structure
+## Quick Reference
 
-```text
-.dotfiles/
-├── packages/      # All stowable configuration packages
-│   ├── git/           # Git configuration and aliases
-│   │   ├── .gitconfig              # Git config (tracked)
-│   │   └── .gitconfig.local.example  # Example for ~/.gitconfig.local
-│   ├── zsh/           # Zsh shell configuration
-│   │   ├── .zshrc
-│   │   ├── .zprofile
-│   │   ├── .zshrc.osx
-│   │   ├── .zshrc.linux
-│   │   └── .zshrc.local.example    # Example for ~/.zshrc.local
-│   ├── tmux/          # Tmux configuration
-│   ├── gh/            # GitHub CLI configuration
-│   │   └── .config/gh/
-│   │       ├── config.yml          # GH CLI config (tracked)
-│   │       └── hosts.yml           # GH hosts config (tracked)
-│   ├── gnuplot/       # GNU Plot configuration
-│   ├── bash/          # Bash configuration
-│   │   ├── .bashrc
-│   │   ├── .bash_profile
-│   │   └── .bashrc.local.example   # Example for ~/.bashrc.local
-│   ├── fish/          # Fish shell configuration
-│   │   └── .config/fish/
-│   │       ├── config.fish
-│   │       ├── config.linux.fish
-│   │       ├── config.osx.fish
-│   │       └── functions/
-│   │           ├── d.fish           # Dotfiles wrapper function
-│   │           └── fish_prompt.fish # Custom prompt
-│   └── system/        # System-wide files
-├── dot            # Main dotfiles management script
-└── README.md      # This file
+### Common Commands
+
+```bash
+./dot install          # Install all dotfiles
+./dot update           # Update and reinstall
+./dot status           # Show status
+./dot health           # Run diagnostics
+./dot packages         # List all packages
+./dot enable rust      # Enable a package
+./dot disable fish     # Disable a package
 ```
 
-Each package directory contains a `manifest.toml` file that defines:
+### Documentation
 
-- Files managed by the package
-- Package metadata (name, description)
-- Installation method (stow or copy-sync)
-- Platform-specific target directories
-- Validation rules for configuration syntax
-- Update commands for package-specific updates
+- **[COMMANDS.md](COMMANDS.md)** - Complete command reference
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Developer documentation
 
-Example manifest:
+### Quick Links
 
-```toml
-files = [".gitconfig", ".gitattributes", ".gitignore-globals"]
-name = "Git"
-description = "Git configuration and aliases"
-method = "stow"
-target = "~"
+- [Installation](#installation) - Get started in 3 commands
+- [Configuration](#configuration) - Environment variables
+- [Package Management](#package-management) - Enable/disable packages
+- [Troubleshooting](#troubleshooting) - Common issues
 
-[validation]
-".gitconfig" = { command = "git", args = ["config", "--list"] }
-```
+## Packages
 
-**Manifest Requirement:** All packages must have a valid `manifest.toml` file. The installation
-script auto-discovers packages by scanning for manifests and validates them before any operations.
+All configurations are organized as packages in the `packages/` directory:
+
+| Package | Description |
+|---------|-------------|
+| **system** | System-wide ignore patterns |
+| **git** | Git configuration and aliases |
+| **bash** | Bash shell configuration |
+| **zsh** | Zsh shell configuration |
+| **fish** | Fish shell configuration |
+| **tmux** | Terminal multiplexer |
+| **gh** | GitHub CLI configuration |
+| **gnuplot** | GNU Plot configuration |
+| **wezterm** | WezTerm terminal emulator |
+| **bat** | Bat syntax highlighter |
+| **rust** | Rust toolchain configuration |
+| **cursor** | Cursor IDE (uses copy-sync) |
+
+Each package has a `manifest.toml` defining managed files, installation method, and validation rules. See package-specific README files for detailed configuration options.
 
 ## Prerequisites
 
@@ -167,6 +153,8 @@ Customize behavior via environment variables:
 - `DOTFILES_CURL_TIMEOUT` - Curl operations timeout (default: 30)
 
 ### Security
+
+- `DOTFILES_SECRET_FILE_MODE` - File permissions for secret configs (default: 600)
 
 ### Output
 
@@ -294,116 +282,6 @@ lg
 
 The aliases are integrated into `.bashrc`, `.zshrc`, and `config.fish`. If eza is not installed,
 the shell configs fall back to standard `ls` aliases.
-
-### Manual Installation
-
-The `dot` script is optional. These dotfiles are standard GNU Stow packages and can be managed manually.
-
-#### 1. Clone Repository
-
-```bash
-git clone git@github.com:hamishmorgan/.dotfiles.git ~/.dotfiles
-cd ~/.dotfiles
-```
-
-#### 2. Create Machine-Specific Configuration
-
-Create `.local` files for your machine-specific settings (git-ignored):
-
-**Git configuration (required):**
-
-```bash
-cp packages/git/.gitconfig.local.example ~/.gitconfig.local
-# Edit with your information:
-# - name, email, username
-# - Signing configuration (1Password, Yubikey, or disable)
-nano ~/.gitconfig.local
-chmod 600 ~/.gitconfig.local
-```
-
-**Shell configuration (optional):**
-
-```bash
-# Bash
-cp packages/bash/.bashrc.local.example ~/.bashrc.local
-nano ~/.bashrc.local
-
-# Zsh
-cp packages/zsh/.zshrc.local.example ~/.zshrc.local
-nano ~/.zshrc.local
-
-# Fish
-nano ~/.config/fish/config_private.fish
-```
-
-#### 3. Install Packages with Stow
-
-```bash
-# Install packages (order doesn't matter)
-stow --verbose --restow --dir=packages --target=$HOME system git zsh tmux gh gnuplot bash fish
-
-# Or install selectively
-stow --verbose --restow --dir=packages --target=$HOME git zsh
-```
-
-**What Stow does:**
-
-- Creates symlinks from `~/.dotfiles/packages/PACKAGE/FILE` to `~/FILE`
-- Example: `~/.dotfiles/packages/git/.gitconfig` → `~/.gitconfig`
-- Handles nested directory structures automatically
-
-#### 5. Verify Installation
-
-```bash
-# Check symlinks were created
-ls -la ~ | grep "^l"
-
-# Should show:
-# lrwxr-xr-x .gitconfig -> .dotfiles/packages/git/.gitconfig
-# lrwxr-xr-x .zshrc -> .dotfiles/packages/zsh/.zshrc
-
-# Test configurations (from your ~/.gitconfig.local)
-git config --get user.name
-git config --get user.email
-```
-
-#### Manual Update
-
-```bash
-cd ~/.dotfiles
-
-# Pull latest changes
-git pull origin main
-
-# Reinstall packages (picks up changes)
-stow --verbose --restow --dir=packages --target=$HOME git zsh tmux gh gnuplot bash fish
-```
-
-#### Manual Uninstall
-
-```bash
-cd ~/.dotfiles
-
-# Remove all symlinks
-stow --verbose --delete --dir=packages --target=$HOME system git zsh tmux gh gnuplot bash fish
-
-# Or remove specific packages
-stow --verbose --delete --dir=packages --target=$HOME git
-```
-
-**When to use manual installation:**
-
-- You want full control over each step
-- You're learning how Stow works
-- You're debugging installation issues
-- You only need specific packages
-- The `dot` script doesn't work for your setup
-
-**When to use the script:**
-
-- You want automated setup with backups
-- You want health checks and validation
-- You prefer a guided installation experience
 
 ## Verification
 
@@ -584,14 +462,44 @@ Like `install`, the `update` command supports verbosity flags:
 ./dot update -vv   # Show all file operations
 ```
 
+## Package Management
+
+Manage individual packages after installation:
+
+```bash
+# List all available packages with status
+./dot packages
+
+# Enable a specific package
+./dot enable PACKAGE_NAME
+
+# Disable a specific package  
+./dot disable PACKAGE_NAME
+```
+
+**Examples:**
+
+```bash
+# Enable the rust package
+./dot enable rust
+
+# Disable the fish shell package
+./dot disable fish
+
+# View all packages and their status
+./dot packages
+```
+
+**Note:** The `cursor` package uses a copy-sync method instead of stow. Use `./dot sync-cursor` to sync settings to Cursor and `./dot pull-cursor` to pull changes back from Cursor.
+
 ## Uninstallation
 
 ### Uninstall
 
 ```bash
 cd ~/.dotfiles
-stow -D git zsh tmux gh gnuplot bash
-# Restore from backup directories in ~/.dotfiles-backup-* if needed
+stow --verbose --delete --dir=packages --target=$HOME git zsh tmux gh gnuplot bash fish
+# Restore from backup directories if needed
 ```
 
 ## Troubleshooting
@@ -613,6 +521,47 @@ Verify installation:
 ```bash
 ./dot health
 ```
+
+## Advanced
+
+### Manual Installation with Stow
+
+The `dot` script is optional. These dotfiles are standard GNU Stow packages that can be managed manually.
+
+**Quick manual setup:**
+
+```bash
+# 1. Clone
+git clone git@github.com:hamishmorgan/.dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
+
+# 2. Create .local configs
+cp packages/git/.gitconfig.local.example ~/.gitconfig.local
+nano ~/.gitconfig.local
+
+# 3. Install with stow
+stow --verbose --restow --dir=packages --target=$HOME system git zsh bash fish tmux
+
+# 4. Verify
+./dot status
+```
+
+**Manual update:**
+
+```bash
+cd ~/.dotfiles
+git pull origin main
+stow --verbose --restow --dir=packages --target=$HOME git zsh bash fish tmux
+```
+
+**Manual uninstall:**
+
+```bash
+cd ~/.dotfiles
+stow --verbose --delete --dir=packages --target=$HOME system git zsh bash fish tmux
+```
+
+See [COMMANDS.md](COMMANDS.md) for complete command reference including all `./dot` commands.
 
 ## Development
 
@@ -789,11 +738,32 @@ Detailed log: ~/.cache/dev-cleanup/cleanup-20250124-143022.log
 
 ## Contributing
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for comprehensive developer documentation:
+Contributions are welcome! See documentation for guidance:
 
-- Git workflow and branch strategy
-- Testing framework and CI/CD
-- Code standards and Bash 3.2 compatibility
-- Architecture and design principles
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute (start here)
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Developer documentation and architecture
+- **[COMMANDS.md](COMMANDS.md)** - Complete command reference
+- **[AGENTS.md](AGENTS.md)** - AI agent instructions
 
-For AI agents, see [AGENTS.md](AGENTS.md) for detailed guidelines.
+### Quick Contribution Workflow
+
+```bash
+# Fork and clone
+git clone git@github.com:YOUR_USERNAME/.dotfiles.git ~/.dotfiles
+
+# Setup development environment
+./dev/setup
+
+# Make changes and test
+./dev/lint && ./dev/test
+
+# Create PR
+gh pr create
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines including:
+
+- Adding new packages
+- Fixing bugs with test-driven development
+- Code standards and testing requirements
+- Pull request process

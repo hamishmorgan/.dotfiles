@@ -392,7 +392,7 @@ tests/
 ├── integration/      # Command-level tests (end-to-end)
 ├── contract/         # Output format validation
 ├── test_helper/      # Shared helper functions
-└── TEST_FRAMEWORK.md # Detailed documentation
+└── README.md         # Testing framework documentation
 ```
 
 **Test Distribution:**
@@ -661,10 +661,6 @@ Key learnings from CI optimization:
     mkdir -p ~/.apt-cache/archives/partial
     sudo mkdir -p /etc/apt/apt.conf.d
     echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
-
-- name: Clean up apt cache lock files
-  if: always()
-  run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
 ```
 
 ---
@@ -980,11 +976,12 @@ When modifying commands, prefer using these helpers over duplicating logic.
 
 ## Additional Resources
 
-- **Testing Guide**: `tests/README.md`
-- **AI Agent Instructions**: `AGENTS.md`
-- **Code Standards**: See [Code Standards](#code-standards)
-- **User Documentation**: `README.md`
-- **Contribution Guide**: See #46 for `CONTRIBUTING.md` proposal
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[COMMANDS.md](COMMANDS.md)** - Complete command reference
+- **[README.md](README.md)** - User documentation
+- **[AGENTS.md](AGENTS.md)** - AI agent instructions
+- **[tests/README.md](tests/README.md)** - Testing framework
+- **[.cursor/rules/](.cursor/rules/)** - Workflow procedures
 
 ---
 
