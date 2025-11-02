@@ -15,8 +15,8 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - Backup of existing files before installation
 - Template-based secrets management
 - macOS and Linux support
-- Validation script for installation verification
-- Packages: git, zsh, tmux, gh, gnuplot, bash, fish, wezterm, bat, rust
+- Health check system for diagnostics and validation
+- Packages: git, zsh, tmux, gh, gnuplot, bash, fish, wezterm, bat, rust, cursor
 - CI/CD validation with GitHub Actions
 
 ## Compatibility
@@ -75,7 +75,8 @@ All configurations are organized as packages in the `packages/` directory:
 | **rust** | Rust toolchain configuration |
 | **cursor** | Cursor IDE (uses copy-sync) |
 
-Each package has a `manifest.toml` defining managed files, installation method, and validation rules. See package-specific README files for detailed configuration options.
+Each package has a `manifest.toml` defining managed files, installation method, and validation rules.
+See package-specific README files for detailed configuration options.
 
 ## Prerequisites
 
@@ -490,7 +491,8 @@ Manage individual packages after installation:
 ./dot packages
 ```
 
-**Note:** The `cursor` package uses a copy-sync method instead of stow. Use `./dot sync-cursor` to sync settings to Cursor and `./dot pull-cursor` to pull changes back from Cursor.
+**Note:** The `cursor` package uses a copy-sync method instead of stow. Use `./dot sync cursor` to sync
+settings to Cursor and `./dot pull cursor` to pull changes back from Cursor.
 
 ## Uninstallation
 

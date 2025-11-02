@@ -599,10 +599,28 @@ git pull
 ./dot security
 ```
 
+## Deprecated Commands
+
+### `./dot validate` (deprecated)
+
+**Status:** Deprecated - Use `./dot health` instead
+
+The `validate` command has been renamed to `health` for clarity. The old command still works but will
+show a deprecation warning:
+
+```bash
+# Old (deprecated)
+./dot validate
+
+# New (recommended)
+./dot health
+```
+
+Both commands provide the same functionality - running comprehensive diagnostics on your dotfiles installation.
+
 ## See Also
 
 - [README.md](README.md) - User guide and installation instructions
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Developer documentation
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
 - [AGENTS.md](AGENTS.md) - AI agent instructions
-
