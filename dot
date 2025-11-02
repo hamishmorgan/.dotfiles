@@ -309,6 +309,50 @@ get_package_files() {
     echo "$PACKAGE_FILES"
 }
 
+# Expand wildcards in file patterns against package directory
+# Input: comma-separated file patterns (may contain wildcards)
+# Output: comma-separated actual files (wildcards expanded)
+expand_file_patterns() {
+    local package="$1"
+    local patterns="$2"
+    local expanded_files=()
+
+    IFS=',' read -ra pattern_array <<< "$patterns"
+
+    for pattern in "${pattern_array[@]}"; do
+        # Trim whitespace
+        pattern=$(echo "$pattern" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+
+        # Check if pattern contains wildcards
+        if [[ "$pattern" == *\** ]]; then
+            # Expand wildcard against package directory
+            local package_dir="$PACKAGES_DIR/$package"
+            local matches=()
+
+            # Use find to match the pattern
+            shopt -s nullglob
+            while IFS= read -r -d '' file; do
+                # Convert absolute path to relative path from package dir
+                local rel_path="${file#"$package_dir"/}"
+                matches+=("$rel_path")
+            done < <(find "$package_dir" -path "$package_dir/$pattern" -print0 2>/dev/null)
+            shopt -u nullglob
+
+            # Add all matches to expanded_files
+            if [[ ${#matches[@]} -gt 0 ]]; then
+                expanded_files+=("${matches[@]}")
+            fi
+        else
+            # No wildcard, use pattern as-is
+            expanded_files+=("$pattern")
+        fi
+    done
+
+    # Output as comma-separated list
+    local IFS=','
+    echo "${expanded_files[*]}"
+}
+
 # Get package description (manifest-only)
 get_package_description() {
     local package="$1"
@@ -1749,6 +1793,8 @@ backup_existing() {
     for package in "${PACKAGES[@]}"; do
         local files
         files=$(get_package_files "$package")
+        # Expand wildcards in file patterns
+        files=$(expand_file_patterns "$package" "$files")
         IFS=',' read -ra file_array <<< "$files"
 
         for file in "${file_array[@]}"; do
@@ -2204,6 +2250,8 @@ validate_package() {
 
     local display_name="${PACKAGE_NAME:-$package}"
     local files="$PACKAGE_FILES"
+    # Expand wildcards in file patterns
+    files=$(expand_file_patterns "$package" "$files")
 
     log_info "Validating $display_name configuration..."
 
@@ -2380,14 +2428,25 @@ show_status() {
     local warning_files=0
     local missing_files=0
 
-    show_section_separator "Installed Files"
+    show_section_separator "Installed Packages"
     echo ""
 
     # Generate file list dynamically from package definitions
     for package in "${PACKAGES[@]}"; do
+        # Load manifest to get display name
+        if ! load_package_manifest "$package" true; then
+            continue
+        fi
+
+        local display_name="${PACKAGE_NAME:-$package}"
         local files
         files=$(get_package_files "$package")
+        # Expand wildcards in file patterns
+        files=$(expand_file_patterns "$package" "$files")
         IFS=',' read -ra file_array <<< "$files"
+
+        # Display package header
+        echo -e "   ${BLUE} $display_name${NC}"
 
         for file in "${file_array[@]}"; do
             # Trim whitespace from file path (handles leading/trailing spaces from TOML parsing)
@@ -2396,7 +2455,7 @@ show_status() {
             if [[ -L "$HOME/$file" ]]; then
                 local target
                 target=$(readlink "$HOME/$file")
-                echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${BLUE}→${NC} $target"
+                echo -e "     ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${BLUE}→${NC} $target"
                 ((installed_files++))
             elif [[ -d "$HOME/$file" ]]; then
                 # Check if directory contains stow-managed files
@@ -2408,20 +2467,22 @@ show_status() {
                 fi
 
                 if [[ "$stow_managed" == true ]]; then
-                    echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${BLUE}(stow-managed directory)${NC}"
+                    echo -e "     ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${BLUE}(stow-managed directory)${NC}"
                     ((installed_files++))
                 else
-                    echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $file ${BLUE}(directory, not stow-managed)${NC}"
+                    echo -e "     ${YELLOW}${SYMBOL_WARNING}${NC} $file ${BLUE}(directory, not stow-managed)${NC}"
                     ((warning_files++))
                 fi
             elif [[ -e "$HOME/$file" ]]; then
-                echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $file ${BLUE}(exists but not a symlink)${NC}"
+                echo -e "     ${YELLOW}${SYMBOL_WARNING}${NC} $file ${BLUE}(exists but not a symlink)${NC}"
                 ((warning_files++))
             else
-                echo -e "   ${RED}${SYMBOL_ERROR}${NC} $file ${BLUE}(not found)${NC}"
+                echo -e "     ${RED}${SYMBOL_ERROR}${NC} $file ${BLUE}(not found)${NC}"
                 ((missing_files++))
             fi
         done
+
+        echo ""
     done
 
     echo ""
@@ -2583,6 +2644,8 @@ show_diff_preview() {
     for package in "${PACKAGES[@]}"; do
         local package_files
         package_files=$(get_package_files "$package")
+        # Expand wildcards in file patterns
+        package_files=$(expand_file_patterns "$package" "$package_files")
 
         IFS=',' read -ra files <<< "$package_files"
 
@@ -2836,6 +2899,8 @@ backup_existing_to() {
     for package in "${PACKAGES[@]}"; do
         local package_files
         package_files=$(get_package_files "$package")
+        # Expand wildcards in file patterns
+        package_files=$(expand_file_patterns "$package" "$package_files")
 
         IFS=',' read -ra files <<< "$package_files"
 
@@ -3819,6 +3884,8 @@ count_symlinks() {
     for package in "${PACKAGES[@]}"; do
         local files
         files=$(get_package_files "$package")
+        # Expand wildcards in file patterns
+        files=$(expand_file_patterns "$package" "$files")
         IFS=',' read -ra file_array <<< "$files"
         count=$((count + ${#file_array[@]}))
     done
@@ -4999,6 +5066,8 @@ is_package_installed() {
     local package="$1"
     local package_files
     package_files=$(get_package_files "$package")
+    # Expand wildcards in file patterns
+    package_files=$(expand_file_patterns "$package" "$package_files")
 
     IFS=',' read -ra files <<< "$package_files"
 
