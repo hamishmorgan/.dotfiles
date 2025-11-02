@@ -19,7 +19,7 @@ teardown() {
     assert_success
 
     # Check for all required sections in one test
-    assert_output --partial "Installed Files"
+    assert_output --partial "Installed Packages"
     assert_output --partial "Installation Status"
     assert_output --regexp "(backup|Backup)"
 

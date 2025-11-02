@@ -23,7 +23,7 @@ teardown() {
     assert_success
 
     # Check for required sections
-    assert_output --partial "Installed Files"
+    assert_output --partial "Installed Packages"
     # Should show count like "16 of 16 files installed"
     assert_output --regexp "[0-9]+ of [0-9]+ files installed"
 }
