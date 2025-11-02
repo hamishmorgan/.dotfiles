@@ -206,10 +206,10 @@ tool --version
 
 ### 6. Update Documentation
 
-Add package to README.md package list (line 19):
+Add package to the Packages table in README.md (in the `## Packages` section):
 
 ```markdown
-- Packages: git, zsh, tmux, gh, gnuplot, bash, fish, wezterm, bat, rust, PACKAGE_NAME
+| **PACKAGE_NAME** | Brief description |
 ```
 
 ### 7. Submit PR
