@@ -25,10 +25,10 @@ Both directory-level and file-level symlinks fail. Therefore, this package uses 
 
 ```bash
 # Sync Cursor configs from dotfiles to system
-./dot sync-cursor
+./dot sync cursor
 
 # After making changes in Cursor, pull them back to dotfiles
-./dot pull-cursor
+./dot pull cursor
 
 # Then commit the updated configs
 git add packages/cursor
@@ -39,22 +39,22 @@ git commit -m "update cursor settings"
 
 ```bash
 # After making changes in Cursor
-./dot pull-cursor                   # Pull changes to dotfiles
+./dot pull cursor                   # Pull changes to dotfiles
 git diff packages/cursor            # Review changes
 git add packages/cursor             # Stage if satisfied
 git commit -m "update cursor settings"
 
 # On another machine
 git pull                            # Get latest dotfiles
-./dot sync-cursor                   # Apply to local Cursor
+./dot sync cursor                   # Apply to local Cursor
 # Restart Cursor to apply
 ```
 
 ## Integration Notes
 
-- **Cursor is NOT in the `PACKAGES` array** (see `dot` script) - it's excluded from stow-based package management
-- **Cursor won't appear in `./dot packages` output** - it has its own commands instead
-- **DO NOT add cursor to `PACKAGES` array** - it uses copy-sync, not stow
+- **Cursor uses copy-sync method** - Defined in manifest.toml with `method = "copy-sync"`
+- **Cursor appears in `./dot packages` output** - But is managed with `sync`/`pull` instead of symlinks
+- **Use `./dot sync cursor` and `./dot pull cursor`** - Not the enable/disable commands
 
 ## Machine-Specific Settings Pattern
 

@@ -112,113 +112,14 @@ let g:ale_linters = {
 
 ## Git Workflow
 
-### Branch Strategy
+**Branch:** Single `main` branch. Machine-specific configs use `.local` files (git-ignored).
 
-- **`main`**: All shared configurations with machine-specific support via `.local` files
+**Workflow:** Create feature branch, make changes, test (`./dev/lint && ./dev/test`), create PR, iterate.
 
-**Machine-specific configuration:**
+**Commits:** Use [conventional commits](https://www.conventionalcommits.org/) - `type(scope): description`
 
-Machine-specific customizations use `.local` files (git-ignored) that are sourced by the
-main configuration files. This eliminates the need for separate branches and the complexity
-of rebasing.
-
-**Configuration layers:**
-
-- Base configs (`.bashrc`, `.zshrc`, etc.) - Git-tracked, symlinked via stow
-- Machine-specific (`.bashrc.local`, `.gitconfig.local`) - Git-ignored, manually created
-- Auto-appended content - Managed through git workflow (see below)
-
-**Why .local files instead of branches:**
-
-- Single branch eliminates rebasing pain
-- Machine-specific configs stay separate and git-ignored
-- No conflicts from auto-appending development tools
-- Scales to unlimited machines
-- Standard pattern in dotfiles community
-
-### Feature Development
-
-```bash
-# Create feature branch from main
-git checkout main
-git pull upstream main
-git checkout -b feature/your-feature
-
-# Make changes and commit
-git add .
-git commit -m "feat: add your feature"
-
-# Keep up to date with main
-git fetch upstream
-git rebase upstream/main
-
-# Push to your fork
-git push origin feature/your-feature
-```
-
-### Commit Message Convention
-
-Follow conventional commits format:
-
-```text
-type(scope): brief description
-
-Longer description if needed.
-
-- Bullet points for details
-- Multiple changes listed
-
-Benefits:
-- Enables automated changelog generation
-- Improves commit history searchability
-- Supports semantic versioning and release notes tooling
-```
-
-**Types:**
-
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting)
-- `refactor`: Code refactoring
-- `perf`: Performance improvements
-- `test`: Test additions/changes
-- `chore`: Maintenance tasks
-- `ci`: CI/CD changes
-
-**Examples:**
-
-```bash
-git commit -m "feat(zsh): add git status to prompt"
-git commit -m "fix(install): handle missing secret files gracefully"
-git commit -m "docs(readme): add manual installation section"
-git commit -m "refactor(dot): extract helper functions for verbosity"
-```
-
-### Pull Request Process
-
-1. **Create feature branch** from main
-2. **Make changes** following code standards
-3. **Test locally:**
-
-   ```bash
-   ./tests/smoke-test.sh
-   ./tests/run-local-ci.sh
-   ```
-
-4. **Create PR** via GitHub
-5. **Request Copilot review:**
-
-   ```bash
-   # Using GitHub CLI or MCP
-   gh pr create
-   ```
-
-6. **Wait for CI** to pass
-7. **Address feedback** from Copilot and CI
-8. **Iterate** until approved
-9. **Update AGENTS.md** if adding new patterns or learnings
-10. **Merge** only after CI and review pass
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution workflow and
+[.cursor/rules/pull-request-workflow.mdc](.cursor/rules/pull-request-workflow.mdc) for PR process.
 
 ---
 
@@ -320,496 +221,54 @@ function_name() {
 
 ## Testing
 
-### Development Workflow Commands
-
-**Recommended workflow using `dev/` commands:**
+**Quick workflow:**
 
 ```bash
-# Setup development environment (first time)
-./dev/setup
-
-# Fast iteration (shell code changes)
-./dev/lint-shell        # Just shellcheck (~5s)
-
-# Before commit
-./dev/lint && ./dev/test   # Lint + smoke + BATS (~1m)
-
-# Before push
-./dev/check             # Complete validation (~3-4m)
+./dev/lint-shell           # Fast (~5s)
+./dev/lint && ./dev/test   # Before commit (~1m)
+./dev/check                # Before push (~3-4m)
 ```
 
-### Atomic Test Commands
-
-**Individual test operations:**
-
-```bash
-# Linting
-./dev/lint-markdown     # Markdown files only (~5s)
-./dev/lint-shell        # Shell scripts only (~5s)
-./dev/lint              # All linting (~10s)
-
-# Testing
-./dev/smoke             # Fast structural validation (~30s)
-./dev/bats              # All BATS test suites (~30s)
-./dev/test              # Smoke + BATS (~1m)
-
-# CI
-./dev/ci                # Full local CI (~2-3m)
-./dev/ci ubuntu         # Test specific platform
-./dev/ci alpine         # Alpine (BusyBox/BSD-like)
-./dev/ci bash32         # Bash 3.2 compatibility
-```
-
-### Legacy Test Scripts
-
-For backward compatibility (CI uses these):
-
-```bash
-./tests/smoke-test.sh      # Redirects to ./dev/smoke
-./tests/run-bats.sh        # Redirects to ./dev/bats
-./tests/run-local-ci.sh    # Redirects to ./dev/ci
-```
-
-### Direct BATS Commands
-
-Run specific test suites directly:
-
-```bash
-bats tests/regression/   # Bug regression tests
-bats tests/unit/         # Unit tests
-bats tests/integration/  # Integration tests
-bats tests/contract/     # Output validation
-```
-
-### Test Framework Organization
-
-The testing framework uses **BATS** (Bash Automated Testing System) with four test categories:
-
-```text
-tests/
-├── regression/        # Bug prevention (one test per bug)
-├── unit/             # Function-level tests (isolated)
-├── integration/      # Command-level tests (end-to-end)
-├── contract/         # Output format validation
-├── test_helper/      # Shared helper functions
-└── TEST_FRAMEWORK.md # Detailed documentation
-```
-
-**Test Distribution:**
-
-- Regression: One test per fixed bug
-- Unit: 70% of tests (function-level)
-- Integration: 25% of tests (command-level)
-- Contract: 5% of tests (output validation)
+**Test categories:** Regression (one per bug), unit, integration, contract.
+See [tests/README.md](tests/README.md) for comprehensive testing documentation.
 
 ### Writing Tests
 
-**Regression tests (most important):**
-
-Create a failing test BEFORE fixing a bug:
-
-```bash
-# tests/regression/test_issue_XX.bats
-@test "Issue #XX: describe the bug" {
-    # Setup that reproduces bug
-    create_mock_backups 15 1
-    
-    run ./dot health
-    
-    # Assertion that fails on the bug
-    assert_output_not_contains "using 0MB"
-}
-```
-
-Pattern:
-
-1. Write test that reproduces bug (test fails)
-2. Fix the bug in code
-3. Run test again (test passes)
-4. Commit test + fix together
-
-**Unit tests:**
-
-Test individual functions with various inputs:
-
-```bash
-# tests/unit/test_backup_functions.bats
-@test "get_backup_stats counts backups correctly" {
-    create_mock_backups 5 1
-    result="$(get_backup_stats)"
-    count=$(echo "$result" | cut -d' ' -f1)
-    [ "$count" = "5" ]
-}
-```
-
-**Integration tests:**
-
-Test complete command workflows:
-
-```bash
-# tests/integration/test_health.bats
-@test "health command exits successfully" {
-    run ./dot health
-    [ "$status" -eq 0 ]
-}
-```
-
-### Test Helper Functions
-
-Available in `tests/test_helper/common.bash`:
-
-- `setup_test_dotfiles` - Create isolated test environment
-- `create_mock_backups COUNT SIZE_MB` - Generate test data
-- `assert_output_contains "pattern"` - Verify output
-- `assert_output_not_contains "pattern"` - Verify exclusion
-
-### Testing Strategy
-
-- **BATS tests**: Automated regression, unit, integration testing
-- **TDD for bugs**: Write failing test before fix (mandatory)
-- **Smoke tests**: Fast structural validation
-- **Container tests**: Cross-platform compatibility (BSD vs GNU)
-- **GitHub Actions**: Final validation on Ubuntu and macOS
-
-### Why This Matters
-
-**BATS tests catch logic bugs:**
-
-- Variable name typos (Issue #66: `$backup_size` vs `$backup_size_kb`)
-- Calculation errors
-- Output format changes
-- Unintended behavior changes
-
-**Cross-platform tests catch compatibility:**
-
-- BSD vs GNU command differences (Alpine tests)
-- macOS-specific issues (GitHub Actions)
-
-**Required:** Write regression test for every bug fix.
-
-### Test Implementation
-
-**Basic test structure:**
-
-```bash
-#!/usr/bin/env bats
-
-load ../test_helper/common
-
-setup() {
-    setup_test_dotfiles
-    cd "$TEST_DOTFILES_DIR"
-}
-
-teardown() {
-    teardown_test_dotfiles
-}
-
-@test "descriptive test name" {
-    # Arrange: Set up test conditions
-    create_mock_backups 5 1
-    
-    # Act: Run the code being tested  
-    run ./dot health
-    
-    # Assert: Verify results
-    assert_success
-    assert_output --partial "5 backups"
-}
-```
-
-**Available assertions** (from bats-assert, bats-support, bats-file):
-
-- `assert_success` / `assert_failure` - Exit codes
-- `assert_equal "expected" "actual"` - Exact match
-- `assert_output --partial "text"` - Substring match
-- `assert_output --regexp "pattern"` - Regex match
-- `refute_output --partial "text"` - Does not contain
-- `assert_file_exist "path"` - File checks
-- `assert_dir_exist "path"` - Directory checks
-
-**Custom helpers** (from `tests/test_helper/common.bash`):
-
-- `setup_test_dotfiles` - Create isolated test environment
-- `create_mock_backups COUNT SIZE_MB` - Generate test backups
-- `source_dot_script` - Load dot script functions
-- `assert_in_range VALUE MIN MAX` - Numeric validation
-
-**Test isolation principles:**
-
-- Each test must be independent  
-- Use `setup()` / `teardown()` hooks
-- Don't rely on test execution order
-- Tests should pass when run individually or in suite
+**Pattern:** Write failing regression test before fixing bugs.
+See [tests/README.md](tests/README.md) and [.cursor/rules/testing-workflow.mdc](.cursor/rules/testing-workflow.mdc)
+for comprehensive testing documentation and TDD patterns.
 
 ---
 
 ## Continuous Integration
 
-### CI Pipeline
+**CI workflow:** Linting, smoke tests, BATS tests (ubuntu/macos), full validation (3 platforms), merge check.
 
-GitHub Actions workflow validates installation on multiple platforms:
+**Total time:** ~1 minute (down from 8-12 minutes via optimizations)
 
-- **Linting Job**: Validates Markdown and Bash scripts before tests
-- **Smoke Tests**: Quick validation of basic functionality
-- **Ubuntu Validation**: Full installation on Ubuntu
-- **macOS Validation**: Full installation on macOS
-- **Bash 3.2 Validation**: Explicit testing with Bash 3.2
+**Monitoring:** `gh pr checks <PR>`, `gh run view --log-failed`
 
-### Workflow Configuration
-
-Workflow file: `.github/workflows/validate.yml`
-
-**Key features:**
-
-- Parallel job execution
-- Linting as prerequisite for all tests
-- Cross-platform testing
-- Bash 3.2 compatibility verification
-- Configuration syntax validation
-
-### CI Performance
-
-Optimizations implemented (Issue #42, PR #58):
-
-- **Linting**: ~15s
-- **Smoke Tests**: ~6s
-- **Ubuntu Validation**: ~28s
-- **Bash 3.2 Validation**: ~32s
-- **macOS Validation**: ~26s
-
-**Total CI time**: ~1 minute (down from 8-12 minutes)
-
-### Monitoring CI
-
-**Check PR status:**
-
-```bash
-# Quick status overview
-gh pr checks <PR_NUMBER>
-
-# View detailed check information
-gh pr view <PR_NUMBER> --json statusCheckRollup
-
-# Watch run in real-time
-gh run watch
-```
-
-**View logs:**
-
-```bash
-# View logs for failed jobs only
-gh run view --log-failed
-
-# List recent workflow runs
-gh run list --workflow=validate.yml --limit 5
-```
-
-**Common workflow:**
-
-```bash
-# After pushing changes
-sleep 30 && gh pr checks <PR_NUMBER>
-
-# If CI fails
-gh run view --log-failed
-
-# Re-run failed jobs
-gh run rerun <RUN_ID> --failed
-```
-
-### CI Best Practices
-
-**Before pushing:**
-
-```bash
-# Ensure local tests pass
-./tests/smoke-test.sh
-./tests/run-local-ci.sh
-
-# Verify linting
-shellcheck dot
-markdownlint "**/*.md"
-```
-
-**Common CI failures:**
-
-- Shellcheck warnings → Fix code style
-- Markdownlint errors → Fix markdown formatting
-- Installation failures → Test locally first
-- Platform-specific issues → Run local CI (alpine test catches BSD issues)
-
-### Caching Strategies
-
-Key learnings from CI optimization:
-
-**What to cache:**
-
-- `apt` packages: Use user-writable cache to avoid permission issues
-- Cache key should use package names, not file hashes (reduces churn)
-
-**What NOT to cache:**
-
-- Homebrew bottles: Install faster than cache save/restore overhead
-- npm tools: Use `npx` with version pinning instead
-
-**apt cache configuration:**
-
-```yaml
-- name: Configure apt caching
-  run: |
-    mkdir -p ~/.apt-cache/archives/partial
-    sudo mkdir -p /etc/apt/apt.conf.d
-    echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
-
-- name: Clean up apt cache lock files
-  if: always()
-  run: rm -rf ~/.apt-cache/archives/lock ~/.apt-cache/archives/partial
-```
+See [.cursor/rules/ci-cd.mdc](.cursor/rules/ci-cd.mdc) for comprehensive CI documentation and optimization patterns.
 
 ---
 
 ## Linting
 
-### Development Commands
-
-**Recommended workflow:**
-
 ```bash
-# Run all linting
-./dev/lint              # Markdown + Shell (~10s)
-
-# Individual linters
-./dev/lint-markdown     # Just Markdown files (~5s)
-./dev/lint-shell        # Just shell scripts (~5s)
+./dev/lint              # All (~10s)
+./dev/lint-shell        # Shellcheck (~5s)
+./dev/lint-markdown     # Markdownlint (~5s)
 ```
 
-### Shellcheck
-
-Lints bash scripts for common issues:
-
-```bash
-# Via dev command (recommended)
-./dev/lint-shell
-
-# Direct invocation
-shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh
-
-# Check with source following
-shellcheck -x dot
-```
-
-**Configuration:** `.shellcheckrc`
-
-Disables acceptable patterns for dotfiles:
-
-```bash
-disable=SC1090  # Can't follow non-constant source
-disable=SC1091  # Not following external files
-disable=SC2034  # Variables unused (used by frameworks)
-disable=SC2231  # Quote expansions in for loop globs
-```
-
-### Markdownlint
-
-Lints markdown documentation:
-
-```bash
-# Via dev command (recommended)
-./dev/lint-markdown
-
-# Direct invocation
-npx --yes markdownlint-cli@0.42.0 "**/*.md"
-
-# Fix auto-fixable issues
-npx --yes markdownlint-cli@0.42.0 "**/*.md" --fix
-```
-
-**Configuration:** `.markdownlint.yml`
-
-```yaml
-# Project-specific rules
-MD013: false  # Line length
-MD033: false  # HTML allowed
-```
-
-### Pre-commit Hooks
-
-Optionally install pre-commit hooks (see #38):
-
-```bash
-# Install pre-commit framework
-pip install pre-commit
-
-# Install hooks
-pre-commit install
-
-# Run manually
-pre-commit run --all-files
-```
+**Configuration:** `.shellcheckrc`, `.markdownlint.yml`
 
 ---
 
 ## Debugging
 
-### Verbose Execution
+**Verbose execution:** `./dot install -vv` or `bash -x ./dot install`
 
-```bash
-# Show all operations
-./dot install -vv
-
-# Trace bash execution
-bash -x ./dot install
-
-# Debug specific command
-set -x
-./dot health
-set +x
-```
-
-### Common Issues
-
-**Symlink conflicts:**
-
-```bash
-# Check existing files
-ls -la ~ | grep -v "^l"
-
-# Remove conflict and retry
-mv ~/.gitconfig ~/.gitconfig.backup
-./dot install
-```
-
-**Stow errors:**
-
-```bash
-# Dry run to see what would happen
-stow --no --verbose --restow --dir=. --target=$HOME git
-
-# Force adoption of existing files (careful!)
-stow --adopt --verbose --restow --dir=. --target=$HOME git
-```
-
-**Repository issues:**
-
-```bash
-# Reset repository state
-git fetch origin
-git reset --hard origin/main
-```
-
-### Health Checks
-
-```bash
-# Run comprehensive diagnostics
-./dot health
-
-# Verbose health check (detailed output)
-./dot health -v
-
-# Check dependency and backup status
-./dot status
-```
+**Diagnostics:** `./dot health -v` for detailed checks, `./dot status` for quick overview
 
 ---
 
@@ -980,11 +439,12 @@ When modifying commands, prefer using these helpers over duplicating logic.
 
 ## Additional Resources
 
-- **Testing Guide**: `tests/README.md`
-- **AI Agent Instructions**: `AGENTS.md`
-- **Code Standards**: See [Code Standards](#code-standards)
-- **User Documentation**: `README.md`
-- **Contribution Guide**: See #46 for `CONTRIBUTING.md` proposal
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[COMMANDS.md](COMMANDS.md)** - Complete command reference
+- **[README.md](README.md)** - User documentation
+- **[AGENTS.md](AGENTS.md)** - AI agent instructions
+- **[tests/README.md](tests/README.md)** - Testing framework
+- **[.cursor/rules/](.cursor/rules/)** - Workflow procedures
 
 ---
 
