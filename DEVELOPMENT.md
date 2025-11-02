@@ -56,9 +56,6 @@ cd ~/.dotfiles
 
 # Add upstream remote
 git remote add upstream git@github.com:hamishmorgan/.dotfiles.git
-
-# Initialize submodules
-git submodule update --init --recursive
 ```
 
 ---
@@ -793,16 +790,12 @@ stow --no --verbose --restow --dir=. --target=$HOME git
 stow --adopt --verbose --restow --dir=. --target=$HOME git
 ```
 
-**Submodule issues:**
+**Repository issues:**
 
 ```bash
-# Reinitialize submodules
-git submodule deinit --all
-git submodule update --init --recursive
-
-# Update submodule URLs
-git submodule sync
-git submodule update --init --recursive
+# Reset repository state
+git fetch origin
+git reset --hard origin/main
 ```
 
 ### Health Checks
@@ -916,7 +909,6 @@ Manual changelog updates in release notes:
 │   ├── .zprofile
 │   ├── .zshrc.osx
 │   ├── .zshrc.linux
-│   ├── .oh-my-zsh/       # Submodule
 │   └── .stow-local-ignore
 ├── tmux/                 # Tmux configuration package
 ├── gh/                   # GitHub CLI configuration
