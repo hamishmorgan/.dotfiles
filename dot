@@ -1793,6 +1793,8 @@ backup_existing() {
     for package in "${PACKAGES[@]}"; do
         local files
         files=$(get_package_files "$package")
+        # Expand wildcards in file patterns
+        files=$(expand_file_patterns "$package" "$files")
         IFS=',' read -ra file_array <<< "$files"
 
         for file in "${file_array[@]}"; do
@@ -2652,6 +2654,8 @@ show_diff_preview() {
     for package in "${PACKAGES[@]}"; do
         local package_files
         package_files=$(get_package_files "$package")
+        # Expand wildcards in file patterns
+        package_files=$(expand_file_patterns "$package" "$package_files")
 
         IFS=',' read -ra files <<< "$package_files"
 
@@ -2905,6 +2909,8 @@ backup_existing_to() {
     for package in "${PACKAGES[@]}"; do
         local package_files
         package_files=$(get_package_files "$package")
+        # Expand wildcards in file patterns
+        package_files=$(expand_file_patterns "$package" "$package_files")
 
         IFS=',' read -ra files <<< "$package_files"
 
@@ -3888,6 +3894,8 @@ count_symlinks() {
     for package in "${PACKAGES[@]}"; do
         local files
         files=$(get_package_files "$package")
+        # Expand wildcards in file patterns
+        files=$(expand_file_patterns "$package" "$files")
         IFS=',' read -ra file_array <<< "$files"
         count=$((count + ${#file_array[@]}))
     done
@@ -5068,6 +5076,8 @@ is_package_installed() {
     local package="$1"
     local package_files
     package_files=$(get_package_files "$package")
+    # Expand wildcards in file patterns
+    package_files=$(expand_file_patterns "$package" "$package_files")
 
     IFS=',' read -ra files <<< "$package_files"
 
