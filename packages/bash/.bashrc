@@ -89,7 +89,10 @@ fi
 command -v zoxide &>/dev/null && eval "$(zoxide init bash)"
 
 # Graphite (stacked PRs)
-command -v gt &>/dev/null && source <(gt bash 2>/dev/null)
+if command -v gt &>/dev/null; then
+    local gt_completion
+    gt_completion=$(gt bash 2>/dev/null) && [[ -n "$gt_completion" ]] && source <(echo "$gt_completion")
+fi
 
 # shadowenv (directory environments)
 command -v shadowenv &>/dev/null && eval "$(shadowenv init bash)"
