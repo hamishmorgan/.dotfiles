@@ -22,21 +22,6 @@ Tmux terminal multiplexer configuration with custom key bindings.
 
 ## Key Bindings
 
-**Prefix:** `` ` `` (backtick) instead of default `Ctrl-b`
+**Prefix:** `` ` `` (backtick, easier than `Ctrl-b`)
 
-**Common commands:**
-
-- `` ` c `` - Create new window
-- `` ` n `` - Next window
-- `` ` p `` - Previous window
-- `` ` % `` - Split horizontally
-- `` ` " `` - Split vertically
-- `` ` d `` - Detach session
-
-## What Makes This Different
-
-**Backtick prefix:** Using backtick instead of `Ctrl-b` provides:
-
-- Easier to reach on most keyboards
-- Doesn't conflict with vim/emacs bindings
-- Single keypress instead of key combination
+**Common:** `` ` c `` new window, `` ` n/p `` next/prev, `` ` %/" `` split, `` ` d `` detach

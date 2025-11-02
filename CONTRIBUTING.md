@@ -64,240 +64,80 @@ Use [conventional commits](https://www.conventionalcommits.org/) format:
 
 ```bash
 git add <files>
-git commit -m "type(scope): description
+git commit -m "type(scope): description"
 
-Detailed explanation of changes.
-
-- Specific change 1
-- Specific change 2"
-```
-
-**Types:**
-
-- `feat` - New feature
-- `fix` - Bug fix
-- `docs` - Documentation
-- `style` - Formatting
-- `refactor` - Code restructuring
-- `perf` - Performance
-- `test` - Tests
-- `chore` - Maintenance
-
-**Examples:**
-
-```bash
-git commit -m "feat(packages): add rust toolchain configuration"
-git commit -m "fix(health): correct backup size calculation"
-git commit -m "docs(readme): document restore command"
+# Types: feat, fix, docs, style, refactor, perf, test, chore
+# Example: git commit -m "feat(packages): add rust configuration"
 ```
 
 ### 5. Push and Create PR
 
 ```bash
 git push origin feature/your-feature-name
-
-# Create PR via GitHub CLI
-gh pr create --title "feat: your feature" --body "Description"
+gh pr create
 ```
 
-### 6. Address Review Feedback
-
-- Wait for CI to pass
-- Wait for code review
-- Address all feedback
-- Push updates incrementally
+Wait for CI, address review feedback, iterate until approved.
 
 ## Adding a New Package
 
-### 1. Create Package Directory
-
 ```bash
+# 1. Create structure
 mkdir -p packages/PACKAGE_NAME
-```
-
-### 2. Create Manifest
-
-Create `packages/PACKAGE_NAME/manifest.toml`:
-
-```toml
-files = [".config/tool/config.yml", ".config/tool/settings.json"]
-
-name = "Package Display Name"
+cat > packages/PACKAGE_NAME/manifest.toml << 'EOF'
+files = [".config/tool/config.yml"]
+name = "Package Name"
 description = "Brief description"
-method = "stow"        # or "copy-sync" for tools that don't support symlinks
+method = "stow"
 target = "~"
+EOF
 
-[validation]
-"*.yml" = { command = "tool", args = ["validate", "file"] }
-
-[update]
-command = "dev/update-script"
-args = ["file"]
-```
-
-**Required fields:**
-
-- `files` - Array of files to manage
-- `name` - Display name
-- `description` - Brief description
-
-**Optional fields:**
-
-- `method` - Installation method (default: "stow")
-- `target` - Target directory (default: "~")
-- `validation` - Syntax validation commands
-- `update` - Package-specific update commands
-
-### 3. Add Configuration Files
-
-```bash
-# Copy configuration files to package directory
+# 2. Add config files
 cp ~/.config/tool/config.yml packages/PACKAGE_NAME/.config/tool/
 
-# Create .stow-local-ignore for files to exclude
-echo ".local" > packages/PACKAGE_NAME/.stow-local-ignore
-echo "*.example" >> packages/PACKAGE_NAME/.stow-local-ignore
-```
+# 3. Create .stow-local-ignore
+cat > packages/PACKAGE_NAME/.stow-local-ignore << 'EOF'
+^manifest\.toml$
+^README\.md$
+\.example$
+\.local$
+EOF
 
-### 4. Create Package README
+# 4. Create README.md (see existing package READMEs for template)
 
-Create `packages/PACKAGE_NAME/README.md`:
+# 5. Test
+./dot enable PACKAGE_NAME && ./dot health -v
 
-```markdown
-# Package Name
+# 6. Add to README.md Packages table
+# | **PACKAGE_NAME** | Brief description |
 
-Brief description of what this package configures.
-
-## Installation
-
-\`\`\`bash
-./dot enable PACKAGE_NAME
-\`\`\`
-
-## What's Included
-
-- Configuration file 1
-- Configuration file 2
-
-## Configuration
-
-How to customize for individual machines.
-
-## Usage
-
-How to use the configured tool.
-```
-
-### 5. Test the Package
-
-```bash
-# Enable package
-./dot enable PACKAGE_NAME
-
-# Check health
-./dot health -v
-
-# Verify symlinks
-ls -la ~/.config/tool/
-
-# Test tool functionality
-tool --version
-```
-
-### 6. Update Documentation
-
-Add package to the Packages table in README.md (in the `## Packages` section):
-
-```markdown
-| **PACKAGE_NAME** | Brief description |
-```
-
-### 7. Submit PR
-
-```bash
+# 7. Submit
 git add packages/PACKAGE_NAME
-git commit -m "feat(packages): add PACKAGE_NAME configuration"
-git push origin feature/add-PACKAGE_NAME
+git commit -m "feat(packages): add PACKAGE_NAME"
 gh pr create
 ```
 
 ## Fixing Bugs
 
-### Test-Driven Bug Fix Pattern (REQUIRED)
+**Test-Driven Development (REQUIRED):**
 
-**Always write a failing test before fixing bugs:**
+1. Create failing regression test in `tests/regression/test_issue_XX.bats`
+2. Verify test fails
+3. Fix the bug
+4. Verify test passes
+5. Commit test and fix together
 
-1. **Create regression test** that reproduces the bug
-2. **Verify test fails** (bug is present)
-3. **Fix the bug** in code
-4. **Verify test passes** (bug is fixed)
-5. **Commit test and fix together**
-
-**Example:**
-
-```bash
-# 1. Create test file
-cat > tests/regression/test_issue_XX.bats << 'EOF'
-@test "Issue #XX: describe bug behavior" {
-    # Setup that triggers bug
-    create_mock_backups 15 1
-    
-    run ./dot health
-    
-    # Assertion that fails on the bug
-    assert_output_not_contains "using 0MB"
-}
-EOF
-
-# 2. Run test - should FAIL
-bats tests/regression/test_issue_XX.bats
-# Output: ✗ Issue #XX: describe bug behavior
-
-# 3. Fix the bug in code
-# (edit dot script or relevant file)
-
-# 4. Run test again - should PASS
-bats tests/regression/test_issue_XX.bats
-# Output: ✓ Issue #XX: describe bug behavior
-
-# 5. Commit both
-git add tests/regression/test_issue_XX.bats dot
-git commit -m "fix: Issue #XX - describe bug
-
-Regression test added to prevent recurrence."
-```
-
-See [.cursor/rules/testing-workflow.mdc](.cursor/rules/testing-workflow.mdc) for detailed testing guidelines.
+See [.cursor/rules/testing-workflow.mdc](.cursor/rules/testing-workflow.mdc) for detailed pattern and examples.
 
 ## Code Standards
 
-### Bash Style
+**Bash:** 3.2 compatible, 2-space indent, explicit error handling, no `set -e`
 
-- **Bash 3.2 compatible** (macOS default)
-- **Long-form arguments** for stow: `--verbose`, `--restow`
-- **Short-form arguments** for coreutils: `-p`, `-r` (BSD compatibility)
-- **Explicit error handling** (no `set -e`)
-- **2-space indentation**
-- **Descriptive variable names**
+**Avoid:** Associative arrays, `mapfile`, `&>>` (all Bash 4.0+)
 
-### What to Avoid
+**Documentation:** Formal, minimal, technically precise
 
-❌ Associative arrays (Bash 4.0+)
-❌ `mapfile` command (Bash 4.0+)
-❌ `&>>` redirect (Bash 4.0+)
-❌ `set -e` (use explicit checks)
-
-✅ Functions for key-value storage
-✅ `while read` loops
-✅ Separate redirects (`> file 2>&1`)
-✅ Explicit `if ! command; then` checks
-
-### Documentation Style
-
-- Formal, minimal, reserved tone
-- Technically precise language
-- No marketing language or exclamations
-- Focus on essential information
+See [DEVELOPMENT.md](DEVELOPMENT.md) for comprehensive code standards.
 
 ## Testing
 
@@ -364,63 +204,17 @@ See [.cursor/rules/pull-request-workflow.mdc](.cursor/rules/pull-request-workflo
 
 ## Documentation
 
-### When to Update Documentation
+Update relevant files for changes:
 
-- **README.md** - User-facing changes (new commands, features, configuration)
-- **DEVELOPMENT.md** - Developer changes (new tests, CI, architecture)
-- **COMMANDS.md** - New or modified commands
-- **AGENTS.md** - New patterns, lessons learned, anti-patterns
-- **Package README** - Package-specific changes
-
-### Documentation Standards
-
-- Keep README.md user-focused (installation, usage, features)
-- Keep DEVELOPMENT.md developer-focused (workflow, architecture, testing)
-- Keep COMMANDS.md as comprehensive reference
-- Add examples for all new features
-- Update cross-references between docs
-
-## Release Process
-
-Maintainers only:
-
-1. Update version in `dot` script
-2. Update CHANGELOG.md
-3. Create git tag
-4. Push to GitHub
-
-```bash
-# Update version
-vim dot  # Change DOT_VERSION
-
-# Commit
-git add dot
-git commit -m "chore: bump version to 1.2.0"
-
-# Tag
-git tag -a v1.2.0 -m "Release v1.2.0"
-
-# Push
-git push origin main --tags
-```
+- **README.md** - User-facing features
+- **DEVELOPMENT.md** - Architecture, testing
+- **COMMANDS.md** - Commands
+- **AGENTS.md** - AI patterns
+- **Package README** - Package-specific
 
 ## Getting Help
 
-- **Questions** - Open an issue with `question` label
-- **Bugs** - Open an issue with `bug` label  
-- **Features** - Open an issue with `enhancement` label
-- **Discussion** - Use GitHub Discussions
-
-## Code of Conduct
-
-- Be respectful and constructive
-- Focus on the code, not the person
-- Assume positive intent
-- Help others learn and grow
-
-## License
-
-By contributing, you agree that your contributions will be licensed under the MIT License.
+Open issues for questions, bugs, or feature requests. Use GitHub Discussions for broader topics.
 
 ## Additional Resources
 

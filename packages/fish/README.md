@@ -29,41 +29,12 @@ chsh -s $(which fish)
 
 After changing default shell, log out and back in for changes to take effect.
 
-## Machine-Specific Configuration
-
-Fish uses `config_private.fish` for machine-specific settings:
+## Configuration
 
 ```bash
-nano ~/.config/fish/config_private.fish
+nano ~/.config/fish/config_private.fish  # Machine-specific settings (git-ignored)
 ```
 
-This file is git-ignored and sourced automatically from `config.fish`.
+**Custom functions:** `d.fish` (dotfiles wrapper), `fish_prompt.fish` (custom prompt)
 
-**Common uses:**
-
-- Machine-specific environment variables
-- Private API keys
-- Work vs. personal aliases
-- Tool-specific paths
-
-## Custom Functions
-
-Included functions in `.config/fish/functions/`:
-
-- `d.fish` - Dotfiles wrapper with shortcuts
-- `fish_prompt.fish` - Custom prompt with git integration
-
-## Platform-Specific Behavior
-
-The configuration automatically detects the platform and sources:
-
-- `config.osx.fish` on macOS
-- `config.linux.fish` on Linux
-
-## What Makes This Different
-
-**User-friendly shell:** Fish provides excellent defaults out of the box. This configuration enhances it with:
-
-- Dotfiles integration (`d` command wrapper)
-- Tool auto-detection
-- Platform-specific optimizations
+**Platform-specific:** Auto-sources `config.osx.fish` (macOS) or `config.linux.fish` (Linux)

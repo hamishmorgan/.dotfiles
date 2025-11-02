@@ -24,34 +24,13 @@ Bash shell configuration with tool integrations and platform-specific settings.
 ./dot enable bash
 ```
 
-## Machine-Specific Configuration
-
-Create `~/.bashrc.local` for per-machine settings:
+## Configuration
 
 ```bash
 cp packages/bash/.bashrc.local.example ~/.bashrc.local
 nano ~/.bashrc.local
 ```
 
-**Common uses:**
+**Platform-specific:** Auto-sources `.bashrc.osx` (macOS) or `.bashrc.linux` (Linux)
 
-- Machine-specific aliases
-- Private environment variables
-- Work vs. personal customizations
-- Tool-specific paths
-
-## Platform-Specific Behavior
-
-The configuration automatically detects the platform and sources:
-
-- `.bashrc.osx` on macOS
-- `.bashrc.linux` on Linux
-
-## Tool Integrations
-
-Automatically configured when tools are installed:
-
-- **NVM** - Node version manager
-- **mise** - Polyglot runtime manager
-- **cargo** - Rust package manager
-- **eza** - Modern ls replacement (falls back to ls if not installed)
+**Tool integrations:** NVM, mise, cargo, eza (auto-detected)

@@ -22,29 +22,12 @@ System-wide configuration files used by all packages.
 ./dot enable system
 ```
 
-**Note:** This package should typically be installed first as it provides global ignore patterns used by other packages.
+**Install first:** Provides global ignore patterns used by other packages.
 
-## What's Included
+## Key Files
 
-**`.stow-global-ignore`:**
+**`.stow-global-ignore`:** Ignores `.git`, `.DS_Store`, `*.swp`, temp files
 
-- Ignores `.git`, `.DS_Store`, `*.swp`, temp files
-- Applied to all stow operations automatically
+**`.editorconfig`:** 2-space indent, LF endings, UTF-8, trim whitespace, final newline
 
-**`.editorconfig`:**
-
-- 2-space indentation for shell scripts
-- LF line endings
-- UTF-8 encoding
-- Trim trailing whitespace
-- Insert final newline
-
-**`.inputrc`:**
-
-- Case-insensitive completion
-- Show all completions immediately
-- Colored completion listings
-
-## What Makes This Different
-
-**Foundation package:** Other packages depend on the ignore patterns defined here. Install this first to avoid stow conflicts.
+**`.inputrc`:** Case-insensitive completion, colored listings

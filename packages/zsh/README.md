@@ -29,34 +29,13 @@ chsh -s $(which zsh)
 
 After changing default shell, log out and back in for changes to take effect.
 
-## Machine-Specific Configuration
-
-Create `~/.zshrc.local` for per-machine settings:
+## Configuration
 
 ```bash
 cp packages/zsh/.zshrc.local.example ~/.zshrc.local
 nano ~/.zshrc.local
 ```
 
-**Common uses:**
+**Platform-specific:** Auto-sources `.zshrc.osx` (macOS) or `.zshrc.linux` (Linux)
 
-- Machine-specific aliases
-- Private environment variables
-- Work vs. personal customizations
-- Tool-specific configuration
-
-## Platform-Specific Behavior
-
-The configuration automatically detects the platform and sources:
-
-- `.zshrc.osx` on macOS
-- `.zshrc.linux` on Linux
-
-## What Makes This Different
-
-**No framework dependencies:** Uses zsh's native completion system instead of oh-my-zsh or prezto for:
-
-- Faster startup time
-- Lower maintenance overhead
-- Built-in features only
-- Simpler configuration
+**No frameworks:** Uses native zsh completion for faster startup and simpler configuration.

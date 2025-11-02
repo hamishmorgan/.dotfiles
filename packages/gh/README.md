@@ -21,28 +21,10 @@ GitHub CLI configuration and aliases.
 
 ## Authentication
 
-After installation, authenticate with GitHub:
-
 ```bash
-gh auth login
+gh auth login  # After installation
 ```
-
-Follow the prompts to:
-
-1. Select GitHub.com
-2. Choose authentication method (browser or token)
-3. Complete authentication flow
 
 ## Configuration
 
-The installed configuration includes:
-
-- Git protocol: SSH
-- Editor: vim
-- Browser: default system browser
-
-Customize in `~/.config/gh/config.yml` (symlinked from this package).
-
-## What Makes This Different
-
-**Pre-configured for SSH:** Uses SSH protocol by default for git operations, avoiding HTTPS password prompts.
+**Pre-configured:** SSH protocol, vim editor. Customize in `~/.config/gh/config.yml`.

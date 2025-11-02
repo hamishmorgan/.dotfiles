@@ -6,38 +6,12 @@ Gnuplot plotting configuration with custom styles and terminal settings.
 
 - `.gnuplot` - Gnuplot configuration
 
-## Features
-
-- **Plotting configuration** - Default plot styles and settings
-- **Custom color schemes** - Enhanced visualization colors
-- **Terminal settings** - Output format preferences
-
 ## Installation
 
 ```bash
+brew install gnuplot     # macOS
+sudo apt install gnuplot # Linux
 ./dot enable gnuplot
 ```
 
-## Prerequisites
-
-Install gnuplot:
-
-```bash
-# macOS
-brew install gnuplot
-
-# Ubuntu/Debian
-sudo apt install gnuplot
-
-# CentOS/RHEL/Fedora
-sudo yum install gnuplot
-```
-
-## Usage
-
-After installation, gnuplot will use the custom configuration automatically:
-
-```bash
-gnuplot
-# Configuration from ~/.gnuplot is loaded
-```
+**Features:** Default plot styles, custom color schemes, terminal settings. Configuration auto-loaded by gnuplot.
