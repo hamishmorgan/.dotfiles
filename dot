@@ -2435,21 +2435,21 @@ show_status() {
         if ! load_package_manifest "$package" true; then
             continue
         fi
-        
+
         local display_name="${PACKAGE_NAME:-$package}"
         local files
         files=$(get_package_files "$package")
         # Expand wildcards in file patterns
         files=$(expand_file_patterns "$package" "$files")
         IFS=',' read -ra file_array <<< "$files"
-        
+
         # Count package status
         local pkg_installed=0
         local pkg_warnings=0
         local pkg_missing=0
-        
+
         # Display package header
-        echo -e "   ${BLUE}▸${NC} ${BLUE}$display_name${NC}"
+        echo -e "   📁 ${BLUE}$display_name${NC}"
 
         for file in "${file_array[@]}"; do
             # Trim whitespace from file path (handles leading/trailing spaces from TOML parsing)
@@ -2489,7 +2489,7 @@ show_status() {
                 ((pkg_missing++))
             fi
         done
-        
+
         echo ""
     done
 
