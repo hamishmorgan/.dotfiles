@@ -13,4 +13,4 @@
 ^\.config/fish/config\.local\.fish$
 
 ^manifest\.toml$
-README.md
+^README\.md$
