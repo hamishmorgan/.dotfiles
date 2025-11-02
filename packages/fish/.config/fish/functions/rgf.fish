@@ -20,13 +20,13 @@ function rgf -d "Search code with ripgrep and fzf, open in editor"
 
         # Use EDITOR if set, otherwise try common editors
         if test -n "$EDITOR"
-            $EDITOR +$line $file
+            $EDITOR "+$line" "$file"
         else if type -q nvim
-            nvim +$line $file
+            nvim "+$line" "$file"
         else if type -q vim
-            vim +$line $file
+            vim "+$line" "$file"
         else if type -q code
-            code --goto $file:$line
+            code --goto "$file:$line"
         else
             echo "Opened: $file:$line"
             echo "Set \$EDITOR to open automatically"

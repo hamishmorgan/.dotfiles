@@ -16,4 +16,4 @@ end
 
 # Pager
 set -gx PAGER less
-set -gx LESS '-R -F -X --mouse'
+set -gx LESS '-R -F -X'
