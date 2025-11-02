@@ -2445,11 +2445,6 @@ show_status() {
         files=$(expand_file_patterns "$package" "$files")
         IFS=',' read -ra file_array <<< "$files"
 
-        # Count package status
-        local pkg_installed=0
-        local pkg_warnings=0
-        local pkg_missing=0
-
         # Display package header
         echo -e "   ${BLUE} $display_name${NC}"
 
@@ -2462,7 +2457,6 @@ show_status() {
                 target=$(readlink "$HOME/$file")
                 echo -e "     ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${BLUE}→${NC} $target"
                 ((installed_files++))
-                ((pkg_installed++))
             elif [[ -d "$HOME/$file" ]]; then
                 # Check if directory contains stow-managed files
                 local stow_managed=false
@@ -2475,20 +2469,16 @@ show_status() {
                 if [[ "$stow_managed" == true ]]; then
                     echo -e "     ${GREEN}${SYMBOL_SUCCESS}${NC} $file ${BLUE}(stow-managed directory)${NC}"
                     ((installed_files++))
-                    ((pkg_installed++))
                 else
                     echo -e "     ${YELLOW}${SYMBOL_WARNING}${NC} $file ${BLUE}(directory, not stow-managed)${NC}"
                     ((warning_files++))
-                    ((pkg_warnings++))
                 fi
             elif [[ -e "$HOME/$file" ]]; then
                 echo -e "     ${YELLOW}${SYMBOL_WARNING}${NC} $file ${BLUE}(exists but not a symlink)${NC}"
                 ((warning_files++))
-                ((pkg_warnings++))
             else
                 echo -e "     ${RED}${SYMBOL_ERROR}${NC} $file ${BLUE}(not found)${NC}"
                 ((missing_files++))
-                ((pkg_missing++))
             fi
         done
 

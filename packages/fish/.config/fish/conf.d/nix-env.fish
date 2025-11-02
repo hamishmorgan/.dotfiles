@@ -51,7 +51,7 @@ if test -e $nix_profile_path
     # Insert Nix's fish share directories into fish's special variables.
     # nixpkgs-installed fish tries to set these up already if NIX_PROFILES is defined, which won't
     # be the case when sourcing $__fish_data_dir/share/config.fish normally, but might be for a
-    # recursive invocation. To guard against that, we'll only insert paths that don't already exit.
+    # recursive invocation. To guard against that, we'll only insert paths that don't already exist.
     # Furthermore, for the vendor_conf.d sourcing, we'll use the pre-existing presence of a path in
     # $fish_function_path to determine whether we want to source the relevant vendor_conf.d folder.
 
