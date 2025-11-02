@@ -3,26 +3,32 @@
 
 load ../test_helper/common
 
-setup() {
+# File-level setup: install once for all tests in this file
+setup_file() {
     setup_test_dotfiles
-    # Isolate HOME to prevent modifying actual user directory
     export HOME="$TEST_DOTFILES_DIR/home"
     mkdir -p "$HOME"
     cd "$TEST_DOTFILES_DIR" || return 1
+    # Install dotfiles once for all tests (avoids redundant 3s installs)
+    ./dot install > /dev/null 2>&1 || true
 }
 
-teardown() {
+# File-level teardown
+teardown_file() {
     teardown_test_dotfiles
 }
 
+# Per-test setup not needed - file-level setup handles it
+setup() {
+    # Ensure we're in the right directory (may be reset by bats)
+    cd "$TEST_DOTFILES_DIR" || return 1
+}
+
 @test "health output has required sections" {
-    # Install dotfiles to ensure proper test environment
-    ./dot install > /dev/null 2>&1 || true
-    
     run ./dot health
     # With installation complete, check output structure
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
-    
+
     # Check for all required sections (actual output format)
     assert_output --partial "Symlink Integrity"
     assert_output --partial "Dependencies"
@@ -31,22 +37,18 @@ teardown() {
 }
 
 @test "health output uses proper status symbols" {
-    ./dot install > /dev/null 2>&1 || true
-    
     run ./dot health
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
-    
+
     # Should use status symbols (color codes or actual symbols)
     # At minimum should have checkmarks or status indicators
     assert_output --regexp "(✓|✗|∙|⚠|HEALTHY|pass|fail|info)"
 }
 
 @test "health verbose output has detailed information" {
-    ./dot install > /dev/null 2>&1 || true
-    
     run ./dot health -v
     [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
-    
+
     # Verbose should have more details
     assert_output --partial "Checking"
 }

@@ -12,31 +12,16 @@ teardown() {
     teardown_test_dotfiles
 }
 
-@test "status output has installed files section" {
+@test "status output format is correct" {
+    # Run status once and check all format requirements
+    # This is faster than running status multiple times
     run ./dot status
     assert_success
 
+    # Check for all required sections in one test
     assert_output --partial "Installed Files"
-}
-
-@test "status output has dotfiles title" {
-    run ./dot status
-    assert_success
-
     assert_output --partial "Installation Status"
-}
-
-@test "status output has backup information" {
-    run ./dot status
-    assert_success
-
-    # Should show either "No backups" or backup count
     assert_output --regexp "(backup|Backup)"
-}
-
-@test "status output is concise" {
-    run ./dot status
-    assert_success
 
     # Status should be brief (< 100 lines typically)
     line_count=$(echo "$output" | wc -l)
