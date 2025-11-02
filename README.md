@@ -427,7 +427,7 @@ The health check performs comprehensive diagnostics in a clean, scannable table 
 The table format shows all checks at a glance with Pass/Fail/Warn status and identifies
 maintenance items that need attention.
 
-The health check performs 10 categories of checks:
+The health check performs 9 categories of checks:
 
 1. **Symlink Integrity**: Verifies all configuration symlinks point to correct files
 2. **Configuration Syntax**: Validates git, tmux, zsh, and bash configuration syntax
