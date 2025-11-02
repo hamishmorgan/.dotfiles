@@ -1,0 +1,80 @@
+#!/bin/bash
+# Profile ./dot health using Podman (Docker-compatible)
+# Usage: ./bin/docker-profile-health
+
+set -e
+
+cd "$(dirname "$0")/.." || exit 1
+
+# Use podman if available, otherwise fall back to docker
+if command -v podman >/dev/null 2>&1; then
+    CONTAINER_CMD="podman"
+    # Check if podman machine is running (macOS)
+    if ! podman info >/dev/null 2>&1; then
+        echo "Podman is installed but machine is not running"
+        echo "Starting podman machine..."
+        if podman machine start >/dev/null 2>&1; then
+            echo "Podman machine started"
+        else
+            echo "Error: Could not start podman machine"
+            echo "Try running: podman machine init && podman machine start"
+            exit 1
+        fi
+    fi
+elif command -v docker >/dev/null 2>&1; then
+    CONTAINER_CMD="docker"
+    # Check if Docker daemon is running
+    if ! docker info >/dev/null 2>&1; then
+        echo "Error: Docker daemon is not running"
+        echo "Please start Docker Desktop or the Docker daemon"
+        exit 1
+    fi
+else
+    echo "Error: Neither podman nor docker is installed or not in PATH"
+    exit 1
+fi
+
+echo "Using $CONTAINER_CMD"
+echo "Building container image for profiling..."
+if ! $CONTAINER_CMD build -f tests/docker/Dockerfile.profile -t dotfiles-profile . > /tmp/container-build.log 2>&1; then
+    echo "Error: Container build failed"
+    echo "Build log:"
+    tail -20 /tmp/container-build.log
+    exit 1
+fi
+
+echo ""
+echo "=== Option 1: Basic timing ==="
+echo "Running: time ./dot health"
+$CONTAINER_CMD run --rm -v "$(pwd):/workspace" dotfiles-profile time ./dot health || true
+
+echo ""
+echo "=== Option 2: strace profiling (system calls summary) ==="
+echo "Running: strace -c ./dot health"
+$CONTAINER_CMD run --rm -v "$(pwd):/workspace" dotfiles-profile strace -c ./dot health 2>&1 | tail -30 || true
+
+echo ""
+echo "=== Option 3: Detailed strace output ==="
+echo "Running: strace -t -e trace=open,stat,read ./dot health"
+$CONTAINER_CMD run --rm -v "$(pwd):/workspace" dotfiles-profile strace -t -e trace=open,stat,read ./dot health 2>&1 | head -50 || true
+
+echo ""
+echo "=== Option 4: Full strace trace ==="
+echo "Saving to /tmp/strace-output.log"
+$CONTAINER_CMD run --rm -v "$(pwd):/workspace" -v /tmp:/tmp dotfiles-profile strace -o /tmp/strace-output.log ./dot health > /dev/null 2>&1 || true
+
+if [[ -f /tmp/strace-output.log ]]; then
+    echo "Analyzing strace output..."
+    echo ""
+    echo "Most common system calls:"
+    grep -E "^[a-zA-Z_]+" /tmp/strace-output.log | awk '{print $1}' | sort | uniq -c | sort -rn | head -20
+
+    echo ""
+    echo "Slow operations (top 20 by time):"
+    grep -E "^[0-9]+\.[0-9]+" /tmp/strace-output.log | awk '{print $NF, $0}' | sort -rn | head -20 | cut -d' ' -f2- | head -20
+
+    echo ""
+    echo "File operations:"
+    grep -E "(open|stat)" /tmp/strace-output.log | grep -E "(manifest|packages|\.git)" | head -20
+fi
+
