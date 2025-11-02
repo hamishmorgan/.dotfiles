@@ -75,8 +75,12 @@ All configurations are organized as packages in the `packages/` directory:
 | **rust** | Rust toolchain configuration |
 | **cursor** | Cursor IDE (uses copy-sync) |
 
-Each package has a `manifest.toml` defining managed files, installation method, and validation rules.
-See package-specific README files for detailed configuration options.
+Each package has:
+
+- `manifest.toml` - Defines managed files, installation method, and validation rules
+- `README.md` - Package-specific documentation and configuration guide
+
+See individual package README files for detailed configuration options and usage.
 
 ## Prerequisites
 
@@ -195,46 +199,34 @@ DOTFILES_BACKUP_DIR_PREFIX=.archive/dotfiles ./dot backup
 
 ### Git Delta - Enhanced Diff Viewer
 
-[Git-delta](https://github.com/dandavison/delta) provides enhanced diffs with:
-
-- Syntax-highlighted diffs
-- Side-by-side view
-- Line numbers
-- Better visualization of changes
-
-**Installation:**
+[Git-delta](https://github.com/dandavison/delta) provides syntax-highlighted diffs with side-by-side view.
 
 ```bash
-# macOS
-brew install git-delta
+# Install delta
+brew install git-delta  # macOS
+cargo install git-delta # Other platforms
 
-# Ubuntu/Debian
-wget https://github.com/dandavison/delta/releases/download/0.18.2/git-delta_0.18.2_amd64.deb
-sudo dpkg -i git-delta_0.18.2_amd64.deb
-
-# Cargo (all platforms)
-cargo install git-delta
+# Enable in ~/.gitconfig.local
+echo '[include]
+    path = ~/.gitconfig.delta' >> ~/.gitconfig.local
 ```
 
-**Activation:**
+See [packages/git/README.md](packages/git/README.md) for detailed git-delta configuration.
 
-After installing delta, enable it by adding to `~/.gitconfig.local`:
-
-```gitconfig
-[include]
-    path = ~/.gitconfig.delta
-```
-
-The `.gitconfig.delta` file is automatically symlinked during `./dot install` and contains
-pre-configured delta settings (Dracula theme, side-by-side view, line numbers).
-
-### Set zsh as default shell
+### Set Default Shell
 
 ```bash
+# Zsh
 chsh -s $(which zsh)
+
+# Fish
+chsh -s $(which fish)
+
+# Bash (if using Homebrew bash)
+chsh -s /opt/homebrew/bin/bash
 ```
 
-Log out and back in for the change to take effect.
+Log out and back in for changes to take effect.
 
 ### Modern CLI Tools
 
@@ -317,46 +309,6 @@ The health check performs 9 categories of checks:
 7. **Orphaned Symlinks**: Finds broken symlinks in home and .config directories
 8. **Dependencies**: Checks all required tools are installed
 9. **Backup Health**: Reports backup directory status and suggests cleanup if needed
-
-## What gets installed
-
-### Git (`git/`)
-
-- Aliases and shortcuts
-- Color configuration
-- Diff tools for various file types
-- Shopify-specific configuration
-
-### Zsh (`zsh/`)
-
-- Login shell environment (`.zprofile`)
-- Interactive shell configuration (`.zshrc`)
-- Modern shell features with native completion systems
-- Platform-specific settings (`.zshrc.osx`, `.zshrc.linux`)
-- Custom aliases and functions
-
-### Tmux (`tmux/`)
-
-- Custom key bindings (prefix: backtick)
-- Mouse support
-- Custom status bar
-- Base index: 1
-
-### GitHub CLI (`gh/`)
-
-- GitHub CLI configuration and aliases
-
-### GNU Plot (`gnuplot/`)
-
-- Plotting configuration and styles
-- Custom color schemes and terminal settings
-
-### Bash (`bash/`)
-
-- Login shell environment (`.bash_profile`)
-- Interactive shell configuration (`.bashrc`)
-- NVM, mise, and cargo integration
-- Custom aliases
 
 ## Updating
 
