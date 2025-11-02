@@ -9,6 +9,32 @@
 
 Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 
+## Table of Contents
+
+- [Why This Dotfiles Setup?](#why-this-dotfiles-setup)
+- [Quick Reference](#quick-reference)
+- [Packages](#packages)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Optional Enhancements](#optional-enhancements)
+- [Verification](#verification)
+- [Machine-Specific Configuration](#machine-specific-configuration)
+- [Updating](#updating)
+- [Package Management](#package-management)
+- [Advanced](#advanced)
+- [Development](#development)
+- [Contributing](#contributing)
+
+## Why This Dotfiles Setup?
+
+- **Safe installation** - Automatic backups before any changes, with rollback on failure
+- **Machine-specific support** - Use `.local` files for per-machine customization without branches
+- **Cross-platform** - Tested on macOS, Ubuntu, and Alpine (BSD-like)
+- **Package-based** - Enable/disable individual configurations as needed
+- **Health monitoring** - Comprehensive diagnostics to verify installation integrity
+- **Standard tooling** - Uses GNU Stow (not custom solution), Bash 3.2 compatible
+
 ## Contents
 
 - Installation script with dependency checks
@@ -16,7 +42,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - Template-based secrets management
 - macOS and Linux support
 - Health check system for diagnostics and validation
-- Packages: git, zsh, tmux, gh, gnuplot, bash, fish, wezterm, bat, rust, cursor
+- Packages: system, git, bash, zsh, fish, tmux, gh, gnuplot, wezterm, bat, rust, cursor
 - CI/CD validation with GitHub Actions
 
 ## Compatibility
@@ -54,6 +80,7 @@ testing on all platforms, including explicit Bash 3.2 validation in CI.
 - [Installation](#installation) - Get started in 3 commands
 - [Configuration](#configuration) - Environment variables
 - [Machine-Specific Configuration](#machine-specific-configuration) - Per-machine settings
+- [Package Management](#package-management) - Enable/disable packages
 - [Advanced](#advanced) - Manual stow management
 
 ## Packages
@@ -136,7 +163,18 @@ Environment variables for customization:
 | `DOTFILES_BACKUP_DIR_PREFIX` | backups/dotfiles-backup | Backup directory prefix |
 | `DOTFILES_RESTORE_SAFETY_PREFIX` | backups/dotfiles-pre-restore | Restore safety prefix |
 
-Example: `DOTFILES_MAX_BACKUPS_TO_KEEP=20 ./dot install`
+**Examples:**
+
+```bash
+# Keep more backups
+DOTFILES_MAX_BACKUPS_TO_KEEP=20 ./dot install
+
+# Longer timeout for slow networks
+DOTFILES_GIT_TIMEOUT=120 ./dot install
+
+# Plain ASCII output for CI/logs
+DOTFILES_OUTPUT_PREFIX="| " ./dot install
+```
 
 ## Optional Enhancements
 
@@ -198,18 +236,24 @@ See [COMMANDS.md](COMMANDS.md) for detailed command documentation.
 
 ## Machine-Specific Configuration
 
-Use `.local` files for per-machine settings (git-ignored):
+This dotfiles setup supports machine-specific configurations through `.local` files. These files are
+git-ignored and allow you to customize settings per machine without affecting the shared configuration.
+
+**Setup `.local` files:**
 
 ```bash
 # Git (required - name, email, signing)
 cp packages/git/.gitconfig.local.example ~/.gitconfig.local
 nano ~/.gitconfig.local
 
-# Shells (optional)
+# Shells (optional - machine-specific aliases, env vars, paths)
 cp packages/bash/.bashrc.local.example ~/.bashrc.local
 cp packages/zsh/.zshrc.local.example ~/.zshrc.local
-nano ~/.config/fish/config_private.fish
+nano ~/.config/fish/config_private.fish  # Fish uses different name
 ```
+
+**Use cases:** Private API keys, work vs personal customizations, machine-specific tool paths, signing
+configuration.
 
 **Auto-appending tools:** Some tools (Shopify dev, tec agent) append to configs. Use `git add -p` to
 skip duplicates when committing.
@@ -219,6 +263,21 @@ skip duplicates when committing.
 ```bash
 ./dot update    # Updates gitignore patterns, runs package updates, reinstalls
 ```
+
+## Package Management
+
+Manage individual packages after installation:
+
+```bash
+./dot packages         # List all packages with status
+./dot enable rust      # Enable a package
+./dot disable fish     # Disable a package
+```
+
+**Copy-sync packages:** The `cursor` package uses copy-sync instead of symlinks. Use `./dot sync cursor`
+to sync settings to Cursor and `./dot pull cursor` to pull changes back.
+
+See [COMMANDS.md](COMMANDS.md) for complete command documentation.
 
 ## Advanced
 
@@ -259,5 +318,15 @@ See [bin/README.md](bin/README.md) for complete documentation.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines, [DEVELOPMENT.md](DEVELOPMENT.md) for
-developer documentation, and [COMMANDS.md](COMMANDS.md) for command reference.
+**Quick start:**
+
+```bash
+git clone git@github.com:YOUR_USERNAME/.dotfiles.git ~/.dotfiles
+./dev/setup
+./dev/lint && ./dev/test
+gh pr create
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines including adding packages,
+fixing bugs with TDD, and code standards. See [DEVELOPMENT.md](DEVELOPMENT.md) for architecture and
+[COMMANDS.md](COMMANDS.md) for command reference.
