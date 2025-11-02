@@ -41,4 +41,3 @@ After installation, gnuplot will use the custom configuration automatically:
 gnuplot
 # Configuration from ~/.gnuplot is loaded
 ```
-

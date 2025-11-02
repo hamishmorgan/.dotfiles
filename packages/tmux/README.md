@@ -25,6 +25,7 @@ Tmux terminal multiplexer configuration with custom key bindings.
 **Prefix:** `` ` `` (backtick) instead of default `Ctrl-b`
 
 **Common commands:**
+
 - `` ` c `` - Create new window
 - `` ` n `` - Next window
 - `` ` p `` - Previous window
@@ -35,7 +36,7 @@ Tmux terminal multiplexer configuration with custom key bindings.
 ## What Makes This Different
 
 **Backtick prefix:** Using backtick instead of `Ctrl-b` provides:
+
 - Easier to reach on most keyboards
 - Doesn't conflict with vim/emacs bindings
 - Single keypress instead of key combination
-

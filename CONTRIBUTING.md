@@ -1,6 +1,7 @@
 # Contributing to .dotfiles
 
-Thank you for your interest in contributing. This guide covers the contribution workflow, development practices, and project standards.
+Thank you for your interest in contributing. This guide covers the contribution workflow, development
+practices, and project standards.
 
 ## Quick Start
 
@@ -428,4 +429,3 @@ By contributing, you agree that your contributions will be licensed under the MI
 - [AGENTS.md](AGENTS.md) - AI agent instructions
 - [tests/README.md](tests/README.md) - Testing framework
 - [.cursor/rules/](.cursor/rules/) - Workflow procedures
-

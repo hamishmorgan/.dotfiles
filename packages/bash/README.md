@@ -34,6 +34,7 @@ nano ~/.bashrc.local
 ```
 
 **Common uses:**
+
 - Machine-specific aliases
 - Private environment variables
 - Work vs. personal customizations
@@ -42,14 +43,15 @@ nano ~/.bashrc.local
 ## Platform-Specific Behavior
 
 The configuration automatically detects the platform and sources:
+
 - `.bashrc.osx` on macOS
 - `.bashrc.linux` on Linux
 
 ## Tool Integrations
 
 Automatically configured when tools are installed:
+
 - **NVM** - Node version manager
 - **mise** - Polyglot runtime manager
 - **cargo** - Rust package manager
 - **eza** - Modern ls replacement (falls back to ls if not installed)
-

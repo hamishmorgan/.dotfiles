@@ -33,10 +33,12 @@ nano ~/.gitconfig.local
 ```
 
 **Required settings:**
+
 - User name and email
 - Signing configuration (1Password, GPG, or disabled)
 
 **Optional settings:**
+
 - Machine-specific aliases
 - Private repository credentials
 - Tool paths
@@ -63,4 +65,3 @@ Or manually:
 ```bash
 curl -sLw "\n" https://www.toptal.com/developers/gitignore/api/linux,osx,vscode,vim,jetbrains > ~/.gitignore-globals
 ```
-

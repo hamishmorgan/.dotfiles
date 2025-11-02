@@ -39,6 +39,7 @@ nano ~/.zshrc.local
 ```
 
 **Common uses:**
+
 - Machine-specific aliases
 - Private environment variables
 - Work vs. personal customizations
@@ -47,14 +48,15 @@ nano ~/.zshrc.local
 ## Platform-Specific Behavior
 
 The configuration automatically detects the platform and sources:
+
 - `.zshrc.osx` on macOS
 - `.zshrc.linux` on Linux
 
 ## What Makes This Different
 
 **No framework dependencies:** Uses zsh's native completion system instead of oh-my-zsh or prezto for:
+
 - Faster startup time
 - Lower maintenance overhead
 - Built-in features only
 - Simpler configuration
-

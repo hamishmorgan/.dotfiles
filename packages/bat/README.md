@@ -45,7 +45,7 @@ bat -p filename.rs   # Plain output (no line numbers)
 ## Aliases
 
 Common aliases for bat:
+
 - `cat` → `bat` (if you prefer bat as default cat replacement)
 
 Note: Aliases are not included by default. Add to your `.bashrc.local` or `.zshrc.local` if desired.
-
