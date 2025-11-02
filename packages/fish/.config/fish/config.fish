@@ -7,13 +7,13 @@ set -g fish_greeting
 # Set up history
 set -g fish_history_max 10000
 
-# # Enable color support
-# set -g fish_color_command blue --bold
-# set -g fish_color_error red --bold
-# set -g fish_color_param normal
-# set -g fish_color_comment brblack
-# set -g fish_color_operator bryellow
-# set -g fish_color_quote green
+# Enable color support
+set -g fish_color_command blue --bold
+set -g fish_color_error red --bold
+set -g fish_color_param normal
+set -g fish_color_comment brblack
+set -g fish_color_operator bryellow
+set -g fish_color_quote green
 
 # Detect OS for conditional configuration loading
 set -gx FISH_HOST_OS (string lower (uname))
@@ -30,48 +30,5 @@ switch $FISH_HOST_OS
         end
 end
 
-# bat (modern cat replacement with syntax highlighting)
-# Ubuntu/Debian name the binary 'batcat' to avoid conflict with bacula-console-qt
-if command -q batcat
-    alias bat='batcat'
-    set -x BAT_CONFIG_PATH "$HOME/.config/bat/config"
-else if command -q bat
-    set -x BAT_CONFIG_PATH "$HOME/.config/bat/config"
-end
-
-# Optional: Uncomment to replace cat with bat everywhere
-# Note: This may break scripts that parse cat output
-# alias cat='bat --paging=never'
-
-# Load dotfiles completions from dot script
-# Note: The 'd' function is auto-loaded from ~/.config/fish/functions/d.fish
-if test -f ~/.dotfiles/dot
-    ~/.dotfiles/dot --completion fish | source
-end
-
-# Shopify development environment (conditional - safe on all machines)
-# dev.fish provides: chruby, nvm, PATH setup, autocomplete
-if test -f /opt/dev/dev.fish
-    source /opt/dev/dev.fish
-end
-
-# Tec agent integration (Shopify's managed Nix environment)
-# Note: eval is required - tec init outputs shell-specific code for this shell
-if test -x ~/.local/state/tec/profiles/base/current/global/init
-    eval "$(~/.local/state/tec/profiles/base/current/global/init fish)"
-end
-
-# Rust environment
-if type -q rustup
-    rustup completions fish rustup | source
-end
-
-if test -f "$HOME/.cargo/env.fish"
-    source "$HOME/.cargo/env.fish"
-end
-
 # Machine-specific configuration (not version-controlled)
-if test -f ~/.config/fish/config.local.fish
-    source ~/.config/fish/config.local.fish
-end
-
+# should be added to ~/.config/fish/conf.d/
