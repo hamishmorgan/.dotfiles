@@ -2449,7 +2449,7 @@ show_status() {
         local pkg_missing=0
 
         # Display package header
-        echo -e "   📁 ${BLUE}$display_name${NC}"
+        echo -e "    ${BLUE}$display_name${NC}"
 
         for file in "${file_array[@]}"; do
             # Trim whitespace from file path (handles leading/trailing spaces from TOML parsing)
