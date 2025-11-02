@@ -119,8 +119,8 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 
 # Editor
-alias e='${EDITOR:-vim}'
-alias v='${EDITOR:-vim}'
+alias e='${EDITOR:-nvim}'
+alias v='${EDITOR:-nvim}'
 
 # Git
 alias g='git'
