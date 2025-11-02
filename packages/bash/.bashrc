@@ -25,27 +25,14 @@ if ! shopt -oq posix; then
 fi
 
 # ━━━ Prompt ━━━
-# Simple, git-aware prompt
-parse_git_branch() {
-    git branch 2>/dev/null | grep '^\*' | sed 's/^\* //'
+# Simple, git-aware prompt (branch only, no dirty check for performance)
+git_branch_prompt() {
+    local branch
+    branch=$(git branch --show-current 2>/dev/null)
+    [[ -n "$branch" ]] && echo " ($branch)"
 }
 
-git_status_indicator() {
-    if git rev-parse --git-dir &>/dev/null; then
-        local branch
-        branch=$(parse_git_branch)
-        if [[ -n "$branch" ]]; then
-            # Check for uncommitted changes
-            if ! git diff-index --quiet HEAD 2>/dev/null; then
-                echo " (${branch}*)"
-            else
-                echo " (${branch})"
-            fi
-        fi
-    fi
-}
-
-PS1='\[\033[34m\]\w\[\033[33m\]$(git_status_indicator)\[\033[00m\] \[\033[32m\]❯\[\033[00m\] '
+PS1='\[\033[34m\]\w\[\033[33m\]$(git_branch_prompt)\[\033[00m\] \[\033[32m\]❯\[\033[00m\] '
 
 # ━━━ Detect OS ━━━
 export BASH_HOST_OS=$(uname | tr '[:upper:]' '[:lower:]')
@@ -87,7 +74,7 @@ if command -v fzf &>/dev/null; then
         export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
     fi
     export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
-    
+
     # Load key bindings if available
     for fzf_bindings in \
         /usr/share/doc/fzf/examples/key-bindings.bash \

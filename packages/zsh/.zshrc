@@ -1,7 +1,8 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2296,SC2016
+# shellcheck disable=SC2296,SC2016,SC1036,SC1073,SC1072,SC1009
 # SC2296: Zsh parameter expansion syntax
 # SC2016: Zsh prompt uses single quotes intentionally
+# SC1036,SC1073,SC1072,SC1009: Zsh glob qualifiers for completion caching
 # Zsh shell configuration
 # ~/.zshrc
 
@@ -18,7 +19,13 @@ setopt histreduceblanks       # Remove superfluous blanks
 
 # ━━━ Completion System ━━━
 autoload -Uz compinit
-compinit
+
+# Cache completions for 24 hours for faster startup
+if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
+    compinit
+else
+    compinit -C
+fi
 
 # Case-insensitive completion
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
@@ -40,7 +47,7 @@ bindkey '^[[B' history-search-forward   # Down arrow
 
 # ━━━ Prompt ━━━
 autoload -Uz vcs_info
-precmd() { 
+precmd() {
     vcs_info
 }
 setopt prompt_subst
@@ -90,7 +97,7 @@ if command -v fzf &>/dev/null; then
         export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
     fi
     export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
-    
+
     # Load key bindings if available
     for fzf_bindings in \
         /usr/share/doc/fzf/examples/key-bindings.zsh \
