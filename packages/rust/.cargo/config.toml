@@ -37,6 +37,9 @@ vcs = "git"
 name = "Hamish Morgan"
 email = "hamish.morgan@gmail.com"
 
+# Private registry configuration
+# Authentication token should be configured via `cargo login --registry shopify-rust`
+# or set CARGO_REGISTRIES_SHOPIFY_RUST_TOKEN environment variable
 [registries.shopify-rust]
 index = "sparse+https://cargo.cloudsmith.io/shopify/rust/"
 credential-provider = "cargo:token"
