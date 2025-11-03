@@ -1,43 +1,19 @@
-# Global Cargo configuration
-# ~/.cargo/config.toml
-#
-# This file contains shared cargo settings for improved build performance
-# and developer experience across all Rust projects.
-#
-# Machine-specific settings (private registries, credentials, etc.) should
-# be placed in ~/.cargo/config.local.toml (see config.local.toml.example)
-
 [build]
-# Parallel compilation jobs (default: number of logical CPUs)
 # Negative values: CPUs + value (e.g., -1 = CPUs - 1, leaving one core free)
 # jobs = 8
-
-# Incremental compilation for faster rebuilds during development
-# Note: May increase disk usage and can be disabled for release builds
 incremental = true
-
-# Enable build pipelining for faster parallel builds
-# Overlaps dependency and dependent compilation
 pipelining = true
 
 [term]
-# Colored output for better readability
 color = "auto"
-
-# Progress bar style
 progress.when = "auto"
 progress.width = 80
 
 [net]
-# Use git CLI for fetches (better SSH key and credential handling)
-# Particularly useful for private dependencies
 git-fetch-with-cli = true
-
-# Retry failed network requests
 retry = 3
 
 [alias]
-# Common cargo command shortcuts
 b = "build"
 br = "build --release"
 c = "check"
@@ -46,35 +22,24 @@ r = "run"
 rr = "run --release"
 t = "test"
 tr = "test --release"
-
-# Enhanced commands for better output
 cc = "check --all-targets --all-features"
 bb = "build --all-targets --all-features"
 tt = "test --all-targets --all-features"
-
-# Common workflows
 # dev = "watch -x check"  # Requires cargo-watch: cargo install cargo-watch
 fmt-check = "fmt -- --check"
 lint = "clippy --all-targets --all-features -- -D warnings"
-
-# Information
 outdated = "outdated --root-deps-only"
 tree = "tree --depth 3"
 
 [cargo-new]
-# Default edition for new projects
-# Uncomment to set (otherwise uses latest stable)
 # edition = "2021"
-
-# Default version control system
 vcs = "git"
+name = "Hamish Morgan"
+email = "hamish.morgan@gmail.com"
 
-# Set default author information for new projects (uncomment and edit as needed)
-# name = "Your Name"
-# email = "your.email@example.com"
-
-# Machine-specific configuration (private registries, credentials, etc.)
-# Place in ~/.cargo/config.local.toml - see config.local.toml.example
-[include]
-path = "config.local.toml"
-
+# Private registry configuration
+# Authentication token should be configured via `cargo login --registry shopify-rust`
+# or set CARGO_REGISTRIES_SHOPIFY_RUST_TOKEN environment variable
+[registries.shopify-rust]
+index = "sparse+https://cargo.cloudsmith.io/shopify/rust/"
+credential-provider = "cargo:token"

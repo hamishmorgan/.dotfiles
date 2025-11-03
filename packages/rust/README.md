@@ -8,10 +8,11 @@ Global Rust development configuration including cargo settings, code formatting 
   - Build performance optimizations (incremental builds, pipelining)
   - Convenient cargo command aliases
   - Network and git settings
+  - Registry configuration (Shopify Rust)
+  - Author information for `cargo new`
 - **`~/.rustfmt.toml`**: Code formatting preferences
   - Consistent code style across projects
   - Edition 2021 defaults
-- **`~/.cargo/config.local.toml.example`**: Template for machine-specific settings
 
 ## Installation
 
@@ -28,20 +29,6 @@ Rustup must be installed before installing this package. See [Rustup Setup](#rus
 # Or manually with stow
 stow --verbose --restow --dir=packages --target=$HOME rust
 ```
-
-### Machine-Specific Configuration
-
-Copy the example file and customize for this machine:
-
-```bash
-cp ~/.cargo/config.local.toml.example ~/.cargo/config.local.toml
-```
-
-Edit `~/.cargo/config.local.toml` to add:
-
-- Private registry credentials
-- Employer-specific configurations
-- Machine-specific build optimizations
 
 ## Rustup Setup
 
@@ -167,15 +154,16 @@ Managed by dotfiles. Includes:
 - **Build optimizations**: Incremental builds, pipelining
 - **Cargo aliases**: Shortcuts like `cargo br` (build --release)
 - **Network settings**: Git CLI integration, retries
+- **Registries**: Shopify Rust registry configuration
+- **Author info**: Name and email for `cargo new` command
 
-### Local Config (`~/.cargo/config.local.toml`)
+### Customization
 
-Machine-specific settings **not** managed by dotfiles:
+To customize for your setup, edit `~/.cargo/config.toml` directly:
 
-- Private registry credentials
-- Employer-specific registries (e.g., Shopify)
-- Target-specific compiler flags
-- Machine-specific build settings
+- Update `[cargo-new]` section with your name/email
+- Add/remove registry configurations as needed
+- Adjust build settings for your machine
 
 ### Merging Existing Configs
 
@@ -187,23 +175,20 @@ If you already have a `~/.cargo/config.toml`:
    cp ~/.cargo/config.toml ~/.cargo/config.toml.backup
    ```
 
-2. **Extract machine-specific settings:**
+2. **Compare and merge settings:**
 
-   - Move private registries to `~/.cargo/config.local.toml`
-   - Move credentials to `~/.cargo/config.local.toml`
-   - Keep generic settings in dotfiles version
+   ```bash
+   # View current config
+   cat ~/.cargo/config.toml.backup
+
+   # After installing dotfiles, merge any custom settings
+   # Edit ~/.cargo/config.toml to add your specific configurations
+   ```
 
 3. **Install package:**
 
    ```bash
    ./dot enable rust
-   ```
-
-4. **Verify merged config:**
-
-   ```bash
-   # View effective configuration (requires nightly)
-   cargo +nightly config get
    ```
 
 ## Rustfmt Configuration
@@ -336,29 +321,27 @@ Cargo merges configurations from multiple locations in this order (later overrid
 
 1. `$CARGO_HOME/config.toml` (or `~/.cargo/config.toml`)
 2. `$(pwd)/.cargo/config.toml` (project-specific)
-3. `$CARGO_HOME/config.local.toml` (via `[include]`)
 
-Verify which config is being used:
+To verify aliases are working:
 
 ```bash
-# Requires nightly toolchain
-cargo +nightly config get
+# Test a simple alias
+cargo b --help  # Should show build help
+
+# List all available aliases
+cargo --list | grep alias
 ```
 
 ### Private Registry Credentials
 
-**Shopify example** (place in `~/.cargo/config.local.toml`):
-
-```toml
-[registries.shopify-rust]
-index = "sparse+https://cargo.cloudsmith.io/shopify/rust/"
-credential-provider = "cargo:token"
-```
-
-Store credentials in `~/.cargo/credentials.toml` (auto-managed by cargo):
+Registry configuration is in `~/.cargo/config.toml`. Store credentials separately in
+`~/.cargo/credentials.toml` (auto-managed by cargo):
 
 ```bash
+# Login to Shopify registry
 cargo login --registry shopify-rust
+
+# Credentials are stored in ~/.cargo/credentials.toml
 ```
 
 ## Best Practices
