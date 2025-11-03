@@ -36,7 +36,3 @@ tree = "tree --depth 3"
 vcs = "git"
 # name = "Your Name"
 # email = "your.email@example.com"
-
-[registries.shopify-rust]
-index = "sparse+https://cargo.cloudsmith.io/shopify/rust/"
-credential-provider = "cargo:token"
