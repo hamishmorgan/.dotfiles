@@ -334,7 +334,8 @@ cargo --list | grep alias
 
 ### Private Registry Credentials
 
-Registry configuration is in `~/.cargo/config.toml`. Store credentials separately in `~/.cargo/credentials.toml` (auto-managed by cargo):
+Registry configuration is in `~/.cargo/config.toml`. Store credentials separately in
+`~/.cargo/credentials.toml` (auto-managed by cargo):
 
 ```bash
 # Login to Shopify registry
