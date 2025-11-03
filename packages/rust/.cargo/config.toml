@@ -34,5 +34,9 @@ tree = "tree --depth 3"
 [cargo-new]
 # edition = "2021"
 vcs = "git"
-# name = "Your Name"
-# email = "your.email@example.com"
+name = "Hamish Morgan"
+email = "hamish.morgan@gmail.com"
+
+[registries.shopify-rust]
+index = "sparse+https://cargo.cloudsmith.io/shopify/rust/"
+credential-provider = "cargo:token"
