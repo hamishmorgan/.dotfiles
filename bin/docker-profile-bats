@@ -1,0 +1,103 @@
+#!/bin/bash
+# Profile BATS unit tests using Podman (Docker-compatible)
+# Usage: ./bin/docker-profile-bats [test_path] [--sequential]
+
+set -e
+
+cd "$(dirname "$0")/.." || exit 1
+
+TEST_PATH="${1:-tests/unit}"
+SEQUENTIAL=false
+
+# Parse arguments
+for arg in "$@"; do
+    case "$arg" in
+        --sequential|-s)
+            SEQUENTIAL=true
+            ;;
+        *)
+            if [[ ! "$arg" =~ ^- ]]; then
+                TEST_PATH="$arg"
+            fi
+            ;;
+    esac
+done
+
+# Use podman if available, otherwise fall back to docker
+if command -v podman >/dev/null 2>&1; then
+    CONTAINER_CMD="podman"
+    # Check if podman machine is running (macOS)
+    if ! podman info >/dev/null 2>&1; then
+        echo "Podman is installed but machine is not running"
+        echo "Starting podman machine..."
+        if podman machine start >/dev/null 2>&1; then
+            echo "Podman machine started"
+        else
+            echo "Error: Could not start podman machine"
+            echo "Try running: podman machine init && podman machine start"
+            exit 1
+        fi
+    fi
+elif command -v docker >/dev/null 2>&1; then
+    CONTAINER_CMD="docker"
+    # Check if Docker daemon is running
+    if ! docker info >/dev/null 2>&1; then
+        echo "Error: Docker daemon is not running"
+        echo "Please start Docker Desktop or the Docker daemon"
+        exit 1
+    fi
+else
+    echo "Error: Neither podman nor docker is installed or not in PATH"
+    exit 1
+fi
+
+echo "Using $CONTAINER_CMD"
+echo "Building container image for profiling..."
+if ! $CONTAINER_CMD build -f tests/docker/Dockerfile.profile -t dotfiles-profile . > /tmp/container-build.log 2>&1; then
+    echo "Error: Container build failed"
+    echo "Build log:"
+    tail -20 /tmp/container-build.log
+    exit 1
+fi
+
+echo ""
+echo "=== Option 1: Basic timing ==="
+if $SEQUENTIAL; then
+    echo "Running: time bats --jobs 1 (sequential, no parallelism)"
+    $CONTAINER_CMD run --rm -v "$(pwd):/workspace" -e TERM=xterm dotfiles-profile time bash -c "cd /workspace && bats --jobs 1 --formatter tap --timing --recursive $TEST_PATH" || true
+else
+    echo "Running: time ./dev/bats $TEST_PATH (parallel)"
+    $CONTAINER_CMD run --rm -v "$(pwd):/workspace" -e TERM=xterm dotfiles-profile time bash -c "cd /workspace && ./dev/bats $TEST_PATH" || true
+fi
+
+echo ""
+echo "=== Option 2: strace profiling (system calls summary) ==="
+if $SEQUENTIAL; then
+    echo "Running: strace -f -c bats --jobs 1 (sequential, follows children)"
+    $CONTAINER_CMD run --rm -v "$(pwd):/workspace" -e TERM=xterm dotfiles-profile strace -f -c bash -c "cd /workspace && bats --jobs 1 --formatter tap --timing --recursive $TEST_PATH" 2>&1 | tail -50 || true
+else
+    echo "Running: strace -f -c ./dev/bats (parallel, follows children)"
+    $CONTAINER_CMD run --rm -v "$(pwd):/workspace" -e TERM=xterm dotfiles-profile strace -f -c bash -c "cd /workspace && ./dev/bats $TEST_PATH" 2>&1 | tail -50 || true
+fi
+
+echo ""
+echo "=== Option 3: Detailed strace output (sequential only) ==="
+echo "Running: strace -f -t -e trace=open,stat,read,execve bats --jobs 1"
+$CONTAINER_CMD run --rm -v "$(pwd):/workspace" -e TERM=xterm dotfiles-profile strace -f -t -e trace=open,stat,read,execve bash -c "cd /workspace && bats --jobs 1 --formatter tap --timing --recursive $TEST_PATH" 2>&1 | head -150 || true
+
+echo ""
+echo "=== Option 4: Test-level timing ==="
+echo "Running tests and showing timing for each..."
+if $SEQUENTIAL; then
+    $CONTAINER_CMD run --rm -v "$(pwd):/workspace" -e TERM=xterm dotfiles-profile bash -c "cd /workspace && bats --jobs 1 --formatter tap --timing --recursive $TEST_PATH 2>&1 | grep -E '^ok|^not ok' | awk '{match(\$0, /[0-9]+ms/); if (RSTART > 0) {time=substr(\$0, RSTART, RLENGTH-2); print time, \$0}}' | sort -rn | head -20" || true
+else
+    $CONTAINER_CMD run --rm -v "$(pwd):/workspace" -e TERM=xterm dotfiles-profile bash -c "cd /workspace && ./dev/bats $TEST_PATH 2>&1 | grep -E '^ok|^not ok' | awk '{match(\$0, /[0-9]+ms/); if (RSTART > 0) {time=substr(\$0, RSTART, RLENGTH-2); print time, \$0}}' | sort -rn | head -20" || true
+fi
+
+echo ""
+echo "=== Usage ==="
+echo "To profile sequential (no parallelism), use --sequential flag:"
+echo "  ./bin/docker-profile-bats tests/unit --sequential"
+echo ""
+echo "This will show actual test execution time instead of wait time."
+
