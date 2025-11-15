@@ -11,3 +11,4 @@ target = "~"
 [update]
 command = "dev/update-gitignore"
 args = ["file"]
+update_target = ".gitignore-globals"
