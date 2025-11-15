@@ -1,0 +1,77 @@
+#!/bin/bash
+# Validate JSONC (JSON with Comments) files
+# Strips // comments and validates as JSON
+
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <jsonc_file>" >&2
+    exit 1
+fi
+
+file="$1"
+if [[ ! -f "$file" ]]; then
+    echo "Error: File not found: $file" >&2
+    exit 1
+fi
+
+# Use Python to strip comments and validate
+# Note: The '-' tells Python to read the script from stdin (the here-document below).
+# The "$file" argument becomes sys.argv[1] in the Python script.
+python3 - "$file" << 'PYEOF'
+import sys
+import json
+
+def strip_jsonc_comments(content):
+    """Strip // comments from JSONC content"""
+    lines = []
+    in_string = False
+    escape_next = False
+
+    for line in content.split('\n'):
+        stripped_line = ''
+        i = 0
+        while i < len(line):
+            char = line[i]
+
+            if escape_next:
+                stripped_line += char
+                escape_next = False
+                i += 1
+                continue
+
+            if char == '\\':
+                escape_next = True
+                stripped_line += char
+                i += 1
+                continue
+
+            if char == '"':
+                in_string = not in_string
+                stripped_line += char
+                i += 1
+                continue
+
+            if not in_string and char == '/' and i < len(line) - 1 and line[i+1] == '/':
+                # Found // comment, skip rest of line
+                break
+
+            stripped_line += char
+            i += 1
+
+        lines.append(stripped_line)
+
+    return '\n'.join(lines)
+
+try:
+    with open(sys.argv[1], 'r') as f:
+        content = f.read()
+    stripped = strip_jsonc_comments(content)
+    json.loads(stripped)
+    sys.exit(0)
+except json.JSONDecodeError as e:
+    print(f"JSON error: {e}", file=sys.stderr)
+    sys.exit(1)
+except Exception as e:
+    print(f"Error: {e}", file=sys.stderr)
+    sys.exit(1)
+PYEOF
+

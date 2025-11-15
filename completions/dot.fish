@@ -1,7 +1,7 @@
 # Fish completion for dot command
 complete -c dot -f
 complete -c dot -s h -l help -d "Show help message"
-complete -c dot -s q -l quiet -d "Quiet mode (errors only)"
+complete -c dot -s s -l silent -d "Silent mode (errors only)"
 complete -c dot -s v -l verbose -d "Verbose output"
 complete -c dot -o vv -d "Very verbose output"
 
@@ -25,7 +25,7 @@ complete -c dot -n __fish_use_subcommand -a pull -d "Pull package files from sys
 complete -c dot -n __fish_use_subcommand -a completion -d "Output shell completion script"
 
 # Verbosity flags for install/update/health
-complete -c dot -n "__fish_seen_subcommand_from install update health" -s q -l quiet -d "Quiet mode"
+complete -c dot -n "__fish_seen_subcommand_from install update health" -s s -l silent -d "Silent mode"
 complete -c dot -n "__fish_seen_subcommand_from install update health" -s v -l verbose -d "Verbose output"
 complete -c dot -n "__fish_seen_subcommand_from install update health" -o vv -d "Very verbose output"
 
@@ -143,7 +143,7 @@ complete -c dot -n "__fish_seen_subcommand_from completion" -a fish -d "Fish she
 # Fish completion for d function wrapper
 complete -c d -f
 complete -c d -s h -l help -d "Show help message"
-complete -c d -s q -l quiet -d "Quiet mode (errors only)"
+complete -c d -s s -l silent -d "Silent mode (errors only)"
 complete -c d -s v -l verbose -d "Verbose output"
 complete -c d -o vv -d "Very verbose output"
 
@@ -169,7 +169,7 @@ complete -c d -n __fish_use_subcommand -a uninstall -d "Remove dotfiles"
 complete -c d -n __fish_use_subcommand -a cd -d "Change to dotfiles directory"
 
 # Verbosity flags for d function
-complete -c d -n "__fish_seen_subcommand_from i install u update h health" -s q -l quiet -d "Quiet mode"
+complete -c d -n "__fish_seen_subcommand_from i install u update h health" -s s -l silent -d "Silent mode"
 complete -c d -n "__fish_seen_subcommand_from i install u update h health" -s v -l verbose -d "Verbose output"
 complete -c d -n "__fish_seen_subcommand_from i install u update h health" -o vv -d "Very verbose output"
 
