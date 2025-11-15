@@ -150,4 +150,4 @@ alias c='clear'
 # ━━━ Machine-Specific Configuration ━━━
 [[ -f ~/.bashrc.local ]] && source ~/.bashrc.local
 
-[[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
+. "$HOME/.local/bin/env"
