@@ -7,6 +7,6 @@ target = "~/.config/Cursor/User"
 target.macos = "~/Library/Application Support/Cursor/User"
 target.linux = "~/.config/Cursor/User"
 
-[validation]
-"settings.json" = { command = "uvx", args = ["python3", "-m", "json.tool"] }
-"keybindings.json" = { command = "uvx", args = ["python3", "-m", "json.tool"] }
+# Note: settings.json and keybindings.json contain comments (JSONC format)
+# which is supported by Cursor but not by strict JSON validators.
+# Validation is skipped for these files since they're valid JSONC.
