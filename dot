@@ -402,8 +402,7 @@ get_validation_deps() {
 
     # Get all packages
     local packages
-    packages=$(get_packages 2>/dev/null)
-    if [[ $? -ne 0 ]]; then
+    if ! packages=$(get_packages 2>/dev/null); then
         return 1
     fi
 
@@ -416,8 +415,7 @@ get_validation_deps() {
 
         # Get all validation patterns
         local patterns
-        patterns=$(get_validation_patterns "$manifest" 2>/dev/null)
-        if [[ $? -ne 0 ]]; then
+        if ! patterns=$(get_validation_patterns "$manifest" 2>/dev/null); then
             continue
         fi
 
@@ -3627,7 +3625,7 @@ validate_config_syntax() {
                         expanded_args+=("$full_path")
                         found_file_placeholder=true
                     # Expand $HOME if present
-                    elif [[ "$arg" == *'$HOME'* ]]; then
+                    elif [[ "$arg" == *"\$HOME"* ]]; then
                         local expanded_arg="${arg//\$HOME/$HOME}"
                         expanded_args+=("$expanded_arg")
                     else
@@ -3646,7 +3644,9 @@ validate_config_syntax() {
                     log_error "Validation failed: $file"
                     if [[ -n "$VALIDATOR_ERROR_OUTPUT" ]]; then
                         # Show validator error output (indented)
-                        echo "$VALIDATOR_ERROR_OUTPUT" | sed 's/^/    /' >&2
+                        while IFS= read -r line; do
+                            printf '    %s\n' "$line" >&2
+                        done <<< "$VALIDATOR_ERROR_OUTPUT"
                         # At verbosity 2+, also show the command that was executed
                         if [[ $verbosity -gt 1 ]]; then
                             log_info "    Executed: $cmd ${expanded_args[*]}"
