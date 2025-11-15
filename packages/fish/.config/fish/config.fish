@@ -22,5 +22,14 @@ switch $FISH_HOST_OS
         end
 end
 
+# ━━━ Tool Integrations ━━━
+
+# zoxide (smart cd replacement)
+if command -v zoxide > /dev/null
+    zoxide init fish | source
+    alias zi='zoxide query -i'  # Interactive selection
+end
+
+# ━━━ Machine-Specific Configuration ━━━
 # Machine-specific configuration (not version-controlled)
 # should be added to ~/.config/fish/conf.d/
