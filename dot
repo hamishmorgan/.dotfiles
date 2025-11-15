@@ -1324,6 +1324,15 @@ run_package_update() {
         return 0  # Continue, not an error
     fi
 
+    local verbosity="${VERBOSITY:-$VERBOSITY_TACITURN}"
+    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
+        if "$command" "${args[@]}" >/dev/null 2>&1; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+
     # Execute update command (array expansion preserves spaces/quotes)
     # Output goes to stdout/stderr (not suppressed like validators)
     if "$command" "${args[@]}" 2>&1 | prefix_output "│ "; then
@@ -1433,11 +1442,11 @@ log_success() {
 }
 
 log_warning() {
-    echo -e "${YELLOW}${SYMBOL_WARNING}${NC} $1" >&2
+    echo -e "${YELLOW}${SYMBOL_WARNING}${NC} $1"
 }
 
 log_error() {
-    echo -e "${RED}${SYMBOL_ERROR}${NC} $1" >&2
+    echo -e "${RED}${SYMBOL_ERROR}${NC} $1"
 }
 
 # Prefix subcommand output for clarity with smart colorization
@@ -2099,15 +2108,13 @@ install_dotfiles() {
                     log_success "Installed $package (adopted existing files)"
                     stow_result=0
                 else
-                    # Show stow error output to stderr so it's visible even when piped
-                    echo "$adopt_output" | prefix_output "│ " >&2
+                    echo "$adopt_output" | prefix_output "│ "
                     log_error "Failed to install package: $package"
                     suggest_fixes "stow" "$package"
                     return 1
                 fi
             else
-                # Show stow error output to stderr so it's visible even when piped
-                echo "$stow_output" | prefix_output "│ " >&2
+                echo "$stow_output" | prefix_output "│ "
                 log_error "Failed to install package: $package"
                 suggest_fixes "stow" "$package"
                 return 1
@@ -2341,6 +2348,7 @@ get_backup_stats() {
 
 # Automatically cleanup old backups if threshold exceeded
 auto_cleanup_backups() {
+    local verbosity="${1:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
     local backup_count
     backup_count=$(get_backup_dirs | wc -l | tr -d ' ')
 
@@ -2349,9 +2357,11 @@ auto_cleanup_backups() {
     fi
 
     local backups_to_remove=$((backup_count - MAX_BACKUPS_TO_KEEP))
-    log_info "Auto cleanup: $backup_count backups found, keeping $MAX_BACKUPS_TO_KEEP most recent, removing $backups_to_remove old backup(s)"
+    if [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
+        log_info "Auto cleanup: $backup_count backups found, keeping $MAX_BACKUPS_TO_KEEP most recent, removing $backups_to_remove old backup(s)"
+    fi
 
-    clean_backups_silent "$MAX_BACKUPS_TO_KEEP"
+    clean_backups_silent "$MAX_BACKUPS_TO_KEEP" "$verbosity"
 
     return 0
 }
@@ -2359,6 +2369,7 @@ auto_cleanup_backups() {
 # Silent version of clean_backups for auto-cleanup
 clean_backups_silent() {
     local keep_count="${1:-$MAX_BACKUPS_TO_KEEP}"
+    local verbosity="${2:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
 
     # Avoid array operations in Bash 3.2 - use counter instead
     local total_backups=0
@@ -2392,7 +2403,9 @@ clean_backups_silent() {
     done <<< "$backup_list"
 
     if [[ $removed_count -gt 0 ]]; then
-        log_success "Removed $removed_count old backup(s)"
+        if [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
+            log_success "Removed $removed_count old backup(s)"
+        fi
     fi
 
     return 0
@@ -2428,16 +2441,33 @@ show_installation_summary() {
 }
 
 # Display a single tip message
-# Usage: show_tip "Run './dot health' to check"
+# Usage: show_tip "Run './dot health' to check" [verbosity]
 show_tip() {
-    echo -e "${BLUE}💡 Tip: $1${NC}"
+    local tip="$1"
+    local verbosity="${2:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
+
+    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
+        return
+    fi
+
+    echo -e "${BLUE}💡 Tip: $tip${NC}"
 }
 
 # Display titled tips section with multiple items
-# Usage: show_tips "Title" "Tip 1" "Tip 2" ...
+# Usage: show_tips "Title" "Tip 1" "Tip 2" ... [verbosity]
 show_tips() {
     local title="$1"
     shift
+
+    local verbosity="${VERBOSITY:-$VERBOSITY_TACITURN}"
+    if [[ $# -gt 0 ]] && [[ "${!#}" =~ ^-?[0-9]+$ ]]; then
+        verbosity="${!#}"
+        set -- "${@:1:$(($#-1))}"
+    fi
+
+    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
+        return
+    fi
 
     echo ""
     echo -e "${BLUE}💡 ${title}:${NC}"
@@ -2448,10 +2478,44 @@ show_tips() {
 }
 
 # Show installation status
+# Optional verbosity parameter for quiet mode support
 show_status() {
+    local verbosity="${1:-$VERBOSITY_TACITURN}"
+
+    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
+        local total_files=0
+        local missing_files=0
+        local warning_files=0
+
+        for package in "${PACKAGES[@]}"; do
+            if ! load_package_manifest "$package" true; then
+                continue
+            fi
+
+            local files
+            files=$(get_package_files "$package")
+            files=$(expand_file_patterns "$package" "$files")
+            IFS=',' read -ra file_array <<< "$files"
+
+            for file in "${file_array[@]}"; do
+                file=$(echo "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                ((total_files++))
+                if [[ ! -L "$HOME/$file" ]] && [[ ! -e "$HOME/$file" ]]; then
+                    ((missing_files++))
+                elif [[ -e "$HOME/$file" ]] && [[ ! -L "$HOME/$file" ]]; then
+                    ((warning_files++))
+                fi
+            done
+        done
+
+        if [[ $missing_files -gt 0 ]] || [[ $warning_files -gt 0 ]]; then
+            return 1
+        fi
+        return 0
+    fi
+
     show_command_header "Dotfiles Installation Status"
 
-    # Count files and issues
     local total_files=0
     local installed_files=0
     local warning_files=0
@@ -3140,7 +3204,7 @@ cmd_install() {
     fi
 
     # Step 2: Install
-    show_numbered_section "2" "Installation Pipeline"
+    show_numbered_section "2" "Installation Pipeline" "$verbosity"
     if ! run_with_verbosity "$verbosity" $VERBOSITY_LOQUACIOUS "" run_installation_pipeline "$verbosity"; then
         echo ""
         log_error "Installation pipeline failed"
@@ -3169,7 +3233,7 @@ cmd_install() {
         "Verify installation: $0 health"
     echo ""
 
-    auto_cleanup_backups
+    auto_cleanup_backups "$verbosity"
 
     return 0
 }
@@ -3270,8 +3334,7 @@ validate_config_syntax() {
                 if ! run_validator "$cmd" "${expanded_args[@]}"; then
                     log_error "Validation failed: $file"
                     if [[ -n "$VALIDATOR_ERROR_OUTPUT" ]]; then
-                        # Show validator error output (indented)
-                        echo "$VALIDATOR_ERROR_OUTPUT" | sed 's/^/    /' >&2
+                        echo "$VALIDATOR_ERROR_OUTPUT" | sed 's/^/    /'
                     else
                         # Fallback if no error output captured
                         log_info "    Validator command failed: $cmd ${expanded_args[*]}"
@@ -3790,6 +3853,12 @@ check_stow_conflicts() {
 # Display a command header
 show_command_header() {
     local title="$1"
+    local verbosity="${2:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
+
+    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
+        return
+    fi
+
     echo ""
     echo -e "${BLUE}╭──────────────────────────────────────────────────────────╮${NC}"
     printf "${BLUE}│${NC}  %-56s${BLUE}│${NC}\n" "$title"
@@ -3811,6 +3880,12 @@ show_section_separator() {
 show_numbered_section() {
     local num="$1"
     local title="$2"
+    local verbosity="${3:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
+
+    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
+        return
+    fi
+
     echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 }
@@ -3820,6 +3895,11 @@ show_command_summary() {
     local status="$1"      # "success" or "info"
     local message="$2"
     local duration="$3"     # optional
+    local verbosity="${4:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
+
+    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
+        return
+    fi
 
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
@@ -3975,9 +4055,7 @@ count_symlinks() {
 cmd_health() {
     local verbosity="${1:-$VERBOSITY_TACITURN}"
 
-    # Quiet mode: only show errors, no output
     if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
-        # Run checks silently, only capture errors
         local errors=0
         for package in "${PACKAGES[@]}"; do
             if ! validate_package "$package" "$verbosity" >/dev/null 2>&1; then
@@ -3987,9 +4065,10 @@ cmd_health() {
         if ! validate_config_syntax "$verbosity" >/dev/null 2>&1; then
             ((errors++))
         fi
-        # Only show errors if any found
         if [[ $errors -gt 0 ]]; then
-            echo "Health check failed with $errors error(s)" >&2
+            if [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
+                echo "Health check failed with $errors error(s)"
+            fi
             return 1
         fi
         return 0
@@ -4434,8 +4513,7 @@ run_with_verbosity() {
             fi
             return 0
         else
-            # Show error output even in quiet mode (errors always shown)
-            echo "$output" | indent_section_output >&2
+            echo "$output" | indent_section_output
             return 1
         fi
     fi
@@ -4942,10 +5020,10 @@ cmd_update() {
     local start_time
     start_time=$(date +%s)
 
-    show_command_header "Dotfiles Update"
+    show_command_header "Dotfiles Update" "$verbosity"
 
     # Step 1: Update packages (from manifests)
-    show_numbered_section "1" "Update Packages"
+    show_numbered_section "1" "Update Packages" "$verbosity"
     local update_count=0
     local updated_packages=()
     local skipped_packages=()
@@ -5029,7 +5107,7 @@ cmd_update() {
 
     # Step 2: Clean up outdated symlinks
     if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
-        show_numbered_section "2" "Clean Up Outdated Symlinks"
+        show_numbered_section "2" "Clean Up Outdated Symlinks" "$verbosity"
         remove_mispointed_symlinks "$verbosity"
         echo ""
     else
@@ -5037,7 +5115,7 @@ cmd_update() {
     fi
 
     # Step 4: Reinstall
-    show_numbered_section "4" "Reinstall Dotfiles"
+    show_numbered_section "4" "Reinstall Dotfiles" "$verbosity"
     if ! run_with_verbosity "$verbosity" $VERBOSITY_LOQUACIOUS "" run_installation_pipeline "$verbosity"; then
         echo ""
         log_error "Installation pipeline failed"
@@ -5054,16 +5132,17 @@ cmd_update() {
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
 
-    show_command_summary "success" "UPDATED" "$duration"
+    show_command_summary "success" "UPDATED" "$duration" "$verbosity"
     echo ""
 
-    auto_cleanup_backups
+    auto_cleanup_backups "$verbosity"
 
     return 0
 }
 
 cmd_status() {
-    show_status
+    local verbosity="${1:-$VERBOSITY_TACITURN}"
+    show_status "$verbosity"
 }
 
 cmd_diff() {
@@ -5513,26 +5592,36 @@ is_valid_command() {
     [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync|pull)$ ]]
 }
 
-# Parse verbosity flag and return verbosity level
-# Handles: -q/--quiet (MUTE), -v/--verbose (LOQUACIOUS), -vv (GARRULOUS)
-# Verbosity levels: MUTE (quiet), TACITURN (normal), LOQUACIOUS (verbose), GARRULOUS (very verbose)
+# Parse verbosity flag and return relative change
+# Handles: -q/--quiet (decrease by 1), -v/--verbose (increase by 1), -vv (increase by 2)
+# Also handles combined flags like -vvqq (net change: +2-2=0)
+# Returns: relative change (-1, +1, +2, etc.)
 # Examples:
-#   -q, --quiet      → VERBOSITY_MUTE
-#   -v, --verbose    → VERBOSITY_LOQUACIOUS
-#   -vv              → VERBOSITY_GARRULOUS
-# Note: Multiple flags set the highest level (last one wins)
+#   -q, --quiet      → -1
+#   -v, --verbose    → +1
+#   -vv              → +2
+#   -vvqq            → 0 (counts v's and q's separately)
 parse_verbosity() {
     local flag="$1"
 
-    if [[ $flag == "-q" ]] || [[ $flag == "--quiet" ]]; then
-        echo "$VERBOSITY_MUTE"
+    if [[ $flag == "--quiet" ]]; then
+        echo "-1"
         return 0
-    elif [[ $flag == "-v" ]] || [[ $flag == "--verbose" ]]; then
-        echo "$VERBOSITY_LOQUACIOUS"
+    elif [[ $flag == "--verbose" ]]; then
+        echo "+1"
         return 0
-    elif [[ $flag =~ ^-vv+$ ]]; then
-        # Regex matches at least 2 v's (-vv, -vvv, etc.), so always return GARRULOUS
-        echo "$VERBOSITY_GARRULOUS"
+    elif [[ $flag =~ ^-[vq]+$ ]]; then
+        # Combined flags like -vvqq: count v's and q's separately
+        local v_count=$(echo "$flag" | tr -cd 'v' | wc -c | tr -d ' ')
+        local q_count=$(echo "$flag" | tr -cd 'q' | wc -c | tr -d ' ')
+        local change=$((v_count - q_count))
+        if [[ $change -gt 0 ]]; then
+            echo "+$change"
+        elif [[ $change -lt 0 ]]; then
+            echo "$change"
+        else
+            echo "0"
+        fi
         return 0
     fi
 
@@ -5548,7 +5637,7 @@ die() {
 
 # Parse command-line arguments
 # Sets global variables: COMMAND, VERBOSITY, COMMAND_ARGS
-# Verbosity levels: MUTE (quiet), TACITURN (normal), LOQUACIOUS (verbose), GARRULOUS (very verbose)
+# Verbosity levels: MUTE (-1), TACITURN (0), LOQUACIOUS (1), GARRULOUS (2)
 parse_arguments() {
     COMMAND=""
     VERBOSITY=$VERBOSITY_TACITURN
@@ -5562,18 +5651,12 @@ parse_arguments() {
                 exit 0
                 ;;
 
-            # Quiet mode (-q, --quiet)
-            -q|--quiet)
-                VERBOSITY=$VERBOSITY_MUTE
-                shift
-                ;;
-
-            # Verbosity (-v, -vv, --verbose)
-            -v*|--verbose)
-                local level
-                if level=$(parse_verbosity "$1"); then
-                    # Set verbosity level (last flag wins if multiple specified)
-                    VERBOSITY=$level
+            # Verbosity flags (-q, -v, -vv, -qq, -vvqq, etc.) - relative changes
+            -q*|-v*|--quiet|--verbose)
+                local change
+                if change=$(parse_verbosity "$1"); then
+                    change="${change#+}"
+                    ((VERBOSITY += change))
                     shift
                 else
                     die "Invalid verbosity flag: $1" show_usage
@@ -5595,10 +5678,24 @@ parse_arguments() {
                 fi
                 COMMAND="$1"
                 shift
-                # Collect remaining arguments for commands that need them
                 while [[ $# -gt 0 ]]; do
-                    COMMAND_ARGS+=("$1")
-                    shift
+                    case $1 in
+                        -q*|-v*|--quiet|--verbose)
+                            local change
+                            if change=$(parse_verbosity "$1"); then
+                                change="${change#+}"
+                                ((VERBOSITY += change))
+                                shift
+                            else
+                                COMMAND_ARGS+=("$1")
+                                shift
+                            fi
+                            ;;
+                        *)
+                            COMMAND_ARGS+=("$1")
+                            shift
+                            ;;
+                    esac
                 done
                 ;;
             # Unknown option (unknown flag)
@@ -5611,6 +5708,13 @@ parse_arguments() {
                 ;;
         esac
     done
+
+    # Clamp verbosity to valid range
+    if [[ $VERBOSITY -lt $VERBOSITY_MUTE ]]; then
+        VERBOSITY=$VERBOSITY_MUTE
+    elif [[ $VERBOSITY -gt $VERBOSITY_GARRULOUS ]]; then
+        VERBOSITY=$VERBOSITY_GARRULOUS
+    fi
 
     # Default to help if no command
     if [[ -z "$COMMAND" ]]; then
@@ -5665,7 +5769,7 @@ main() {
             cmd_update "$VERBOSITY"
             ;;
         status)
-            cmd_status
+            cmd_status "$VERBOSITY"
             ;;
         diff)
             cmd_diff
