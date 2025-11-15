@@ -5555,7 +5555,7 @@ die() {
 
 # Parse command-line arguments
 # Sets global variables: COMMAND, VERBOSITY, COMMAND_ARGS
-# Verbosity levels: -1 (silent), 0 (normal), 1 (verbose), 2 (very verbose)
+# Verbosity levels: MUTE (quiet), TACITURN (normal), LOQUACIOUS (verbose), GARRULOUS (very verbose)
 parse_arguments() {
     COMMAND=""
     VERBOSITY=$VERBOSITY_TACITURN
