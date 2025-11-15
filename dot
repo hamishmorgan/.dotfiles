@@ -5494,6 +5494,14 @@ parse_arguments() {
 # Handle shell completion requests
 handle_completion() {
     local shell="$1"
+    
+    # Initialize packages for shells that need dynamic completions
+    # All shells use PACKAGES array in their completion files
+    if ! initialize_packages; then
+        log_error "Failed to initialize packages for completion"
+        return 1
+    fi
+    
     case "$shell" in
         bash)
             show_bash_completion
@@ -5590,321 +5598,59 @@ main() {
 # Usage: source <(dot --completion bash) or source <(dot --completion zsh)
 
 show_bash_completion() {
-    cat << 'EOF'
-# Dotfiles management wrapper function
-d() {
-    local cmd="${1:-help}"
-    if (($#)); then shift; fi
-
-    case "$cmd" in
-        h|health) "$HOME/.dotfiles/dot" health "$@" ;;
-        s|status) "$HOME/.dotfiles/dot" status "$@" ;;
-        u|update) "$HOME/.dotfiles/dot" update "$@" ;;
-        d|diff)   "$HOME/.dotfiles/dot" diff "$@" ;;
-        b|backup) "$HOME/.dotfiles/dot" backup "$@" ;;
-        backups)  "$HOME/.dotfiles/dot" backups "$@" ;;
-        r|restore) "$HOME/.dotfiles/dot" restore "$@" ;;
-        c|clean)  "$HOME/.dotfiles/dot" clean "$@" ;;
-        i|install) "$HOME/.dotfiles/dot" install "$@" ;;
-        security) "$HOME/.dotfiles/dot" security "$@" ;;
-        cd)       builtin cd "$HOME/.dotfiles" || return ;;
-        *)        "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
-    esac
-}
-
-# Bash completion for dot script
-_dot_completion() {
-    local cur="${COMP_WORDS[COMP_CWORD]}"
-    local prev="${COMP_WORDS[COMP_CWORD-1]}"
-
-    # Complete commands
-    if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
-        local commands="install status health update diff backup backups restore clean uninstall enable disable packages security sync pull"
-        local flags="-h --help -v --verbose -vv"
-        # Bash 3.2 compatible (no mapfile)
-        COMPREPLY=()
-        while IFS= read -r word; do
-            COMPREPLY+=("$word")
-        done < <(compgen -W "$commands $flags" -- "$cur")
+    local completion_file="$DOTFILES_DIR/completions/dot.bash"
+    if [[ -f "$completion_file" ]]; then
+        cat "$completion_file"
     else
-        # Complete flags for commands that support verbosity
-        case "$prev" in
-            install|update|health)
-                local flags="-v --verbose -vv"
-                COMPREPLY=()
-                while IFS= read -r word; do
-                    COMPREPLY+=("$word")
-                done < <(compgen -W "$flags" -- "$cur")
-                ;;
-            enable|disable)
-                # Generate package list from manifests dynamically
-                local packages=""
-                for pkg in "${PACKAGES[@]}"; do
-                    packages="$packages $pkg"
-                done
-                COMPREPLY=()
-                while IFS= read -r word; do
-                    COMPREPLY+=("$word")
-                done < <(compgen -W "$packages" -- "$cur")
-                ;;
-        esac
+        log_error "Completion file not found: $completion_file"
+        return 1
     fi
-}
-complete -F _dot_completion dot
-
-# Bash completion for d function wrapper
-_d_completion_bash() {
-    local cur="${COMP_WORDS[COMP_CWORD]}"
-    local prev="${COMP_WORDS[COMP_CWORD-1]}"
-
-    # Complete commands
-    if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
-        local commands="h health s status u update b backup c clean i install uninstall cd"
-        local flags="-h --help -v --verbose -vv"
-        # Bash 3.2 compatible (no mapfile)
-        COMPREPLY=()
-        while IFS= read -r word; do
-            COMPREPLY+=("$word")
-        done < <(compgen -W "$commands $flags" -- "$cur")
-    else
-        # Complete flags for commands that support verbosity
-        case "$prev" in
-            i|install|u|update|h|health)
-                local flags="-v --verbose -vv"
-                COMPREPLY=()
-                while IFS= read -r word; do
-                    COMPREPLY+=("$word")
-                done < <(compgen -W "$flags" -- "$cur")
-                ;;
-        esac
-    fi
-}
-complete -F _d_completion_bash d
-EOF
 }
 
 show_zsh_completion() {
-    cat << 'EOF'
-# Dotfiles management wrapper function
-d() {
-    local cmd="${1:-help}"
-    if (($#)); then shift; fi
-
-    case "$cmd" in
-        h|health) "$HOME/.dotfiles/dot" health "$@" ;;
-        s|status) "$HOME/.dotfiles/dot" status "$@" ;;
-        u|update) "$HOME/.dotfiles/dot" update "$@" ;;
-        d|diff)   "$HOME/.dotfiles/dot" diff "$@" ;;
-        b|backup) "$HOME/.dotfiles/dot" backup "$@" ;;
-        backups)  "$HOME/.dotfiles/dot" backups "$@" ;;
-        r|restore) "$HOME/.dotfiles/dot" restore "$@" ;;
-        c|clean)  "$HOME/.dotfiles/dot" clean "$@" ;;
-        i|install) "$HOME/.dotfiles/dot" install "$@" ;;
-        security) "$HOME/.dotfiles/dot" security "$@" ;;
-        cd)       builtin cd "$HOME/.dotfiles" || return ;;
-        *)        "$HOME/.dotfiles/dot" "$cmd" "$@" ;;
-    esac
-}
-
-# Zsh completion for dot script
-_dot_completion() {
-    local curcontext="$curcontext" state line
-    typeset -A opt_args
-
-    _arguments -C \
-        '(-h --help)'{-h,--help}'[Show help message]' \
-        '(-v --verbose)'{-v,--verbose}'[Verbose output (can be repeated)]' \
-        '-vv[Very verbose output]' \
-        '1: :->command' \
-        '*::arg:->args'
-
-    case $state in
-        command)
-            local -a commands
-            commands=(
-                'install:Install dotfiles using GNU Stow'
-                'status:Show installation status and recent backups'
-                'health:Run comprehensive diagnostics'
-                'update:Update configurations and reinstall'
-                'diff:Preview changes before applying'
-                'backup:Create backup of existing files'
-                'backups:List all available backups with details'
-                'restore:Restore from backup (default: latest)'
-                'clean:Clean up backup directories'
-                'uninstall:Remove dotfiles symlinks'
-                'enable:Enable a specific package'
-                'disable:Disable a specific package'
-                'packages:List all packages and their status'
-                'security:Run security audit on dotfiles'
-            )
-            _describe 'dot command' commands
-            ;;
-        args)
-            case $words[1] in
-                install|update|health)
-                    _arguments \
-                        '(-v --verbose)'{-v,--verbose}'[Verbose output]' \
-                        '-vv[Very verbose output]'
-                    ;;
-                enable|disable)
-                    # Complete with package names from manifests
-                    local -a packages
-                    packages=()
-                    for pkg in "${PACKAGES[@]}"; do
-                        local desc
-                        desc=$(get_package_description "$pkg" 2>/dev/null || echo "")
-                        if [[ -n "$desc" ]]; then
-                            packages+=("$pkg:$desc")
-                        else
-                            packages+=("$pkg")
-                        fi
-                    done
-                    _describe 'package' packages
-                    ;;
-                restore)
-                    # Complete with available backup IDs
-                    local -a backups
-                    backups=('latest:Most recent backup')
-                    while IFS= read -r dir; do
-                        local name
-                        name=$(basename "$dir")
-                        local timestamp="${name#dotfiles-backup-}"
-                        backups+=("$timestamp:Backup $timestamp")
-                    done < <(find "$HOME/.dotfiles/backups" -type d -name "dotfiles-backup-*" 2>/dev/null | sort -r)
-                    _describe 'backup' backups
-                    ;;
-            esac
-            ;;
-    esac
-}
-compdef _dot_completion dot
-
-# Zsh completion for d function wrapper
-_d_completion() {
-    local curcontext="$curcontext" state line
-    typeset -A opt_args
-
-    _arguments -C \
-        '(-h --help)'{-h,--help}'[Show help message]' \
-        '(-v --verbose)'{-v,--verbose}'[Verbose output (can be repeated)]' \
-        '-vv[Very verbose output]' \
-        '1: :->command' \
-        '*::arg:->args'
-
-    case $state in
-        command)
-            local -a commands
-            commands=(
-                'h:health - Comprehensive diagnostics'
-                'health:Comprehensive diagnostics'
-                's:status - Quick status check'
-                'status:Quick status check'
-                'u:update - Update and reinstall'
-                'update:Update and reinstall'
-                'd:diff - Preview changes'
-                'diff:Preview changes'
-                'b:backup - Create backup'
-                'backup:Create backup'
-                'backups:List all available backups'
-                'r:restore - Restore from backup'
-                'restore:Restore from backup'
-                'c:clean - Clean up old backups'
-                'clean:Clean up old backups'
-                'i:install - Install dotfiles'
-                'install:Install dotfiles'
-                'uninstall:Remove dotfiles'
-                'cd:Change to dotfiles directory'
-            )
-            _describe 'dotfiles command' commands
-            ;;
-        args)
-            case $words[1] in
-                i|install|u|update|h|health)
-                    _arguments \
-                        '(-v --verbose)'{-v,--verbose}'[Verbose output]' \
-                        '-vv[Very verbose output]'
-                    ;;
-            esac
-            ;;
-    esac
-}
-compdef _d_completion d
-EOF
+    local completion_file="$DOTFILES_DIR/completions/dot.zsh"
+    if [[ -f "$completion_file" ]]; then
+        cat "$completion_file"
+    else
+        log_error "Completion file not found: $completion_file"
+        return 1
+    fi
 }
 
 show_fish_completion() {
-    cat << EOF
-# Fish completion for dot command
-complete -c dot -f
-complete -c dot -s h -l help -d "Show help message"
-complete -c dot -s v -l verbose -d "Verbose output (can be repeated)"
-complete -c dot -o vv -d "Very verbose output"
+    local completion_file="$DOTFILES_DIR/completions/dot.fish"
+    if [[ ! -f "$completion_file" ]]; then
+        log_error "Completion file not found: $completion_file"
+        return 1
+    fi
 
-# Commands
-complete -c dot -n "__fish_use_subcommand" -a "install" -d "Install dotfiles using GNU Stow"
-complete -c dot -n "__fish_use_subcommand" -a "status" -d "Show installation status and recent backups"
-complete -c dot -n "__fish_use_subcommand" -a "health" -d "Run comprehensive diagnostics"
-complete -c dot -n "__fish_use_subcommand" -a "update" -d "Update configurations and reinstall"
-complete -c dot -n "__fish_use_subcommand" -a "backup" -d "Create backup of existing files"
-complete -c dot -n "__fish_use_subcommand" -a "backups" -d "List all available backups with details"
-complete -c dot -n "__fish_use_subcommand" -a "restore" -d "Restore from backup (default: latest)"
-complete -c dot -n "__fish_use_subcommand" -a "clean" -d "Clean up backup directories"
-complete -c dot -n "__fish_use_subcommand" -a "uninstall" -d "Remove dotfiles symlinks"
-complete -c dot -n "__fish_use_subcommand" -a "enable" -d "Enable a specific package"
-complete -c dot -n "__fish_use_subcommand" -a "disable" -d "Disable a specific package"
-complete -c dot -n "__fish_use_subcommand" -a "packages" -d "List all packages and their status"
-
-# Verbosity flags for install/update/health
-complete -c dot -n "__fish_seen_subcommand_from install update health" -s v -l verbose -d "Verbose output"
-complete -c dot -n "__fish_seen_subcommand_from install update health" -o vv -d "Very verbose output"
-
-# Package completions for enable/disable (generated from manifests)
-EOF
-
-    # Generate package completions dynamically from manifests
-    for pkg in "${PACKAGES[@]}"; do
-        local desc
-        desc=$(get_package_description "$pkg" 2>/dev/null || echo "")
-        if [[ -n "$desc" ]]; then
-            # Escape quotes in description for fish completion
-            desc="${desc//\"/\\\"}"
-            echo "complete -c dot -n \"__fish_seen_subcommand_from enable disable\" -a \"$pkg\" -d \"$desc\""
+    # Read file and inject dynamic package completions
+    local found_marker=false
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ "$line" =~ "# Package completions for enable/disable" ]]; then
+            # Output the marker line and comment
+            echo "$line"
+            echo "# This section is dynamically generated by the dot script"
+            # Generate package completions dynamically from manifests
+            for pkg in "${PACKAGES[@]}"; do
+                local desc
+                desc=$(get_package_description "$pkg" 2>/dev/null || echo "")
+                if [[ -n "$desc" ]]; then
+                    # Escape quotes in description for fish completion
+                    desc="${desc//\"/\\\"}"
+                    echo "complete -c dot -n \"__fish_seen_subcommand_from enable disable\" -a \"$pkg\" -d \"$desc\""
+                else
+                    echo "complete -c dot -n \"__fish_seen_subcommand_from enable disable\" -a \"$pkg\""
+                fi
+            done
+            found_marker=true
+            # Skip the placeholder comment line in the file
+            IFS= read -r skip_line || true
         else
-            echo "complete -c dot -n \"__fish_seen_subcommand_from enable disable\" -a \"$pkg\""
+            # Output all other lines as-is
+            echo "$line"
         fi
-    done
-
-    cat << 'EOF'
-
-# Fish completion for d function wrapper
-complete -c d -f
-complete -c d -s h -l help -d "Show help message"
-complete -c d -s v -l verbose -d "Verbose output (can be repeated)"
-complete -c d -o vv -d "Very verbose output"
-
-# Commands with aliases
-complete -c d -n "__fish_use_subcommand" -a "h" -d "health - Comprehensive diagnostics"
-complete -c d -n "__fish_use_subcommand" -a "health" -d "Comprehensive diagnostics"
-complete -c d -n "__fish_use_subcommand" -a "s" -d "status - Quick status check"
-complete -c d -n "__fish_use_subcommand" -a "status" -d "Quick status check"
-complete -c d -n "__fish_use_subcommand" -a "u" -d "update - Update and reinstall"
-complete -c d -n "__fish_use_subcommand" -a "update" -d "Update and reinstall"
-complete -c d -n "__fish_use_subcommand" -a "b" -d "backup - Create backup"
-complete -c d -n "__fish_use_subcommand" -a "backup" -d "Create backup"
-complete -c d -n "__fish_use_subcommand" -a "backups" -d "List all available backups"
-complete -c d -n "__fish_use_subcommand" -a "r" -d "restore - Restore from backup"
-complete -c d -n "__fish_use_subcommand" -a "restore" -d "Restore from backup"
-complete -c d -n "__fish_use_subcommand" -a "c" -d "clean - Clean up old backups"
-complete -c d -n "__fish_use_subcommand" -a "clean" -d "Clean up old backups"
-complete -c d -n "__fish_use_subcommand" -a "i" -d "install - Install dotfiles"
-complete -c d -n "__fish_use_subcommand" -a "install" -d "Install dotfiles"
-complete -c d -n "__fish_use_subcommand" -a "uninstall" -d "Remove dotfiles"
-complete -c d -n "__fish_use_subcommand" -a "cd" -d "Change to dotfiles directory"
-
-# Verbosity flags for d function
-complete -c d -n "__fish_seen_subcommand_from i install u update h health" -s v -l verbose -d "Verbose output"
-complete -c d -n "__fish_seen_subcommand_from i install u update h health" -o vv -d "Very verbose output"
-EOF
+    done < "$completion_file"
 }
 
 # Run main function with all arguments
