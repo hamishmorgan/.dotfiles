@@ -8,24 +8,72 @@
 # - Avoids process substitution where possible for portability
 # - All array operations use bash 3.2 compatible syntax
 
-# Set DOTFILES_DIR before sourcing libraries
+# Verify bash version
+if [[ "${BASH_VERSINFO[0]}" -lt 3 || ( "${BASH_VERSINFO[0]}" -eq 3 && "${BASH_VERSINFO[1]}" -lt 2 ) ]]; then
+    echo "Error: This script requires bash 3.2 or later"
+    echo "Current version: $BASH_VERSION"
+    exit 1
+fi
+
+# Safer glob handling
+shopt -s nullglob      # Empty expansion for non-matching globs
+shopt -s extglob       # Extended pattern matching
+
+# Note: Not using 'set -e' for better error handling control
+# Errors are explicitly checked and handled with context
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Status symbols
+SYMBOL_SUCCESS='✓'
+SYMBOL_ERROR='✗'
+SYMBOL_WARNING='⚠'
+SYMBOL_INFO='∙'
+
+# Configuration
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly LIB_DIR="$DOTFILES_DIR/lib"
-
-# Source library modules (in dependency order)
-# Note: common.sh handles bash version check and shopt settings
-source "$LIB_DIR/common.sh"
 readonly PACKAGES_DIR="$DOTFILES_DIR/packages"
-source "$LIB_DIR/version.sh"  # Depends on common.sh (for command_exists)
-source "$LIB_DIR/output.sh"   # Defines colors, symbols, verbosity; uses common.sh utilities
-source "$LIB_DIR/toml.sh"     # Depends on common.sh and output.sh (for logging)
 
-# Backup directory (dynamically set per operation)
+# Global variable for validator error output (used by run_validator)
+VALIDATOR_ERROR_OUTPUT=""
+
+# Backup retention policy (configurable via environment variables)
+readonly MAX_BACKUPS_TO_DISPLAY="${DOTFILES_MAX_BACKUPS_TO_DISPLAY:-5}"     # Status output
+readonly MAX_BACKUPS_TO_KEEP="${DOTFILES_MAX_BACKUPS_TO_KEEP:-10}"          # Auto cleanup threshold
+
+# Display limits
+readonly RESTORE_DISPLAY_LIMIT="${DOTFILES_RESTORE_DISPLAY_LIMIT:-20}"      # Restore preview
+
+# Timeout values in seconds
+readonly GIT_TIMEOUT="${DOTFILES_GIT_TIMEOUT:-60}"                           # Git operations
+readonly CURL_TIMEOUT="${DOTFILES_CURL_TIMEOUT:-30}"                         # Curl downloads
+
+# Security
+readonly SECRET_FILE_MODE="${DOTFILES_SECRET_FILE_MODE:-600}"                # Secret file permissions
+
+# Output formatting
+readonly OUTPUT_PREFIX="${DOTFILES_OUTPUT_PREFIX:-│ }"                       # Indentation character
+
+# Backup paths
+readonly BACKUP_DIR_PREFIX="${DOTFILES_BACKUP_DIR_PREFIX:-backups/dotfiles-backup}"
+readonly RESTORE_SAFETY_PREFIX="${DOTFILES_RESTORE_SAFETY_PREFIX:-backups/dotfiles-pre-restore}"
 BACKUP_DIR="$DOTFILES_DIR/${BACKUP_DIR_PREFIX}-$(date +%s)"
 
+# Unit conversion constants
+readonly SECONDS_PER_DAY=86400
+readonly KB_TO_MB=1024
+
+# Track installation state for rollback
+INSTALLED_PACKAGES=()
+INSTALLATION_IN_PROGRESS=false
+ROLLBACK_STACK=()
+
 # Add action to rollback stack
-# Note: INSTALLED_PACKAGES, INSTALLATION_IN_PROGRESS, and ROLLBACK_STACK are
-# defined in lib/common.sh (sourced above)
 add_rollback() {
     local action="$1"
     ROLLBACK_STACK+=("$action")
@@ -236,6 +284,16 @@ initialize_packages() {
     return 0
 }
 
+# Helper function to remove quotes and whitespace from strings
+# Used for cleaning file paths extracted from TOML arrays
+# Note: This removes ALL quotes, including quotes that might be part of the value
+# For TOML values, use get_toml_value() which handles quotes correctly
+trim_quotes_and_whitespace() {
+    local input="$1"
+    # Remove leading/trailing whitespace, single quotes, and double quotes
+    echo "$input" | sed 's/^["'\''[:space:]]*//; s/["'\''[:space:]]*$//'
+}
+
 # Get package files (manifest-only)
 # Get files/directories for each package (for status display)
 # Note: Returns macOS-specific paths for cross-platform packages (cursor).
@@ -333,6 +391,325 @@ get_required_deps() {
     esac
 }
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Package Manifest Functions (TOML parsing)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Helper function to escape regex special characters in section names
+escape_regex_special_chars() {
+    local input="$1"
+    echo "$input" | sed 's/\[/\\[/g; s/\]/\\]/g; s/\./\\./g; s/\*/\\*/g; s/\+/\\+/g; s/\?/\\?/g; s/\^/\\^/g; s/\$/\\$/g'
+}
+
+# Get TOML value from section (empty string for top-level)
+# Checks for key existence to distinguish missing vs empty
+get_toml_value() {
+    local file="$1"
+    local section="$2"  # Empty string for top-level
+    local key="$3"
+
+    if [[ ! -f "$file" ]]; then
+        return 1
+    fi
+
+    # Handle top-level vs section
+    if [[ -z "$section" ]]; then
+        # Top-level key - search before first [ section
+        local section_content
+        section_content=$(sed '/^\[/,$d' "$file")
+    else
+        # Escape regex special characters in section name for safe matching
+        local escaped_section
+        escaped_section=$(escape_regex_special_chars "$section")
+
+        # Extract section content
+        # Only remove last line if it starts with [ (next section), not if it's content
+        section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file" | sed -e '1d' -e '/^\[/,$d')
+    fi
+
+    # Check if key exists at all (even if empty)
+    # Escape regex special characters in key for safe matching
+    local escaped_key
+    escaped_key=$(escape_regex_special_chars "$key")
+    local key_exists
+    key_exists=$(echo "$section_content" | grep -c "^$escaped_key\s*=" 2>/dev/null || echo "0")
+    # Remove any whitespace/newlines from grep output
+    key_exists="${key_exists//[[:space:]]/}"
+
+    if [[ "$key_exists" -eq 0 ]]; then
+        return 1  # Key doesn't exist - use default
+    fi
+
+    # Extract key value, strip comments and trim whitespace
+    # Use escaped key for safe pattern matching (already computed above)
+    local value_line
+    value_line=$(echo "$section_content" | \
+        grep "^$escaped_key\s*=" | \
+        sed 's/#.*$//; s/^\s*//; s/\s*$//' | \
+        head -1)
+
+    if [[ -z "$value_line" ]]; then
+        return 1
+    fi
+
+    # Extract value (handle quoted and unquoted)
+    local value
+    # Extract everything after first = sign, then trim leading whitespace
+    value="${value_line#*=}"
+    # Trim leading whitespace (handles spaces, tabs, etc.)
+    value="${value#"${value%%[![:space:]]*}"}"
+
+    # Remove quotes if present (handles both single and double quotes)
+    # Note: This does not handle escaped quotes within values - document limitation if needed
+    if [[ "$value" =~ ^[\"'].*[\"']$ ]]; then
+        # Remove leading and trailing quotes (both single and double)
+        # Use separate checks for each quote type to avoid shellcheck issues
+        if [[ "$value" =~ ^\".*\"$ ]]; then
+            value="${value#\"}"
+            value="${value%\"}"
+        elif [[ "$value" =~ ^\'.*\'$ ]]; then
+            value="${value#\'}"
+            value="${value%\'}"
+        fi
+    fi
+
+    # Return empty string if key exists but value is empty (explicit empty)
+    # Caller checks return code: 0 = key exists (even if empty), 1 = key missing
+    echo "$value"
+    return 0
+}
+
+# Get TOML array (supports single-line and multi-line arrays)
+# Uses balanced bracket matching to handle nested brackets correctly
+# Supports top-level keys (empty section string)
+get_toml_array() {
+    local file="$1"
+    local section="$2"  # Empty string for top-level
+    local key="$3"
+
+    if [[ ! -f "$file" ]]; then
+        return 1
+    fi
+
+    # Handle top-level vs section
+    if [[ -z "$section" ]]; then
+        # Top-level key - search before first [ section
+        local section_content
+        section_content=$(sed '/^\[/,$d' "$file")
+    else
+        # Extract section content
+        local escaped_section
+        escaped_section=$(escape_regex_special_chars "$section")
+        # Get content from section header to next section or end of file
+        # Remove section header line itself, keep content lines
+        section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file" | sed -e '1d' -e '/^\[/,$d')
+    fi
+
+    # Find array declaration (key = [...] or key = [ ... ])
+    # Escape key for safe regex matching
+    local escaped_key
+    escaped_key=$(escape_regex_special_chars "$key")
+    local array_start_line
+    array_start_line=$(echo "$section_content" | grep -n "^$escaped_key\s*=" | cut -d: -f1 | head -1)
+
+    if [[ -z "$array_start_line" ]]; then
+        return 1
+    fi
+
+    # Extract lines starting from array declaration
+    # Stop at closing bracket to avoid processing subsequent lines
+    local array_lines
+    array_lines=$(echo "$section_content" | sed -n "${array_start_line},\$p" | sed "/\]/q")
+
+    # Parse array using balanced bracket matching
+    local result_value=""
+    local in_quotes=false
+    local quote_char=""
+    local bracket_depth=0
+    local array_started=false
+    local current_element=""
+    local line_num=0
+
+    # Process character by character (bash 3.2 compatible)
+    while IFS= read -r line; do
+        ((line_num++))
+
+        # Skip comment lines
+        if [[ "$line" =~ ^[[:space:]]*# ]]; then
+            continue
+        fi
+
+        # Process each character (inline comments handled within loop to respect quotes)
+        for ((i=0; i<${#line}; i++)); do
+            local char="${line:$i:1}"
+
+            # If we see a '#' outside of quotes, treat as comment and break
+            if [[ "$char" == "#" && "$in_quotes" == false ]]; then
+                break
+            fi
+
+            case "$char" in
+                '[')
+                    if [[ "$in_quotes" == false ]]; then
+                        if [[ "$array_started" == false ]]; then
+                            array_started=true
+                        fi
+                        ((bracket_depth++))
+                    else
+                        current_element="$current_element$char"
+                    fi
+                    ;;
+                ']')
+                    if [[ "$in_quotes" == false ]]; then
+                        ((bracket_depth--))
+                        if [[ $bracket_depth -eq 0 && "$array_started" == true ]]; then
+                            # End of array
+                            if [[ -n "$current_element" ]]; then
+                                current_element=$(echo "$current_element" | sed 's/^\s*//; s/\s*$//')
+                                if [[ -n "$current_element" ]]; then
+                                    if [[ -n "$result_value" ]]; then
+                                        result_value="$result_value,$current_element"
+                                    else
+                                        result_value="$current_element"
+                                    fi
+                                fi
+                            fi
+                            # Remove quotes and return
+                            # Use parameter expansion to avoid sed character class issues
+                            result_value="${result_value//\"/}"
+                            result_value="${result_value//\'/}"
+                            # Remove spaces around commas using parameter expansion (bash 3.2 compatible)
+                            local previous_value
+                            while true; do
+                                previous_value="$result_value"
+                                result_value="${result_value// ,/,}"
+                                result_value="${result_value//, /,}"
+                                # Stop if no changes were made
+                                [[ "$result_value" == "$previous_value" ]] && break
+                            done
+                            echo "$result_value"
+                            return 0
+                        fi
+                    else
+                        current_element="$current_element$char"
+                    fi
+                    ;;
+                '"'|"'")
+                    if [[ "$in_quotes" == false ]]; then
+                        in_quotes=true
+                        quote_char="$char"
+                        current_element="$current_element$char"
+                    elif [[ "$char" == "$quote_char" ]]; then
+                        # Closing quote - add to current_element BEFORE toggling in_quotes
+                        current_element="$current_element$char"
+                        in_quotes=false
+                        quote_char=""
+                    else
+                        # Different quote type (single vs double) - treat as regular character
+                        current_element="$current_element$char"
+                    fi
+                    ;;
+                ',')
+                    if [[ "$in_quotes" == false && "$array_started" == true && $bracket_depth -eq 1 ]]; then
+                        # Comma separator at array level
+                        current_element=$(echo "$current_element" | sed 's/^\s*//; s/\s*$//')
+                        if [[ -n "$current_element" ]]; then
+                            if [[ -n "$result_value" ]]; then
+                                result_value="$result_value,$current_element"
+                            else
+                                result_value="$current_element"
+                            fi
+                        fi
+                        current_element=""
+                    else
+                        current_element="$current_element$char"
+                    fi
+                    ;;
+                *)
+                    # Add character if we're inside the array (started) OR if we're inside quotes
+                    # This ensures characters inside quoted strings are captured even before array_started is set
+                    if [[ "$array_started" == true || "$in_quotes" == true ]]; then
+                        current_element="$current_element$char"
+                    fi
+                    ;;
+            esac
+        done
+
+        # Add newline if in quotes (for multi-line strings)
+        if [[ "$in_quotes" == true ]]; then
+            current_element="$current_element "
+        fi
+    done <<< "$array_lines"
+
+    # Array not closed properly
+    if [[ $bracket_depth -ne 0 ]]; then
+        log_error "Unbalanced brackets in array (manifest: $file, section: $section, key: $key)"
+        return 1
+    fi
+
+    # Handle final element if array was properly closed
+    # (in case array ends without trailing comma: [ "a", "b" ])
+    if [[ -n "$current_element" ]]; then
+        current_element=$(echo "$current_element" | sed 's/^\s*//; s/\s*$//')
+        if [[ -n "$current_element" ]]; then
+            if [[ -n "$result_value" ]]; then
+                result_value="$result_value,$current_element"
+            else
+                result_value="$current_element"
+            fi
+        fi
+    fi
+
+    # Output result (even if empty array [])
+    if [[ -n "$result_value" ]]; then
+        # Use parameter expansion to avoid sed character class issues
+        result_value="${result_value//\"/}"
+        result_value="${result_value//\'/}"
+        # Remove spaces around commas using parameter expansion (bash 3.2 compatible)
+        local previous_value
+        while true; do
+            previous_value="$result_value"
+            result_value="${result_value// ,/,}"
+            result_value="${result_value//, /,}"
+            # Stop if no changes were made
+            [[ "$result_value" == "$previous_value" ]] && break
+        done
+        echo "$result_value"
+    else
+        echo ""  # Empty array
+    fi
+    return 0
+}
+
+# Apply platform-specific target override from manifest
+# Bash 3.2 compatible
+apply_platform_target_override() {
+    local manifest="$1"
+    local platform="$2"
+
+    if [[ "$platform" == "linux" ]]; then
+        local linux_target
+        linux_target=$(get_toml_value "$manifest" "linux" "target")
+        if [[ -n "$linux_target" ]]; then
+            # Expand ~ to $HOME if present
+            if [[ "$linux_target" == ~* ]]; then
+                linux_target="${linux_target/#\~/$HOME}"
+            fi
+            PACKAGE_TARGET="$linux_target"
+        fi
+    elif [[ "$platform" == "macos" ]]; then
+        local macos_target
+        macos_target=$(get_toml_value "$manifest" "macos" "target")
+        if [[ -n "$macos_target" ]]; then
+            # Expand ~ to $HOME if present
+            if [[ "$macos_target" == ~* ]]; then
+                macos_target="${macos_target/#\~/$HOME}"
+            fi
+            PACKAGE_TARGET="$macos_target"
+        fi
+    fi
+}
+
 # Load package manifest (manifest.toml)
 # Sets global variables: PACKAGE_NAME, PACKAGE_DESCRIPTION, PACKAGE_METHOD, PACKAGE_TARGET, PACKAGE_FILES
 load_package_manifest() {
@@ -420,6 +797,280 @@ load_package_manifest() {
         return 1  # Invalid manifest - files required
     fi
 
+    return 0
+}
+
+# Get TOML inline table (parses { command = "...", args = [...] })
+# Returns: "command|arg1,arg2,arg3" format (pipe-separated, args comma-separated)
+# Bash 3.2 compatible character-by-character parsing
+get_toml_inline_table() {
+    local file="$1"
+    local section="$2"  # Empty string for top-level
+    local key="$3"
+
+    if [[ ! -f "$file" ]]; then
+        return 1
+    fi
+
+    # Extract section content
+    local section_content
+    if [[ -z "$section" ]]; then
+        section_content=$(sed '/^\[/,$d' "$file")
+    else
+        local escaped_section
+        escaped_section=$(escape_regex_special_chars "$section")
+        # Extract from [section] to next [ or end of file
+        section_content=$(sed -n "/\[$escaped_section\]/,/^\[/p" "$file")
+        # Remove first line ([section]) and last line if it starts with [ (next section)
+        section_content=$(echo "$section_content" | sed '1d')
+        if echo "$section_content" | grep -q '^\['; then
+            section_content=$(echo "$section_content" | sed '$d')
+        fi
+    fi
+
+    # Find inline table declaration (key = { ... })
+    # Handle quoted keys like ".gitconfig" - match with quotes in the file
+    local table_start_line
+    # The key comes in as ".gitconfig" (without quotes from get_validation_patterns)
+    # Match it with quotes in the file: "key" = { ... }
+    # Escape special regex chars in the key for grep, then wrap in quotes
+    local escaped_key
+    escaped_key=$(escape_regex_special_chars "$key")
+    # Try with quotes first (most common case)
+    table_start_line=$(echo "$section_content" | grep -n "^\"$escaped_key\"\s*=" | cut -d: -f1 | head -1)
+    # If not found, try without quotes (for unquoted keys)
+    if [[ -z "$table_start_line" ]]; then
+        table_start_line=$(echo "$section_content" | grep -n "^$escaped_key\s*=" | cut -d: -f1 | head -1)
+    fi
+
+    if [[ -z "$table_start_line" ]]; then
+        return 1
+    fi
+
+    # Extract line with inline table
+    local table_line
+    table_line=$(echo "$section_content" | sed -n "${table_start_line}p" | sed 's/#.*$//')
+    # Extract everything after the first = sign (key = { ... })
+    # Use awk to split on first = and get everything after it
+    table_line=$(echo "$table_line" | awk -F'=' '{if (NF>1) {s=""; for(i=2;i<=NF;i++) {if(i>2) s=s"="; s=s$i}; print s}}')
+    # Trim leading/trailing whitespace (handle any whitespace characters)
+    table_line=$(echo "$table_line" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+
+    # Handle multi-line inline tables (they shouldn't exist in our simplified TOML, but handle just in case)
+    # Check if table closes on same line
+    local open_braces
+    open_braces=$(echo "$table_line" | grep -o '{' | wc -l | tr -d ' ')
+    local close_braces
+    close_braces=$(echo "$table_line" | grep -o '}' | wc -l | tr -d ' ')
+
+    if [[ -z "$open_braces" ]]; then
+        open_braces=0
+    fi
+    if [[ -z "$close_braces" ]]; then
+        close_braces=0
+    fi
+
+    # If braces don't match, read more lines (shouldn't happen in our simplified TOML)
+    if [[ $open_braces -gt $close_braces ]]; then
+        local line_count=$((table_start_line + 1))
+        while IFS= read -r next_line; do
+            table_line="$table_line$next_line"
+            open_braces=$(echo "$table_line" | grep -o '{' | wc -l | tr -d ' ')
+            close_braces=$(echo "$table_line" | grep -o '}' | wc -l | tr -d ' ')
+            if [[ -z "$open_braces" ]]; then
+                open_braces=0
+            fi
+            if [[ -z "$close_braces" ]]; then
+                close_braces=0
+            fi
+            if [[ $open_braces -eq $close_braces ]]; then
+                break
+            fi
+            ((line_count++))
+        done < <(echo "$section_content" | sed -n "$((table_start_line + 1)),\$p")
+    fi
+
+    # Parse inline table: { command = "value", args = [...] }
+    local in_quotes=false
+    local quote_char=""
+    local bracket_depth=0
+    local in_table=false
+    local current_field=""
+    local field_name=""
+    local command_value=""
+    local args_array=""
+    local in_array=false
+    local array_bracket_depth=0
+
+    # Process character by character
+    for ((i=0; i<${#table_line}; i++)); do
+        local char="${table_line:$i:1}"
+
+        case "$char" in
+            '{')
+                if [[ "$in_quotes" == false ]]; then
+                    in_table=true
+                    ((bracket_depth++))
+                    # Don't add { to current_field - it's not part of field name/value
+                else
+                    current_field="$current_field$char"
+                fi
+                ;;
+            '}')
+                if [[ "$in_quotes" == false ]]; then
+                    ((bracket_depth--))
+                    if [[ $bracket_depth -eq 0 ]]; then
+                        # End of table - process last field (if any)
+                        # Don't add } to current_field - it's not part of field value
+                        if [[ -n "$field_name" && -n "$current_field" ]]; then
+                            local trimmed_field_name
+                            trimmed_field_name=$(echo "$field_name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                            if [[ "$trimmed_field_name" == "command" ]]; then
+                                command_value=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+                            elif [[ "$trimmed_field_name" == "args" ]]; then
+                                args_array=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//')
+                            fi
+                        elif [[ -z "$field_name" && -n "$current_field" ]]; then
+                            # Handle case where last field wasn't processed yet (no trailing comma)
+                            # Try to determine field type from context - if current_field looks like an array, it's args
+                            if echo "$current_field" | grep -q '^\['; then
+                                args_array=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//')
+                            fi
+                        fi
+                        break
+                    else
+                        current_field="$current_field$char"
+                    fi
+                else
+                    current_field="$current_field$char"
+                fi
+                ;;
+            '[')
+                if [[ "$in_quotes" == false && "$in_table" == true ]]; then
+                    in_array=true
+                    ((array_bracket_depth++))
+                fi
+                current_field="$current_field$char"
+                ;;
+            ']')
+                if [[ "$in_quotes" == false && "$in_array" == true ]]; then
+                    ((array_bracket_depth--))
+                    if [[ $array_bracket_depth -eq 0 ]]; then
+                        in_array=false
+                    fi
+                fi
+                current_field="$current_field$char"
+                ;;
+            '=')
+                if [[ "$in_quotes" == false && "$in_table" == true && "$in_array" == false ]]; then
+                    # Field name before '=' (only if not inside array)
+                    field_name=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//')
+                    current_field=""
+                else
+                    current_field="$current_field$char"
+                fi
+                ;;
+            ',')
+                if [[ "$in_quotes" == false && "$in_table" == true && "$in_array" == false ]]; then
+                    # Field separator (only if not inside array)
+                            local trimmed_field_name
+                            trimmed_field_name=$(echo "$field_name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                            if [[ "$trimmed_field_name" == "command" ]]; then
+                                command_value=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+                            elif [[ "$trimmed_field_name" == "args" ]]; then
+                                args_array=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//')
+                            fi
+                            field_name=""
+                            current_field=""
+                else
+                    current_field="$current_field$char"
+                fi
+                ;;
+            '"'|"'")
+                if [[ "$in_quotes" == false ]]; then
+                    in_quotes=true
+                    quote_char="$char"
+                elif [[ "$char" == "$quote_char" ]]; then
+                    in_quotes=false
+                    quote_char=""
+                fi
+                current_field="$current_field$char"
+                ;;
+            *)
+                current_field="$current_field$char"
+                ;;
+        esac
+    done
+
+    # Parse args array if present
+    if [[ -n "$args_array" ]]; then
+        # Extract array content (remove brackets)
+        local args_content
+        args_content=$(echo "$args_array" | sed 's/^\[//; s/\]$//')
+
+        # Parse array elements (handle quoted strings)
+        local args_list=""
+        local in_quotes=false
+        local quote_char=""
+        local current_arg=""
+
+        for ((i=0; i<${#args_content}; i++)); do
+            local char="${args_content:$i:1}"
+
+            case "$char" in
+                ',')
+                    if [[ "$in_quotes" == false ]]; then
+                        # Arg separator
+                        current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+                        if [[ -n "$args_list" ]]; then
+                            args_list="$args_list,$current_arg"
+                        else
+                            args_list="$current_arg"
+                        fi
+                        current_arg=""
+                    else
+                        current_arg="$current_arg$char"
+                    fi
+                    ;;
+                '"'|"'")
+                    if [[ "$in_quotes" == false ]]; then
+                        in_quotes=true
+                        quote_char="$char"
+                    elif [[ "$char" == "$quote_char" ]]; then
+                        in_quotes=false
+                        quote_char=""
+                    fi
+                    current_arg="$current_arg$char"
+                    ;;
+                *)
+                    current_arg="$current_arg$char"
+                    ;;
+            esac
+        done
+
+        # Add last arg
+        if [[ -n "$current_arg" ]]; then
+            current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+            if [[ -n "$args_list" ]]; then
+                args_list="$args_list,$current_arg"
+            else
+                args_list="$current_arg"
+            fi
+        fi
+
+        args_array="$args_list"
+    fi
+
+    if [[ -z "$command_value" ]]; then
+        return 1
+    fi
+
+    # Return format: "command|arg1,arg2,arg3"
+    if [[ -n "$args_array" ]]; then
+        echo "$command_value|$args_array"
+    else
+        echo "$command_value|"
+    fi
     return 0
 }
 
@@ -667,15 +1318,6 @@ run_package_update() {
         return 0  # Continue, not an error
     fi
 
-    local verbosity="${VERBOSITY:-$VERBOSITY_TACITURN}"
-    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
-        if "$command" "${args[@]}" >/dev/null 2>&1; then
-            return 0
-        else
-            return 1
-        fi
-    fi
-
     # Execute update command (array expansion preserves spaces/quotes)
     # Output goes to stdout/stderr (not suppressed like validators)
     if "$command" "${args[@]}" 2>&1 | prefix_output "│ "; then
@@ -775,6 +1417,53 @@ discover_secret_configs() {
     find "$PACKAGES_DIR" -type f -name "*.secret" 2>/dev/null | sort
 }
 
+# Logging functions
+log_info() {
+    echo -e "${BLUE}${SYMBOL_INFO}${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}${SYMBOL_SUCCESS}${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}${SYMBOL_WARNING}${NC} $1" >&2
+}
+
+log_error() {
+    echo -e "${RED}${SYMBOL_ERROR}${NC} $1" >&2
+}
+
+# Prefix subcommand output for clarity with smart colorization
+# Colors lines based on content patterns (errors, warnings, info)
+prefix_output() {
+    local prefix="${1:-$OUTPUT_PREFIX}"
+    while IFS= read -r line; do
+        # Skip harmless stow BUG warnings about absolute path mismatches
+        if [[ "$line" =~ "BUG in find_stowed_path? Absolute/relative mismatch" ]]; then
+            continue
+        fi
+
+        # Pattern matching for line classification
+        if [[ "$line" =~ ^[[:space:]]*(ERROR|error|Error|FAIL|fail|failed|Failed|cannot|Cannot|unable|Unable|fatal|Fatal|FATAL) ]] || \
+           [[ "$line" =~ (error:|failed:|fatal:) ]]; then
+            # Error patterns - red
+            echo -e "${RED}${prefix}${line}${NC}"
+        elif [[ "$line" =~ ^[[:space:]]*(WARN|warn|Warn|WARNING|warning|Warning|BUG) ]] || \
+             [[ "$line" =~ (warning:|warn:) ]]; then
+            # Warning patterns - yellow
+            echo -e "${YELLOW}${prefix}${line}${NC}"
+        elif [[ "$line" =~ ^[[:space:]]*(SUCCESS|success|Success|OK|ok|Ok|DONE|done|Done|✓|✔) ]] || \
+             [[ "$line" =~ (success:|complete:|completed:) ]]; then
+            # Success patterns - green
+            echo -e "${GREEN}${prefix}${line}${NC}"
+        else
+            # Info/normal output - blue (subtle)
+            echo -e "${BLUE}${prefix}${NC}${line}"
+        fi
+    done
+}
+
 # Show usage information
 show_usage() {
     echo "Usage: $0 COMMAND [OPTIONS]"
@@ -800,23 +1489,23 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  -h, --help           Show this help message"
-    echo "  -q, --quiet          Quiet mode (errors only, level -1)"
+    echo "  -s, --silent         Silent mode (errors only, level -1)"
     echo "  -v, --verbose        Verbose output (level 1)"
     echo "  -vv                  Very verbose output (level 2)"
     echo ""
     echo "Verbosity Levels:"
-    echo "  $VERBOSITY_MUTE (-q, --quiet)       Quiet mode (errors only)"
-    echo "  $VERBOSITY_TACITURN (default)       Normal output (summary + errors/warnings)"
-    echo "  $VERBOSITY_LOQUACIOUS (-v, --verbose) Verbose (add package names and progress)"
-    echo "  $VERBOSITY_GARRULOUS (-vv)          Very verbose (show every file operation)"
+    echo "  -1 (-s, --silent)    Silent mode (errors only)"
+    echo "  0 (default)          Normal output (summary + errors/warnings)"
+    echo "  1 (-v, --verbose)    Verbose (add package names and progress)"
+    echo "  2 (-vv)              Very verbose (show every file operation)"
     echo ""
     echo "  Note: Last verbosity flag wins if multiple are specified"
     echo ""
     echo "Examples:"
     echo "  $0 install                # Install with summary only"
-    echo "  $0 install -q             # Install silently (errors only)"
     echo "  $0 install -v             # Install showing packages"
     echo "  $0 install -vv            # Install showing every file link"
+    echo "  $0 install --verbose --verbose  # Same as -vv"
     echo "  $0 health                 # Diagnostics table"
     echo "  $0 health -v              # Detailed diagnostics"
     echo "  $0 update                 # Update with summary"
@@ -835,13 +1524,136 @@ show_usage() {
     echo "  source (\$0 completion fish)  # for fish"
 }
 
+# Check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Portable timeout function (works on Linux and macOS)
+# Uses GNU timeout if available, otherwise falls back to Perl
+portable_timeout() {
+    local duration="$1"
+    shift
+
+    if command_exists timeout; then
+        timeout "$duration" "$@"
+    elif command_exists perl; then
+        # Perl-based timeout (portable, available on macOS)
+        perl -e 'alarm shift; exec @ARGV' "$duration" "$@"
+    else
+        # No timeout available, run command normally
+        "$@"
+    fi
+}
+
+# Check dependencies
+# Get minimum version for a tool (bash 3.2 compatible - no associative arrays)
+get_min_version() {
+    local tool="$1"
+    case "$tool" in
+        git)  echo "2.0.0" ;;
+        stow) echo "2.3" ;;
+        *)    echo "" ;;  # No minimum version requirement
+    esac
+}
+
+# Compare semantic versions (returns 0 if $1 >= $2)
+# Works on both Linux (GNU sort) and macOS (BSD sort)
+version_ge() {
+    local v1="$1"
+    local v2="$2"
+
+    # Try GNU sort -V (Linux)
+    if printf '%s\n%s\n' "$v2" "$v1" | sort -V -C 2>/dev/null; then
+        return 0
+    elif [[ $? -eq 2 ]]; then
+        # Exit code 2 means sort -V not supported, try gsort (Homebrew)
+        if command -v gsort >/dev/null 2>&1; then
+            printf '%s\n%s\n' "$v2" "$v1" | gsort -V -C
+            return $?
+        fi
+
+        # Fall back to bash-native comparison
+        _version_ge_fallback "$v1" "$v2"
+        return $?
+    else
+        # Exit code 1 means sort -V worked but comparison failed
+        return 1
+    fi
+}
+
+# Fallback version comparison for systems without sort -V (bash 3.2 compatible)
+# Returns 0 if $1 >= $2
+_version_ge_fallback() {
+    local v1="$1"
+    local v2="$2"
+
+    # Split versions by dots (IFS localized to read command)
+    IFS=. read -ra ver1 <<< "$v1"
+    IFS=. read -ra ver2 <<< "$v2"
+
+    # Compare each component
+    local max_len=${#ver1[@]}
+    [[ ${#ver2[@]} -gt $max_len ]] && max_len=${#ver2[@]}
+
+    local i
+    for ((i=0; i<max_len; i++)); do
+        local num1="${ver1[i]:-0}"
+        local num2="${ver2[i]:-0}"
+
+        # Strip letters from end (e.g., "3a" -> "3")
+        num1="${num1%%[a-z]*}"
+        num2="${num2%%[a-z]*}"
+
+        # Compare numerically
+        if ((10#$num1 > 10#$num2)); then
+            return 0
+        elif ((10#$num1 < 10#$num2)); then
+            return 1
+        fi
+    done
+
+    # All components equal
+    return 0
+}
+
+# Check specific tool version and return current version on stdout
+# Returns: 0 if version >= minimum, 1 otherwise
+check_tool_version() {
+    local tool="$1"
+    local min_version="$2"
+    local current_version=""
+
+    case "$tool" in
+        git)
+            current_version=$(git --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
+            ;;
+        stow)
+            current_version=$(stow --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
+            ;;
+    esac
+
+    # Output current version for caller
+    echo "$current_version"
+
+    if [[ -z "$current_version" ]]; then
+        return 1  # Could not determine version
+    fi
+
+    if version_ge "$current_version" "$min_version"; then
+        return 0  # Version is sufficient
+    else
+        return 1  # Version is too old
+    fi
+}
+
 # Check dependencies with version requirements
 # Usage: check_dependencies [verbosity]
 #   verbosity 0 (default): Only show errors
 #   verbosity 1 (-v): Show each tool being checked
 #   verbosity 2 (-vv): Show version details for each tool
 check_dependencies() {
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
+    local verbosity="${1:-0}"
 
     log_info "Checking dependencies..."
 
@@ -854,7 +1666,7 @@ check_dependencies() {
     for dep in $common_deps; do
         if ! command_exists "$dep"; then
             missing_deps+=("$dep")
-            [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]] && log_error "Checking $dep... not found"
+            [[ $verbosity -gt 0 ]] && log_error "Checking $dep... not found"
         else
             # Check version if minimum is specified
             local min_version
@@ -869,30 +1681,30 @@ check_dependencies() {
                 if [[ $check_status -eq 0 ]]; then
                     # Version is sufficient
                     satisfied_deps+=("$dep:$actual_version:$min_version")
-                    if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+                    if [[ $verbosity -gt 1 ]]; then
                         log_success "Checking $dep... ${actual_version} (>= ${min_version})"
-                    elif [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+                    elif [[ $verbosity -gt 0 ]]; then
                         log_success "Checking $dep... ${actual_version}"
                     fi
                 elif [[ -n "$actual_version" ]]; then
                     # Version was determined but is too old
                     outdated_deps+=("$dep (${actual_version} < ${min_version})")
-                    if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+                    if [[ $verbosity -gt 0 ]]; then
                         log_warning "Checking $dep... version too old (${actual_version} < ${min_version})"
                     fi
                 else
                     # Could not determine version - treat as outdated
                     outdated_deps+=("$dep (unknown < ${min_version})")
-                    if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+                    if [[ $verbosity -gt 0 ]]; then
                         log_warning "Checking $dep... unable to determine version"
                     fi
                 fi
             else
                 # No version requirement
                 satisfied_deps+=("$dep:present")
-                if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+                if [[ $verbosity -gt 1 ]]; then
                     log_success "Checking $dep... present (no version requirement)"
-                elif [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+                elif [[ $verbosity -gt 0 ]]; then
                     log_success "Checking $dep... present"
                 fi
             fi
@@ -935,7 +1747,7 @@ check_dependencies() {
     log_success "All dependencies satisfied"
 
     # Show summary at verbosity 1+
-    if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
+    if [[ $verbosity -gt 0 ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
         log_info "Total: ${#satisfied_deps[@]} dependencies satisfied"
     fi
 
@@ -1226,16 +2038,16 @@ merge_secret_configs() {
 
 # Install dotfiles using Stow with rollback support
 install_dotfiles() {
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
+    local verbosity="${1:-0}"
 
     # Set stow flags based on verbosity level
     local stow_flags="--restow --dir=$PACKAGES_DIR --target=$HOME"
-    if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+    if [[ $verbosity -gt 1 ]]; then
         stow_flags="--verbose $stow_flags"
     fi
 
     # Only show header in verbose mode
-    if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+    if [[ $verbosity -gt 0 ]]; then
         log_info "Installing dotfiles using Stow..."
     fi
 
@@ -1246,7 +2058,7 @@ install_dotfiles() {
         fi
 
         # Show package name at verbosity 1+
-        if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+        if [[ $verbosity -gt 0 ]]; then
             log_info "Installing package: $package"
         fi
 
@@ -1258,7 +2070,7 @@ install_dotfiles() {
         local stow_result
 
         # shellcheck disable=SC2086
-        if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+        if [[ $verbosity -gt 1 ]]; then
             # Level 2: Show all stow file operations
             # Try --restow first, but if it fails due to conflicts, try --adopt
             if stow_output=$(stow $stow_flags "$package" 2>&1); then
@@ -1270,7 +2082,7 @@ install_dotfiles() {
                 # Files exist but aren't symlinks - use --adopt to take ownership
                 # Remove --restow from flags when adopting (can't restow if files already exist)
                 local adopt_flags="--adopt --dir=$PACKAGES_DIR --target=$HOME"
-                if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+                if [[ $verbosity -gt 1 ]]; then
                     adopt_flags="--verbose $adopt_flags"
                 fi
                 log_info "Adopting existing files for $package..."
@@ -1281,18 +2093,20 @@ install_dotfiles() {
                     log_success "Installed $package (adopted existing files)"
                     stow_result=0
                 else
-                    echo "$adopt_output" | prefix_output "│ "
+                    # Show stow error output to stderr so it's visible even when piped
+                    echo "$adopt_output" | prefix_output "│ " >&2
                     log_error "Failed to install package: $package"
                     suggest_fixes "stow" "$package"
                     return 1
                 fi
             else
-                echo "$stow_output" | prefix_output "│ "
+                # Show stow error output to stderr so it's visible even when piped
+                echo "$stow_output" | prefix_output "│ " >&2
                 log_error "Failed to install package: $package"
                 suggest_fixes "stow" "$package"
                 return 1
             fi
-        elif [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+        elif [[ $verbosity -gt 0 ]]; then
             # Level 1+: Just show success per package (level 2 already handled above)
             if stow $stow_flags "$package" >/dev/null 2>&1; then
                 INSTALLED_PACKAGES+=("$package")
@@ -1439,7 +2253,7 @@ check_symlink() {
 # Optional verbosity parameter for enhanced output
 validate_package() {
     local package="$1"
-    local verbosity="${2:-$VERBOSITY_TACITURN}"
+    local verbosity="${2:-0}"
 
     if ! load_package_manifest "$package"; then
         log_error "Package '$package' missing manifest: $PACKAGES_DIR/$package/manifest.toml"
@@ -1454,7 +2268,7 @@ validate_package() {
     log_info "Validating $display_name configuration..."
 
     # At verbosity 2+, show which files are being validated
-    if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+    if [[ $verbosity -gt 1 ]]; then
         IFS=',' read -ra file_array <<< "$files"
         log_info "    Files to check: ${#file_array[@]}"
         for file in "${file_array[@]}"; do
@@ -1521,7 +2335,6 @@ get_backup_stats() {
 
 # Automatically cleanup old backups if threshold exceeded
 auto_cleanup_backups() {
-    local verbosity="${1:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
     local backup_count
     backup_count=$(get_backup_dirs | wc -l | tr -d ' ')
 
@@ -1530,11 +2343,9 @@ auto_cleanup_backups() {
     fi
 
     local backups_to_remove=$((backup_count - MAX_BACKUPS_TO_KEEP))
-    if [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
-        log_info "Auto cleanup: $backup_count backups found, keeping $MAX_BACKUPS_TO_KEEP most recent, removing $backups_to_remove old backup(s)"
-    fi
+    log_info "Auto cleanup: $backup_count backups found, keeping $MAX_BACKUPS_TO_KEEP most recent, removing $backups_to_remove old backup(s)"
 
-    clean_backups_silent "$MAX_BACKUPS_TO_KEEP" "$verbosity"
+    clean_backups_silent "$MAX_BACKUPS_TO_KEEP"
 
     return 0
 }
@@ -1542,7 +2353,6 @@ auto_cleanup_backups() {
 # Silent version of clean_backups for auto-cleanup
 clean_backups_silent() {
     local keep_count="${1:-$MAX_BACKUPS_TO_KEEP}"
-    local verbosity="${2:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
 
     # Avoid array operations in Bash 3.2 - use counter instead
     local total_backups=0
@@ -1576,9 +2386,7 @@ clean_backups_silent() {
     done <<< "$backup_list"
 
     if [[ $removed_count -gt 0 ]]; then
-        if [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
-            log_success "Removed $removed_count old backup(s)"
-        fi
+        log_success "Removed $removed_count old backup(s)"
     fi
 
     return 0
@@ -1614,33 +2422,16 @@ show_installation_summary() {
 }
 
 # Display a single tip message
-# Usage: show_tip "Run './dot health' to check" [verbosity]
+# Usage: show_tip "Run './dot health' to check"
 show_tip() {
-    local tip="$1"
-    local verbosity="${2:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
-
-    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
-        return
-    fi
-
-    echo -e "${BLUE}💡 Tip: $tip${NC}"
+    echo -e "${BLUE}💡 Tip: $1${NC}"
 }
 
 # Display titled tips section with multiple items
-# Usage: show_tips "Title" "Tip 1" "Tip 2" ... [verbosity]
+# Usage: show_tips "Title" "Tip 1" "Tip 2" ...
 show_tips() {
     local title="$1"
     shift
-
-    local verbosity="${VERBOSITY:-$VERBOSITY_TACITURN}"
-    if [[ $# -gt 0 ]] && [[ "${!#}" =~ ^-?[0-9]+$ ]]; then
-        verbosity="${!#}"
-        set -- "${@:1:$(($#-1))}"
-    fi
-
-    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
-        return
-    fi
 
     echo ""
     echo -e "${BLUE}💡 ${title}:${NC}"
@@ -1651,44 +2442,10 @@ show_tips() {
 }
 
 # Show installation status
-# Optional verbosity parameter for quiet mode support
 show_status() {
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
-
-    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
-        local total_files=0
-        local missing_files=0
-        local warning_files=0
-
-        for package in "${PACKAGES[@]}"; do
-            if ! load_package_manifest "$package" true; then
-                continue
-            fi
-
-            local files
-            files=$(get_package_files "$package")
-            files=$(expand_file_patterns "$package" "$files")
-            IFS=',' read -ra file_array <<< "$files"
-
-            for file in "${file_array[@]}"; do
-                file=$(echo "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-                ((total_files++))
-                if [[ ! -L "$HOME/$file" ]] && [[ ! -e "$HOME/$file" ]]; then
-                    ((missing_files++))
-                elif [[ -e "$HOME/$file" ]] && [[ ! -L "$HOME/$file" ]]; then
-                    ((warning_files++))
-                fi
-            done
-        done
-
-        if [[ $missing_files -gt 0 ]] || [[ $warning_files -gt 0 ]]; then
-            return 1
-        fi
-        return 0
-    fi
-
     show_command_header "Dotfiles Installation Status"
 
+    # Count files and issues
     local total_files=0
     local installed_files=0
     local warning_files=0
@@ -2361,7 +3118,7 @@ uninstall_dotfiles() {
 
 # Main command handlers
 cmd_install() {
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
+    local verbosity="${1:-0}"
     local start_time
     start_time=$(date +%s)
 
@@ -2369,7 +3126,7 @@ cmd_install() {
     INSTALLATION_IN_PROGRESS=true
 
     # Step 1: Backup
-    if ! run_step "1" "Backup Existing Files" "$verbosity" $VERBOSITY_GARRULOUS "Backup completed" \
+    if ! run_step "1" "Backup Existing Files" "$verbosity" 2 "Backup completed" \
          "Backup failed - aborting installation" backup_existing; then
         log_info "Backup directory: $BACKUP_DIR"
         INSTALLATION_IN_PROGRESS=false
@@ -2377,8 +3134,8 @@ cmd_install() {
     fi
 
     # Step 2: Install
-    show_numbered_section "2" "Installation Pipeline" "$verbosity"
-    if ! run_with_verbosity "$verbosity" $VERBOSITY_LOQUACIOUS "" run_installation_pipeline "$verbosity"; then
+    show_numbered_section "2" "Installation Pipeline"
+    if ! run_with_verbosity "$verbosity" 1 "" run_installation_pipeline "$verbosity"; then
         echo ""
         log_error "Installation pipeline failed"
         log_info "Run './dot health' to check installation state"
@@ -2387,7 +3144,7 @@ cmd_install() {
     fi
 
     # Show summary for normal output (level 0, not silent)
-    if [[ $verbosity -eq $VERBOSITY_TACITURN ]]; then
+    if [[ $verbosity -gt -1 ]] && [[ $verbosity -le 0 ]]; then
         show_installation_summary
     fi
     echo ""
@@ -2406,7 +3163,7 @@ cmd_install() {
         "Verify installation: $0 health"
     echo ""
 
-    auto_cleanup_backups "$verbosity"
+    auto_cleanup_backups
 
     return 0
 }
@@ -2415,7 +3172,7 @@ cmd_install() {
 # Validate configuration syntax (manifest-based)
 # Optional verbosity parameter for enhanced output
 validate_config_syntax() {
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
+    local verbosity="${1:-0}"
     log_info "Validating configuration syntax..."
 
     local errors=0
@@ -2439,7 +3196,7 @@ validate_config_syntax() {
         # Skip packages without validation entries
         if ! get_validation_patterns "$PACKAGES_DIR/$package/manifest.toml" >/dev/null 2>&1; then
             # At verbosity 2+, show which packages are being skipped
-            if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+            if [[ $verbosity -gt 1 ]]; then
                 log_info "    Package $package: No validation rules defined"
             fi
             continue
@@ -2459,7 +3216,7 @@ validate_config_syntax() {
             # Check if file exists
             if [[ ! -f "$full_path" ]]; then
                 # At verbosity 2+, show which files are being skipped
-                if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+                if [[ $verbosity -gt 1 ]]; then
                     log_info "    Skipping $file (not installed at $full_path)"
                 fi
                 continue  # Skip if not installed
@@ -2475,7 +3232,7 @@ validate_config_syntax() {
                 args_string="${validator_cmd#*|}"
 
                 # Show validator command at verbosity 2+
-                if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+                if [[ $verbosity -gt 1 ]]; then
                     log_info "    Validator: $cmd (args: ${args_string//file/<file>})"
                 fi
 
@@ -2507,23 +3264,21 @@ validate_config_syntax() {
                 if ! run_validator "$cmd" "${expanded_args[@]}"; then
                     log_error "Validation failed: $file"
                     if [[ -n "$VALIDATOR_ERROR_OUTPUT" ]]; then
-                        # Use while loop with parameter expansion instead of sed (shellcheck SC2001)
-                        while IFS= read -r line; do
-                            echo "    $line"
-                        done <<< "$VALIDATOR_ERROR_OUTPUT"
+                        # Show validator error output (indented)
+                        echo "$VALIDATOR_ERROR_OUTPUT" | sed 's/^/    /' >&2
                     else
                         # Fallback if no error output captured
                         log_info "    Validator command failed: $cmd ${expanded_args[*]}"
                     fi
                     # At verbosity 2+, show the full command that was executed
-                    if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+                    if [[ $verbosity -gt 1 ]]; then
                         log_info "    Executed: $cmd ${expanded_args[*]}"
                     fi
                     ((errors++))
                 else
                     log_success "Validation passed: $file"
                     # At verbosity 2+, show the command that succeeded
-                    if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+                    if [[ $verbosity -gt 1 ]]; then
                         log_info "    Executed: $cmd ${expanded_args[*]}"
                     fi
                 fi
@@ -3029,12 +3784,6 @@ check_stow_conflicts() {
 # Display a command header
 show_command_header() {
     local title="$1"
-    local verbosity="${2:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
-
-    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
-        return
-    fi
-
     echo ""
     echo -e "${BLUE}╭──────────────────────────────────────────────────────────╮${NC}"
     printf "${BLUE}│${NC}  %-56s${BLUE}│${NC}\n" "$title"
@@ -3056,12 +3805,6 @@ show_section_separator() {
 show_numbered_section() {
     local num="$1"
     local title="$2"
-    local verbosity="${3:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
-
-    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
-        return
-    fi
-
     echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 }
@@ -3071,11 +3814,6 @@ show_command_summary() {
     local status="$1"      # "success" or "info"
     local message="$2"
     local duration="$3"     # optional
-    local verbosity="${4:-${VERBOSITY:-$VERBOSITY_TACITURN}}"
-
-    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
-        return
-    fi
 
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
@@ -3112,10 +3850,10 @@ show_health_table_header() {
 show_health_check_spinner() {
     local num="$1"
     local category="$2"
-    local verbosity="${3:-$VERBOSITY_TACITURN}"
+    local verbosity="${3:-0}"
 
     # Skip in silent mode
-    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
+    if [[ $verbosity -eq -1 ]]; then
         return
     fi
 
@@ -3129,10 +3867,10 @@ show_health_table_row() {
     local category="$2"
     local status="$3"
     local details="$4"
-    local verbosity="${5:-$VERBOSITY_TACITURN}"
+    local verbosity="${5:-0}"
 
     # Skip in silent mode
-    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
+    if [[ $verbosity -eq -1 ]]; then
         return
     fi
 
@@ -3229,51 +3967,30 @@ count_symlinks() {
 
 # Comprehensive health check command (table format)
 cmd_health() {
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
+    local verbosity="${1:-0}"
 
-    if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
+    # Silent mode: only show errors, no output
+    if [[ $verbosity -eq -1 ]]; then
+        # Run checks silently, only capture errors
         local errors=0
-        local all_errors=""
-
-        # Capture errors but suppress normal output in quiet mode
         for package in "${PACKAGES[@]}"; do
-            local error_output
-            local exit_code
-            error_output=$(validate_package "$package" "$verbosity" 2>&1)
-            exit_code=$?
-            if [[ $exit_code -ne 0 ]]; then
+            if ! validate_package "$package" "$verbosity" >/dev/null 2>&1; then
                 ((errors++))
-                if [[ -n "$error_output" ]]; then
-                    all_errors+="$error_output"$'\n'
-                fi
             fi
         done
-
-        local config_error_output
-        local config_exit_code
-        config_error_output=$(validate_config_syntax "$verbosity" 2>&1)
-        config_exit_code=$?
-        if [[ $config_exit_code -ne 0 ]]; then
+        if ! validate_config_syntax "$verbosity" >/dev/null 2>&1; then
             ((errors++))
-            if [[ -n "$config_error_output" ]]; then
-                all_errors+="$config_error_output"$'\n'
-            fi
         fi
-
+        # Only show errors if any found
         if [[ $errors -gt 0 ]]; then
-            # Always show errors, even in quiet mode
-            if [[ -n "$all_errors" ]]; then
-                echo -e "$all_errors" >&2
-            else
-                echo "Health check failed with $errors error(s)" >&2
-            fi
+            echo "Health check failed with $errors error(s)" >&2
             return 1
         fi
         return 0
     fi
 
     # If verbosity > 0, show detailed output
-    if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+    if [[ $verbosity -gt 0 ]]; then
         cmd_health_verbose "$verbosity"
         return $?
     fi
@@ -3291,7 +4008,7 @@ cmd_health() {
     local total_warnings=0
 
     # Display table header immediately (skip in silent mode)
-    if [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
+    if [[ $verbosity -gt -1 ]]; then
         show_health_table_header
     fi
 
@@ -3304,7 +4021,7 @@ cmd_health() {
     output=""
     for package in "${PACKAGES[@]}"; do
         local package_output
-        package_output=$(validate_package "$package" "$verbosity" 2>&1)
+        package_output=$(validate_package "$package" 2>&1)
         local package_result=$?
         if [[ $package_result -ne 0 ]]; then
             output="${output}${package_output}\n"
@@ -3328,7 +4045,7 @@ cmd_health() {
 
     # 2. Configuration syntax
     show_health_check_spinner "2" "Configuration Syntax" "$verbosity"
-    output=$(validate_config_syntax "$verbosity" 2>&1)
+    output=$(validate_config_syntax 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
         check_statuses+=("fail")
@@ -3541,12 +4258,12 @@ cmd_health() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
+        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+        show_health_table_row "11" "Backup Health" "info" "$verbosity" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # Calculate duration
@@ -3684,8 +4401,8 @@ run_with_verbosity() {
     shift 3
     # Remaining args are the command to execute
 
-    # Use -ge comparison: show details if verbosity >= threshold
-    if [[ $verbosity -ge $threshold ]]; then
+    # Use -gt comparison: show details if verbosity > threshold
+    if [[ $verbosity -gt $threshold ]]; then
         # Show detailed output (indented)
         # Use pipefail to ensure command exit code is preserved
         local output
@@ -3705,13 +4422,14 @@ run_with_verbosity() {
         exit_code=$?
         set +o pipefail
         if [[ $exit_code -eq 0 ]]; then
-            # Show success message if verbosity >= normal (not quiet)
-            if [[ -n "$success_msg" ]] && [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
+            # Show success message if verbosity > -1 (not silent)
+            if [[ -n "$success_msg" ]] && [[ $verbosity -gt -1 ]]; then
                 echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $success_msg"
             fi
             return 0
         else
-            echo "$output" | indent_section_output
+            # Show error output even in silent mode (errors always shown)
+            echo "$output" | indent_section_output >&2
             return 1
         fi
     fi
@@ -3742,35 +4460,24 @@ run_step() {
 }
 
 # Execute a health check section with consistent formatting
-# Usage: run_health_check NUM TITLE CHECK_FUNCTION [ARGS...]
-# Note: CHECK_FUNCTION can accept verbosity as first argument
+# Usage: run_health_check NUM TITLE CHECK_FUNCTION
 run_health_check() {
     local num="$1"
     local title="$2"
     local check_function="$3"
-    shift 3
-    # Remaining args are passed to check_function
 
-    # Get verbosity from first arg if provided, otherwise default to normal
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
-
-    # Skip header in quiet mode
-    if [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
-        echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-    fi
-    "$check_function" "$@" 2>&1 | indent_section_output
+    echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    $check_function 2>&1 | indent_section_output
     # Capture exit code from check_function (first command in pipe)
     local result=${PIPESTATUS[0]}
-    if [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
-        echo ""
-    fi
+    echo ""
     return "$result"
 }
 
 # Verbose health check (detailed output with unified design)
 cmd_health_verbose() {
-    local verbosity="${1:-$VERBOSITY_LOQUACIOUS}"
+    local verbosity="${1:-1}"
 
     # Track timing
     local start_time
@@ -3780,9 +4487,9 @@ cmd_health_verbose() {
     local total_warnings=0
 
     # Display header with verbosity level indicator (skip in silent mode)
-    if [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
+    if [[ $verbosity -gt -1 ]]; then
         local verbosity_label="Detailed"
-        if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+        if [[ $verbosity -gt 1 ]]; then
             verbosity_label="Very Detailed"
         fi
 
@@ -3803,7 +4510,10 @@ cmd_health_verbose() {
 
     # 2. Configuration syntax
     local syntax_result
-    run_health_check "2" "Configuration Syntax" validate_config_syntax "$verbosity" && syntax_result=0 || syntax_result=$?
+    validate_config_syntax_with_verbosity() {
+        validate_config_syntax "$verbosity"
+    }
+    run_health_check "2" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
     ((total_errors += syntax_result))
 
     # 3. Submodule health
@@ -3841,8 +4551,11 @@ cmd_health_verbose() {
     # Note: Orphaned symlinks are warnings, not errors
 
     # 10. Dependencies
-    # Pass verbosity level directly to check_dependencies
-    if ! run_health_check "10" "Dependencies" check_dependencies "$verbosity"; then
+    # Pass verbosity level to show appropriate detail
+    check_dependencies_verbose() {
+        check_dependencies "$verbosity"
+    }
+    if ! run_health_check "10" "Dependencies" check_dependencies_verbose; then
         ((total_errors++))
     fi
 
@@ -3855,12 +4568,12 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
+        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+        show_health_table_row "11" "Backup Health" "info" "$verbosity" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # 12. Manifest validation
@@ -3872,7 +4585,7 @@ cmd_health_verbose() {
         check_details+=("Manifest errors")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "12" "Manifest Validation" "fail" "Manifest errors" "$verbosity"
+        show_health_table_row "12" "Manifest Validation" "Manifest Validation" "fail" "$verbosity" "Manifest errors" "$verbosity"
     else
         local manifest_count=0
         for package in "${PACKAGES[@]}"; do
@@ -3883,7 +4596,7 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("$manifest_count manifest(s) valid")
         check_outputs+=("")
-        show_health_table_row "12" "Manifest Validation" "pass" "$manifest_count manifest(s) valid" "$verbosity"
+        show_health_table_row "12" "Manifest Validation" "Manifest Validation" "pass" "$verbosity" "$manifest_count manifest(s) valid" "$verbosity"
     fi
 
     # Calculate duration
@@ -4134,7 +4847,7 @@ pull_package_from_system() {
 # Remove broken or mispointed dotfile symlinks
 # This handles cases where packages were moved (e.g., bash/ -> packages/bash/)
 remove_mispointed_symlinks() {
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
+    local verbosity="${1:-0}"
     local removed_count=0
 
     # Find all symlinks in $HOME that point to $DOTFILES_DIR
@@ -4144,7 +4857,7 @@ remove_mispointed_symlinks() {
 
         # Check if symlink is broken OR points to wrong location
         if [[ ! -e "$symlink" ]] || [[ "$target" == "$DOTFILES_DIR/"* && "$target" != "$PACKAGES_DIR/"* ]]; then
-            if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+            if [[ $verbosity -gt 1 ]]; then
                 log_info "Removing outdated symlink: ${symlink#"$HOME"/}"
             fi
             rm -f "$symlink"
@@ -4159,7 +4872,7 @@ remove_mispointed_symlinks() {
             target="$(readlink "$symlink")"
 
             if [[ ! -e "$symlink" ]] || [[ "$target" == *"$DOTFILES_DIR/"* && "$target" != *"$PACKAGES_DIR/"* ]]; then
-                if [[ $verbosity -ge $VERBOSITY_GARRULOUS ]]; then
+                if [[ $verbosity -gt 1 ]]; then
                     log_info "Removing outdated symlink: ${symlink#"$HOME"/}"
                 fi
                 rm -f "$symlink"
@@ -4168,7 +4881,7 @@ remove_mispointed_symlinks() {
         done < <(find "$HOME/.config" -maxdepth 3 -type l 2>/dev/null)
     fi
 
-    if [[ $removed_count -gt 0 && $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+    if [[ $removed_count -gt 0 && $verbosity -gt 0 ]]; then
         log_info "Removed $removed_count outdated symlink(s)"
     fi
 
@@ -4177,7 +4890,7 @@ remove_mispointed_symlinks() {
 
 # Common installation pipeline
 run_installation_pipeline() {
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
+    local verbosity="${1:-0}"
 
     # Skip dependency check if environment variable is set (useful for CI)
     if [[ "${SKIP_DEPENDENCY_CHECK:-}" != "true" ]]; then
@@ -4214,14 +4927,14 @@ run_installation_pipeline() {
 }
 
 cmd_update() {
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
+    local verbosity="${1:-0}"
     local start_time
     start_time=$(date +%s)
 
-    show_command_header "Dotfiles Update" "$verbosity"
+    show_command_header "Dotfiles Update"
 
     # Step 1: Update packages (from manifests)
-    show_numbered_section "1" "Update Packages" "$verbosity"
+    show_numbered_section "1" "Update Packages"
     local update_count=0
     local updated_packages=()
     local skipped_packages=()
@@ -4274,7 +4987,7 @@ cmd_update() {
         fi
 
         # Show package update
-        if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+        if [[ $verbosity -gt 0 ]]; then
             log_info "Updating $display_name..."
         fi
 
@@ -4283,13 +4996,13 @@ cmd_update() {
             ((update_count++))
             updated_packages+=("$display_name")
             # Show success message at verbosity 1+ (level 2 should show at least what level 1 shows)
-            if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+            if [[ $verbosity -gt 0 ]]; then
                 echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $display_name updated"
             fi
         else
             skipped_packages+=("$display_name")
             # Show skip message at verbosity 1+ (level 2 should show at least what level 1 shows)
-            if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+            if [[ $verbosity -gt 0 ]]; then
                 echo -e "   ${BLUE}${SYMBOL_INFO}${NC} $display_name already up to date"
             fi
         fi
@@ -4297,15 +5010,15 @@ cmd_update() {
 
     if [[ $update_count -eq 0 && ${#updated_packages[@]} -eq 0 && ${#skipped_packages[@]} -eq 0 ]]; then
         # Show message at verbosity 1+ (level 2 should show at least what level 1 shows)
-        if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
+        if [[ $verbosity -gt 0 ]]; then
             echo -e "   ${BLUE}${SYMBOL_INFO}${NC} No packages with update commands"
         fi
     fi
     echo ""
 
     # Step 2: Clean up outdated symlinks
-    if [[ $verbosity -ge $VERBOSITY_LOQUACIOUS ]]; then
-        show_numbered_section "2" "Clean Up Outdated Symlinks" "$verbosity"
+    if [[ $verbosity -gt 0 ]]; then
+        show_numbered_section "2" "Clean Up Outdated Symlinks"
         remove_mispointed_symlinks "$verbosity"
         echo ""
     else
@@ -4313,15 +5026,15 @@ cmd_update() {
     fi
 
     # Step 4: Reinstall
-    show_numbered_section "4" "Reinstall Dotfiles" "$verbosity"
-    if ! run_with_verbosity "$verbosity" $VERBOSITY_LOQUACIOUS "" run_installation_pipeline "$verbosity"; then
+    show_numbered_section "4" "Reinstall Dotfiles"
+    if ! run_with_verbosity "$verbosity" 1 "" run_installation_pipeline "$verbosity"; then
         echo ""
         log_error "Installation pipeline failed"
         return 1
     fi
 
     # Show summary for normal output (level 0, not silent)
-    if [[ $verbosity -eq $VERBOSITY_TACITURN ]]; then
+    if [[ $verbosity -gt -1 ]] && [[ $verbosity -le 0 ]]; then
         show_installation_summary
     fi
     echo ""
@@ -4330,17 +5043,16 @@ cmd_update() {
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
 
-    show_command_summary "success" "UPDATED" "$duration" "$verbosity"
+    show_command_summary "success" "UPDATED" "$duration"
     echo ""
 
-    auto_cleanup_backups "$verbosity"
+    auto_cleanup_backups
 
     return 0
 }
 
 cmd_status() {
-    local verbosity="${1:-$VERBOSITY_TACITURN}"
-    show_status "$verbosity"
+    show_status
 }
 
 cmd_diff() {
@@ -4790,35 +5502,32 @@ is_valid_command() {
     [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync|pull)$ ]]
 }
 
-# Parse verbosity flag and return relative change
-# Handles: -q/--quiet (decrease by 1), -v/--verbose (increase by 1), -vv (increase by 2)
-# Also handles combined flags like -vvqq (net change: +2-2=0)
-# Returns: relative change (-1, +1, +2, etc.)
+# Parse verbosity flag and return verbosity level
+# Handles: -s/--silent (-1), -v/--verbose (1), -vv (2)
+# Verbosity levels: -1 (silent), 0 (normal), 1 (verbose), 2 (very verbose)
 # Examples:
-#   -q, --quiet      → -1
-#   -v, --verbose    → +1
-#   -vv              → +2
-#   -vvqq            → 0 (counts v's and q's separately)
+#   -s, --silent     → -1
+#   -v, --verbose    → 1
+#   -vv              → 2
+# Note: Multiple flags set the highest level (last one wins)
 parse_verbosity() {
     local flag="$1"
 
-    if [[ $flag == "--quiet" ]]; then
+    if [[ $flag == "-s" ]] || [[ $flag == "--silent" ]]; then
         echo "-1"
         return 0
-    elif [[ $flag == "--verbose" ]]; then
-        echo "+1"
+    elif [[ $flag == "-v" ]] || [[ $flag == "--verbose" ]]; then
+        echo "1"
         return 0
-    elif [[ $flag =~ ^-[vq]+$ ]]; then
-        # Combined flags like -vvqq: count v's and q's separately
-        local v_count=$(echo "$flag" | tr -cd 'v' | wc -c | tr -d ' ')
-        local q_count=$(echo "$flag" | tr -cd 'q' | wc -c | tr -d ' ')
-        local change=$((v_count - q_count))
-        if [[ $change -gt 0 ]]; then
-            echo "+$change"
-        elif [[ $change -lt 0 ]]; then
-            echo "$change"
+    elif [[ $flag =~ ^-vv+$ ]]; then
+        # Count v's: -vv=2, -vvv=2 (max), etc.
+        local v_part="${flag#-}"
+        local count="${#v_part}"
+        # Cap at 2 (very verbose)
+        if [[ $count -ge 2 ]]; then
+            echo "2"
         else
-            echo "0"
+            echo "1"
         fi
         return 0
     fi
@@ -4835,10 +5544,10 @@ die() {
 
 # Parse command-line arguments
 # Sets global variables: COMMAND, VERBOSITY, COMMAND_ARGS
-# Verbosity levels: MUTE (-1), TACITURN (0), LOQUACIOUS (1), GARRULOUS (2)
+# Verbosity levels: -1 (silent), 0 (normal), 1 (verbose), 2 (very verbose)
 parse_arguments() {
     COMMAND=""
-    VERBOSITY=$VERBOSITY_TACITURN
+    VERBOSITY=0
     COMMAND_ARGS=()
 
     while [[ $# -gt 0 ]]; do
@@ -4849,12 +5558,18 @@ parse_arguments() {
                 exit 0
                 ;;
 
-            # Verbosity flags (-q, -v, -vv, -qq, -vvqq, etc.) - relative changes
-            -q*|-v*|--quiet|--verbose)
-                local change
-                if change=$(parse_verbosity "$1"); then
-                    change="${change#+}"
-                    ((VERBOSITY += change))
+            # Silent mode (-s, --silent)
+            -s|--silent)
+                VERBOSITY=-1
+                shift
+                ;;
+
+            # Verbosity (-v, -vv, --verbose)
+            -v*|--verbose)
+                local level
+                if level=$(parse_verbosity "$1"); then
+                    # Set verbosity level (last flag wins if multiple specified)
+                    VERBOSITY=$level
                     shift
                 else
                     die "Invalid verbosity flag: $1" show_usage
@@ -4876,24 +5591,10 @@ parse_arguments() {
                 fi
                 COMMAND="$1"
                 shift
+                # Collect remaining arguments for commands that need them
                 while [[ $# -gt 0 ]]; do
-                    case $1 in
-                        -q*|-v*|--quiet|--verbose)
-                            local change
-                            if change=$(parse_verbosity "$1"); then
-                                change="${change#+}"
-                                ((VERBOSITY += change))
-                                shift
-                            else
-                                COMMAND_ARGS+=("$1")
-                                shift
-                            fi
-                            ;;
-                        *)
-                            COMMAND_ARGS+=("$1")
-                            shift
-                            ;;
-                    esac
+                    COMMAND_ARGS+=("$1")
+                    shift
                 done
                 ;;
             # Unknown option (unknown flag)
@@ -4906,13 +5607,6 @@ parse_arguments() {
                 ;;
         esac
     done
-
-    # Clamp verbosity to valid range
-    if [[ $VERBOSITY -lt $VERBOSITY_MUTE ]]; then
-        VERBOSITY=$VERBOSITY_MUTE
-    elif [[ $VERBOSITY -gt $VERBOSITY_GARRULOUS ]]; then
-        VERBOSITY=$VERBOSITY_GARRULOUS
-    fi
 
     # Default to help if no command
     if [[ -z "$COMMAND" ]]; then
@@ -4967,7 +5661,7 @@ main() {
             cmd_update "$VERBOSITY"
             ;;
         status)
-            cmd_status "$VERBOSITY"
+            cmd_status
             ;;
         diff)
             cmd_diff
