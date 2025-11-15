@@ -42,7 +42,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - Template-based secrets management
 - macOS and Linux support
 - Health check system for diagnostics and validation
-- Packages: system, git, bash, zsh, fish, tmux, gh, gnuplot, wezterm, bat, rust, cursor
+- Packages: system, git, bash, zsh, fish, tmux, gh, gnuplot, wezterm, bat, rust, ripgrep, cursor
 - CI/CD validation with GitHub Actions
 
 ## Compatibility
@@ -100,6 +100,7 @@ All configurations are organized as packages in the `packages/` directory:
 | **wezterm** | WezTerm terminal emulator |
 | **bat** | Bat syntax highlighter |
 | **rust** | Rust toolchain configuration |
+| **ripgrep** | Ripgrep configuration |
 | **cursor** | Cursor IDE (uses copy-sync) |
 
 Each package has:

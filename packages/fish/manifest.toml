@@ -12,4 +12,6 @@ method = "stow"
 target = "~"
 
 [validation]
-".config/fish/*.fish" = { command = "fish", args = ["-n", "file"] }
+".config/fish/config.fish" = { command = "fish", args = ["-n", "FILE"] }
+".config/fish/config.osx.fish" = { command = "fish", args = ["-n", "FILE"] }
+".config/fish/config.linux.fish" = { command = "fish", args = ["-n", "FILE"] }

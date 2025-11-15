@@ -27,7 +27,7 @@ _dot_completion() {
     # Complete commands
     if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
         local commands="install status health update diff backup backups restore clean uninstall enable disable packages security sync pull"
-        local flags="-h --help -q --quiet -v --verbose -vv"
+        local flags="-h --help -s --silent -v --verbose -vv"
         # Bash 3.2 compatible (no mapfile)
         COMPREPLY=()
         while IFS= read -r word; do
@@ -37,7 +37,7 @@ _dot_completion() {
         # Complete flags for commands that support verbosity
         case "$prev" in
             install|update|health)
-                local flags="-q --quiet -v --verbose -vv"
+                local flags="-s --silent -v --verbose -vv"
                 COMPREPLY=()
                 while IFS= read -r word; do
                     COMPREPLY+=("$word")
@@ -67,7 +67,7 @@ _d_completion_bash() {
     # Complete commands
     if [[ ${COMP_CWORD} -eq 1 ]] || [[ "$prev" == -* ]]; then
         local commands="h health s status u update b backup c clean i install uninstall cd"
-        local flags="-h --help -q --quiet -v --verbose -vv"
+        local flags="-h --help -s --silent -v --verbose -vv"
         # Bash 3.2 compatible (no mapfile)
         COMPREPLY=()
         while IFS= read -r word; do
@@ -77,7 +77,7 @@ _d_completion_bash() {
         # Complete flags for commands that support verbosity
         case "$prev" in
             i|install|u|update|h|health)
-                local flags="-q --quiet -v --verbose -vv"
+                local flags="-s --silent -v --verbose -vv"
                 COMPREPLY=()
                 while IFS= read -r word; do
                     COMPREPLY+=("$word")
