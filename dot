@@ -3540,14 +3540,14 @@ validate_config_syntax() {
                     local in_quotes=false
                     local current_arg=""
                     local i=0
-                    
+
                     while [[ $i -lt ${#args_string} ]]; do
                         local char="${args_string:$i:1}"
                         local prev_char=""
                         [[ $i -gt 0 ]] && prev_char="${args_string:$((i-1)):1}"
                         local next_char=""
                         [[ $((i+1)) -lt ${#args_string} ]] && next_char="${args_string:$((i+1)):1}"
-                        
+
                         # Check for pattern "," (quote-comma-quote) which separates args
                         # But only if we're currently in quotes (ending a quoted arg)
                         if [[ "$in_quotes" == true ]] && \
@@ -3565,7 +3565,7 @@ validate_config_syntax() {
                             # But we'll handle that in the next iteration
                             continue
                         fi
-                        
+
                         case "$char" in
                             '"')
                                 if [[ "$prev_char" == "\\" ]]; then
@@ -4502,8 +4502,8 @@ cmd_health() {
         show_health_table_row "5" "Symlink Integrity" "pass" "$file_count files linked" "$verbosity"
     fi
 
-    # 2. Configuration syntax
-    show_health_check_spinner "2" "Configuration Syntax" "$verbosity"
+    # 6. Configuration syntax (need valid configs for things to work)
+    show_health_check_spinner "6" "Configuration Syntax" "$verbosity"
     output=$(validate_config_syntax 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4945,7 +4945,7 @@ cmd_health_verbose() {
     validate_config_syntax_with_verbosity() {
         validate_config_syntax "$verbosity"
     }
-    run_health_check "2" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
+    run_health_check "6" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
     ((total_errors += syntax_result))
 
     # 7. File permissions (security)
@@ -4972,17 +4972,8 @@ cmd_health_verbose() {
     run_health_check "11" "Orphaned Symlinks" check_orphaned_symlinks
     # Note: Orphaned symlinks are warnings, not errors
 
-    # 10. Dependencies
-    # Pass verbosity level to show appropriate detail
-    check_dependencies_verbose() {
-        check_dependencies "$verbosity"
-    }
-    if ! run_health_check "10" "Dependencies" check_dependencies_verbose; then
-        ((total_errors++))
-    fi
-
-    # 11. Backup health
-    show_health_check_spinner "11" "Backup Health" "$verbosity"
+    # 12. Backup health (maintenance)
+    show_health_check_spinner "12" "Backup Health" "$verbosity"
     local backup_count backup_size_kb
     read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
@@ -4990,35 +4981,12 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
+        show_health_table_row "12" "Backup Health" "pass" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
-    fi
-
-    # 12. Manifest validation
-    show_health_check_spinner "12" "Manifest Validation" "$verbosity"
-    output=$(validate_all_manifests 2>&1)
-    result=$?
-    if [[ $result -ne 0 ]]; then
-        check_statuses+=("fail")
-        check_details+=("Manifest errors")
-        check_outputs+=("$output")
-        ((total_errors += result))
-        show_health_table_row "12" "Manifest Validation" "fail" "Manifest errors" "$verbosity"
-    else
-        local manifest_count=0
-        for package in "${PACKAGES[@]}"; do
-            if [[ -f "$PACKAGES_DIR/$package/manifest.toml" ]]; then
-                ((manifest_count++))
-            fi
-        done
-        check_statuses+=("pass")
-        check_details+=("$manifest_count manifest(s) valid")
-        check_outputs+=("")
-        show_health_table_row "12" "Manifest Validation" "pass" "$manifest_count manifest(s) valid" "$verbosity"
+        show_health_table_row "12" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # Calculate duration
