@@ -3536,14 +3536,14 @@ validate_config_syntax() {
                     local in_quotes=false
                     local current_arg=""
                     local i=0
-                    
+
                     while [[ $i -lt ${#args_string} ]]; do
                         local char="${args_string:$i:1}"
                         local prev_char=""
                         [[ $i -gt 0 ]] && prev_char="${args_string:$((i-1)):1}"
                         local next_char=""
                         [[ $((i+1)) -lt ${#args_string} ]] && next_char="${args_string:$((i+1)):1}"
-                        
+
                         # Check for pattern "," (quote-comma-quote) which separates args
                         # But only if we're currently in quotes (ending a quoted arg)
                         if [[ "$in_quotes" == true ]] && \
@@ -3561,7 +3561,7 @@ validate_config_syntax() {
                             # But we'll handle that in the next iteration
                             continue
                         fi
-                        
+
                         case "$char" in
                             '"')
                                 if [[ "$prev_char" == "\\" ]]; then
@@ -4398,8 +4398,81 @@ cmd_health() {
     local output
     local result
 
-    # 1. Symlink integrity
-    show_health_check_spinner "1" "Symlink Integrity" "$verbosity"
+    # 1. Dependencies (most fundamental - can't do anything without tools)
+    show_health_check_spinner "1" "Dependencies" "$verbosity"
+    if check_dependencies >/dev/null 2>&1; then
+        check_statuses+=("pass")
+        check_details+=("All satisfied")
+        check_outputs+=("")
+        show_health_table_row "1" "Dependencies" "pass" "All satisfied" "$verbosity"
+    else
+        output=$(check_dependencies 2>&1)
+        check_statuses+=("fail")
+        check_details+=("Missing deps")
+        check_outputs+=("$output")
+        ((total_errors++))
+        show_health_table_row "1" "Dependencies" "fail" "Missing deps" "$verbosity"
+    fi
+
+    # 2. Git repository status (need valid repo to work with dotfiles)
+    show_health_check_spinner "2" "Git Repository" "$verbosity"
+    output=$(check_git_repo_status 2>&1)
+    result=$?
+    if [[ $result -ne 0 ]]; then
+        check_statuses+=("warn")
+        check_details+=("Uncommitted changes")
+        check_outputs+=("$output")
+        ((total_warnings += result))
+        show_health_table_row "2" "Git Repository" "warn" "Uncommitted changes" "$verbosity"
+    else
+        check_statuses+=("pass")
+        check_details+=("Clean, up-to-date")
+        check_outputs+=("")
+        show_health_table_row "2" "Git Repository" "pass" "Clean, up-to-date" "$verbosity"
+    fi
+
+    # 3. Manifest validation (need valid manifests to discover packages)
+    show_health_check_spinner "3" "Manifest Validation" "$verbosity"
+    output=$(validate_all_manifests 2>&1)
+    result=$?
+    if [[ $result -ne 0 ]]; then
+        check_statuses+=("fail")
+        check_details+=("Manifest errors")
+        check_outputs+=("$output")
+        ((total_errors += result))
+        show_health_table_row "3" "Manifest Validation" "fail" "Manifest errors" "$verbosity"
+    else
+        local manifest_count=0
+        for package in "${PACKAGES[@]}"; do
+            if [[ -f "$PACKAGES_DIR/$package/manifest.toml" ]]; then
+                ((manifest_count++))
+            fi
+        done
+        check_statuses+=("pass")
+        check_details+=("$manifest_count manifest(s) valid")
+        check_outputs+=("")
+        show_health_table_row "3" "Manifest Validation" "pass" "$manifest_count manifest(s) valid" "$verbosity"
+    fi
+
+    # 4. Stow conflicts (blocks installation)
+    show_health_check_spinner "4" "Stow Conflicts" "$verbosity"
+    output=$(check_stow_conflicts 2>&1)
+    result=$?
+    if [[ $result -ne 0 ]]; then
+        check_statuses+=("fail")
+        check_details+=("$result conflict(s)")
+        check_outputs+=("$output")
+        ((total_errors += result))
+        show_health_table_row "4" "Stow Conflicts" "fail" "$result conflict(s)" "$verbosity"
+    else
+        check_statuses+=("pass")
+        check_details+=("No conflicts")
+        check_outputs+=("")
+        show_health_table_row "4" "Stow Conflicts" "pass" "No conflicts" "$verbosity"
+    fi
+
+    # 5. Symlink integrity (core functionality)
+    show_health_check_spinner "5" "Symlink Integrity" "$verbosity"
     output=""
     for package in "${PACKAGES[@]}"; do
         local package_output
@@ -4415,18 +4488,18 @@ cmd_health() {
         check_statuses+=("fail")
         check_details+=("Validation errors")
         check_outputs+=("$output")
-        show_health_table_row "1" "Symlink Integrity" "fail" "Validation errors" "$verbosity"
+        show_health_table_row "5" "Symlink Integrity" "fail" "Validation errors" "$verbosity"
     else
         local file_count
         file_count=$(count_symlinks)
         check_statuses+=("pass")
         check_details+=("$file_count files linked")
         check_outputs+=("")
-        show_health_table_row "1" "Symlink Integrity" "pass" "$file_count files linked" "$verbosity"
+        show_health_table_row "5" "Symlink Integrity" "pass" "$file_count files linked" "$verbosity"
     fi
 
-    # 2. Configuration syntax
-    show_health_check_spinner "2" "Configuration Syntax" "$verbosity"
+    # 6. Configuration syntax (need valid configs for things to work)
+    show_health_check_spinner "6" "Configuration Syntax" "$verbosity"
     output=$(validate_config_syntax 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4434,16 +4507,33 @@ cmd_health() {
         check_details+=("Syntax errors")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "2" "Configuration Syntax" "fail" "Syntax errors" "$verbosity"
+        show_health_table_row "6" "Configuration Syntax" "fail" "Syntax errors" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("All configs valid")
         check_outputs+=("")
-        show_health_table_row "2" "Configuration Syntax" "pass" "All configs valid" "$verbosity"
+        show_health_table_row "6" "Configuration Syntax" "pass" "All configs valid" "$verbosity"
     fi
 
-    # 3. Submodule health
-    show_health_check_spinner "3" "Submodule Health" "$verbosity"
+    # 7. File permissions (security)
+    show_health_check_spinner "7" "File Permissions" "$verbosity"
+    output=$(check_file_permissions 2>&1)
+    result=$?
+    if [[ $result -ne 0 ]]; then
+        check_statuses+=("fail")
+        check_details+=("Insecure permissions")
+        check_outputs+=("$output")
+        ((total_errors += result))
+        show_health_table_row "7" "File Permissions" "fail" "Insecure permissions" "$verbosity"
+    else
+        check_statuses+=("pass")
+        check_details+=("Secrets secured")
+        check_outputs+=("")
+        show_health_table_row "7" "File Permissions" "pass" "Secrets secured" "$verbosity"
+    fi
+
+    # 8. Submodule health (important but not blocking)
+    show_health_check_spinner "8" "Submodule Health" "$verbosity"
     output=$(check_submodule_health 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4451,33 +4541,16 @@ cmd_health() {
         check_details+=("Issues found")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "3" "Submodule Health" "fail" "Issues found" "$verbosity"
+        show_health_table_row "8" "Submodule Health" "fail" "Issues found" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("All submodules clean")
         check_outputs+=("")
-        show_health_table_row "3" "Submodule Health" "pass" "All submodules clean" "$verbosity"
+        show_health_table_row "8" "Submodule Health" "pass" "All submodules clean" "$verbosity"
     fi
 
-    # 4. Git repository status
-    show_health_check_spinner "4" "Git Repository" "$verbosity"
-    output=$(check_git_repo_status 2>&1)
-    result=$?
-    if [[ $result -ne 0 ]]; then
-        check_statuses+=("warn")
-        check_details+=("Uncommitted changes")
-        check_outputs+=("$output")
-        ((total_warnings += result))
-        show_health_table_row "4" "Git Repository" "warn" "Uncommitted changes" "$verbosity"
-    else
-        check_statuses+=("pass")
-        check_details+=("Clean, up-to-date")
-        check_outputs+=("")
-        show_health_table_row "4" "Git Repository" "pass" "Clean, up-to-date" "$verbosity"
-    fi
-
-    # 5. Template/secret config consistency
-    show_health_check_spinner "5" "Template Consistency" "$verbosity"
+    # 9. Template/secret config consistency (important but not blocking)
+    show_health_check_spinner "9" "Template Consistency" "$verbosity"
     output=$(check_template_consistency 2>&1)
     result=$?
     local template_count=0
@@ -4487,33 +4560,16 @@ cmd_health() {
         check_details+=("Stale configs")
         check_outputs+=("$output")
         ((total_warnings += result))
-        show_health_table_row "5" "Template Consistency" "warn" "Stale configs" "$verbosity"
+        show_health_table_row "9" "Template Consistency" "warn" "Stale configs" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("$template_count template(s) synced")
         check_outputs+=("")
-        show_health_table_row "5" "Template Consistency" "pass" "$template_count template(s) synced" "$verbosity"
+        show_health_table_row "9" "Template Consistency" "pass" "$template_count template(s) synced" "$verbosity"
     fi
 
-    # 6. File permissions
-    show_health_check_spinner "6" "File Permissions" "$verbosity"
-    output=$(check_file_permissions 2>&1)
-    result=$?
-    if [[ $result -ne 0 ]]; then
-        check_statuses+=("fail")
-        check_details+=("Insecure permissions")
-        check_outputs+=("$output")
-        ((total_errors += result))
-        show_health_table_row "6" "File Permissions" "fail" "Insecure permissions" "$verbosity"
-    else
-        check_statuses+=("pass")
-        check_details+=("Secrets secured")
-        check_outputs+=("")
-        show_health_table_row "6" "File Permissions" "pass" "Secrets secured" "$verbosity"
-    fi
-
-    # 7. Shell integration
-    show_health_check_spinner "7" "Shell Integration" "$verbosity"
+    # 10. Shell integration (nice to have)
+    show_health_check_spinner "10" "Shell Integration" "$verbosity"
     output=$(check_shell_integration 2>&1)
     result=$?
 
@@ -4565,7 +4621,7 @@ cmd_health() {
         check_details+=("Issues detected")
         check_outputs+=("$output")
         ((total_warnings += result))
-        show_health_table_row "7" "Shell Integration" "warn" "Issues detected" "$verbosity"
+        show_health_table_row "10" "Shell Integration" "warn" "Issues detected" "$verbosity"
     else
         check_statuses+=("pass")
         if [[ -n "$shell_name" ]]; then
@@ -4575,64 +4631,31 @@ cmd_health() {
         fi
         check_outputs+=("")
         if [[ -n "$shell_name" ]]; then
-            show_health_table_row "7" "Shell Integration" "pass" "$shell_name active" "$verbosity"
+            show_health_table_row "10" "Shell Integration" "pass" "$shell_name active" "$verbosity"
         else
-            show_health_table_row "7" "Shell Integration" "pass" "Shell active" "$verbosity"
+            show_health_table_row "10" "Shell Integration" "pass" "Shell active" "$verbosity"
         fi
     fi
 
-    # 8. Stow conflicts
-    show_health_check_spinner "8" "Stow Conflicts" "$verbosity"
-    output=$(check_stow_conflicts 2>&1)
-    result=$?
-    if [[ $result -ne 0 ]]; then
-        check_statuses+=("fail")
-        check_details+=("$result conflict(s)")
-        check_outputs+=("$output")
-        ((total_errors += result))
-        show_health_table_row "8" "Stow Conflicts" "fail" "$result conflict(s)" "$verbosity"
-    else
-        check_statuses+=("pass")
-        check_details+=("No conflicts")
-        check_outputs+=("")
-        show_health_table_row "8" "Stow Conflicts" "pass" "No conflicts" "$verbosity"
-    fi
-
-    # 9. Orphaned symlinks
-    show_health_check_spinner "9" "Orphaned Symlinks" "$verbosity"
+    # 11. Orphaned symlinks (cleanup/maintenance)
+    show_health_check_spinner "11" "Orphaned Symlinks" "$verbosity"
     output=$(check_orphaned_symlinks 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
         check_statuses+=("warn")
         check_details+=("$result found")
         check_outputs+=("$output")
-        show_health_table_row "9" "Orphaned Symlinks" "warn" "$result found" "$verbosity"
+        show_health_table_row "11" "Orphaned Symlinks" "warn" "$result found" "$verbosity"
         # Don't count as error, just warning
     else
         check_statuses+=("pass")
         check_details+=("None found")
         check_outputs+=("")
-        show_health_table_row "9" "Orphaned Symlinks" "pass" "None found" "$verbosity"
+        show_health_table_row "11" "Orphaned Symlinks" "pass" "None found" "$verbosity"
     fi
 
-    # 10. Dependencies
-    show_health_check_spinner "10" "Dependencies" "$verbosity"
-    if check_dependencies >/dev/null 2>&1; then
-        check_statuses+=("pass")
-        check_details+=("All satisfied")
-        check_outputs+=("")
-        show_health_table_row "10" "Dependencies" "pass" "All satisfied" "$verbosity"
-    else
-        output=$(check_dependencies 2>&1)
-        check_statuses+=("fail")
-        check_details+=("Missing deps")
-        check_outputs+=("$output")
-        ((total_errors++))
-        show_health_table_row "10" "Dependencies" "fail" "Missing deps" "$verbosity"
-    fi
-
-    # 11. Backup health
-    show_health_check_spinner "11" "Backup Health" "$verbosity"
+    # 12. Backup health (maintenance)
+    show_health_check_spinner "12" "Backup Health" "$verbosity"
     local backup_count backup_size_kb
     read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
@@ -4882,67 +4905,71 @@ cmd_health_verbose() {
         echo ""
     fi
 
-    # 1. Symlink integrity
-    echo -e " ${BLUE}1. Symlink Integrity${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    # 1. Dependencies (most fundamental - can't do anything without tools)
+    check_dependencies_verbose() {
+        check_dependencies "$verbosity"
+    }
+    if ! run_health_check "1" "Dependencies" check_dependencies_verbose; then
+        ((total_errors++))
+    fi
+
+    # 2. Git repository status (need valid repo to work with dotfiles)
+    local git_result
+    run_health_check "2" "Git Repository" check_git_repo_status && git_result=0 || git_result=$?
+    ((total_warnings += git_result))
+
+    # 3. Manifest validation (need valid manifests to discover packages)
+    local manifest_result
+    run_health_check "3" "Manifest Validation" validate_all_manifests && manifest_result=0 || manifest_result=$?
+    ((total_errors += manifest_result))
+
+    # 4. Stow conflicts (blocks installation)
+    local stow_result
+    run_health_check "4" "Stow Conflicts" check_stow_conflicts && stow_result=0 || stow_result=$?
+    ((total_errors += stow_result))
+
+    # 5. Symlink integrity (core functionality)
+    echo -e " ${BLUE}5. Symlink Integrity${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     for package in "${PACKAGES[@]}"; do
         validate_package "$package" "$verbosity" 2>&1 | indent_section_output || ((total_errors++))
     done
     echo ""
 
-    # 2. Configuration syntax
+    # 6. Configuration syntax (need valid configs for things to work)
     local syntax_result
     validate_config_syntax_with_verbosity() {
         validate_config_syntax "$verbosity"
     }
-    run_health_check "2" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
+    run_health_check "6" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
     ((total_errors += syntax_result))
 
-    # 3. Submodule health
-    local submodule_result
-    run_health_check "3" "Submodule Health" check_submodule_health && submodule_result=0 || submodule_result=$?
-    ((total_errors += submodule_result))
-
-    # 4. Git repository status
-    local git_result
-    run_health_check "4" "Git Repository" check_git_repo_status && git_result=0 || git_result=$?
-    ((total_warnings += git_result))
-
-    # 5. Template/secret config consistency
-    local template_result
-    run_health_check "5" "Template Consistency" check_template_consistency && template_result=0 || template_result=$?
-    ((total_warnings += template_result))
-
-    # 6. File permissions
+    # 7. File permissions (security)
     local perm_result
-    run_health_check "6" "File Permissions" check_file_permissions && perm_result=0 || perm_result=$?
+    run_health_check "7" "File Permissions" check_file_permissions && perm_result=0 || perm_result=$?
     ((total_errors += perm_result))
 
-    # 7. Shell integration
+    # 8. Submodule health (important but not blocking)
+    local submodule_result
+    run_health_check "8" "Submodule Health" check_submodule_health && submodule_result=0 || submodule_result=$?
+    ((total_errors += submodule_result))
+
+    # 9. Template/secret config consistency (important but not blocking)
+    local template_result
+    run_health_check "9" "Template Consistency" check_template_consistency && template_result=0 || template_result=$?
+    ((total_warnings += template_result))
+
+    # 10. Shell integration (nice to have)
     local shell_result
-    run_health_check "7" "Shell Integration" check_shell_integration && shell_result=0 || shell_result=$?
+    run_health_check "10" "Shell Integration" check_shell_integration && shell_result=0 || shell_result=$?
     ((total_warnings += shell_result))
 
-    # 8. Stow conflicts
-    local stow_result
-    run_health_check "8" "Stow Conflicts" check_stow_conflicts && stow_result=0 || stow_result=$?
-    ((total_errors += stow_result))
-
-    # 9. Orphaned symlinks
-    run_health_check "9" "Orphaned Symlinks" check_orphaned_symlinks
+    # 11. Orphaned symlinks (cleanup/maintenance)
+    run_health_check "11" "Orphaned Symlinks" check_orphaned_symlinks
     # Note: Orphaned symlinks are warnings, not errors
 
-    # 10. Dependencies
-    # Pass verbosity level to show appropriate detail
-    check_dependencies_verbose() {
-        check_dependencies "$verbosity"
-    }
-    if ! run_health_check "10" "Dependencies" check_dependencies_verbose; then
-        ((total_errors++))
-    fi
-
-    # 11. Backup health
-    show_health_check_spinner "11" "Backup Health" "$verbosity"
+    # 12. Backup health (maintenance)
+    show_health_check_spinner "12" "Backup Health" "$verbosity"
     local backup_count backup_size_kb
     read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
@@ -4950,35 +4977,12 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
+        show_health_table_row "12" "Backup Health" "pass" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
-    fi
-
-    # 12. Manifest validation
-    show_health_check_spinner "12" "Manifest Validation" "$verbosity"
-    output=$(validate_all_manifests 2>&1)
-    result=$?
-    if [[ $result -ne 0 ]]; then
-        check_statuses+=("fail")
-        check_details+=("Manifest errors")
-        check_outputs+=("$output")
-        ((total_errors += result))
-        show_health_table_row "12" "Manifest Validation" "fail" "Manifest errors" "$verbosity"
-    else
-        local manifest_count=0
-        for package in "${PACKAGES[@]}"; do
-            if [[ -f "$PACKAGES_DIR/$package/manifest.toml" ]]; then
-                ((manifest_count++))
-            fi
-        done
-        check_statuses+=("pass")
-        check_details+=("$manifest_count manifest(s) valid")
-        check_outputs+=("")
-        show_health_table_row "12" "Manifest Validation" "pass" "$manifest_count manifest(s) valid" "$verbosity"
+        show_health_table_row "12" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # Calculate duration
