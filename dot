@@ -1460,14 +1460,6 @@ run_validator() {
 
     # Execute validator (array expansion preserves spaces/quotes)
     # Capture both stdout and stderr for error reporting
-    # Debug: log what we're executing (only for uvx commands at high verbosity)
-    if [[ "$command" == "uvx" ]] && [[ "${DEBUG_VALIDATION:-0}" == "1" ]]; then
-        echo "DEBUG: Executing $command with ${#args[@]} args:" >&2
-        local idx
-        for idx in "${!args[@]}"; do
-            echo "DEBUG:   [$idx]=${args[$idx]@Q}" >&2
-        done
-    fi
     local validator_output
     validator_output=$("$command" "${args[@]}" 2>&1)
     local validator_exit=$?
@@ -3551,10 +3543,6 @@ validate_config_syntax() {
 
                     while [[ $i -lt ${#args_string} ]]; do
                         local char="${args_string:$i:1}"
-                        local prev_char=""
-                        [[ $i -gt 0 ]] && prev_char="${args_string:$((i-1)):1}"
-                        local next_char=""
-                        [[ $((i+1)) -lt ${#args_string} ]] && next_char="${args_string:$((i+1)):1}"
 
                         # Handle escape sequences FIRST (before checking for quotes or patterns)
                         if [[ "$char" == "\\" ]] && [[ $i -lt $((${#args_string} - 1)) ]]; then
@@ -3585,8 +3573,7 @@ validate_config_syntax() {
                                         fi
                                         current_arg=""
                                         # Skip ',"' pattern (3 chars: ", comma, ")
-                                        i=$((i + 3))  # Skip past the ',"' pattern
-                                        # The next iteration will process the quote that starts the next arg
+                                        i=$((i + 3))
                                         continue
                                     else
                                         # Last arg or not followed by ,"
@@ -3623,14 +3610,11 @@ validate_config_syntax() {
                 fi
 
                 # Unescape quotes in arguments (\" -> ")
-                # This is needed because TOML strings have escaped quotes, but commands expect unescaped quotes
+                # TOML strings have escaped quotes, but commands expect unescaped quotes
                 local unescaped_args=()
                 local arg_val
                 for arg_val in "${validator_args[@]}"; do
-                    # Replace \" with " (unescape quotes)
-                    # Use parameter expansion to replace escaped quotes
-                    local unescaped_arg="${arg_val//\\\"/\"}"
-                    unescaped_args+=("$unescaped_arg")
+                    unescaped_args+=("${arg_val//\\\"/\"}")
                 done
                 validator_args=("${unescaped_args[@]}")
 
