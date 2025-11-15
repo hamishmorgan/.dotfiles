@@ -4466,18 +4466,29 @@ run_step() {
 }
 
 # Execute a health check section with consistent formatting
-# Usage: run_health_check NUM TITLE CHECK_FUNCTION
+# Usage: run_health_check NUM TITLE CHECK_FUNCTION [ARGS...]
+# Note: CHECK_FUNCTION can accept verbosity as first argument
 run_health_check() {
     local num="$1"
     local title="$2"
     local check_function="$3"
+    shift 3
+    # Remaining args are passed to check_function
 
-    echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    $check_function 2>&1 | indent_section_output
+    # Get verbosity from first arg if provided, otherwise default to normal
+    local verbosity="${1:-$VERBOSITY_NORMAL}"
+
+    # Skip header in silent mode
+    if [[ $verbosity -ge $VERBOSITY_NORMAL ]]; then
+        echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+    fi
+    "$check_function" "$@" 2>&1 | indent_section_output
     # Capture exit code from check_function (first command in pipe)
     local result=${PIPESTATUS[0]}
-    echo ""
+    if [[ $verbosity -ge $VERBOSITY_NORMAL ]]; then
+        echo ""
+    fi
     return "$result"
 }
 
