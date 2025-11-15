@@ -7,6 +7,6 @@ target = "~/.config/Cursor/User"
 target.macos = "~/Library/Application Support/Cursor/User"
 target.linux = "~/.config/Cursor/User"
 
-# Note: settings.json and keybindings.json contain comments (JSONC format)
-# which is supported by Cursor but not by strict JSON validators.
-# Validation is skipped for these files since they're valid JSONC.
+[validation]
+"settings.json" = { command = "dev/validate-jsonc", args = [] }
+"keybindings.json" = { command = "dev/validate-jsonc", args = [] }
