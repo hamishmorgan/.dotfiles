@@ -5528,17 +5528,17 @@ parse_verbosity() {
         echo "$VERBOSITY_MUTE"
         return 0
     elif [[ $flag == "-v" ]] || [[ $flag == "--verbose" ]]; then
-        echo "1"
+        echo "$VERBOSITY_LOQUACIOUS"
         return 0
     elif [[ $flag =~ ^-vv+$ ]]; then
         # Count v's: -vv=2, -vvv=2 (max), etc.
         local v_part="${flag#-}"
         local count="${#v_part}"
-        # Cap at 2 (very verbose)
+        # Cap at very verbose (garrulous)
         if [[ $count -ge 2 ]]; then
-            echo "2"
+            echo "$VERBOSITY_GARRULOUS"
         else
-            echo "1"
+            echo "$VERBOSITY_LOQUACIOUS"
         fi
         return 0
     fi
