@@ -1475,12 +1475,12 @@ show_usage() {
     echo "  security      Run security audit on dotfiles"
     echo "  sync PACKAGE   Sync package files to system (for copy-sync packages)"
     echo "  pull PACKAGE   Pull package files from system (for copy-sync packages)"
+    echo "  completion SHELL   Output shell completion script (bash, zsh, or fish)"
     echo ""
     echo "Options:"
     echo "  -h, --help           Show this help message"
     echo "  -v, --verbose        Enable verbose output (level 1)"
     echo "  -vv                  Enable very verbose output (level 2)"
-    echo "  --completion SHELL   Output shell completion script (bash, zsh, or fish)"
     echo ""
     echo "Verbosity Levels:"
     echo "  (none)   Summary only - task completion + errors/warnings"
@@ -1509,9 +1509,9 @@ show_usage() {
     echo ""
     echo "Shell Integration:"
     echo "  # In .bashrc or .zshrc:"
-    echo "  source <($0 --completion bash)  # for bash"
-    echo "  source <($0 --completion zsh)   # for zsh"
-    echo "  source (\$0 --completion fish)  # for fish"
+    echo "  source <($0 completion bash)  # for bash"
+    echo "  source <($0 completion zsh)   # for zsh"
+    echo "  source (\$0 completion fish)  # for fish"
 }
 
 # Check if command exists
@@ -5444,14 +5444,6 @@ parse_arguments() {
                 fi
                 ;;
 
-            # Completion
-            --completion)
-                if [[ -z "${2:-}" ]]; then
-                    die "Missing argument for --completion" show_usage
-                fi
-                handle_completion "$2"
-                exit 0
-                ;;
 
             # Deprecated validate command
             validate)
@@ -5461,7 +5453,7 @@ parse_arguments() {
                 ;;
 
             # Valid commands
-            install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync|pull)
+            install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync|pull|completion)
                 if [[ -n "$COMMAND" ]]; then
                     die "Multiple commands specified: '$COMMAND' and '$1'"
                 fi
@@ -5582,6 +5574,13 @@ main() {
         pull)
             cmd_pull
             ;;
+        completion)
+            # Pass shell argument if provided
+            if [[ ${#COMMAND_ARGS[@]} -eq 0 ]]; then
+                die "Missing shell argument for completion command. Use: completion <bash|zsh|fish>"
+            fi
+            handle_completion "${COMMAND_ARGS[0]}"
+            ;;
         *)
             die "Unknown command: $COMMAND"
             ;;
@@ -5590,7 +5589,7 @@ main() {
 
 # Shell completion support
 # This section provides completion functions that can be sourced from shell configs
-# Usage: source <(dot --completion bash) or source <(dot --completion zsh)
+# Usage: source <(dot completion bash) or source <(dot completion zsh)
 
 
 # Run main function with all arguments
