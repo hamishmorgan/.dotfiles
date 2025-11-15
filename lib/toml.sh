@@ -78,16 +78,15 @@ get_toml_value() {
 
     # Remove quotes if present (handles both single and double quotes)
     # Note: This does not handle escaped quotes within values - document limitation if needed
-    if [[ "$value" =~ ^[\"'].*[\"']$ ]]; then
-        # Remove leading and trailing quotes (both single and double)
-        # Use separate checks for each quote type to avoid shellcheck issues
-        if [[ "$value" =~ ^\".*\"$ ]]; then
-            value="${value#\"}"
-            value="${value%\"}"
-        elif [[ "$value" =~ ^\'.*\'$ ]]; then
-            value="${value#\'}"
-            value="${value%\'}"
-        fi
+    # Use parameter expansion for compatibility (macOS bash 3.2 has regex differences)
+    if [[ "${value:0:1}" == '"' && "${value: -1}" == '"' ]]; then
+        # Double quotes
+        value="${value#\"}"
+        value="${value%\"}"
+    elif [[ "${value:0:1}" == "'" && "${value: -1}" == "'" ]]; then
+        # Single quotes
+        value="${value#\'}"
+        value="${value%\'}"
     fi
 
     # Return empty string if key exists but value is empty (explicit empty)
