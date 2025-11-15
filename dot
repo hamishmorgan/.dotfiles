@@ -5514,12 +5514,12 @@ is_valid_command() {
 }
 
 # Parse verbosity flag and return verbosity level
-# Handles: -q/--quiet (-1), -v/--verbose (1), -vv (2)
-# Verbosity levels: -1 (quiet), 0 (normal), 1 (verbose), 2 (very verbose)
+# Handles: -q/--quiet (MUTE), -v/--verbose (LOQUACIOUS), -vv (GARRULOUS)
+# Verbosity levels: MUTE (quiet), TACITURN (normal), LOQUACIOUS (verbose), GARRULOUS (very verbose)
 # Examples:
-#   -q, --quiet      → -1
-#   -v, --verbose    → 1
-#   -vv              → 2
+#   -q, --quiet      → VERBOSITY_MUTE
+#   -v, --verbose    → VERBOSITY_LOQUACIOUS
+#   -vv              → VERBOSITY_GARRULOUS
 # Note: Multiple flags set the highest level (last one wins)
 parse_verbosity() {
     local flag="$1"
