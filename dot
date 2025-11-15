@@ -1559,9 +1559,13 @@ validate_manifest_semantic() {
             ;;
     esac
 
-    # Validate files exist
-    IFS=',' read -ra files <<< "$PACKAGE_FILES"
+    # Validate files exist (expand glob patterns first)
+    local expanded_files
+    expanded_files=$(expand_file_patterns "$package" "$PACKAGE_FILES")
+    IFS=',' read -ra files <<< "$expanded_files"
     for file in "${files[@]}"; do
+        # Trim whitespace from file path
+        file=$(echo "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
         local file_path="$PACKAGES_DIR/$package/$file"
 
         # Check for path traversal
