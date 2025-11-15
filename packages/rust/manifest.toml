@@ -11,19 +11,19 @@ target = "~"
   "tomli",
   "python3",
   "-c",
-  "import sys; import tomli; f=sys.argv[1]; tomli.load(open(f, \"rb\"))",
+  "import sys; import tomli; f=sys.argv[1]; tomli.load(open(f, 'rb'))",
 ] }
 ".rustfmt.toml" = { command = "uvx", args = [
   "--with",
   "tomli",
   "python3",
   "-c",
-  "import sys; import tomli; f=sys.argv[1]; tomli.load(open(f, \"rb\"))",
+  "import sys; import tomli; f=sys.argv[1]; tomli.load(open(f, 'rb'))",
 ] }
 ".rustfmt.toml.example" = { command = "uvx", args = [
   "--with",
   "tomli",
   "python3",
   "-c",
-  "import sys; import tomli; f=sys.argv[1]; tomli.load(open(f, \"rb\"))",
+  "import sys; import tomli; f=sys.argv[1]; tomli.load(open(f, 'rb'))",
 ] }

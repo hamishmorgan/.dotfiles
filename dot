@@ -39,8 +39,9 @@ SYMBOL_INFO='∙'
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PACKAGES_DIR="$DOTFILES_DIR/packages"
 
-# Global variable for validator error output (used by run_validator)
+# Global variables for validator status (used by run_validator)
 VALIDATOR_ERROR_OUTPUT=""
+VALIDATOR_SKIPPED=false
 
 # Backup retention policy (configurable via environment variables)
 readonly MAX_BACKUPS_TO_DISPLAY="${DOTFILES_MAX_BACKUPS_TO_DISPLAY:-5}"     # Status output
@@ -390,6 +391,84 @@ get_required_deps() {
         validation) echo "uv" ;;  # uv provides uvx for validation
         *)        echo "" ;;
     esac
+}
+
+# Get validation dependencies from all package manifests
+# Returns: space-separated list of unique validation commands (tools only, not scripts)
+# Excludes: already-tracked dependencies (git, bash), scripts (paths with /), uvx (covered by uv)
+get_validation_deps() {
+    local validation_commands=()
+    local seen_commands=()
+
+    # Get all packages
+    local packages
+    packages=$(get_packages 2>/dev/null)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    # Iterate through each package
+    for package in $packages; do
+        local manifest="$PACKAGES_DIR/$package/manifest.toml"
+        if [[ ! -f "$manifest" ]]; then
+            continue
+        fi
+
+        # Get all validation patterns
+        local patterns
+        patterns=$(get_validation_patterns "$manifest" 2>/dev/null)
+        if [[ $? -ne 0 ]]; then
+            continue
+        fi
+
+        # Extract command from each validation entry
+        while IFS= read -r pattern; do
+            [[ -z "$pattern" ]] && continue
+
+            local validator_cmd
+            validator_cmd=$(get_validation_entry "$manifest" "$pattern" 2>/dev/null)
+            if [[ -z "$validator_cmd" ]]; then
+                continue
+            fi
+
+            # Extract command (format: "cmd|arg1,arg2,arg3")
+            local cmd
+            cmd="${validator_cmd%%|*}"
+
+            # Skip if empty
+            [[ -z "$cmd" ]] && continue
+
+            # Skip scripts (paths with /)
+            if [[ "$cmd" == */* ]]; then
+                continue
+            fi
+
+            # Skip already-tracked dependencies
+            case "$cmd" in
+                git|bash|stow) continue ;;
+                uvx) continue ;;  # Covered by uv
+            esac
+
+            # Check if we've seen this command before
+            local already_seen=false
+            for seen in "${seen_commands[@]}"; do
+                if [[ "$seen" == "$cmd" ]]; then
+                    already_seen=true
+                    break
+                fi
+            done
+
+            if [[ "$already_seen" == false ]]; then
+                seen_commands+=("$cmd")
+                validation_commands+=("$cmd")
+            fi
+        done <<< "$patterns"
+    done
+
+    # Return space-separated list
+    if [[ ${#validation_commands[@]} -gt 0 ]]; then
+        echo "${validation_commands[*]}"
+    fi
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1651,6 +1730,7 @@ get_min_version() {
     case "$tool" in
         git)  echo "2.0.0" ;;
         stow) echo "2.3" ;;
+        uv)   echo "0.1.0" ;;  # uv provides uvx for validation
         *)    echo "" ;;  # No minimum version requirement
     esac
 }
@@ -1728,6 +1808,10 @@ check_tool_version() {
             ;;
         stow)
             current_version=$(stow --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
+            ;;
+        uv)
+            # uv version format: uv 0.1.0 or uv 0.1.0+...
+            current_version=$(uv --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
             ;;
     esac
 
@@ -3521,25 +3605,18 @@ validate_config_syntax() {
                     fi
                 fi
 
-                # Unescape quotes in arguments (\" -> ")
-                # TOML strings have escaped quotes, but commands expect unescaped quotes
-                local unescaped_args=()
-                local arg_val
-                for arg_val in "${validator_args[@]}"; do
-                    unescaped_args+=("${arg_val//\\\"/\"}")
-                done
-                validator_args=("${unescaped_args[@]}")
-
                 # Expand $HOME and replace FILE placeholder in args array
                 local expanded_args=()
                 local found_file_placeholder=false
                 for arg in "${validator_args[@]}"; do
+                    # Trim whitespace from arg (handles leading/trailing spaces from TOML parsing)
+                    arg=$(echo "$arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
                     # Replace FILE placeholder with full path (simple literal replacement)
                     if [[ "$arg" == "FILE" ]]; then
                         expanded_args+=("$full_path")
                         found_file_placeholder=true
                     # Expand $HOME if present
-                    elif [[ "$arg" == *"\$HOME"* ]]; then
+                    elif [[ "$arg" == *'$HOME'* ]]; then
                         local expanded_arg="${arg//\$HOME/$HOME}"
                         expanded_args+=("$expanded_arg")
                     else
@@ -3559,13 +3636,13 @@ validate_config_syntax() {
                     if [[ -n "$VALIDATOR_ERROR_OUTPUT" ]]; then
                         # Show validator error output (indented)
                         echo "$VALIDATOR_ERROR_OUTPUT" | sed 's/^/    /' >&2
+                        # At verbosity 2+, also show the command that was executed
+                        if [[ $verbosity -gt 1 ]]; then
+                            log_info "    Executed: $cmd ${expanded_args[*]}"
+                        fi
                     else
                         # Fallback if no error output captured
                         log_info "    Validator command failed: $cmd ${expanded_args[*]}"
-                    fi
-                    # At verbosity 2+, show the full command that was executed
-                    if [[ $verbosity -gt 1 ]]; then
-                        log_info "    Executed: $cmd ${expanded_args[*]}"
                     fi
                     ((errors++))
                 elif [[ "$VALIDATOR_SKIPPED" == true ]]; then
@@ -4578,12 +4655,12 @@ cmd_health() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
+        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$verbosity" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # Calculate duration
@@ -4901,12 +4978,12 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
+        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$verbosity" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # 12. Manifest validation
@@ -4918,7 +4995,7 @@ cmd_health_verbose() {
         check_details+=("Manifest errors")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "12" "Manifest Validation" "Manifest Validation" "fail" "$verbosity" "Manifest errors" "$verbosity"
+        show_health_table_row "12" "Manifest Validation" "fail" "Manifest errors" "$verbosity"
     else
         local manifest_count=0
         for package in "${PACKAGES[@]}"; do
@@ -4929,7 +5006,7 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("$manifest_count manifest(s) valid")
         check_outputs+=("")
-        show_health_table_row "12" "Manifest Validation" "Manifest Validation" "pass" "$verbosity" "$manifest_count manifest(s) valid" "$verbosity"
+        show_health_table_row "12" "Manifest Validation" "pass" "$manifest_count manifest(s) valid" "$verbosity"
     fi
 
     # Calculate duration
