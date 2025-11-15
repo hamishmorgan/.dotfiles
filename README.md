@@ -249,11 +249,9 @@ z proj python           # Jumps to ~/projects/python-app
 # Interactive selection
 zi dot                  # Shows options matching 'dot'
 
-# Add current directory to database
-z --add .
-
-# Remove from database
-z --remove /path/to/dir
+# Manual database management (optional - zoxide auto-tracks directories)
+zoxide add .            # Add current directory to database
+zoxide remove /path/to/dir  # Remove from database
 ```
 
 **Benefits:** Frecency-based navigation (frequent + recent), fuzzy matching, interactive selection, faster navigation
