@@ -99,6 +99,11 @@ setup_test_dotfiles() {
             cp "$manifest" "$test_package_dir/manifest.toml"
         done < <(find "$repo_root/packages" -name "manifest.toml" -type f 2>/dev/null)
     fi
+
+    # Copy lib directory (required for library modules)
+    if [[ -d "$repo_root/lib" ]]; then
+        cp -r "$repo_root/lib" "$TEST_DOTFILES_DIR/lib"
+    fi
 }
 
 # Clean up test dotfiles directory
