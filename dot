@@ -1495,12 +1495,12 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  -h, --help           Show this help message"
-    echo "  -s, --silent         Silent mode (errors only, level -1)"
+    echo "  -q, --quiet          Quiet mode (errors only, level -1)"
     echo "  -v, --verbose        Verbose output (level 1)"
     echo "  -vv                  Very verbose output (level 2)"
     echo ""
     echo "Verbosity Levels:"
-    echo "  -1 (-s, --silent)    Silent mode (errors only)"
+    echo "  $VERBOSITY_SILENT (-q, --quiet)     Quiet mode (errors only)"
     echo "  0 (default)          Normal output (summary + errors/warnings)"
     echo "  1 (-v, --verbose)    Verbose (add package names and progress)"
     echo "  2 (-vv)              Very verbose (show every file operation)"
@@ -5524,8 +5524,8 @@ is_valid_command() {
 parse_verbosity() {
     local flag="$1"
 
-    if [[ $flag == "-s" ]] || [[ $flag == "--silent" ]]; then
-        echo "-1"
+    if [[ $flag == "-q" ]] || [[ $flag == "--quiet" ]]; then
+        echo "$VERBOSITY_SILENT"
         return 0
     elif [[ $flag == "-v" ]] || [[ $flag == "--verbose" ]]; then
         echo "1"
