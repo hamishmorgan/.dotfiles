@@ -3141,7 +3141,7 @@ cmd_install() {
 
     # Step 2: Install
     show_numbered_section "2" "Installation Pipeline"
-    if ! run_with_verbosity "$verbosity" 1 "" run_installation_pipeline "$verbosity"; then
+    if ! run_with_verbosity "$verbosity" $VERBOSITY_VERBOSE "" run_installation_pipeline "$verbosity"; then
         echo ""
         log_error "Installation pipeline failed"
         log_info "Run './dot health' to check installation state"
@@ -5033,7 +5033,7 @@ cmd_update() {
 
     # Step 4: Reinstall
     show_numbered_section "4" "Reinstall Dotfiles"
-    if ! run_with_verbosity "$verbosity" 1 "" run_installation_pipeline "$verbosity"; then
+    if ! run_with_verbosity "$verbosity" $VERBOSITY_VERBOSE "" run_installation_pipeline "$verbosity"; then
         echo ""
         log_error "Installation pipeline failed"
         return 1
