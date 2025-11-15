@@ -4852,48 +4852,18 @@ cmd_update() {
             IFS=',' read -ra update_args <<< "$args_string"
         fi
 
-        # Replace "file" placeholder in args array
-        # For update commands, "file" gets replaced with the file being updated
-        # Uses update_target from manifest if set, otherwise first file in files array
-        local expanded_args=()
+        # Resolve relative paths relative to package directory
+        # Absolute paths (starting with /) are passed as-is
+        local resolved_args=()
         for arg in "${update_args[@]}"; do
-            if [[ "$arg" == "file" ]]; then
-                # Load manifest to get files list and update_target
-                if load_package_manifest "$package"; then
-                    local file_to_update=""
-                    local manifest="$PACKAGES_DIR/$package/manifest.toml"
+            # Remove quotes and whitespace
+            arg=$(trim_quotes_and_whitespace "$arg")
 
-                    # Check for update_target field in [update] section
-                    # Optional: specifies which file to update when "file" placeholder is used
-                    # Format: [update] update_target = ".zshrc"
-                    # If not set, falls back to first file in files array
-                    local update_target
-                    if update_target=$(get_toml_value "$manifest" "update" "update_target" 2>/dev/null) && [[ -n "$update_target" ]]; then
-                        file_to_update="$update_target"
-                    fi
-
-                    # Fallback: use first file in files array if update_target not set
-                    if [[ -z "$file_to_update" ]]; then
-                        local files_string="$PACKAGE_FILES"
-                        IFS=',' read -ra files <<< "$files_string"
-                        if [[ ${#files[@]} -gt 0 ]]; then
-                            # Remove quotes and whitespace from the first file
-                            file_to_update=$(trim_quotes_and_whitespace "${files[0]}")
-                        fi
-                    fi
-
-                    if [[ -n "$file_to_update" ]]; then
-                        expanded_args+=("$PACKAGES_DIR/$package/$file_to_update")
-                    else
-                        # Fallback: use package directory
-                        expanded_args+=("$PACKAGES_DIR/$package")
-                    fi
-                else
-                    # Fallback: use package directory
-                    expanded_args+=("$PACKAGES_DIR/$package")
-                fi
+            # If arg is relative path (doesn't start with /), resolve relative to package directory
+            if [[ "$arg" != /* ]]; then
+                resolved_args+=("$PACKAGES_DIR/$package/$arg")
             else
-                expanded_args+=("$arg")
+                resolved_args+=("$arg")
             fi
         done
 
@@ -4910,7 +4880,7 @@ cmd_update() {
         fi
 
         # Execute update command
-        if run_package_update "$cmd" "${expanded_args[@]}"; then
+        if run_package_update "$cmd" "${resolved_args[@]}"; then
             ((update_count++))
             updated_packages+=("$display_name")
             if [[ $verbosity -lt 2 ]]; then
