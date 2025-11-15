@@ -1082,13 +1082,16 @@ get_toml_inline_table() {
         esac
     done
 
-    # Parse args array if present
+    # Parse args array if present - use get_toml_array for proper handling
     if [[ -n "$args_array" ]]; then
+        # Try to use get_toml_array for proper parsing (handles quoted strings with commas)
+        # First, we need to extract the key path - for inline tables, we need to parse differently
+        # For now, parse manually but preserve quoted strings properly
         # Extract array content (remove brackets)
         local args_content
         args_content=$(echo "$args_array" | sed 's/^\[//; s/\]$//')
 
-        # Parse array elements (handle quoted strings)
+        # Parse array elements (handle quoted strings) - preserve quotes in output
         local args_list=""
         local in_quotes=false
         local quote_char=""
@@ -1100,8 +1103,9 @@ get_toml_inline_table() {
             case "$char" in
                 ',')
                     if [[ "$in_quotes" == false ]]; then
-                        # Arg separator
-                        current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+                        # Arg separator - preserve quotes in the arg
+                        current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//')
+                        # Don't remove quotes - they indicate the arg should be treated as one unit
                         if [[ -n "$args_list" ]]; then
                             args_list="$args_list,$current_arg"
                         else
@@ -1130,7 +1134,7 @@ get_toml_inline_table() {
 
         # Add last arg
         if [[ -n "$current_arg" ]]; then
-            current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+            current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//')
             if [[ -n "$args_list" ]]; then
                 args_list="$args_list,$current_arg"
             else
@@ -3523,19 +3527,98 @@ validate_config_syntax() {
                     log_info "    Validator: $cmd (args: ${args_string//file/<file>})"
                 fi
 
-                # Convert args string to array
+                # Convert args string to array (handle quoted strings with commas)
+                # Format from TOML parser: "arg1","arg2","arg3" or arg1,arg2,arg3
                 local validator_args=()
                 if [[ -n "$args_string" ]]; then
-                    IFS=',' read -ra validator_args <<< "$args_string"
+                    # Parse comma-separated string, respecting quoted strings
+                    # Handle format: "arg1","arg2","arg with, comma"
+                    local in_quotes=false
+                    local current_arg=""
+                    local i=0
+                    
+                    while [[ $i -lt ${#args_string} ]]; do
+                        local char="${args_string:$i:1}"
+                        local prev_char=""
+                        [[ $i -gt 0 ]] && prev_char="${args_string:$((i-1)):1}"
+                        local next_char=""
+                        [[ $((i+1)) -lt ${#args_string} ]] && next_char="${args_string:$((i+1)):1}"
+                        
+                        # Check for pattern "," (quote-comma-quote) which separates args
+                        # But only if we're currently in quotes (ending a quoted arg)
+                        if [[ "$in_quotes" == true ]] && \
+                           [[ $i -lt $((${#args_string} - 2)) ]] && \
+                           [[ "${args_string:$i:3}" == '","' ]]; then
+                            # End of quoted arg, save it and skip the "," pattern
+                            current_arg=$(printf '%s\n' "$current_arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                            if [[ -n "$current_arg" ]]; then
+                                validator_args+=("$current_arg")
+                            fi
+                            current_arg=""
+                            in_quotes=false
+                            i=$((i + 3))  # Skip '","'
+                            # After skipping, the next char should be a quote starting the next arg
+                            # But we'll handle that in the next iteration
+                            continue
+                        fi
+                        
+                        case "$char" in
+                            '"')
+                                if [[ "$prev_char" == "\\" ]]; then
+                                    # Escaped quote - add as literal
+                                    current_arg="$current_arg$char"
+                                elif [[ "$in_quotes" == false ]]; then
+                                    # Start of quoted string - skip the quote
+                                    in_quotes=true
+                                elif [[ "$next_char" == "" ]]; then
+                                    # End of quoted string (last arg) - skip the quote
+                                    in_quotes=false
+                                else
+                                    # Quote inside string - treat as literal (shouldn't happen)
+                                    current_arg="$current_arg$char"
+                                fi
+                                ;;
+                            ',')
+                                if [[ "$in_quotes" == false ]]; then
+                                    # Arg separator (unquoted args) - save current arg
+                                    current_arg=$(printf '%s\n' "$current_arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                                    if [[ -n "$current_arg" ]]; then
+                                        validator_args+=("$current_arg")
+                                    fi
+                                    current_arg=""
+                                else
+                                    # Comma inside quoted string - preserve it
+                                    current_arg="$current_arg$char"
+                                fi
+                                ;;
+                            '\\')
+                                # Escape character - add it and the next char as literal
+                                # Don't toggle in_quotes for escaped characters
+                                current_arg="$current_arg$char"
+                                ((i++))
+                                if [[ $i -lt ${#args_string} ]]; then
+                                    current_arg="$current_arg${args_string:$i:1}"
+                                fi
+                                ;;
+                            *)
+                                current_arg="$current_arg$char"
+                                ;;
+                        esac
+                        ((i++))
+                    done
+                    # Add last arg
+                    if [[ -n "$current_arg" ]]; then
+                        current_arg=$(printf '%s\n' "$current_arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                        if [[ -n "$current_arg" ]]; then
+                            validator_args+=("$current_arg")
+                        fi
+                    fi
                 fi
 
                 # Expand $HOME and replace FILE placeholder in args array
                 local expanded_args=()
                 local found_file_placeholder=false
                 for arg in "${validator_args[@]}"; do
-                    # Trim whitespace from arg (handles leading/trailing spaces from TOML parsing)
-                    # Use printf instead of echo to avoid interpreting -n as a flag
-                    arg=$(printf '%s\n' "$arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
                     # Replace FILE placeholder with full path (simple literal replacement)
                     if [[ "$arg" == "FILE" ]]; then
                         expanded_args+=("$full_path")
