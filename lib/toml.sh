@@ -79,11 +79,14 @@ get_toml_value() {
     # Remove quotes if present (handles both single and double quotes)
     # Note: This does not handle escaped quotes within values - document limitation if needed
     # Use parameter expansion for compatibility (macOS bash 3.2 has regex differences)
-    if [[ "${value:0:1}" == '"' && "${value: -1}" == '"' ]]; then
+    # ${value:0:1} gets first char, ${value:$((${#value}-1)):1} gets last char (bash 3.2 compatible)
+    local first_char="${value:0:1}"
+    local last_char="${value:$((${#value}-1)):1}"
+    if [[ "$first_char" == '"' && "$last_char" == '"' ]]; then
         # Double quotes
         value="${value#\"}"
         value="${value%\"}"
-    elif [[ "${value:0:1}" == "'" && "${value: -1}" == "'" ]]; then
+    elif [[ "$first_char" == "'" && "$last_char" == "'" ]]; then
         # Single quotes
         value="${value#\'}"
         value="${value%\'}"
