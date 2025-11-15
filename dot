@@ -3132,7 +3132,7 @@ cmd_install() {
     INSTALLATION_IN_PROGRESS=true
 
     # Step 1: Backup
-    if ! run_step "1" "Backup Existing Files" "$verbosity" 2 "Backup completed" \
+    if ! run_step "1" "Backup Existing Files" "$verbosity" $VERBOSITY_VERY_VERBOSE "Backup completed" \
          "Backup failed - aborting installation" backup_existing; then
         log_info "Backup directory: $BACKUP_DIR"
         INSTALLATION_IN_PROGRESS=false
@@ -4887,7 +4887,7 @@ remove_mispointed_symlinks() {
         done < <(find "$HOME/.config" -maxdepth 3 -type l 2>/dev/null)
     fi
 
-    if [[ $removed_count -gt 0 && $verbosity -gt 0 ]]; then
+    if [[ $removed_count -gt 0 && $verbosity -ge $VERBOSITY_VERBOSE ]]; then
         log_info "Removed $removed_count outdated symlink(s)"
     fi
 
