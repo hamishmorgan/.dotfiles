@@ -39,9 +39,8 @@ SYMBOL_INFO='∙'
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PACKAGES_DIR="$DOTFILES_DIR/packages"
 
-# Global variables for validator status (used by run_validator)
+# Global variable for validator error output (used by run_validator)
 VALIDATOR_ERROR_OUTPUT=""
-VALIDATOR_SKIPPED=false
 
 # Backup retention policy (configurable via environment variables)
 readonly MAX_BACKUPS_TO_DISPLAY="${DOTFILES_MAX_BACKUPS_TO_DISPLAY:-5}"     # Status output
@@ -391,82 +390,6 @@ get_required_deps() {
         validation) echo "uv" ;;  # uv provides uvx for validation
         *)        echo "" ;;
     esac
-}
-
-# Get validation dependencies from all package manifests
-# Returns: space-separated list of unique validation commands (tools only, not scripts)
-# Excludes: already-tracked dependencies (git, bash), scripts (paths with /), uvx (covered by uv)
-get_validation_deps() {
-    local validation_commands=()
-    local seen_commands=()
-
-    # Get all packages
-    local packages
-    if ! packages=$(get_packages 2>/dev/null); then
-        return 1
-    fi
-
-    # Iterate through each package
-    for package in $packages; do
-        local manifest="$PACKAGES_DIR/$package/manifest.toml"
-        if [[ ! -f "$manifest" ]]; then
-            continue
-        fi
-
-        # Get all validation patterns
-        local patterns
-        if ! patterns=$(get_validation_patterns "$manifest" 2>/dev/null); then
-            continue
-        fi
-
-        # Extract command from each validation entry
-        while IFS= read -r pattern; do
-            [[ -z "$pattern" ]] && continue
-
-            local validator_cmd
-            validator_cmd=$(get_validation_entry "$manifest" "$pattern" 2>/dev/null)
-            if [[ -z "$validator_cmd" ]]; then
-                continue
-            fi
-
-            # Extract command (format: "cmd|arg1,arg2,arg3")
-            local cmd
-            cmd="${validator_cmd%%|*}"
-
-            # Skip if empty
-            [[ -z "$cmd" ]] && continue
-
-            # Skip scripts (paths with /)
-            if [[ "$cmd" == */* ]]; then
-                continue
-            fi
-
-            # Skip already-tracked dependencies
-            case "$cmd" in
-                git|bash|stow) continue ;;
-                uvx) continue ;;  # Covered by uv
-            esac
-
-            # Check if we've seen this command before
-            local already_seen=false
-            for seen in "${seen_commands[@]}"; do
-                if [[ "$seen" == "$cmd" ]]; then
-                    already_seen=true
-                    break
-                fi
-            done
-
-            if [[ "$already_seen" == false ]]; then
-                seen_commands+=("$cmd")
-                validation_commands+=("$cmd")
-            fi
-        done <<< "$patterns"
-    done
-
-    # Return space-separated list
-    if [[ ${#validation_commands[@]} -gt 0 ]]; then
-        echo "${validation_commands[*]}"
-    fi
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1080,16 +1003,13 @@ get_toml_inline_table() {
         esac
     done
 
-    # Parse args array if present - use get_toml_array for proper handling
+    # Parse args array if present
     if [[ -n "$args_array" ]]; then
-        # Try to use get_toml_array for proper parsing (handles quoted strings with commas)
-        # First, we need to extract the key path - for inline tables, we need to parse differently
-        # For now, parse manually but preserve quoted strings properly
         # Extract array content (remove brackets)
         local args_content
         args_content=$(echo "$args_array" | sed 's/^\[//; s/\]$//')
 
-        # Parse array elements (handle quoted strings) - preserve quotes in output
+        # Parse array elements (handle quoted strings)
         local args_list=""
         local in_quotes=false
         local quote_char=""
@@ -1101,9 +1021,8 @@ get_toml_inline_table() {
             case "$char" in
                 ',')
                     if [[ "$in_quotes" == false ]]; then
-                        # Arg separator - preserve quotes in the arg
-                        current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//')
-                        # Don't remove quotes - they indicate the arg should be treated as one unit
+                        # Arg separator
+                        current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
                         if [[ -n "$args_list" ]]; then
                             args_list="$args_list,$current_arg"
                         else
@@ -1132,7 +1051,7 @@ get_toml_inline_table() {
 
         # Add last arg
         if [[ -n "$current_arg" ]]; then
-            current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//')
+            current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
             if [[ -n "$args_list" ]]; then
                 args_list="$args_list,$current_arg"
             else
@@ -1732,7 +1651,6 @@ get_min_version() {
     case "$tool" in
         git)  echo "2.0.0" ;;
         stow) echo "2.3" ;;
-        uv)   echo "0.1.0" ;;  # uv provides uvx for validation
         *)    echo "" ;;  # No minimum version requirement
     esac
 }
@@ -1810,10 +1728,6 @@ check_tool_version() {
             ;;
         stow)
             current_version=$(stow --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
-            ;;
-        uv)
-            # uv version format: uv 0.1.0 or uv 0.1.0+...
-            current_version=$(uv --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
             ;;
     esac
 
@@ -3644,16 +3558,14 @@ validate_config_syntax() {
                     log_error "Validation failed: $file"
                     if [[ -n "$VALIDATOR_ERROR_OUTPUT" ]]; then
                         # Show validator error output (indented)
-                        while IFS= read -r line; do
-                            printf '    %s\n' "$line" >&2
-                        done <<< "$VALIDATOR_ERROR_OUTPUT"
-                        # At verbosity 2+, also show the command that was executed
-                        if [[ $verbosity -gt 1 ]]; then
-                            log_info "    Executed: $cmd ${expanded_args[*]}"
-                        fi
+                        echo "$VALIDATOR_ERROR_OUTPUT" | sed 's/^/    /' >&2
                     else
                         # Fallback if no error output captured
                         log_info "    Validator command failed: $cmd ${expanded_args[*]}"
+                    fi
+                    # At verbosity 2+, show the full command that was executed
+                    if [[ $verbosity -gt 1 ]]; then
+                        log_info "    Executed: $cmd ${expanded_args[*]}"
                     fi
                     ((errors++))
                 elif [[ "$VALIDATOR_SKIPPED" == true ]]; then
@@ -4501,8 +4413,8 @@ cmd_health() {
         show_health_table_row "5" "Symlink Integrity" "pass" "$file_count files linked" "$verbosity"
     fi
 
-    # 6. Configuration syntax (need valid configs for things to work)
-    show_health_check_spinner "6" "Configuration Syntax" "$verbosity"
+    # 2. Configuration syntax
+    show_health_check_spinner "2" "Configuration Syntax" "$verbosity"
     output=$(validate_config_syntax 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4666,12 +4578,12 @@ cmd_health() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
+        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+        show_health_table_row "11" "Backup Health" "info" "$verbosity" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # Calculate duration
@@ -4944,7 +4856,7 @@ cmd_health_verbose() {
     validate_config_syntax_with_verbosity() {
         validate_config_syntax "$verbosity"
     }
-    run_health_check "6" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
+    run_health_check "2" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
     ((total_errors += syntax_result))
 
     # 7. File permissions (security)
@@ -4971,8 +4883,17 @@ cmd_health_verbose() {
     run_health_check "11" "Orphaned Symlinks" check_orphaned_symlinks
     # Note: Orphaned symlinks are warnings, not errors
 
-    # 12. Backup health (maintenance)
-    show_health_check_spinner "12" "Backup Health" "$verbosity"
+    # 10. Dependencies
+    # Pass verbosity level to show appropriate detail
+    check_dependencies_verbose() {
+        check_dependencies "$verbosity"
+    }
+    if ! run_health_check "10" "Dependencies" check_dependencies_verbose; then
+        ((total_errors++))
+    fi
+
+    # 11. Backup health
+    show_health_check_spinner "11" "Backup Health" "$verbosity"
     local backup_count backup_size_kb
     read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
@@ -4980,12 +4901,35 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "12" "Backup Health" "pass" "No backups" "$verbosity"
+        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "12" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+        show_health_table_row "11" "Backup Health" "info" "$verbosity" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+    fi
+
+    # 12. Manifest validation
+    show_health_check_spinner "12" "Manifest Validation" "$verbosity"
+    output=$(validate_all_manifests 2>&1)
+    result=$?
+    if [[ $result -ne 0 ]]; then
+        check_statuses+=("fail")
+        check_details+=("Manifest errors")
+        check_outputs+=("$output")
+        ((total_errors += result))
+        show_health_table_row "12" "Manifest Validation" "Manifest Validation" "fail" "$verbosity" "Manifest errors" "$verbosity"
+    else
+        local manifest_count=0
+        for package in "${PACKAGES[@]}"; do
+            if [[ -f "$PACKAGES_DIR/$package/manifest.toml" ]]; then
+                ((manifest_count++))
+            fi
+        done
+        check_statuses+=("pass")
+        check_details+=("$manifest_count manifest(s) valid")
+        check_outputs+=("")
+        show_health_table_row "12" "Manifest Validation" "Manifest Validation" "pass" "$verbosity" "$manifest_count manifest(s) valid" "$verbosity"
     fi
 
     # Calculate duration
