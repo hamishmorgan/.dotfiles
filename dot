@@ -39,9 +39,8 @@ SYMBOL_INFO='∙'
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PACKAGES_DIR="$DOTFILES_DIR/packages"
 
-# Global variables for validator status (used by run_validator)
+# Global variable for validator error output (used by run_validator)
 VALIDATOR_ERROR_OUTPUT=""
-VALIDATOR_SKIPPED=false
 
 # Backup retention policy (configurable via environment variables)
 readonly MAX_BACKUPS_TO_DISPLAY="${DOTFILES_MAX_BACKUPS_TO_DISPLAY:-5}"     # Status output
@@ -388,85 +387,8 @@ get_required_deps() {
     local type="$1"
     case "$type" in
         common)   echo "stow git" ;;
-        validation) echo "uv" ;;  # uv provides uvx for validation
         *)        echo "" ;;
     esac
-}
-
-# Get validation dependencies from all package manifests
-# Returns: space-separated list of unique validation commands (tools only, not scripts)
-# Excludes: already-tracked dependencies (git, bash), scripts (paths with /), uvx (covered by uv)
-get_validation_deps() {
-    local validation_commands=()
-    local seen_commands=()
-
-    # Get all packages
-    local packages
-    if ! packages=$(get_packages 2>/dev/null); then
-        return 1
-    fi
-
-    # Iterate through each package
-    for package in $packages; do
-        local manifest="$PACKAGES_DIR/$package/manifest.toml"
-        if [[ ! -f "$manifest" ]]; then
-            continue
-        fi
-
-        # Get all validation patterns
-        local patterns
-        if ! patterns=$(get_validation_patterns "$manifest" 2>/dev/null); then
-            continue
-        fi
-
-        # Extract command from each validation entry
-        while IFS= read -r pattern; do
-            [[ -z "$pattern" ]] && continue
-
-            local validator_cmd
-            validator_cmd=$(get_validation_entry "$manifest" "$pattern" 2>/dev/null)
-            if [[ -z "$validator_cmd" ]]; then
-                continue
-            fi
-
-            # Extract command (format: "cmd|arg1,arg2,arg3")
-            local cmd
-            cmd="${validator_cmd%%|*}"
-
-            # Skip if empty
-            [[ -z "$cmd" ]] && continue
-
-            # Skip scripts (paths with /)
-            if [[ "$cmd" == */* ]]; then
-                continue
-            fi
-
-            # Skip already-tracked dependencies
-            case "$cmd" in
-                git|bash|stow) continue ;;
-                uvx) continue ;;  # Covered by uv
-            esac
-
-            # Check if we've seen this command before
-            local already_seen=false
-            for seen in "${seen_commands[@]}"; do
-                if [[ "$seen" == "$cmd" ]]; then
-                    already_seen=true
-                    break
-                fi
-            done
-
-            if [[ "$already_seen" == false ]]; then
-                seen_commands+=("$cmd")
-                validation_commands+=("$cmd")
-            fi
-        done <<< "$patterns"
-    done
-
-    # Return space-separated list
-    if [[ ${#validation_commands[@]} -gt 0 ]]; then
-        echo "${validation_commands[*]}"
-    fi
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1080,16 +1002,13 @@ get_toml_inline_table() {
         esac
     done
 
-    # Parse args array if present - use get_toml_array for proper handling
+    # Parse args array if present
     if [[ -n "$args_array" ]]; then
-        # Try to use get_toml_array for proper parsing (handles quoted strings with commas)
-        # First, we need to extract the key path - for inline tables, we need to parse differently
-        # For now, parse manually but preserve quoted strings properly
         # Extract array content (remove brackets)
         local args_content
         args_content=$(echo "$args_array" | sed 's/^\[//; s/\]$//')
 
-        # Parse array elements (handle quoted strings) - preserve quotes in output
+        # Parse array elements (handle quoted strings)
         local args_list=""
         local in_quotes=false
         local quote_char=""
@@ -1101,9 +1020,8 @@ get_toml_inline_table() {
             case "$char" in
                 ',')
                     if [[ "$in_quotes" == false ]]; then
-                        # Arg separator - preserve quotes in the arg
-                        current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//')
-                        # Don't remove quotes - they indicate the arg should be treated as one unit
+                        # Arg separator
+                        current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
                         if [[ -n "$args_list" ]]; then
                             args_list="$args_list,$current_arg"
                         else
@@ -1132,7 +1050,7 @@ get_toml_inline_table() {
 
         # Add last arg
         if [[ -n "$current_arg" ]]; then
-            current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//')
+            current_arg=$(echo "$current_arg" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
             if [[ -n "$args_list" ]]; then
                 args_list="$args_list,$current_arg"
             else
@@ -1344,98 +1262,6 @@ run_validator() {
         fi
     fi
 
-    # For uvx commands, check if available, otherwise skip (no fallback to python3)
-    if [[ "$command" == "uvx" ]]; then
-        if ! command_exists "uvx"; then
-            # Find file path for error message
-            local file_path=""
-            # Check last arg first (often the file path)
-            local last_idx=$((${#args[@]} - 1))
-            if [[ $last_idx -ge 0 ]]; then
-                local last_arg="${args[$last_idx]}"
-                # If last arg is an actual file, use it
-                if [[ -f "$last_arg" ]]; then
-                    file_path="$last_arg"
-                else
-                    # Look for file paths in args
-                    for arg in "${args[@]}"; do
-                        if [[ -f "$arg" ]]; then
-                            file_path="$arg"
-                            break
-                        fi
-                    done
-                    # If still not found, try to extract from Python code strings
-                    if [[ -z "$file_path" ]]; then
-                        for arg in "${args[@]}"; do
-                            # Look for file paths in Python code (e.g., open('/path/to/file'))
-                            # Use grep instead of regex for bash 3.2 compatibility
-                            local extracted_path
-                            extracted_path=$(echo "$arg" | grep -o "open(['\"][^'\"]*['\"])" | sed "s/open(['\"]//; s/['\"])//" | head -1)
-                            if [[ -n "$extracted_path" ]] && [[ -f "$extracted_path" ]]; then
-                                file_path="$extracted_path"
-                                break
-                            fi
-                        done
-                    fi
-                    # Fallback to last arg if nothing found
-                    if [[ -z "$file_path" ]]; then
-                        file_path="$last_arg"
-                    fi
-                fi
-            fi
-
-            # Extract package name from --with if present for better error message
-            local required_package=""
-            local skip_next=false
-            for arg in "${args[@]}"; do
-                if [[ "$arg" == "--with" ]]; then
-                    skip_next=true
-                    continue
-                elif [[ "$skip_next" == true ]]; then
-                    required_package="$arg"
-                    break
-                fi
-            done
-
-            if [[ -n "$required_package" ]]; then
-                log_warning "uvx not installed, skipping validation for ${file_path#"$HOME"/}"
-                log_info "    Install uvx to enable validation (automatically handles $required_package dependency)"
-            else
-                log_warning "uvx not installed, skipping validation for ${file_path#"$HOME"/}"
-                log_info "    Install uvx to enable validation"
-            fi
-            VALIDATOR_SKIPPED=true
-            return 0  # Continue, not an error
-        fi
-    # For Python commands, convert to uvx (handles dependencies automatically)
-    elif [[ "$command" == "python3" ]] || [[ "$command" == "python" ]]; then
-        if command_exists "uvx"; then
-            # Use uvx to run Python with dependencies
-            command="uvx"
-            # Prepend python3 to args for uvx
-            local uvx_args=("python3" "${args[@]}")
-            args=("${uvx_args[@]}")
-        else
-            local file_path=""
-            # Find file path in args (usually last arg or contains "file")
-            for arg in "${args[@]}"; do
-                if [[ -f "$arg" ]]; then
-                    file_path="$arg"
-                    break
-                fi
-            done
-            if [[ -z "$file_path" ]]; then
-                # Bash 3.2 compatible: get last element of array
-                local last_idx=$((${#args[@]} - 1))
-                file_path="${args[$last_idx]}"
-            fi
-            log_warning "python3 command specified but uvx not available, skipping validation for ${file_path#"$HOME"/}"
-            log_info "    Install uvx to enable validation (preferred over direct python3)"
-            VALIDATOR_SKIPPED=true
-            return 0  # Continue, not an error
-        fi
-    fi
-
     # Check if command exists
     if ! command_exists "$command"; then
         local file_path=""
@@ -1451,9 +1277,8 @@ run_validator() {
             local last_idx=$((${#args[@]} - 1))
             file_path="${args[$last_idx]}"
         fi
-            log_warning "$command not installed, skipping validation for ${file_path#"$HOME"/}"
-            VALIDATOR_SKIPPED=true
-            return 0  # Continue, not an error
+        log_warning "$command not installed, skipping validation for ${file_path#"$HOME"/}"
+        return 0  # Continue, not an error
     fi
 
     # Execute validator (array expansion preserves spaces/quotes)
@@ -1549,13 +1374,9 @@ validate_manifest_semantic() {
             ;;
     esac
 
-    # Validate files exist (expand glob patterns first)
-    local expanded_files
-    expanded_files=$(expand_file_patterns "$package" "$PACKAGE_FILES")
-    IFS=',' read -ra files <<< "$expanded_files"
+    # Validate files exist
+    IFS=',' read -ra files <<< "$PACKAGE_FILES"
     for file in "${files[@]}"; do
-        # Trim whitespace from file path
-        file=$(echo "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
         local file_path="$PACKAGES_DIR/$package/$file"
 
         # Check for path traversal
@@ -1732,7 +1553,6 @@ get_min_version() {
     case "$tool" in
         git)  echo "2.0.0" ;;
         stow) echo "2.3" ;;
-        uv)   echo "0.1.0" ;;  # uv provides uvx for validation
         *)    echo "" ;;  # No minimum version requirement
     esac
 }
@@ -1811,10 +1631,6 @@ check_tool_version() {
         stow)
             current_version=$(stow --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
             ;;
-        uv)
-            # uv version format: uv 0.1.0 or uv 0.1.0+...
-            current_version=$(uv --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
-            ;;
     esac
 
     # Output current version for caller
@@ -1846,12 +1662,7 @@ check_dependencies() {
     local satisfied_deps=()
     local common_deps
     common_deps="$(get_required_deps common)"
-    local validation_base_deps
-    validation_base_deps="$(get_required_deps validation)"
-    local validation_tool_deps
-    validation_tool_deps="$(get_validation_deps)"
 
-    # Check common dependencies (required for core functionality)
     for dep in $common_deps; do
         if ! command_exists "$dep"; then
             missing_deps+=("$dep")
@@ -1900,73 +1711,6 @@ check_dependencies() {
         fi
     done
 
-    # Check validation base dependencies (uv for uvx)
-    local missing_validation_base_deps=()
-    for dep in $validation_base_deps; do
-        if ! command_exists "$dep"; then
-            missing_validation_base_deps+=("$dep")
-            [[ $verbosity -gt 0 ]] && log_warning "Checking $dep... not found (optional for validation)"
-        else
-            # Check version if minimum is specified
-            local min_version
-            min_version=$(get_min_version "$dep")
-
-            if [[ -n "$min_version" ]]; then
-                # Capture version and check status in one call
-                local actual_version
-                actual_version=$(check_tool_version "$dep" "$min_version" 2>&1)
-                local check_status=$?
-
-                if [[ $check_status -eq 0 ]]; then
-                    # Version is sufficient
-                    satisfied_deps+=("$dep:$actual_version:$min_version")
-                    if [[ $verbosity -gt 1 ]]; then
-                        log_success "Checking $dep... ${actual_version} (>= ${min_version})"
-                    elif [[ $verbosity -gt 0 ]]; then
-                        log_success "Checking $dep... ${actual_version}"
-                    fi
-                elif [[ -n "$actual_version" ]]; then
-                    # Version was determined but is too old
-                    outdated_deps+=("$dep (${actual_version} < ${min_version})")
-                    if [[ $verbosity -gt 0 ]]; then
-                        log_warning "Checking $dep... version too old (${actual_version} < ${min_version})"
-                    fi
-                else
-                    # Could not determine version - treat as outdated
-                    outdated_deps+=("$dep (unknown < ${min_version})")
-                    if [[ $verbosity -gt 0 ]]; then
-                        log_warning "Checking $dep... unable to determine version"
-                    fi
-                fi
-            else
-                # No version requirement
-                satisfied_deps+=("$dep:present")
-                if [[ $verbosity -gt 1 ]]; then
-                    log_success "Checking $dep... present (no version requirement)"
-                elif [[ $verbosity -gt 0 ]]; then
-                    log_success "Checking $dep... present"
-                fi
-            fi
-        fi
-    done
-
-    # Check validation tool dependencies (from package manifests)
-    local missing_validation_tool_deps=()
-    for dep in $validation_tool_deps; do
-        if ! command_exists "$dep"; then
-            missing_validation_tool_deps+=("$dep")
-            [[ $verbosity -gt 0 ]] && log_warning "Checking $dep... not found (optional for validation)"
-        else
-            # No version requirement for validation tools (just check presence)
-            satisfied_deps+=("$dep:present")
-            if [[ $verbosity -gt 1 ]]; then
-                log_success "Checking $dep... present (validation tool)"
-            elif [[ $verbosity -gt 0 ]]; then
-                log_success "Checking $dep... present"
-            fi
-        fi
-    done
-
     local has_errors=false
 
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
@@ -1996,47 +1740,11 @@ check_dependencies() {
         echo ""
     fi
 
-    # Show warning about missing validation base dependencies (uv)
-    if [[ ${#missing_validation_base_deps[@]} -gt 0 ]]; then
-        log_warning "Optional validation dependencies missing: ${missing_validation_base_deps[*]}"
-        echo ""
-        echo "Install for validation support:"
-        echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"
-        echo "  Or: brew install uv  # macOS"
-        echo "  Or: pip install uv   # Any platform"
-        echo ""
-        echo "  Note: Without uv, validation will be skipped (not an error)"
-        echo ""
-    fi
-
-    # Show warning about missing validation tool dependencies
-    if [[ ${#missing_validation_tool_deps[@]} -gt 0 ]]; then
-        log_warning "Optional validation tool dependencies missing: ${missing_validation_tool_deps[*]}"
-        echo ""
-        echo "These tools are used for validating configuration files:"
-        for tool in "${missing_validation_tool_deps[@]}"; do
-            echo "  - $tool (used by package validation rules)"
-        done
-        echo ""
-        echo "Install missing tools to enable validation:"
-        echo "  Ubuntu/Debian: sudo apt-get install ${missing_validation_tool_deps[*]}"
-        echo "  macOS: brew install ${missing_validation_tool_deps[*]}"
-        echo ""
-        echo "  Note: Without these tools, validation will be skipped (not an error)"
-        echo ""
-    fi
-
     if [[ "$has_errors" == true ]]; then
         return 1
     fi
 
-    if [[ $verbosity -gt 0 ]]; then
-        log_success "All required dependencies satisfied"
-        if [[ ${#missing_validation_base_deps[@]} -gt 0 ]] || [[ ${#missing_validation_tool_deps[@]} -gt 0 ]]; then
-            local all_missing=("${missing_validation_base_deps[@]}" "${missing_validation_tool_deps[@]}")
-            log_info "Optional validation dependencies: ${all_missing[*]} (not installed)"
-        fi
-    fi
+    log_success "All dependencies satisfied"
 
     # Show summary at verbosity 1+
     if [[ $verbosity -gt 0 ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
@@ -2883,7 +2591,7 @@ show_status() {
                 echo -e "   ${YELLOW}${SYMBOL_WARNING}${NC} $package_name/$file ${BLUE}(out of sync)${NC}"
             done
             if [[ ${#unsynced_files[@]} -gt 0 ]]; then
-                show_tips "Sync commands" \
+                show_tips \
                     "Sync to system: ./dot sync $package" \
                     "Pull from system: ./dot pull $package"
             fi
@@ -3482,9 +3190,8 @@ validate_config_syntax() {
         else
             target_dir="$PACKAGE_TARGET"  # Use PACKAGE_TARGET which includes platform-specific overrides
         fi
-        # Normalize trailing slash and expand ~
+        # Normalize trailing slash
         target_dir="${target_dir%/}"
-        target_dir="${target_dir/#\~/$HOME}"
 
         # Skip packages without validation entries
         if ! get_validation_patterns "$PACKAGES_DIR/$package/manifest.toml" >/dev/null 2>&1; then
@@ -3515,9 +3222,9 @@ validate_config_syntax() {
                 continue  # Skip if not installed
             fi
 
-            # Find matching validator (exact match only - literal file names)
+            # Find matching validator (exact match first, then glob patterns)
             local validator_cmd
-            validator_cmd=$(get_validation_entry "$PACKAGES_DIR/$package/manifest.toml" "$file")
+            validator_cmd=$(get_validator_for_file "$file" "$package")
             if [[ -n "$validator_cmd" ]]; then
                 # Extract command and args from validator_cmd (format: "cmd|arg1,arg2,arg3")
                 local cmd args_string
@@ -3529,137 +3236,45 @@ validate_config_syntax() {
                     log_info "    Validator: $cmd (args: ${args_string//file/<file>})"
                 fi
 
-                # Convert args string to array (handle quoted strings with commas)
-                # Format from TOML parser: "arg1","arg2","arg3" or arg1,arg2,arg3
+                # Convert args string to array
                 local validator_args=()
                 if [[ -n "$args_string" ]]; then
-                    # Parse comma-separated string, respecting quoted strings
-                    # Handle format: "arg1","arg2","arg with, comma"
-                    local in_quotes=false
-                    local current_arg=""
-                    local i=0
-
-                    while [[ $i -lt ${#args_string} ]]; do
-                        local char="${args_string:$i:1}"
-
-                        # Handle escape sequences FIRST (before checking for quotes or patterns)
-                        if [[ "$char" == "\\" ]] && [[ $i -lt $((${#args_string} - 1)) ]]; then
-                            # Escape character - consume both the backslash and next char
-                            # This handles \" (escaped quote) and other escapes
-                            current_arg="$current_arg$char"
-                            ((i++))
-                            if [[ $i -lt ${#args_string} ]]; then
-                                current_arg="$current_arg${args_string:$i:1}"
-                            fi
-                            ((i++))
-                            continue
-                        fi
-
-                        case "$char" in
-                            '"')
-                                if [[ "$in_quotes" == false ]]; then
-                                    # Start of quoted string - skip the quote, start tracking
-                                    in_quotes=true
-                                else
-                                    # End of quoted string - check if followed by ," pattern
-                                    if [[ $i -lt $((${#args_string} - 2)) ]] && \
-                                       [[ "${args_string:$((i+1)):2}" == ',"' ]]; then
-                                        # Found ',"' pattern - save arg and skip entire pattern
-                                        current_arg=$(printf '%s\n' "$current_arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-                                        if [[ -n "$current_arg" ]]; then
-                                            validator_args+=("$current_arg")
-                                        fi
-                                        current_arg=""
-                                        # Skip ',"' pattern (3 chars: ", comma, ")
-                                        i=$((i + 3))
-                                        continue
-                                    else
-                                        # Last arg or not followed by ,"
-                                        in_quotes=false
-                                    fi
-                                fi
-                                ;;
-                            ',')
-                                if [[ "$in_quotes" == false ]]; then
-                                    # Arg separator (unquoted args) - save current arg
-                                    current_arg=$(printf '%s\n' "$current_arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-                                    if [[ -n "$current_arg" ]]; then
-                                        validator_args+=("$current_arg")
-                                    fi
-                                    current_arg=""
-                                else
-                                    # Comma inside quoted string - preserve it
-                                    current_arg="$current_arg$char"
-                                fi
-                                ;;
-                            *)
-                                current_arg="$current_arg$char"
-                                ;;
-                        esac
-                        ((i++))
-                    done
-                    # Add last arg
-                    if [[ -n "$current_arg" ]]; then
-                        current_arg=$(printf '%s\n' "$current_arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-                        if [[ -n "$current_arg" ]]; then
-                            validator_args+=("$current_arg")
-                        fi
-                    fi
+                    IFS=',' read -ra validator_args <<< "$args_string"
                 fi
 
-                # Unescape quotes in arguments (\" -> ")
-                # TOML strings have escaped quotes, but commands expect unescaped quotes
-                local unescaped_args=()
-                local arg_val
-                for arg_val in "${validator_args[@]}"; do
-                    unescaped_args+=("${arg_val//\\\"/\"}")
-                done
-                validator_args=("${unescaped_args[@]}")
-
-                # Expand $HOME and replace FILE placeholder in args array
+                # Replace "file" placeholder in args array
+                # The placeholder can appear as a standalone argument OR within a string argument
                 local expanded_args=()
-                local found_file_placeholder=false
                 for arg in "${validator_args[@]}"; do
-                    # Replace FILE placeholder with full path (simple literal replacement)
-                    if [[ "$arg" == "FILE" ]]; then
+                    if [[ "$arg" == "file" ]]; then
+                        # Standalone "file" argument - replace with full path
                         expanded_args+=("$full_path")
-                        found_file_placeholder=true
-                    # Expand $HOME if present
-                    elif [[ "$arg" == *"\$HOME"* ]]; then
-                        local expanded_arg="${arg//\$HOME/$HOME}"
-                        expanded_args+=("$expanded_arg")
+                    elif [[ "$arg" == *"file"* ]]; then
+                        # "file" appears within the argument (e.g., in Python code string)
+                        # Replace all occurrences
+                        local replaced_arg="${arg//file/$full_path}"
+                        expanded_args+=("$replaced_arg")
                     else
                         expanded_args+=("$arg")
                     fi
                 done
-                # If FILE placeholder wasn't found, append full file path as last argument
-                if [[ "$found_file_placeholder" == false ]]; then
-                    expanded_args+=("$full_path")
-                fi
 
                 # Execute validator
                 VALIDATOR_ERROR_OUTPUT=""
-                VALIDATOR_SKIPPED=false
                 if ! run_validator "$cmd" "${expanded_args[@]}"; then
                     log_error "Validation failed: $file"
                     if [[ -n "$VALIDATOR_ERROR_OUTPUT" ]]; then
                         # Show validator error output (indented)
-                        while IFS= read -r line; do
-                            printf '    %s\n' "$line" >&2
-                        done <<< "$VALIDATOR_ERROR_OUTPUT"
-                        # At verbosity 2+, also show the command that was executed
-                        if [[ $verbosity -gt 1 ]]; then
-                            log_info "    Executed: $cmd ${expanded_args[*]}"
-                        fi
+                        echo "$VALIDATOR_ERROR_OUTPUT" | sed 's/^/    /' >&2
                     else
                         # Fallback if no error output captured
                         log_info "    Validator command failed: $cmd ${expanded_args[*]}"
                     fi
+                    # At verbosity 2+, show the full command that was executed
+                    if [[ $verbosity -gt 1 ]]; then
+                        log_info "    Executed: $cmd ${expanded_args[*]}"
+                    fi
                     ((errors++))
-                elif [[ "$VALIDATOR_SKIPPED" == true ]]; then
-                    # Validation was skipped (dependencies missing) - don't show as passed
-                    # Warning already shown by run_validator
-                    :
                 else
                     log_success "Validation passed: $file"
                     # At verbosity 2+, show the command that succeeded
@@ -4401,81 +4016,8 @@ cmd_health() {
     local output
     local result
 
-    # 1. Dependencies (most fundamental - can't do anything without tools)
-    show_health_check_spinner "1" "Dependencies" "$verbosity"
-    if check_dependencies >/dev/null 2>&1; then
-        check_statuses+=("pass")
-        check_details+=("All satisfied")
-        check_outputs+=("")
-        show_health_table_row "1" "Dependencies" "pass" "All satisfied" "$verbosity"
-    else
-        output=$(check_dependencies 2>&1)
-        check_statuses+=("fail")
-        check_details+=("Missing deps")
-        check_outputs+=("$output")
-        ((total_errors++))
-        show_health_table_row "1" "Dependencies" "fail" "Missing deps" "$verbosity"
-    fi
-
-    # 2. Git repository status (need valid repo to work with dotfiles)
-    show_health_check_spinner "2" "Git Repository" "$verbosity"
-    output=$(check_git_repo_status 2>&1)
-    result=$?
-    if [[ $result -ne 0 ]]; then
-        check_statuses+=("warn")
-        check_details+=("Uncommitted changes")
-        check_outputs+=("$output")
-        ((total_warnings += result))
-        show_health_table_row "2" "Git Repository" "warn" "Uncommitted changes" "$verbosity"
-    else
-        check_statuses+=("pass")
-        check_details+=("Clean, up-to-date")
-        check_outputs+=("")
-        show_health_table_row "2" "Git Repository" "pass" "Clean, up-to-date" "$verbosity"
-    fi
-
-    # 3. Manifest validation (need valid manifests to discover packages)
-    show_health_check_spinner "3" "Manifest Validation" "$verbosity"
-    output=$(validate_all_manifests 2>&1)
-    result=$?
-    if [[ $result -ne 0 ]]; then
-        check_statuses+=("fail")
-        check_details+=("Manifest errors")
-        check_outputs+=("$output")
-        ((total_errors += result))
-        show_health_table_row "3" "Manifest Validation" "fail" "Manifest errors" "$verbosity"
-    else
-        local manifest_count=0
-        for package in "${PACKAGES[@]}"; do
-            if [[ -f "$PACKAGES_DIR/$package/manifest.toml" ]]; then
-                ((manifest_count++))
-            fi
-        done
-        check_statuses+=("pass")
-        check_details+=("$manifest_count manifest(s) valid")
-        check_outputs+=("")
-        show_health_table_row "3" "Manifest Validation" "pass" "$manifest_count manifest(s) valid" "$verbosity"
-    fi
-
-    # 4. Stow conflicts (blocks installation)
-    show_health_check_spinner "4" "Stow Conflicts" "$verbosity"
-    output=$(check_stow_conflicts 2>&1)
-    result=$?
-    if [[ $result -ne 0 ]]; then
-        check_statuses+=("fail")
-        check_details+=("$result conflict(s)")
-        check_outputs+=("$output")
-        ((total_errors += result))
-        show_health_table_row "4" "Stow Conflicts" "fail" "$result conflict(s)" "$verbosity"
-    else
-        check_statuses+=("pass")
-        check_details+=("No conflicts")
-        check_outputs+=("")
-        show_health_table_row "4" "Stow Conflicts" "pass" "No conflicts" "$verbosity"
-    fi
-
-    # 5. Symlink integrity (core functionality)
-    show_health_check_spinner "5" "Symlink Integrity" "$verbosity"
+    # 1. Symlink integrity
+    show_health_check_spinner "1" "Symlink Integrity" "$verbosity"
     output=""
     for package in "${PACKAGES[@]}"; do
         local package_output
@@ -4491,18 +4033,18 @@ cmd_health() {
         check_statuses+=("fail")
         check_details+=("Validation errors")
         check_outputs+=("$output")
-        show_health_table_row "5" "Symlink Integrity" "fail" "Validation errors" "$verbosity"
+        show_health_table_row "1" "Symlink Integrity" "fail" "Validation errors" "$verbosity"
     else
         local file_count
         file_count=$(count_symlinks)
         check_statuses+=("pass")
         check_details+=("$file_count files linked")
         check_outputs+=("")
-        show_health_table_row "5" "Symlink Integrity" "pass" "$file_count files linked" "$verbosity"
+        show_health_table_row "1" "Symlink Integrity" "pass" "$file_count files linked" "$verbosity"
     fi
 
-    # 6. Configuration syntax (need valid configs for things to work)
-    show_health_check_spinner "6" "Configuration Syntax" "$verbosity"
+    # 2. Configuration syntax
+    show_health_check_spinner "2" "Configuration Syntax" "$verbosity"
     output=$(validate_config_syntax 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4510,33 +4052,16 @@ cmd_health() {
         check_details+=("Syntax errors")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "6" "Configuration Syntax" "fail" "Syntax errors" "$verbosity"
+        show_health_table_row "2" "Configuration Syntax" "fail" "Syntax errors" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("All configs valid")
         check_outputs+=("")
-        show_health_table_row "6" "Configuration Syntax" "pass" "All configs valid" "$verbosity"
+        show_health_table_row "2" "Configuration Syntax" "pass" "All configs valid" "$verbosity"
     fi
 
-    # 7. File permissions (security)
-    show_health_check_spinner "7" "File Permissions" "$verbosity"
-    output=$(check_file_permissions 2>&1)
-    result=$?
-    if [[ $result -ne 0 ]]; then
-        check_statuses+=("fail")
-        check_details+=("Insecure permissions")
-        check_outputs+=("$output")
-        ((total_errors += result))
-        show_health_table_row "7" "File Permissions" "fail" "Insecure permissions" "$verbosity"
-    else
-        check_statuses+=("pass")
-        check_details+=("Secrets secured")
-        check_outputs+=("")
-        show_health_table_row "7" "File Permissions" "pass" "Secrets secured" "$verbosity"
-    fi
-
-    # 8. Submodule health (important but not blocking)
-    show_health_check_spinner "8" "Submodule Health" "$verbosity"
+    # 3. Submodule health
+    show_health_check_spinner "3" "Submodule Health" "$verbosity"
     output=$(check_submodule_health 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4544,16 +4069,33 @@ cmd_health() {
         check_details+=("Issues found")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "8" "Submodule Health" "fail" "Issues found" "$verbosity"
+        show_health_table_row "3" "Submodule Health" "fail" "Issues found" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("All submodules clean")
         check_outputs+=("")
-        show_health_table_row "8" "Submodule Health" "pass" "All submodules clean" "$verbosity"
+        show_health_table_row "3" "Submodule Health" "pass" "All submodules clean" "$verbosity"
     fi
 
-    # 9. Template/secret config consistency (important but not blocking)
-    show_health_check_spinner "9" "Template Consistency" "$verbosity"
+    # 4. Git repository status
+    show_health_check_spinner "4" "Git Repository" "$verbosity"
+    output=$(check_git_repo_status 2>&1)
+    result=$?
+    if [[ $result -ne 0 ]]; then
+        check_statuses+=("warn")
+        check_details+=("Uncommitted changes")
+        check_outputs+=("$output")
+        ((total_warnings += result))
+        show_health_table_row "4" "Git Repository" "warn" "Uncommitted changes" "$verbosity"
+    else
+        check_statuses+=("pass")
+        check_details+=("Clean, up-to-date")
+        check_outputs+=("")
+        show_health_table_row "4" "Git Repository" "pass" "Clean, up-to-date" "$verbosity"
+    fi
+
+    # 5. Template/secret config consistency
+    show_health_check_spinner "5" "Template Consistency" "$verbosity"
     output=$(check_template_consistency 2>&1)
     result=$?
     local template_count=0
@@ -4563,16 +4105,33 @@ cmd_health() {
         check_details+=("Stale configs")
         check_outputs+=("$output")
         ((total_warnings += result))
-        show_health_table_row "9" "Template Consistency" "warn" "Stale configs" "$verbosity"
+        show_health_table_row "5" "Template Consistency" "warn" "Stale configs" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("$template_count template(s) synced")
         check_outputs+=("")
-        show_health_table_row "9" "Template Consistency" "pass" "$template_count template(s) synced" "$verbosity"
+        show_health_table_row "5" "Template Consistency" "pass" "$template_count template(s) synced" "$verbosity"
     fi
 
-    # 10. Shell integration (nice to have)
-    show_health_check_spinner "10" "Shell Integration" "$verbosity"
+    # 6. File permissions
+    show_health_check_spinner "6" "File Permissions" "$verbosity"
+    output=$(check_file_permissions 2>&1)
+    result=$?
+    if [[ $result -ne 0 ]]; then
+        check_statuses+=("fail")
+        check_details+=("Insecure permissions")
+        check_outputs+=("$output")
+        ((total_errors += result))
+        show_health_table_row "6" "File Permissions" "fail" "Insecure permissions" "$verbosity"
+    else
+        check_statuses+=("pass")
+        check_details+=("Secrets secured")
+        check_outputs+=("")
+        show_health_table_row "6" "File Permissions" "pass" "Secrets secured" "$verbosity"
+    fi
+
+    # 7. Shell integration
+    show_health_check_spinner "7" "Shell Integration" "$verbosity"
     output=$(check_shell_integration 2>&1)
     result=$?
 
@@ -4624,7 +4183,7 @@ cmd_health() {
         check_details+=("Issues detected")
         check_outputs+=("$output")
         ((total_warnings += result))
-        show_health_table_row "10" "Shell Integration" "warn" "Issues detected" "$verbosity"
+        show_health_table_row "7" "Shell Integration" "warn" "Issues detected" "$verbosity"
     else
         check_statuses+=("pass")
         if [[ -n "$shell_name" ]]; then
@@ -4634,31 +4193,64 @@ cmd_health() {
         fi
         check_outputs+=("")
         if [[ -n "$shell_name" ]]; then
-            show_health_table_row "10" "Shell Integration" "pass" "$shell_name active" "$verbosity"
+            show_health_table_row "7" "Shell Integration" "pass" "$shell_name active" "$verbosity"
         else
-            show_health_table_row "10" "Shell Integration" "pass" "Shell active" "$verbosity"
+            show_health_table_row "7" "Shell Integration" "pass" "Shell active" "$verbosity"
         fi
     fi
 
-    # 11. Orphaned symlinks (cleanup/maintenance)
-    show_health_check_spinner "11" "Orphaned Symlinks" "$verbosity"
+    # 8. Stow conflicts
+    show_health_check_spinner "8" "Stow Conflicts" "$verbosity"
+    output=$(check_stow_conflicts 2>&1)
+    result=$?
+    if [[ $result -ne 0 ]]; then
+        check_statuses+=("fail")
+        check_details+=("$result conflict(s)")
+        check_outputs+=("$output")
+        ((total_errors += result))
+        show_health_table_row "8" "Stow Conflicts" "fail" "$result conflict(s)" "$verbosity"
+    else
+        check_statuses+=("pass")
+        check_details+=("No conflicts")
+        check_outputs+=("")
+        show_health_table_row "8" "Stow Conflicts" "pass" "No conflicts" "$verbosity"
+    fi
+
+    # 9. Orphaned symlinks
+    show_health_check_spinner "9" "Orphaned Symlinks" "$verbosity"
     output=$(check_orphaned_symlinks 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
         check_statuses+=("warn")
         check_details+=("$result found")
         check_outputs+=("$output")
-        show_health_table_row "11" "Orphaned Symlinks" "warn" "$result found" "$verbosity"
+        show_health_table_row "9" "Orphaned Symlinks" "warn" "$result found" "$verbosity"
         # Don't count as error, just warning
     else
         check_statuses+=("pass")
         check_details+=("None found")
         check_outputs+=("")
-        show_health_table_row "11" "Orphaned Symlinks" "pass" "None found" "$verbosity"
+        show_health_table_row "9" "Orphaned Symlinks" "pass" "None found" "$verbosity"
     fi
 
-    # 12. Backup health (maintenance)
-    show_health_check_spinner "12" "Backup Health" "$verbosity"
+    # 10. Dependencies
+    show_health_check_spinner "10" "Dependencies" "$verbosity"
+    if check_dependencies >/dev/null 2>&1; then
+        check_statuses+=("pass")
+        check_details+=("All satisfied")
+        check_outputs+=("")
+        show_health_table_row "10" "Dependencies" "pass" "All satisfied" "$verbosity"
+    else
+        output=$(check_dependencies 2>&1)
+        check_statuses+=("fail")
+        check_details+=("Missing deps")
+        check_outputs+=("$output")
+        ((total_errors++))
+        show_health_table_row "10" "Dependencies" "fail" "Missing deps" "$verbosity"
+    fi
+
+    # 11. Backup health
+    show_health_check_spinner "11" "Backup Health" "$verbosity"
     local backup_count backup_size_kb
     read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
@@ -4666,12 +4258,12 @@ cmd_health() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
+        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+        show_health_table_row "11" "Backup Health" "info" "$verbosity" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # Calculate duration
@@ -4908,71 +4500,67 @@ cmd_health_verbose() {
         echo ""
     fi
 
-    # 1. Dependencies (most fundamental - can't do anything without tools)
-    check_dependencies_verbose() {
-        check_dependencies "$verbosity"
-    }
-    if ! run_health_check "1" "Dependencies" check_dependencies_verbose; then
-        ((total_errors++))
-    fi
-
-    # 2. Git repository status (need valid repo to work with dotfiles)
-    local git_result
-    run_health_check "2" "Git Repository" check_git_repo_status && git_result=0 || git_result=$?
-    ((total_warnings += git_result))
-
-    # 3. Manifest validation (need valid manifests to discover packages)
-    local manifest_result
-    run_health_check "3" "Manifest Validation" validate_all_manifests && manifest_result=0 || manifest_result=$?
-    ((total_errors += manifest_result))
-
-    # 4. Stow conflicts (blocks installation)
-    local stow_result
-    run_health_check "4" "Stow Conflicts" check_stow_conflicts && stow_result=0 || stow_result=$?
-    ((total_errors += stow_result))
-
-    # 5. Symlink integrity (core functionality)
-    echo -e " ${BLUE}5. Symlink Integrity${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    # 1. Symlink integrity
+    echo -e " ${BLUE}1. Symlink Integrity${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     for package in "${PACKAGES[@]}"; do
         validate_package "$package" "$verbosity" 2>&1 | indent_section_output || ((total_errors++))
     done
     echo ""
 
-    # 6. Configuration syntax (need valid configs for things to work)
+    # 2. Configuration syntax
     local syntax_result
     validate_config_syntax_with_verbosity() {
         validate_config_syntax "$verbosity"
     }
-    run_health_check "6" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
+    run_health_check "2" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
     ((total_errors += syntax_result))
 
-    # 7. File permissions (security)
-    local perm_result
-    run_health_check "7" "File Permissions" check_file_permissions && perm_result=0 || perm_result=$?
-    ((total_errors += perm_result))
-
-    # 8. Submodule health (important but not blocking)
+    # 3. Submodule health
     local submodule_result
-    run_health_check "8" "Submodule Health" check_submodule_health && submodule_result=0 || submodule_result=$?
+    run_health_check "3" "Submodule Health" check_submodule_health && submodule_result=0 || submodule_result=$?
     ((total_errors += submodule_result))
 
-    # 9. Template/secret config consistency (important but not blocking)
+    # 4. Git repository status
+    local git_result
+    run_health_check "4" "Git Repository" check_git_repo_status && git_result=0 || git_result=$?
+    ((total_warnings += git_result))
+
+    # 5. Template/secret config consistency
     local template_result
-    run_health_check "9" "Template Consistency" check_template_consistency && template_result=0 || template_result=$?
+    run_health_check "5" "Template Consistency" check_template_consistency && template_result=0 || template_result=$?
     ((total_warnings += template_result))
 
-    # 10. Shell integration (nice to have)
+    # 6. File permissions
+    local perm_result
+    run_health_check "6" "File Permissions" check_file_permissions && perm_result=0 || perm_result=$?
+    ((total_errors += perm_result))
+
+    # 7. Shell integration
     local shell_result
-    run_health_check "10" "Shell Integration" check_shell_integration && shell_result=0 || shell_result=$?
+    run_health_check "7" "Shell Integration" check_shell_integration && shell_result=0 || shell_result=$?
     ((total_warnings += shell_result))
 
-    # 11. Orphaned symlinks (cleanup/maintenance)
-    run_health_check "11" "Orphaned Symlinks" check_orphaned_symlinks
+    # 8. Stow conflicts
+    local stow_result
+    run_health_check "8" "Stow Conflicts" check_stow_conflicts && stow_result=0 || stow_result=$?
+    ((total_errors += stow_result))
+
+    # 9. Orphaned symlinks
+    run_health_check "9" "Orphaned Symlinks" check_orphaned_symlinks
     # Note: Orphaned symlinks are warnings, not errors
 
-    # 12. Backup health (maintenance)
-    show_health_check_spinner "12" "Backup Health" "$verbosity"
+    # 10. Dependencies
+    # Pass verbosity level to show appropriate detail
+    check_dependencies_verbose() {
+        check_dependencies "$verbosity"
+    }
+    if ! run_health_check "10" "Dependencies" check_dependencies_verbose; then
+        ((total_errors++))
+    fi
+
+    # 11. Backup health
+    show_health_check_spinner "11" "Backup Health" "$verbosity"
     local backup_count backup_size_kb
     read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
@@ -4980,12 +4568,35 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "12" "Backup Health" "pass" "No backups" "$verbosity"
+        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "12" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+        show_health_table_row "11" "Backup Health" "info" "$verbosity" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+    fi
+
+    # 12. Manifest validation
+    show_health_check_spinner "12" "Manifest Validation" "$verbosity"
+    output=$(validate_all_manifests 2>&1)
+    result=$?
+    if [[ $result -ne 0 ]]; then
+        check_statuses+=("fail")
+        check_details+=("Manifest errors")
+        check_outputs+=("$output")
+        ((total_errors += result))
+        show_health_table_row "12" "Manifest Validation" "Manifest Validation" "fail" "$verbosity" "Manifest errors" "$verbosity"
+    else
+        local manifest_count=0
+        for package in "${PACKAGES[@]}"; do
+            if [[ -f "$PACKAGES_DIR/$package/manifest.toml" ]]; then
+                ((manifest_count++))
+            fi
+        done
+        check_statuses+=("pass")
+        check_details+=("$manifest_count manifest(s) valid")
+        check_outputs+=("")
+        show_health_table_row "12" "Manifest Validation" "Manifest Validation" "pass" "$verbosity" "$manifest_count manifest(s) valid" "$verbosity"
     fi
 
     # Calculate duration
@@ -5227,7 +4838,7 @@ pull_package_from_system() {
     fi
 
     log_success "Pulled $pulled_count file(s) successfully"
-    show_tips "Next steps" \
+    show_tips \
         "Review changes: git diff packages/$package" \
         "Commit if satisfied: git add packages/$package && git commit"
     return 0
