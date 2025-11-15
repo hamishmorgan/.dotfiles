@@ -3334,7 +3334,10 @@ validate_config_syntax() {
                 if ! run_validator "$cmd" "${expanded_args[@]}"; then
                     log_error "Validation failed: $file"
                     if [[ -n "$VALIDATOR_ERROR_OUTPUT" ]]; then
-                        echo "$VALIDATOR_ERROR_OUTPUT" | sed 's/^/    /'
+                        # Use while loop with parameter expansion instead of sed (shellcheck SC2001)
+                        while IFS= read -r line; do
+                            echo "    $line"
+                        done <<< "$VALIDATOR_ERROR_OUTPUT"
                     else
                         # Fallback if no error output captured
                         log_info "    Validator command failed: $cmd ${expanded_args[*]}"
@@ -4058,7 +4061,7 @@ cmd_health() {
     if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
         local errors=0
         local all_errors=""
-        
+
         # Capture errors but suppress normal output in quiet mode
         for package in "${PACKAGES[@]}"; do
             local error_output
@@ -4072,7 +4075,7 @@ cmd_health() {
                 fi
             fi
         done
-        
+
         local config_error_output
         local config_exit_code
         config_error_output=$(validate_config_syntax "$verbosity" 2>&1)
@@ -4083,7 +4086,7 @@ cmd_health() {
                 all_errors+="$config_error_output"$'\n'
             fi
         fi
-        
+
         if [[ $errors -gt 0 ]]; then
             # Always show errors, even in quiet mode
             if [[ -n "$all_errors" ]]; then
