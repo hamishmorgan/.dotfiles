@@ -6,5 +6,5 @@ method = "stow"
 target = "~"
 
 [validation]
-".zshrc" = { command = "zsh", args = ["-n"] }
-".zprofile" = { command = "zsh", args = ["-n"] }
+".zshrc" = { command = "zsh", args = ["-n", "FILE"] }
+".zprofile" = { command = "zsh", args = ["-n", "FILE"] }
