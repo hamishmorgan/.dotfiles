@@ -227,7 +227,8 @@ cargo install eza     # Other platforms
 
 #### gitignore.io (gi command)
 
-The `gi` command generates `.gitignore` files from [gitignore.io](https://gitignore.io) templates. Available in bash, zsh, and fish shells.
+The `gi` command generates `.gitignore` files from [gitignore.io](https://gitignore.io) templates.
+Available in bash, zsh, and fish shells.
 
 ```bash
 # Generate gitignore for Python
