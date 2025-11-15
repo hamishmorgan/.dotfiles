@@ -3476,8 +3476,9 @@ validate_config_syntax() {
         else
             target_dir="$PACKAGE_TARGET"  # Use PACKAGE_TARGET which includes platform-specific overrides
         fi
-        # Normalize trailing slash
+        # Normalize trailing slash and expand ~
         target_dir="${target_dir%/}"
+        target_dir="${target_dir/#\~/$HOME}"
 
         # Skip packages without validation entries
         if ! get_validation_patterns "$PACKAGES_DIR/$package/manifest.toml" >/dev/null 2>&1; then
@@ -3533,7 +3534,8 @@ validate_config_syntax() {
                 local found_file_placeholder=false
                 for arg in "${validator_args[@]}"; do
                     # Trim whitespace from arg (handles leading/trailing spaces from TOML parsing)
-                    arg=$(echo "$arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                    # Use printf instead of echo to avoid interpreting -n as a flag
+                    arg=$(printf '%s\n' "$arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
                     # Replace FILE placeholder with full path (simple literal replacement)
                     if [[ "$arg" == "FILE" ]]; then
                         expanded_args+=("$full_path")
