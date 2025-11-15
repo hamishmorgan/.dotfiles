@@ -1672,7 +1672,7 @@ check_dependencies() {
     for dep in $common_deps; do
         if ! command_exists "$dep"; then
             missing_deps+=("$dep")
-            [[ $verbosity -gt $VERBOSITY_NORMAL ]] && log_error "Checking $dep... not found"
+            [[ $verbosity -ge $VERBOSITY_VERBOSE ]] && log_error "Checking $dep... not found"
         else
             # Check version if minimum is specified
             local min_version
@@ -1687,30 +1687,30 @@ check_dependencies() {
                 if [[ $check_status -eq 0 ]]; then
                     # Version is sufficient
                     satisfied_deps+=("$dep:$actual_version:$min_version")
-                    if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+                    if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
                         log_success "Checking $dep... ${actual_version} (>= ${min_version})"
-                    elif [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+                    elif [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
                         log_success "Checking $dep... ${actual_version}"
                     fi
                 elif [[ -n "$actual_version" ]]; then
                     # Version was determined but is too old
                     outdated_deps+=("$dep (${actual_version} < ${min_version})")
-                    if [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+                    if [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
                         log_warning "Checking $dep... version too old (${actual_version} < ${min_version})"
                     fi
                 else
                     # Could not determine version - treat as outdated
                     outdated_deps+=("$dep (unknown < ${min_version})")
-                    if [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+                    if [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
                         log_warning "Checking $dep... unable to determine version"
                     fi
                 fi
             else
                 # No version requirement
                 satisfied_deps+=("$dep:present")
-                if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+                if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
                     log_success "Checking $dep... present (no version requirement)"
-                elif [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+                elif [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
                     log_success "Checking $dep... present"
                 fi
             fi
@@ -1753,7 +1753,7 @@ check_dependencies() {
     log_success "All dependencies satisfied"
 
     # Show summary at verbosity 1+
-    if [[ $verbosity -gt $VERBOSITY_NORMAL ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
+    if [[ $verbosity -ge $VERBOSITY_VERBOSE ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
         log_info "Total: ${#satisfied_deps[@]} dependencies satisfied"
     fi
 
@@ -2048,12 +2048,12 @@ install_dotfiles() {
 
     # Set stow flags based on verbosity level
     local stow_flags="--restow --dir=$PACKAGES_DIR --target=$HOME"
-    if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+    if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
         stow_flags="--verbose $stow_flags"
     fi
 
     # Only show header in verbose mode
-    if [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+    if [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
         log_info "Installing dotfiles using Stow..."
     fi
 
@@ -2064,7 +2064,7 @@ install_dotfiles() {
         fi
 
         # Show package name at verbosity 1+
-        if [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+        if [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
             log_info "Installing package: $package"
         fi
 
@@ -2076,7 +2076,7 @@ install_dotfiles() {
         local stow_result
 
         # shellcheck disable=SC2086
-        if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+        if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
             # Level 2: Show all stow file operations
             # Try --restow first, but if it fails due to conflicts, try --adopt
             if stow_output=$(stow $stow_flags "$package" 2>&1); then
@@ -2088,7 +2088,7 @@ install_dotfiles() {
                 # Files exist but aren't symlinks - use --adopt to take ownership
                 # Remove --restow from flags when adopting (can't restow if files already exist)
                 local adopt_flags="--adopt --dir=$PACKAGES_DIR --target=$HOME"
-                if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+                if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
                     adopt_flags="--verbose $adopt_flags"
                 fi
                 log_info "Adopting existing files for $package..."
@@ -2112,7 +2112,7 @@ install_dotfiles() {
                 suggest_fixes "stow" "$package"
                 return 1
             fi
-        elif [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+        elif [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
             # Level 1+: Just show success per package (level 2 already handled above)
             if stow $stow_flags "$package" >/dev/null 2>&1; then
                 INSTALLED_PACKAGES+=("$package")
@@ -2274,7 +2274,7 @@ validate_package() {
     log_info "Validating $display_name configuration..."
 
     # At verbosity 2+, show which files are being validated
-    if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+    if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
         IFS=',' read -ra file_array <<< "$files"
         log_info "    Files to check: ${#file_array[@]}"
         for file in "${file_array[@]}"; do
@@ -3150,7 +3150,7 @@ cmd_install() {
     fi
 
     # Show summary for normal output (level 0, not silent)
-    if [[ $verbosity -gt $VERBOSITY_SILENT ]] && [[ $verbosity -le $VERBOSITY_NORMAL ]]; then
+    if [[ $verbosity -ge $VERBOSITY_NORMAL ]] && [[ $verbosity -le $VERBOSITY_NORMAL ]]; then
         show_installation_summary
     fi
     echo ""
@@ -3202,7 +3202,7 @@ validate_config_syntax() {
         # Skip packages without validation entries
         if ! get_validation_patterns "$PACKAGES_DIR/$package/manifest.toml" >/dev/null 2>&1; then
             # At verbosity 2+, show which packages are being skipped
-            if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+            if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
                 log_info "    Package $package: No validation rules defined"
             fi
             continue
@@ -3222,7 +3222,7 @@ validate_config_syntax() {
             # Check if file exists
             if [[ ! -f "$full_path" ]]; then
                 # At verbosity 2+, show which files are being skipped
-                if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+                if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
                     log_info "    Skipping $file (not installed at $full_path)"
                 fi
                 continue  # Skip if not installed
@@ -3238,7 +3238,7 @@ validate_config_syntax() {
                 args_string="${validator_cmd#*|}"
 
                 # Show validator command at verbosity 2+
-                if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+                if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
                     log_info "    Validator: $cmd (args: ${args_string//file/<file>})"
                 fi
 
@@ -3277,14 +3277,14 @@ validate_config_syntax() {
                         log_info "    Validator command failed: $cmd ${expanded_args[*]}"
                     fi
                     # At verbosity 2+, show the full command that was executed
-                    if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+                    if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
                         log_info "    Executed: $cmd ${expanded_args[*]}"
                     fi
                     ((errors++))
                 else
                     log_success "Validation passed: $file"
                     # At verbosity 2+, show the command that succeeded
-                    if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+                    if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
                         log_info "    Executed: $cmd ${expanded_args[*]}"
                     fi
                 fi
@@ -3996,7 +3996,7 @@ cmd_health() {
     fi
 
     # If verbosity > 0, show detailed output
-    if [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+    if [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
         cmd_health_verbose "$verbosity"
         return $?
     fi
@@ -4014,7 +4014,7 @@ cmd_health() {
     local total_warnings=0
 
     # Display table header immediately (skip in silent mode)
-    if [[ $verbosity -gt $VERBOSITY_SILENT ]]; then
+    if [[ $verbosity -ge $VERBOSITY_NORMAL ]]; then
         show_health_table_header
     fi
 
@@ -4428,8 +4428,8 @@ run_with_verbosity() {
         exit_code=$?
         set +o pipefail
         if [[ $exit_code -eq 0 ]]; then
-            # Show success message if verbosity > -1 (not silent)
-            if [[ -n "$success_msg" ]] && [[ $verbosity -gt $VERBOSITY_SILENT ]]; then
+            # Show success message if verbosity >= normal (not silent)
+            if [[ -n "$success_msg" ]] && [[ $verbosity -ge $VERBOSITY_NORMAL ]]; then
                 echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $success_msg"
             fi
             return 0
@@ -4493,9 +4493,9 @@ cmd_health_verbose() {
     local total_warnings=0
 
     # Display header with verbosity level indicator (skip in silent mode)
-    if [[ $verbosity -gt $VERBOSITY_SILENT ]]; then
+    if [[ $verbosity -ge $VERBOSITY_NORMAL ]]; then
         local verbosity_label="Detailed"
-        if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+        if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
             verbosity_label="Very Detailed"
         fi
 
@@ -4863,7 +4863,7 @@ remove_mispointed_symlinks() {
 
         # Check if symlink is broken OR points to wrong location
         if [[ ! -e "$symlink" ]] || [[ "$target" == "$DOTFILES_DIR/"* && "$target" != "$PACKAGES_DIR/"* ]]; then
-            if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+            if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
                 log_info "Removing outdated symlink: ${symlink#"$HOME"/}"
             fi
             rm -f "$symlink"
@@ -4878,7 +4878,7 @@ remove_mispointed_symlinks() {
             target="$(readlink "$symlink")"
 
             if [[ ! -e "$symlink" ]] || [[ "$target" == *"$DOTFILES_DIR/"* && "$target" != *"$PACKAGES_DIR/"* ]]; then
-                if [[ $verbosity -gt $VERBOSITY_VERBOSE ]]; then
+                if [[ $verbosity -ge $VERBOSITY_VERY_VERBOSE ]]; then
                     log_info "Removing outdated symlink: ${symlink#"$HOME"/}"
                 fi
                 rm -f "$symlink"
@@ -4993,7 +4993,7 @@ cmd_update() {
         fi
 
         # Show package update
-        if [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+        if [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
             log_info "Updating $display_name..."
         fi
 
@@ -5002,13 +5002,13 @@ cmd_update() {
             ((update_count++))
             updated_packages+=("$display_name")
             # Show success message at verbosity 1+ (level 2 should show at least what level 1 shows)
-            if [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+            if [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
                 echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $display_name updated"
             fi
         else
             skipped_packages+=("$display_name")
             # Show skip message at verbosity 1+ (level 2 should show at least what level 1 shows)
-            if [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+            if [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
                 echo -e "   ${BLUE}${SYMBOL_INFO}${NC} $display_name already up to date"
             fi
         fi
@@ -5016,14 +5016,14 @@ cmd_update() {
 
     if [[ $update_count -eq 0 && ${#updated_packages[@]} -eq 0 && ${#skipped_packages[@]} -eq 0 ]]; then
         # Show message at verbosity 1+ (level 2 should show at least what level 1 shows)
-        if [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+        if [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
             echo -e "   ${BLUE}${SYMBOL_INFO}${NC} No packages with update commands"
         fi
     fi
     echo ""
 
     # Step 2: Clean up outdated symlinks
-    if [[ $verbosity -gt $VERBOSITY_NORMAL ]]; then
+    if [[ $verbosity -ge $VERBOSITY_VERBOSE ]]; then
         show_numbered_section "2" "Clean Up Outdated Symlinks"
         remove_mispointed_symlinks "$verbosity"
         echo ""
@@ -5040,7 +5040,7 @@ cmd_update() {
     fi
 
     # Show summary for normal output (level 0, not silent)
-    if [[ $verbosity -gt $VERBOSITY_SILENT ]] && [[ $verbosity -le $VERBOSITY_NORMAL ]]; then
+    if [[ $verbosity -ge $VERBOSITY_NORMAL ]] && [[ $verbosity -le $VERBOSITY_NORMAL ]]; then
         show_installation_summary
     fi
     echo ""
