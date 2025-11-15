@@ -4027,7 +4027,7 @@ cmd_health() {
     output=""
     for package in "${PACKAGES[@]}"; do
         local package_output
-        package_output=$(validate_package "$package" 2>&1)
+        package_output=$(validate_package "$package" "$verbosity" 2>&1)
         local package_result=$?
         if [[ $package_result -ne 0 ]]; then
             output="${output}${package_output}\n"
@@ -4051,7 +4051,7 @@ cmd_health() {
 
     # 2. Configuration syntax
     show_health_check_spinner "2" "Configuration Syntax" "$verbosity"
-    output=$(validate_config_syntax 2>&1)
+    output=$(validate_config_syntax "$verbosity" 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
         check_statuses+=("fail")
@@ -4264,7 +4264,7 @@ cmd_health() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
+        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
@@ -4579,7 +4579,7 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
+        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
