@@ -129,14 +129,14 @@ else
     echo -e "${YELLOW}⊘ (markdownlint not installed)${NC}"
 fi
 
-# Test 10: Logging functions use symbols
+# Test 10: Logging functions use symbols (now in lib/output.sh)
 echo -n "Test 10: Symbol-based logging... "
-if grep -q 'SYMBOL_INFO=' "$DOTFILES_DIR/dot" && \
-   grep -q 'SYMBOL_SUCCESS=' "$DOTFILES_DIR/dot" && \
-   grep -q 'SYMBOL_WARNING=' "$DOTFILES_DIR/dot" && \
-   grep -q 'SYMBOL_ERROR=' "$DOTFILES_DIR/dot" && \
-   grep -q 'SYMBOL_INFO}' "$DOTFILES_DIR/dot" && \
-   grep -q 'SYMBOL_SUCCESS}' "$DOTFILES_DIR/dot"; then
+if grep -q 'SYMBOL_INFO=' "$DOTFILES_DIR/lib/output.sh" && \
+   grep -q 'SYMBOL_SUCCESS=' "$DOTFILES_DIR/lib/output.sh" && \
+   grep -q 'SYMBOL_WARNING=' "$DOTFILES_DIR/lib/output.sh" && \
+   grep -q 'SYMBOL_ERROR=' "$DOTFILES_DIR/lib/output.sh" && \
+   grep -q 'SYMBOL_INFO}' "$DOTFILES_DIR/lib/output.sh" && \
+   grep -q 'SYMBOL_SUCCESS}' "$DOTFILES_DIR/lib/output.sh"; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
@@ -156,10 +156,10 @@ else
     echo -e "${GREEN}✓${NC}"
 fi
 
-# Test 12: Bash version check present
+# Test 12: Bash version check present (now in lib/common.sh)
 echo -n "Test 12: Bash version check present... "
-if grep -q 'BASH_VERSINFO' "$DOTFILES_DIR/dot" && \
-   grep -q 'requires bash 3.2' "$DOTFILES_DIR/dot"; then
+if grep -q 'BASH_VERSINFO' "$DOTFILES_DIR/lib/common.sh" && \
+   grep -q 'requires bash 3.2' "$DOTFILES_DIR/lib/common.sh"; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"

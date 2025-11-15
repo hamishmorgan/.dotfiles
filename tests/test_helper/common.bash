@@ -99,6 +99,11 @@ setup_test_dotfiles() {
             cp "$manifest" "$test_package_dir/manifest.toml"
         done < <(find "$repo_root/packages" -name "manifest.toml" -type f 2>/dev/null)
     fi
+
+    # Copy lib directory (required for library modules)
+    if [[ -d "$repo_root/lib" ]]; then
+        cp -r "$repo_root/lib" "$TEST_DOTFILES_DIR/lib"
+    fi
 }
 
 # Clean up test dotfiles directory
@@ -148,6 +153,100 @@ source_dot_script() {
     # Suppress main execution by preventing main() call
     export BATS_TESTING=1
     source "$dot_script"
+}
+
+# Source library modules for unit testing
+# Usage: source_lib_common | source_lib_version | source_lib_output | source_lib_toml
+# These functions source library modules in dependency order
+
+# Get repository root directory
+get_repo_root() {
+    local repo_root="$BATS_TEST_DIRNAME/../.."
+    if [[ ! -d "$repo_root/lib" ]]; then
+        # Fallback: try one level up (for tests directly in tests/)
+        repo_root="$BATS_TEST_DIRNAME/.."
+    fi
+    echo "$repo_root"
+}
+
+# Track which libraries have been sourced to prevent re-sourcing
+_LIBS_SOURCED=""
+
+# Source lib/common.sh
+# Sets DOTFILES_DIR before sourcing
+# Idempotent: only sources once per test run
+source_lib_common() {
+    # Check if already sourced
+    if [[ "$_LIBS_SOURCED" == *"common"* ]]; then
+        return 0
+    fi
+
+    local repo_root
+    repo_root="$(get_repo_root)"
+
+    # Set DOTFILES_DIR before sourcing common.sh (required)
+    export DOTFILES_DIR="${DOTFILES_DIR:-$repo_root}"
+
+    source "$repo_root/lib/common.sh"
+    _LIBS_SOURCED="${_LIBS_SOURCED}common "
+}
+
+# Source lib/version.sh
+# Requires: lib/common.sh (for command_exists)
+# Idempotent: only sources once per test run
+source_lib_version() {
+    # Check if already sourced
+    if [[ "$_LIBS_SOURCED" == *"version"* ]]; then
+        return 0
+    fi
+
+    local repo_root
+    repo_root="$(get_repo_root)"
+
+    # Source dependencies first
+    source_lib_common
+
+    source "$repo_root/lib/version.sh"
+    _LIBS_SOURCED="${_LIBS_SOURCED}version "
+}
+
+# Source lib/output.sh
+# Requires: lib/common.sh (for colors/symbols)
+# Idempotent: only sources once per test run
+source_lib_output() {
+    # Check if already sourced
+    if [[ "$_LIBS_SOURCED" == *"output"* ]]; then
+        return 0
+    fi
+
+    local repo_root
+    repo_root="$(get_repo_root)"
+
+    # Source dependencies first
+    source_lib_common
+
+    source "$repo_root/lib/output.sh"
+    _LIBS_SOURCED="${_LIBS_SOURCED}output "
+}
+
+# Source lib/toml.sh
+# Requires: lib/common.sh, lib/output.sh (for logging)
+# Idempotent: only sources once per test run
+source_lib_toml() {
+    # Check if already sourced
+    if [[ "$_LIBS_SOURCED" == *"toml"* ]]; then
+        return 0
+    fi
+
+    local repo_root
+    repo_root="$(get_repo_root)"
+
+    # Source dependencies first
+    source_lib_common
+    source_lib_output
+
+    source "$repo_root/lib/toml.sh"
+    _LIBS_SOURCED="${_LIBS_SOURCED}toml "
 }
 
 # Fallback assert functions if bats-assert is not available
