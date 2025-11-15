@@ -6,5 +6,5 @@ method = "stow"
 target = "~"
 
 [validation]
-".bashrc" = { command = "bash", args = ["-n", "FILE"] }
-".bash_profile" = { command = "bash", args = ["-n", "FILE"] }
+".bashrc" = { command = "bash", args = ["-n"] }
+".bash_profile" = { command = "bash", args = ["-n"] }
