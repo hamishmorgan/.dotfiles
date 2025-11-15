@@ -4516,10 +4516,7 @@ cmd_health_verbose() {
 
     # 2. Configuration syntax
     local syntax_result
-    validate_config_syntax_with_verbosity() {
-        validate_config_syntax "$verbosity"
-    }
-    run_health_check "2" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
+    run_health_check "2" "Configuration Syntax" validate_config_syntax "$verbosity" && syntax_result=0 || syntax_result=$?
     ((total_errors += syntax_result))
 
     # 3. Submodule health
@@ -4557,11 +4554,8 @@ cmd_health_verbose() {
     # Note: Orphaned symlinks are warnings, not errors
 
     # 10. Dependencies
-    # Pass verbosity level to show appropriate detail
-    check_dependencies_verbose() {
-        check_dependencies "$verbosity"
-    }
-    if ! run_health_check "10" "Dependencies" check_dependencies_verbose; then
+    # Pass verbosity level directly to check_dependencies
+    if ! run_health_check "10" "Dependencies" check_dependencies "$verbosity"; then
         ((total_errors++))
     fi
 
