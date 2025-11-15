@@ -6,4 +6,17 @@ method = "stow"
 target = "~"
 
 [validation]
-"*.yml" = { command = "python3", args = ["-c", "import yaml; yaml.safe_load(open('file'))"] }
+".config/gh/config.yml" = { command = "uvx", args = [
+  "--with",
+  "pyyaml",
+  "python3",
+  "-c",
+  "import sys; import yaml; yaml.safe_load(open(sys.argv[1]))",
+] }
+".config/gh/hosts.yml" = { command = "uvx", args = [
+  "--with",
+  "pyyaml",
+  "python3",
+  "-c",
+  "import sys; import yaml; yaml.safe_load(open(sys.argv[1]))",
+] }

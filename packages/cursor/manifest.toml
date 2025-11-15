@@ -8,4 +8,5 @@ target.macos = "~/Library/Application Support/Cursor/User"
 target.linux = "~/.config/Cursor/User"
 
 [validation]
-"*.json" = { command = "python3", args = ["-m", "json.tool", "file"] }
+"settings.json" = { command = "uvx", args = ["python3", "-m", "json.tool"] }
+"keybindings.json" = { command = "uvx", args = ["python3", "-m", "json.tool"] }

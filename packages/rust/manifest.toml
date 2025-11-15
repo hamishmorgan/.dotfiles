@@ -1,9 +1,4 @@
-files = [
-  ".cargo/config.toml",
-  ".cargo/config.local.toml.example",
-  ".rustfmt.toml",
-  ".rustfmt.toml.example"
-]
+files = [".cargo/config.toml", ".rustfmt.toml", ".rustfmt.toml.example"]
 
 name = "Rust"
 description = "Rust toolchain configuration"
@@ -11,4 +6,24 @@ method = "stow"
 target = "~"
 
 [validation]
-"*.toml" = { command = "python3", args = ["-c", "import tomli; tomli.load(open('file', 'rb'))"] }
+".cargo/config.toml" = { command = "uvx", args = [
+  "--with",
+  "tomli",
+  "python3",
+  "-c",
+  "import sys; import tomli; f=sys.argv[1]; tomli.load(open(f, 'rb'))",
+] }
+".rustfmt.toml" = { command = "uvx", args = [
+  "--with",
+  "tomli",
+  "python3",
+  "-c",
+  "import sys; import tomli; f=sys.argv[1]; tomli.load(open(f, 'rb'))",
+] }
+".rustfmt.toml.example" = { command = "uvx", args = [
+  "--with",
+  "tomli",
+  "python3",
+  "-c",
+  "import sys; import tomli; f=sys.argv[1]; tomli.load(open(f, 'rb'))",
+] }

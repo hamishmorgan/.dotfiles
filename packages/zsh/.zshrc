@@ -172,3 +172,5 @@ alias c='clear'
 
 # ━━━ Machine-Specific Configuration ━━━
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+. "$HOME/.local/bin/env"
