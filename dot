@@ -3610,7 +3610,8 @@ validate_config_syntax() {
                 local found_file_placeholder=false
                 for arg in "${validator_args[@]}"; do
                     # Trim whitespace from arg (handles leading/trailing spaces from TOML parsing)
-                    arg=$(echo "$arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                    # Use printf instead of echo to avoid interpreting -n as a flag
+                    arg=$(printf '%s\n' "$arg" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
                     # Replace FILE placeholder with full path (simple literal replacement)
                     if [[ "$arg" == "FILE" ]]; then
                         expanded_args+=("$full_path")
