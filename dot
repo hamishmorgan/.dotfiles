@@ -3150,7 +3150,7 @@ cmd_install() {
     fi
 
     # Show summary for normal output (level 0, not silent)
-    if [[ $verbosity -ge $VERBOSITY_TACITURN ]] && [[ $verbosity -le $VERBOSITY_TACITURN ]]; then
+    if [[ $verbosity -eq $VERBOSITY_TACITURN ]]; then
         show_installation_summary
     fi
     echo ""
@@ -5045,7 +5045,7 @@ cmd_update() {
     fi
 
     # Show summary for normal output (level 0, not silent)
-    if [[ $verbosity -ge $VERBOSITY_TACITURN ]] && [[ $verbosity -le $VERBOSITY_TACITURN ]]; then
+    if [[ $verbosity -eq $VERBOSITY_TACITURN ]]; then
         show_installation_summary
     fi
     echo ""
