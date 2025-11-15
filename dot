@@ -5494,7 +5494,7 @@ parse_arguments() {
 # Handle shell completion requests
 handle_completion() {
     local shell="$1"
-    
+
     # Initialize packages for shells that need dynamic completions (bash, zsh)
     # Fish handles its own dynamic completions internally
     if [[ "$shell" == "bash" ]] || [[ "$shell" == "zsh" ]]; then
@@ -5503,21 +5503,14 @@ handle_completion() {
             return 1
         fi
     fi
-    
-    case "$shell" in
-        bash)
-            show_bash_completion
-            ;;
-        zsh)
-            show_zsh_completion
-            ;;
-        fish)
-            show_fish_completion
-            ;;
-        *)
-            die "Unknown shell type: $shell. Use 'bash', 'zsh', or 'fish'"
-            ;;
-    esac
+
+    # Output completion file for the specified shell
+    local completion_file="$DOTFILES_DIR/completions/dot.$shell"
+    if [[ -f "$completion_file" ]]; then
+        cat "$completion_file"
+    else
+        die "Unknown shell type: $shell. Use 'bash', 'zsh', or 'fish'"
+    fi
 }
 
 # Main script logic
@@ -5599,35 +5592,6 @@ main() {
 # This section provides completion functions that can be sourced from shell configs
 # Usage: source <(dot --completion bash) or source <(dot --completion zsh)
 
-show_bash_completion() {
-    local completion_file="$DOTFILES_DIR/completions/dot.bash"
-    if [[ -f "$completion_file" ]]; then
-        cat "$completion_file"
-    else
-        log_error "Completion file not found: $completion_file"
-        return 1
-    fi
-}
-
-show_zsh_completion() {
-    local completion_file="$DOTFILES_DIR/completions/dot.zsh"
-    if [[ -f "$completion_file" ]]; then
-        cat "$completion_file"
-    else
-        log_error "Completion file not found: $completion_file"
-        return 1
-    fi
-}
-
-show_fish_completion() {
-    local completion_file="$DOTFILES_DIR/completions/dot.fish"
-    if [[ -f "$completion_file" ]]; then
-        cat "$completion_file"
-    else
-        log_error "Completion file not found: $completion_file"
-        return 1
-    fi
-}
 
 # Run main function with all arguments
 # Skip if being sourced for testing
