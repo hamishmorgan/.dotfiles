@@ -23,12 +23,9 @@ source "$LIB_DIR/toml.sh"     # Depends on common.sh and output.sh (for logging)
 # Backup directory (dynamically set per operation)
 BACKUP_DIR="$DOTFILES_DIR/${BACKUP_DIR_PREFIX}-$(date +%s)"
 
-# Track installation state for rollback
-INSTALLED_PACKAGES=()
-INSTALLATION_IN_PROGRESS=false
-ROLLBACK_STACK=()
-
 # Add action to rollback stack
+# Note: INSTALLED_PACKAGES, INSTALLATION_IN_PROGRESS, and ROLLBACK_STACK are
+# defined in lib/common.sh (sourced above)
 add_rollback() {
     local action="$1"
     ROLLBACK_STACK+=("$action")
