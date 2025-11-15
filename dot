@@ -39,6 +39,9 @@ SYMBOL_INFO='∙'
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PACKAGES_DIR="$DOTFILES_DIR/packages"
 
+# Global variable for validator error output (used by run_validator)
+VALIDATOR_ERROR_OUTPUT=""
+
 # Backup retention policy (configurable via environment variables)
 readonly MAX_BACKUPS_TO_DISPLAY="${DOTFILES_MAX_BACKUPS_TO_DISPLAY:-5}"     # Status output
 readonly MAX_BACKUPS_TO_KEEP="${DOTFILES_MAX_BACKUPS_TO_KEEP:-10}"          # Auto cleanup threshold
@@ -1279,9 +1282,16 @@ run_validator() {
     fi
 
     # Execute validator (array expansion preserves spaces/quotes)
-    if "$command" "${args[@]}" >/dev/null 2>&1; then
+    # Capture both stdout and stderr for error reporting
+    local validator_output
+    validator_output=$("$command" "${args[@]}" 2>&1)
+    local validator_exit=$?
+
+    if [[ $validator_exit -eq 0 ]]; then
         return 0
     else
+        # Return error output via global variable for caller to access
+        VALIDATOR_ERROR_OUTPUT="$validator_output"
         return 1
     fi
 }
@@ -1479,17 +1489,17 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  -h, --help           Show this help message"
-    echo "  -v, --verbose        Enable verbose output (level 1)"
-    echo "  -vv                  Enable very verbose output (level 2)"
+    echo "  -s, --silent         Silent mode (errors only, level -1)"
+    echo "  -v, --verbose        Verbose output (level 1)"
+    echo "  -vv                  Very verbose output (level 2)"
     echo ""
     echo "Verbosity Levels:"
-    echo "  (none)   Summary only - task completion + errors/warnings"
-    echo "  -v       Add package names and progress details"
-    echo "  -vv      Show every file touched/checked (full detail)"
+    echo "  -1 (-s, --silent)    Silent mode (errors only)"
+    echo "  0 (default)          Normal output (summary + errors/warnings)"
+    echo "  1 (-v, --verbose)    Verbose (add package names and progress)"
+    echo "  2 (-vv)              Very verbose (show every file operation)"
     echo ""
-    echo "  Note: Verbosity flags can be combined:"
-    echo "        -v -v          Same as -vv"
-    echo "        --verbose --verbose  Same as -vv"
+    echo "  Note: Last verbosity flag wins if multiple are specified"
     echo ""
     echo "Examples:"
     echo "  $0 install                # Install with summary only"
@@ -1656,7 +1666,7 @@ check_dependencies() {
     for dep in $common_deps; do
         if ! command_exists "$dep"; then
             missing_deps+=("$dep")
-            [[ $verbosity -ge 1 ]] && log_error "Checking $dep... not found"
+            [[ $verbosity -gt 0 ]] && log_error "Checking $dep... not found"
         else
             # Check version if minimum is specified
             local min_version
@@ -1671,30 +1681,30 @@ check_dependencies() {
                 if [[ $check_status -eq 0 ]]; then
                     # Version is sufficient
                     satisfied_deps+=("$dep:$actual_version:$min_version")
-                    if [[ $verbosity -ge 2 ]]; then
+                    if [[ $verbosity -gt 1 ]]; then
                         log_success "Checking $dep... ${actual_version} (>= ${min_version})"
-                    elif [[ $verbosity -ge 1 ]]; then
+                    elif [[ $verbosity -gt 0 ]]; then
                         log_success "Checking $dep... ${actual_version}"
                     fi
                 elif [[ -n "$actual_version" ]]; then
                     # Version was determined but is too old
                     outdated_deps+=("$dep (${actual_version} < ${min_version})")
-                    if [[ $verbosity -ge 1 ]]; then
+                    if [[ $verbosity -gt 0 ]]; then
                         log_warning "Checking $dep... version too old (${actual_version} < ${min_version})"
                     fi
                 else
                     # Could not determine version - treat as outdated
                     outdated_deps+=("$dep (unknown < ${min_version})")
-                    if [[ $verbosity -ge 1 ]]; then
+                    if [[ $verbosity -gt 0 ]]; then
                         log_warning "Checking $dep... unable to determine version"
                     fi
                 fi
             else
                 # No version requirement
                 satisfied_deps+=("$dep:present")
-                if [[ $verbosity -ge 2 ]]; then
+                if [[ $verbosity -gt 1 ]]; then
                     log_success "Checking $dep... present (no version requirement)"
-                elif [[ $verbosity -ge 1 ]]; then
+                elif [[ $verbosity -gt 0 ]]; then
                     log_success "Checking $dep... present"
                 fi
             fi
@@ -1737,7 +1747,7 @@ check_dependencies() {
     log_success "All dependencies satisfied"
 
     # Show summary at verbosity 1+
-    if [[ $verbosity -ge 1 ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
+    if [[ $verbosity -gt 0 ]] && [[ ${#satisfied_deps[@]} -gt 0 ]]; then
         log_info "Total: ${#satisfied_deps[@]} dependencies satisfied"
     fi
 
@@ -2032,12 +2042,12 @@ install_dotfiles() {
 
     # Set stow flags based on verbosity level
     local stow_flags="--restow --dir=$PACKAGES_DIR --target=$HOME"
-    if [[ $verbosity -ge 2 ]]; then
+    if [[ $verbosity -gt 1 ]]; then
         stow_flags="--verbose $stow_flags"
     fi
 
     # Only show header in verbose mode
-    if [[ $verbosity -ge 1 ]]; then
+    if [[ $verbosity -gt 0 ]]; then
         log_info "Installing dotfiles using Stow..."
     fi
 
@@ -2048,7 +2058,7 @@ install_dotfiles() {
         fi
 
         # Show package name at verbosity 1+
-        if [[ $verbosity -ge 1 ]]; then
+        if [[ $verbosity -gt 0 ]]; then
             log_info "Installing package: $package"
         fi
 
@@ -2060,7 +2070,7 @@ install_dotfiles() {
         local stow_result
 
         # shellcheck disable=SC2086
-        if [[ $verbosity -ge 2 ]]; then
+        if [[ $verbosity -gt 1 ]]; then
             # Level 2: Show all stow file operations
             # Try --restow first, but if it fails due to conflicts, try --adopt
             if stow_output=$(stow $stow_flags "$package" 2>&1); then
@@ -2072,7 +2082,7 @@ install_dotfiles() {
                 # Files exist but aren't symlinks - use --adopt to take ownership
                 # Remove --restow from flags when adopting (can't restow if files already exist)
                 local adopt_flags="--adopt --dir=$PACKAGES_DIR --target=$HOME"
-                if [[ $verbosity -ge 2 ]]; then
+                if [[ $verbosity -gt 1 ]]; then
                     adopt_flags="--verbose $adopt_flags"
                 fi
                 log_info "Adopting existing files for $package..."
@@ -2096,8 +2106,8 @@ install_dotfiles() {
                 suggest_fixes "stow" "$package"
                 return 1
             fi
-        elif [[ $verbosity -eq 1 ]]; then
-            # Level 1: Just show success per package
+        elif [[ $verbosity -gt 0 ]]; then
+            # Level 1+: Just show success per package (level 2 already handled above)
             if stow $stow_flags "$package" >/dev/null 2>&1; then
                 INSTALLED_PACKAGES+=("$package")
                 log_success "Installed $package"
@@ -2240,8 +2250,10 @@ check_symlink() {
 }
 
 # Generic package validation function
+# Optional verbosity parameter for enhanced output
 validate_package() {
     local package="$1"
+    local verbosity="${2:-0}"
 
     if ! load_package_manifest "$package"; then
         log_error "Package '$package' missing manifest: $PACKAGES_DIR/$package/manifest.toml"
@@ -2255,6 +2267,16 @@ validate_package() {
 
     log_info "Validating $display_name configuration..."
 
+    # At verbosity 2+, show which files are being validated
+    if [[ $verbosity -gt 1 ]]; then
+        IFS=',' read -ra file_array <<< "$files"
+        log_info "    Files to check: ${#file_array[@]}"
+        for file in "${file_array[@]}"; do
+            file=$(echo "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+            log_info "      - $file"
+        done
+    fi
+
     local errors=0
     IFS=',' read -ra file_array <<< "$files"
 
@@ -2266,6 +2288,7 @@ validate_package() {
         # - trailing slash prevents false positives with siblings like git-old/
         # Note: Uses substring matching, not canonical path verification (Issue #100)
         if ! check_symlink "$file" ".dotfiles/packages/$package/"; then
+            # check_symlink already logs the error, but we need to track it
             ((errors++))
         fi
     done
@@ -3120,8 +3143,8 @@ cmd_install() {
         return 1
     fi
 
-    # Show summary for level 0
-    if [[ $verbosity -eq 0 ]]; then
+    # Show summary for normal output (level 0, not silent)
+    if [[ $verbosity -gt -1 ]] && [[ $verbosity -le 0 ]]; then
         show_installation_summary
     fi
     echo ""
@@ -3147,7 +3170,9 @@ cmd_install() {
 
 
 # Validate configuration syntax (manifest-based)
+# Optional verbosity parameter for enhanced output
 validate_config_syntax() {
+    local verbosity="${1:-0}"
     log_info "Validating configuration syntax..."
 
     local errors=0
@@ -3170,6 +3195,10 @@ validate_config_syntax() {
 
         # Skip packages without validation entries
         if ! get_validation_patterns "$PACKAGES_DIR/$package/manifest.toml" >/dev/null 2>&1; then
+            # At verbosity 2+, show which packages are being skipped
+            if [[ $verbosity -gt 1 ]]; then
+                log_info "    Package $package: No validation rules defined"
+            fi
             continue
         fi
 
@@ -3186,6 +3215,10 @@ validate_config_syntax() {
 
             # Check if file exists
             if [[ ! -f "$full_path" ]]; then
+                # At verbosity 2+, show which files are being skipped
+                if [[ $verbosity -gt 1 ]]; then
+                    log_info "    Skipping $file (not installed at $full_path)"
+                fi
                 continue  # Skip if not installed
             fi
 
@@ -3198,6 +3231,11 @@ validate_config_syntax() {
                 cmd="${validator_cmd%%|*}"
                 args_string="${validator_cmd#*|}"
 
+                # Show validator command at verbosity 2+
+                if [[ $verbosity -gt 1 ]]; then
+                    log_info "    Validator: $cmd (args: ${args_string//file/<file>})"
+                fi
+
                 # Convert args string to array
                 local validator_args=()
                 if [[ -n "$args_string" ]]; then
@@ -3205,21 +3243,44 @@ validate_config_syntax() {
                 fi
 
                 # Replace "file" placeholder in args array
+                # The placeholder can appear as a standalone argument OR within a string argument
                 local expanded_args=()
                 for arg in "${validator_args[@]}"; do
                     if [[ "$arg" == "file" ]]; then
+                        # Standalone "file" argument - replace with full path
                         expanded_args+=("$full_path")
+                    elif [[ "$arg" == *"file"* ]]; then
+                        # "file" appears within the argument (e.g., in Python code string)
+                        # Replace all occurrences
+                        local replaced_arg="${arg//file/$full_path}"
+                        expanded_args+=("$replaced_arg")
                     else
                         expanded_args+=("$arg")
                     fi
                 done
 
                 # Execute validator
+                VALIDATOR_ERROR_OUTPUT=""
                 if ! run_validator "$cmd" "${expanded_args[@]}"; then
                     log_error "Validation failed: $file"
+                    if [[ -n "$VALIDATOR_ERROR_OUTPUT" ]]; then
+                        # Show validator error output (indented)
+                        echo "$VALIDATOR_ERROR_OUTPUT" | sed 's/^/    /' >&2
+                    else
+                        # Fallback if no error output captured
+                        log_info "    Validator command failed: $cmd ${expanded_args[*]}"
+                    fi
+                    # At verbosity 2+, show the full command that was executed
+                    if [[ $verbosity -gt 1 ]]; then
+                        log_info "    Executed: $cmd ${expanded_args[*]}"
+                    fi
                     ((errors++))
                 else
                     log_success "Validation passed: $file"
+                    # At verbosity 2+, show the command that succeeded
+                    if [[ $verbosity -gt 1 ]]; then
+                        log_info "    Executed: $cmd ${expanded_args[*]}"
+                    fi
                 fi
             fi
             # No validator found = skip (opt-in)
@@ -3789,6 +3850,12 @@ show_health_table_header() {
 show_health_check_spinner() {
     local num="$1"
     local category="$2"
+    local verbosity="${3:-0}"
+
+    # Skip in silent mode
+    if [[ $verbosity -eq -1 ]]; then
+        return
+    fi
 
     # Show spinner - ⠿ is a wide character (2 cols)
     printf " %3s %-25s ${BLUE}⠿ Checking...${NC}\r" "$num." "$category"  # Right-align number with dot
@@ -3800,6 +3867,12 @@ show_health_table_row() {
     local category="$2"
     local status="$3"
     local details="$4"
+    local verbosity="${5:-0}"
+
+    # Skip in silent mode
+    if [[ $verbosity -eq -1 ]]; then
+        return
+    fi
 
     local status_text
     local status_color
@@ -3894,11 +3967,31 @@ count_symlinks() {
 
 # Comprehensive health check command (table format)
 cmd_health() {
-    local verbose="${1:-false}"
+    local verbosity="${1:-0}"
 
-    # If verbose mode, show the old detailed output
-    if [[ "$verbose" == "true" ]]; then
-        cmd_health_verbose
+    # Silent mode: only show errors, no output
+    if [[ $verbosity -eq -1 ]]; then
+        # Run checks silently, only capture errors
+        local errors=0
+        for package in "${PACKAGES[@]}"; do
+            if ! validate_package "$package" "$verbosity" >/dev/null 2>&1; then
+                ((errors++))
+            fi
+        done
+        if ! validate_config_syntax "$verbosity" >/dev/null 2>&1; then
+            ((errors++))
+        fi
+        # Only show errors if any found
+        if [[ $errors -gt 0 ]]; then
+            echo "Health check failed with $errors error(s)" >&2
+            return 1
+        fi
+        return 0
+    fi
+
+    # If verbosity > 0, show detailed output
+    if [[ $verbosity -gt 0 ]]; then
+        cmd_health_verbose "$verbosity"
         return $?
     fi
 
@@ -3914,19 +4007,24 @@ cmd_health() {
     local total_errors=0
     local total_warnings=0
 
-    # Display table header immediately
-    show_health_table_header
+    # Display table header immediately (skip in silent mode)
+    if [[ $verbosity -gt -1 ]]; then
+        show_health_table_header
+    fi
 
     # Run checks and display results progressively
     local output
     local result
 
     # 1. Symlink integrity
-    show_health_check_spinner "1" "Symlink Integrity"
+    show_health_check_spinner "1" "Symlink Integrity" "$verbosity"
     output=""
     for package in "${PACKAGES[@]}"; do
-        if ! validate_package "$package" >/dev/null 2>&1; then
-            output="${output}Package $package validation failed\n"
+        local package_output
+        package_output=$(validate_package "$package" 2>&1)
+        local package_result=$?
+        if [[ $package_result -ne 0 ]]; then
+            output="${output}${package_output}\n"
             ((total_errors++))
         fi
     done
@@ -3935,18 +4033,18 @@ cmd_health() {
         check_statuses+=("fail")
         check_details+=("Validation errors")
         check_outputs+=("$output")
-        show_health_table_row "1" "Symlink Integrity" "fail" "Validation errors"
+        show_health_table_row "1" "Symlink Integrity" "fail" "Validation errors" "$verbosity"
     else
         local file_count
         file_count=$(count_symlinks)
         check_statuses+=("pass")
         check_details+=("$file_count files linked")
         check_outputs+=("")
-        show_health_table_row "1" "Symlink Integrity" "pass" "$file_count files linked"
+        show_health_table_row "1" "Symlink Integrity" "pass" "$file_count files linked" "$verbosity"
     fi
 
     # 2. Configuration syntax
-    show_health_check_spinner "2" "Configuration Syntax"
+    show_health_check_spinner "2" "Configuration Syntax" "$verbosity"
     output=$(validate_config_syntax 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -3954,16 +4052,16 @@ cmd_health() {
         check_details+=("Syntax errors")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "2" "Configuration Syntax" "fail" "Syntax errors"
+        show_health_table_row "2" "Configuration Syntax" "fail" "Syntax errors" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("All configs valid")
         check_outputs+=("")
-        show_health_table_row "2" "Configuration Syntax" "pass" "All configs valid"
+        show_health_table_row "2" "Configuration Syntax" "pass" "All configs valid" "$verbosity"
     fi
 
     # 3. Submodule health
-    show_health_check_spinner "3" "Submodule Health"
+    show_health_check_spinner "3" "Submodule Health" "$verbosity"
     output=$(check_submodule_health 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -3971,16 +4069,16 @@ cmd_health() {
         check_details+=("Issues found")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "3" "Submodule Health" "fail" "Issues found"
+        show_health_table_row "3" "Submodule Health" "fail" "Issues found" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("All submodules clean")
         check_outputs+=("")
-        show_health_table_row "3" "Submodule Health" "pass" "All submodules clean"
+        show_health_table_row "3" "Submodule Health" "pass" "All submodules clean" "$verbosity"
     fi
 
     # 4. Git repository status
-    show_health_check_spinner "4" "Git Repository"
+    show_health_check_spinner "4" "Git Repository" "$verbosity"
     output=$(check_git_repo_status 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -3988,16 +4086,16 @@ cmd_health() {
         check_details+=("Uncommitted changes")
         check_outputs+=("$output")
         ((total_warnings += result))
-        show_health_table_row "4" "Git Repository" "warn" "Uncommitted changes"
+        show_health_table_row "4" "Git Repository" "warn" "Uncommitted changes" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("Clean, up-to-date")
         check_outputs+=("")
-        show_health_table_row "4" "Git Repository" "pass" "Clean, up-to-date"
+        show_health_table_row "4" "Git Repository" "pass" "Clean, up-to-date" "$verbosity"
     fi
 
     # 5. Template/secret config consistency
-    show_health_check_spinner "5" "Template Consistency"
+    show_health_check_spinner "5" "Template Consistency" "$verbosity"
     output=$(check_template_consistency 2>&1)
     result=$?
     local template_count=0
@@ -4007,16 +4105,16 @@ cmd_health() {
         check_details+=("Stale configs")
         check_outputs+=("$output")
         ((total_warnings += result))
-        show_health_table_row "5" "Template Consistency" "warn" "Stale configs"
+        show_health_table_row "5" "Template Consistency" "warn" "Stale configs" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("$template_count template(s) synced")
         check_outputs+=("")
-        show_health_table_row "5" "Template Consistency" "pass" "$template_count template(s) synced"
+        show_health_table_row "5" "Template Consistency" "pass" "$template_count template(s) synced" "$verbosity"
     fi
 
     # 6. File permissions
-    show_health_check_spinner "6" "File Permissions"
+    show_health_check_spinner "6" "File Permissions" "$verbosity"
     output=$(check_file_permissions 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4024,16 +4122,16 @@ cmd_health() {
         check_details+=("Insecure permissions")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "6" "File Permissions" "fail" "Insecure permissions"
+        show_health_table_row "6" "File Permissions" "fail" "Insecure permissions" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("Secrets secured")
         check_outputs+=("")
-        show_health_table_row "6" "File Permissions" "pass" "Secrets secured"
+        show_health_table_row "6" "File Permissions" "pass" "Secrets secured" "$verbosity"
     fi
 
     # 7. Shell integration
-    show_health_check_spinner "7" "Shell Integration"
+    show_health_check_spinner "7" "Shell Integration" "$verbosity"
     output=$(check_shell_integration 2>&1)
     result=$?
 
@@ -4085,7 +4183,7 @@ cmd_health() {
         check_details+=("Issues detected")
         check_outputs+=("$output")
         ((total_warnings += result))
-        show_health_table_row "7" "Shell Integration" "warn" "Issues detected"
+        show_health_table_row "7" "Shell Integration" "warn" "Issues detected" "$verbosity"
     else
         check_statuses+=("pass")
         if [[ -n "$shell_name" ]]; then
@@ -4095,14 +4193,14 @@ cmd_health() {
         fi
         check_outputs+=("")
         if [[ -n "$shell_name" ]]; then
-            show_health_table_row "7" "Shell Integration" "pass" "$shell_name active"
+            show_health_table_row "7" "Shell Integration" "pass" "$shell_name active" "$verbosity"
         else
-            show_health_table_row "7" "Shell Integration" "pass" "Shell active"
+            show_health_table_row "7" "Shell Integration" "pass" "Shell active" "$verbosity"
         fi
     fi
 
     # 8. Stow conflicts
-    show_health_check_spinner "8" "Stow Conflicts"
+    show_health_check_spinner "8" "Stow Conflicts" "$verbosity"
     output=$(check_stow_conflicts 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4110,49 +4208,49 @@ cmd_health() {
         check_details+=("$result conflict(s)")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "8" "Stow Conflicts" "fail" "$result conflict(s)"
+        show_health_table_row "8" "Stow Conflicts" "fail" "$result conflict(s)" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("No conflicts")
         check_outputs+=("")
-        show_health_table_row "8" "Stow Conflicts" "pass" "No conflicts"
+        show_health_table_row "8" "Stow Conflicts" "pass" "No conflicts" "$verbosity"
     fi
 
     # 9. Orphaned symlinks
-    show_health_check_spinner "9" "Orphaned Symlinks"
+    show_health_check_spinner "9" "Orphaned Symlinks" "$verbosity"
     output=$(check_orphaned_symlinks 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
         check_statuses+=("warn")
         check_details+=("$result found")
         check_outputs+=("$output")
-        show_health_table_row "9" "Orphaned Symlinks" "warn" "$result found"
+        show_health_table_row "9" "Orphaned Symlinks" "warn" "$result found" "$verbosity"
         # Don't count as error, just warning
     else
         check_statuses+=("pass")
         check_details+=("None found")
         check_outputs+=("")
-        show_health_table_row "9" "Orphaned Symlinks" "pass" "None found"
+        show_health_table_row "9" "Orphaned Symlinks" "pass" "None found" "$verbosity"
     fi
 
     # 10. Dependencies
-    show_health_check_spinner "10" "Dependencies"
+    show_health_check_spinner "10" "Dependencies" "$verbosity"
     if check_dependencies >/dev/null 2>&1; then
         check_statuses+=("pass")
         check_details+=("All satisfied")
         check_outputs+=("")
-        show_health_table_row "10" "Dependencies" "pass" "All satisfied"
+        show_health_table_row "10" "Dependencies" "pass" "All satisfied" "$verbosity"
     else
         output=$(check_dependencies 2>&1)
         check_statuses+=("fail")
         check_details+=("Missing deps")
         check_outputs+=("$output")
         ((total_errors++))
-        show_health_table_row "10" "Dependencies" "fail" "Missing deps"
+        show_health_table_row "10" "Dependencies" "fail" "Missing deps" "$verbosity"
     fi
 
     # 11. Backup health
-    show_health_check_spinner "11" "Backup Health"
+    show_health_check_spinner "11" "Backup Health" "$verbosity"
     local backup_count backup_size_kb
     read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
@@ -4160,12 +4258,12 @@ cmd_health() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "No backups"
+        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)"
+        show_health_table_row "11" "Backup Health" "info" "$verbosity" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # Calculate duration
@@ -4303,7 +4401,8 @@ run_with_verbosity() {
     shift 3
     # Remaining args are the command to execute
 
-    if [[ $verbosity -ge $threshold ]]; then
+    # Use -gt comparison: show details if verbosity > threshold
+    if [[ $verbosity -gt $threshold ]]; then
         # Show detailed output (indented)
         # Use pipefail to ensure command exit code is preserved
         local output
@@ -4323,12 +4422,13 @@ run_with_verbosity() {
         exit_code=$?
         set +o pipefail
         if [[ $exit_code -eq 0 ]]; then
-            if [[ -n "$success_msg" ]]; then
+            # Show success message if verbosity > -1 (not silent)
+            if [[ -n "$success_msg" ]] && [[ $verbosity -gt -1 ]]; then
                 echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $success_msg"
             fi
             return 0
         else
-            # Show error output even at verbosity 0
+            # Show error output even in silent mode (errors always shown)
             echo "$output" | indent_section_output >&2
             return 1
         fi
@@ -4377,6 +4477,8 @@ run_health_check() {
 
 # Verbose health check (detailed output with unified design)
 cmd_health_verbose() {
+    local verbosity="${1:-1}"
+
     # Track timing
     local start_time
     start_time=$(date +%s)
@@ -4384,24 +4486,34 @@ cmd_health_verbose() {
     local total_errors=0
     local total_warnings=0
 
-    # Display same header as regular mode
-    echo ""
-    echo -e "${BLUE}╭──────────────────────────────────────────────────────────╮${NC}"
-    echo -e "${BLUE}│${NC}  Dotfiles Health Check ${BLUE}(Detailed)${NC}                       ${BLUE}│${NC}"
-    echo -e "${BLUE}╰──────────────────────────────────────────────────────────╯${NC}"
-    echo ""
+    # Display header with verbosity level indicator (skip in silent mode)
+    if [[ $verbosity -gt -1 ]]; then
+        local verbosity_label="Detailed"
+        if [[ $verbosity -gt 1 ]]; then
+            verbosity_label="Very Detailed"
+        fi
+
+        echo ""
+        echo -e "${BLUE}╭──────────────────────────────────────────────────────────╮${NC}"
+        echo -e "${BLUE}│${NC}  Dotfiles Health Check ${BLUE}($verbosity_label)${NC}                       ${BLUE}│${NC}"
+        echo -e "${BLUE}╰──────────────────────────────────────────────────────────╯${NC}"
+        echo ""
+    fi
 
     # 1. Symlink integrity
     echo -e " ${BLUE}1. Symlink Integrity${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     for package in "${PACKAGES[@]}"; do
-        validate_package "$package" 2>&1 | indent_section_output || ((total_errors++))
+        validate_package "$package" "$verbosity" 2>&1 | indent_section_output || ((total_errors++))
     done
     echo ""
 
     # 2. Configuration syntax
     local syntax_result
-    run_health_check "2" "Configuration Syntax" validate_config_syntax && syntax_result=0 || syntax_result=$?
+    validate_config_syntax_with_verbosity() {
+        validate_config_syntax "$verbosity"
+    }
+    run_health_check "2" "Configuration Syntax" validate_config_syntax_with_verbosity && syntax_result=0 || syntax_result=$?
     ((total_errors += syntax_result))
 
     # 3. Submodule health
@@ -4439,16 +4551,16 @@ cmd_health_verbose() {
     # Note: Orphaned symlinks are warnings, not errors
 
     # 10. Dependencies
-    # Pass verbosity 1 to show each tool being checked in verbose health mode
+    # Pass verbosity level to show appropriate detail
     check_dependencies_verbose() {
-        check_dependencies 1
+        check_dependencies "$verbosity"
     }
     if ! run_health_check "10" "Dependencies" check_dependencies_verbose; then
         ((total_errors++))
     fi
 
     # 11. Backup health
-    show_health_check_spinner "11" "Backup Health"
+    show_health_check_spinner "11" "Backup Health" "$verbosity"
     local backup_count backup_size_kb
     read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
@@ -4456,16 +4568,16 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "No backups"
+        show_health_table_row "11" "Backup Health" "pass" "$verbosity" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)"
+        show_health_table_row "11" "Backup Health" "info" "$verbosity" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # 12. Manifest validation
-    show_health_check_spinner "12" "Manifest Validation"
+    show_health_check_spinner "12" "Manifest Validation" "$verbosity"
     output=$(validate_all_manifests 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4473,7 +4585,7 @@ cmd_health_verbose() {
         check_details+=("Manifest errors")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "12" "Manifest Validation" "fail" "Manifest errors"
+        show_health_table_row "12" "Manifest Validation" "Manifest Validation" "fail" "$verbosity" "Manifest errors" "$verbosity"
     else
         local manifest_count=0
         for package in "${PACKAGES[@]}"; do
@@ -4484,7 +4596,7 @@ cmd_health_verbose() {
         check_statuses+=("pass")
         check_details+=("$manifest_count manifest(s) valid")
         check_outputs+=("")
-        show_health_table_row "12" "Manifest Validation" "pass" "$manifest_count manifest(s) valid"
+        show_health_table_row "12" "Manifest Validation" "Manifest Validation" "pass" "$verbosity" "$manifest_count manifest(s) valid" "$verbosity"
     fi
 
     # Calculate duration
@@ -4745,7 +4857,7 @@ remove_mispointed_symlinks() {
 
         # Check if symlink is broken OR points to wrong location
         if [[ ! -e "$symlink" ]] || [[ "$target" == "$DOTFILES_DIR/"* && "$target" != "$PACKAGES_DIR/"* ]]; then
-            if [[ $verbosity -ge 2 ]]; then
+            if [[ $verbosity -gt 1 ]]; then
                 log_info "Removing outdated symlink: ${symlink#"$HOME"/}"
             fi
             rm -f "$symlink"
@@ -4760,7 +4872,7 @@ remove_mispointed_symlinks() {
             target="$(readlink "$symlink")"
 
             if [[ ! -e "$symlink" ]] || [[ "$target" == *"$DOTFILES_DIR/"* && "$target" != *"$PACKAGES_DIR/"* ]]; then
-                if [[ $verbosity -ge 2 ]]; then
+                if [[ $verbosity -gt 1 ]]; then
                     log_info "Removing outdated symlink: ${symlink#"$HOME"/}"
                 fi
                 rm -f "$symlink"
@@ -4769,7 +4881,7 @@ remove_mispointed_symlinks() {
         done < <(find "$HOME/.config" -maxdepth 3 -type l 2>/dev/null)
     fi
 
-    if [[ $removed_count -gt 0 && $verbosity -ge 1 ]]; then
+    if [[ $removed_count -gt 0 && $verbosity -gt 0 ]]; then
         log_info "Removed $removed_count outdated symlink(s)"
     fi
 
@@ -4875,7 +4987,7 @@ cmd_update() {
         fi
 
         # Show package update
-        if [[ $verbosity -ge 1 ]]; then
+        if [[ $verbosity -gt 0 ]]; then
             log_info "Updating $display_name..."
         fi
 
@@ -4883,26 +4995,29 @@ cmd_update() {
         if run_package_update "$cmd" "${resolved_args[@]}"; then
             ((update_count++))
             updated_packages+=("$display_name")
-            if [[ $verbosity -lt 2 ]]; then
+            # Show success message at verbosity 1+ (level 2 should show at least what level 1 shows)
+            if [[ $verbosity -gt 0 ]]; then
                 echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $display_name updated"
             fi
         else
             skipped_packages+=("$display_name")
-            if [[ $verbosity -lt 2 ]]; then
+            # Show skip message at verbosity 1+ (level 2 should show at least what level 1 shows)
+            if [[ $verbosity -gt 0 ]]; then
                 echo -e "   ${BLUE}${SYMBOL_INFO}${NC} $display_name already up to date"
             fi
         fi
     done
 
     if [[ $update_count -eq 0 && ${#updated_packages[@]} -eq 0 && ${#skipped_packages[@]} -eq 0 ]]; then
-        if [[ $verbosity -lt 2 ]]; then
+        # Show message at verbosity 1+ (level 2 should show at least what level 1 shows)
+        if [[ $verbosity -gt 0 ]]; then
             echo -e "   ${BLUE}${SYMBOL_INFO}${NC} No packages with update commands"
         fi
     fi
     echo ""
 
     # Step 2: Clean up outdated symlinks
-    if [[ $verbosity -ge 1 ]]; then
+    if [[ $verbosity -gt 0 ]]; then
         show_numbered_section "2" "Clean Up Outdated Symlinks"
         remove_mispointed_symlinks "$verbosity"
         echo ""
@@ -4918,8 +5033,8 @@ cmd_update() {
         return 1
     fi
 
-    # Show summary for level 0
-    if [[ $verbosity -eq 0 ]]; then
+    # Show summary for normal output (level 0, not silent)
+    if [[ $verbosity -gt -1 ]] && [[ $verbosity -le 0 ]]; then
         show_installation_summary
     fi
     echo ""
@@ -5387,24 +5502,33 @@ is_valid_command() {
     [[ "$cmd" =~ ^(install|health|update|status|diff|backup|backups|restore|clean|uninstall|enable|disable|packages|security|sync|pull)$ ]]
 }
 
-# Parse verbosity flag and return level increment
-# Handles: -v (1), -vv (2), -vvv (3), --verbose (1)
+# Parse verbosity flag and return verbosity level
+# Handles: -s/--silent (-1), -v/--verbose (1), -vv (2)
+# Verbosity levels: -1 (silent), 0 (normal), 1 (verbose), 2 (very verbose)
 # Examples:
-#   -v           → 1
-#   -vv          → 2
-#   --verbose    → 1
-#   -v -v        → 1 + 1 = 2 (accumulated)
-#   --verbose --verbose → 1 + 1 = 2 (accumulated)
+#   -s, --silent     → -1
+#   -v, --verbose    → 1
+#   -vv              → 2
+# Note: Multiple flags set the highest level (last one wins)
 parse_verbosity() {
     local flag="$1"
 
-    if [[ $flag =~ ^-v+$ ]]; then
-        # Count v's: -v=1, -vv=2, -vvv=3
-        local v_part="${flag#-}"
-        echo "${#v_part}"
+    if [[ $flag == "-s" ]] || [[ $flag == "--silent" ]]; then
+        echo "-1"
         return 0
-    elif [[ $flag == "--verbose" ]]; then
+    elif [[ $flag == "-v" ]] || [[ $flag == "--verbose" ]]; then
         echo "1"
+        return 0
+    elif [[ $flag =~ ^-vv+$ ]]; then
+        # Count v's: -vv=2, -vvv=2 (max), etc.
+        local v_part="${flag#-}"
+        local count="${#v_part}"
+        # Cap at 2 (very verbose)
+        if [[ $count -ge 2 ]]; then
+            echo "2"
+        else
+            echo "1"
+        fi
         return 0
     fi
 
@@ -5420,6 +5544,7 @@ die() {
 
 # Parse command-line arguments
 # Sets global variables: COMMAND, VERBOSITY, COMMAND_ARGS
+# Verbosity levels: -1 (silent), 0 (normal), 1 (verbose), 2 (very verbose)
 parse_arguments() {
     COMMAND=""
     VERBOSITY=0
@@ -5433,11 +5558,18 @@ parse_arguments() {
                 exit 0
                 ;;
 
-            # Verbosity (-v, -vv, -vvv, --verbose)
+            # Silent mode (-s, --silent)
+            -s|--silent)
+                VERBOSITY=-1
+                shift
+                ;;
+
+            # Verbosity (-v, -vv, --verbose)
             -v*|--verbose)
                 local level
                 if level=$(parse_verbosity "$1"); then
-                    ((VERBOSITY += level))
+                    # Set verbosity level (last flag wins if multiple specified)
+                    VERBOSITY=$level
                     shift
                 else
                     die "Invalid verbosity flag: $1" show_usage
@@ -5522,12 +5654,8 @@ main() {
             cmd_install "$VERBOSITY"
             ;;
         health)
-            # Health only has 2 modes: table (0) or detailed (1+)
-            if [[ $VERBOSITY -ge 1 ]]; then
-                cmd_health true
-            else
-                cmd_health false
-            fi
+            # Health supports verbosity levels: table (0), detailed (1), very detailed (2+)
+            cmd_health "$VERBOSITY"
             ;;
         update)
             cmd_update "$VERBOSITY"
