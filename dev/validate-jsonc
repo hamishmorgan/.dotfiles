@@ -17,7 +17,6 @@ fi
 python3 - "$file" << 'PYEOF'
 import sys
 import json
-import re
 
 def strip_jsonc_comments(content):
     """Strip // comments from JSONC content"""
