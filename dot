@@ -4407,8 +4407,8 @@ run_with_verbosity() {
     shift 3
     # Remaining args are the command to execute
 
-    # Use -gt comparison: show details if verbosity > threshold
-    if [[ $verbosity -gt $threshold ]]; then
+    # Use -ge comparison: show details if verbosity >= threshold
+    if [[ $verbosity -ge $threshold ]]; then
         # Show detailed output (indented)
         # Use pipefail to ensure command exit code is preserved
         local output
