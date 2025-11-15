@@ -185,4 +185,4 @@ alias c='clear'
 # ━━━ Machine-Specific Configuration ━━━
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
-. "$HOME/.local/bin/env"
+[[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
