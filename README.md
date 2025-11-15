@@ -225,6 +225,24 @@ cargo install eza     # Other platforms
 
 **Auto-configured aliases:** `ls`, `ll`, `la`, `lt`, `lta`, `lg`, `lm`, `lz` (falls back to standard `ls` if eza not installed)
 
+#### gitignore.io (gi command)
+
+The `gi` command generates `.gitignore` files from [gitignore.io](https://gitignore.io) templates.
+Available in bash, zsh, and fish shells.
+
+```bash
+# Generate gitignore for Python
+gi python > .gitignore
+
+# Generate gitignore for multiple types
+gi node,osx,vim > .gitignore
+
+# Append to existing gitignore
+gi python >> .gitignore
+```
+
+**Configuration:** Uses `DOTFILES_CURL_TIMEOUT` environment variable (default: 30 seconds) for network timeouts.
+
 ## Verification
 
 ```bash
