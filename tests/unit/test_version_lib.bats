@@ -32,13 +32,13 @@ teardown() {
 }
 
 @test "version_ge returns success when v1 >= v2" {
-    version_ge "2.0.0" "1.0.0"
+    run version_ge "2.0.0" "1.0.0"
     assert_success
 
-    version_ge "1.5.0" "1.0.0"
+    run version_ge "1.5.0" "1.0.0"
     assert_success
 
-    version_ge "1.0.1" "1.0.0"
+    run version_ge "1.0.1" "1.0.0"
     assert_success
 }
 
