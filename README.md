@@ -225,6 +225,38 @@ cargo install eza     # Other platforms
 
 **Auto-configured aliases:** `ls`, `ll`, `la`, `lt`, `lta`, `lg`, `lm`, `lz` (falls back to standard `ls` if eza not installed)
 
+#### zoxide (smart cd replacement)
+
+[zoxide](https://github.com/ajeetdsouza/zoxide) - Smarter `cd` command with frecency-based directory jumping.
+
+```bash
+brew install zoxide      # macOS
+cargo install zoxide    # Other platforms
+apk add zoxide          # Alpine
+```
+
+**Auto-configured:** Initializes automatically if installed. Provides `z` command for smart directory navigation and
+`zi` alias for interactive selection.
+
+**Usage:**
+
+```bash
+# Jump to frequently used directories
+z dotfiles              # Jumps to ~/.dotfiles
+z docs                  # Jumps to ~/Documents
+z proj python           # Jumps to ~/projects/python-app
+
+# Interactive selection
+zi dot                  # Shows options matching 'dot'
+
+# Manual database management (optional - zoxide auto-tracks directories)
+zoxide add .            # Add current directory to database
+zoxide remove /path/to/dir  # Remove from database
+```
+
+**Benefits:** Frecency-based navigation (frequent + recent), fuzzy matching, interactive selection, faster navigation
+than `cd`, learns from usage patterns.
+
 ## Verification
 
 ```bash

@@ -108,8 +108,11 @@ if command -v fzf &>/dev/null; then
     done
 fi
 
-# zoxide (smart cd)
-command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
+# zoxide (smart cd replacement)
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init zsh)"
+    alias zi='zoxide query -i'  # Interactive selection
+fi
 
 # Graphite (stacked PRs)
 if command -v gt &>/dev/null; then
