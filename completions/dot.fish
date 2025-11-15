@@ -73,17 +73,17 @@ end
 function __dot_complete_backups
     set -l cmd "$argv[1]"
     set -l subcommands "$argv[2]"
-    set -l backup_dir_path "$dotfiles_dir/backups"
+    set -l backup_dir_path ""
 
-    # Calculate dotfiles_dir if not set
-    if test -z "$dotfiles_dir"
-        if set -q __fish_dotfiles_dir
-            set backup_dir_path "$__fish_dotfiles_dir/backups"
-        else if test -f (status --current-filename)
-            set backup_dir_path (dirname (dirname (status --current-filename)))/backups
-        else
-            set backup_dir_path "$HOME/.dotfiles/backups"
-        end
+    # Calculate backup_dir_path with multiple fallbacks
+    if set -q __fish_dotfiles_dir
+        set backup_dir_path "$__fish_dotfiles_dir/backups"
+    else if test -f (status --current-filename)
+        set backup_dir_path (dirname (dirname (status --current-filename)))/backups
+    else if test -n "$dotfiles_dir"
+        set backup_dir_path "$dotfiles_dir/backups"
+    else
+        set backup_dir_path "$HOME/.dotfiles/backups"
     end
 
     complete -c "$cmd" -n "__fish_seen_subcommand_from $subcommands" -a latest -d "Most recent backup" -k
