@@ -72,4 +72,3 @@ rg "pattern" --no-hidden         # Don't search hidden files
 - Smart case sensitivity reduces typos
 - Colored output improves readability
 - Consistent configuration across machines
-
