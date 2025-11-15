@@ -3975,7 +3975,7 @@ count_symlinks() {
 cmd_health() {
     local verbosity="${1:-$VERBOSITY_NORMAL}"
 
-    # Silent mode: only show errors, no output
+    # Quiet mode: only show errors, no output
     if [[ $verbosity -eq $VERBOSITY_SILENT ]]; then
         # Run checks silently, only capture errors
         local errors=0
@@ -4428,13 +4428,13 @@ run_with_verbosity() {
         exit_code=$?
         set +o pipefail
         if [[ $exit_code -eq 0 ]]; then
-            # Show success message if verbosity >= normal (not silent)
+            # Show success message if verbosity >= normal (not quiet)
             if [[ -n "$success_msg" ]] && [[ $verbosity -ge $VERBOSITY_NORMAL ]]; then
                 echo -e "   ${GREEN}${SYMBOL_SUCCESS}${NC} $success_msg"
             fi
             return 0
         else
-            # Show error output even in silent mode (errors always shown)
+            # Show error output even in quiet mode (errors always shown)
             echo "$output" | indent_section_output >&2
             return 1
         fi
@@ -4478,7 +4478,7 @@ run_health_check() {
     # Get verbosity from first arg if provided, otherwise default to normal
     local verbosity="${1:-$VERBOSITY_NORMAL}"
 
-    # Skip header in silent mode
+    # Skip header in quiet mode
     if [[ $verbosity -ge $VERBOSITY_NORMAL ]]; then
         echo -e " ${BLUE}${num}. ${title}${NC} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
@@ -5514,10 +5514,10 @@ is_valid_command() {
 }
 
 # Parse verbosity flag and return verbosity level
-# Handles: -s/--silent (-1), -v/--verbose (1), -vv (2)
-# Verbosity levels: -1 (silent), 0 (normal), 1 (verbose), 2 (very verbose)
+# Handles: -q/--quiet (-1), -v/--verbose (1), -vv (2)
+# Verbosity levels: -1 (quiet), 0 (normal), 1 (verbose), 2 (very verbose)
 # Examples:
-#   -s, --silent     → -1
+#   -q, --quiet      → -1
 #   -v, --verbose    → 1
 #   -vv              → 2
 # Note: Multiple flags set the highest level (last one wins)
@@ -5569,8 +5569,8 @@ parse_arguments() {
                 exit 0
                 ;;
 
-            # Silent mode (-s, --silent)
-            -s|--silent)
+            # Quiet mode (-q, --quiet)
+            -q|--quiet)
                 VERBOSITY=$VERBOSITY_SILENT
                 shift
                 ;;

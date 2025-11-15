@@ -26,7 +26,7 @@ _dot_completion() {
 
     _arguments -C \
         '(-h --help)'{-h,--help}'[Show help message]' \
-        '(-s --silent)'{-s,--silent}'[Silent mode (errors only)]' \
+        '(-q --quiet)'{-q,--quiet}'[Quiet mode (errors only)]' \
         '(-v --verbose)'{-v,--verbose}'[Verbose output]' \
         '-vv[Very verbose output]' \
         '1: :->command' \
@@ -57,7 +57,7 @@ _dot_completion() {
             case $words[1] in
                 install|update|health)
                     _arguments \
-                        '(-s --silent)'{-s,--silent}'[Silent mode]' \
+                        '(-q --quiet)'{-q,--quiet}'[Quiet mode]' \
                         '(-v --verbose)'{-v,--verbose}'[Verbose output]' \
                         '-vv[Very verbose output]'
                     ;;
@@ -101,7 +101,7 @@ _d_completion() {
 
     _arguments -C \
         '(-h --help)'{-h,--help}'[Show help message]' \
-        '(-s --silent)'{-s,--silent}'[Silent mode (errors only)]' \
+        '(-q --quiet)'{-q,--quiet}'[Quiet mode (errors only)]' \
         '(-v --verbose)'{-v,--verbose}'[Verbose output]' \
         '-vv[Very verbose output]' \
         '1: :->command' \
@@ -137,7 +137,7 @@ _d_completion() {
             case $words[1] in
                 i|install|u|update|h|health)
                     _arguments \
-                        '(-s --silent)'{-s,--silent}'[Silent mode]' \
+                        '(-q --quiet)'{-q,--quiet}'[Quiet mode]' \
                         '(-v --verbose)'{-v,--verbose}'[Verbose output]' \
                         '-vv[Very verbose output]'
                     ;;
