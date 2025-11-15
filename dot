@@ -3545,8 +3545,19 @@ validate_config_syntax() {
                         local char="${args_string:$i:1}"
                         local prev_char=""
                         [[ $i -gt 0 ]] && prev_char="${args_string:$((i-1)):1}"
-                        local next_char=""
-                        [[ $((i+1)) -lt ${#args_string} ]] && next_char="${args_string:$((i+1)):1}"
+
+                        # Handle escape sequences first (before checking for quotes)
+                        if [[ "$char" == "\\" ]] && [[ $i -lt $((${#args_string} - 1)) ]]; then
+                            # Escape character - consume both the backslash and next char
+                            # This handles \" (escaped quote) and other escapes
+                            current_arg="$current_arg$char"
+                            ((i++))
+                            if [[ $i -lt ${#args_string} ]]; then
+                                current_arg="$current_arg${args_string:$i:1}"
+                            fi
+                            ((i++))
+                            continue
+                        fi
 
                         # Check for pattern "," (quote-comma-quote) which separates args
                         # But only if we're currently in quotes (ending a quoted arg)
@@ -3561,25 +3572,17 @@ validate_config_syntax() {
                             current_arg=""
                             in_quotes=false
                             i=$((i + 3))  # Skip '","'
-                            # After skipping, the next char should be a quote starting the next arg
-                            # But we'll handle that in the next iteration
                             continue
                         fi
 
                         case "$char" in
                             '"')
-                                if [[ "$prev_char" == "\\" ]]; then
-                                    # Escaped quote - add as literal
-                                    current_arg="$current_arg$char"
-                                elif [[ "$in_quotes" == false ]]; then
-                                    # Start of quoted string - skip the quote
+                                if [[ "$in_quotes" == false ]]; then
+                                    # Start of quoted string - skip the quote, start tracking
                                     in_quotes=true
-                                elif [[ "$next_char" == "" ]]; then
-                                    # End of quoted string (last arg) - skip the quote
-                                    in_quotes=false
                                 else
-                                    # Quote inside string - treat as literal (shouldn't happen)
-                                    current_arg="$current_arg$char"
+                                    # End of quoted string (last arg) - handled by "," check above
+                                    in_quotes=false
                                 fi
                                 ;;
                             ',')
@@ -3593,15 +3596,6 @@ validate_config_syntax() {
                                 else
                                     # Comma inside quoted string - preserve it
                                     current_arg="$current_arg$char"
-                                fi
-                                ;;
-                            '\\')
-                                # Escape character - add it and the next char as literal
-                                # Don't toggle in_quotes for escaped characters
-                                current_arg="$current_arg$char"
-                                ((i++))
-                                if [[ $i -lt ${#args_string} ]]; then
-                                    current_arg="$current_arg${args_string:$i:1}"
                                 fi
                                 ;;
                             *)
