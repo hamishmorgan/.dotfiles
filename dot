@@ -5531,15 +5531,8 @@ parse_verbosity() {
         echo "$VERBOSITY_LOQUACIOUS"
         return 0
     elif [[ $flag =~ ^-vv+$ ]]; then
-        # Count v's: -vv=2, -vvv=2 (max), etc.
-        local v_part="${flag#-}"
-        local count="${#v_part}"
-        # Cap at very verbose (garrulous)
-        if [[ $count -ge 2 ]]; then
-            echo "$VERBOSITY_GARRULOUS"
-        else
-            echo "$VERBOSITY_LOQUACIOUS"
-        fi
+        # Regex matches at least 2 v's (-vv, -vvv, etc.), so always return GARRULOUS
+        echo "$VERBOSITY_GARRULOUS"
         return 0
     fi
 
