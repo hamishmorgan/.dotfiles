@@ -2266,7 +2266,7 @@ check_symlink() {
 # Optional verbosity parameter for enhanced output
 validate_package() {
     local package="$1"
-    local verbosity="${2:-0}"
+    local verbosity="${2:-$VERBOSITY_TACITURN}"
 
     if ! load_package_manifest "$package"; then
         log_error "Package '$package' missing manifest: $PACKAGES_DIR/$package/manifest.toml"
@@ -4057,17 +4057,39 @@ cmd_health() {
 
     if [[ $verbosity -eq $VERBOSITY_MUTE ]]; then
         local errors=0
+        local all_errors=""
+        
+        # Capture errors but suppress normal output in quiet mode
         for package in "${PACKAGES[@]}"; do
-            if ! validate_package "$package" "$verbosity" >/dev/null 2>&1; then
+            local error_output
+            local exit_code
+            error_output=$(validate_package "$package" "$verbosity" 2>&1)
+            exit_code=$?
+            if [[ $exit_code -ne 0 ]]; then
                 ((errors++))
+                if [[ -n "$error_output" ]]; then
+                    all_errors+="$error_output"$'\n'
+                fi
             fi
         done
-        if ! validate_config_syntax "$verbosity" >/dev/null 2>&1; then
+        
+        local config_error_output
+        local config_exit_code
+        config_error_output=$(validate_config_syntax "$verbosity" 2>&1)
+        config_exit_code=$?
+        if [[ $config_exit_code -ne 0 ]]; then
             ((errors++))
+            if [[ -n "$config_error_output" ]]; then
+                all_errors+="$config_error_output"$'\n'
+            fi
         fi
+        
         if [[ $errors -gt 0 ]]; then
-            if [[ $verbosity -ge $VERBOSITY_TACITURN ]]; then
-                echo "Health check failed with $errors error(s)"
+            # Always show errors, even in quiet mode
+            if [[ -n "$all_errors" ]]; then
+                echo -e "$all_errors" >&2
+            else
+                echo "Health check failed with $errors error(s)" >&2
             fi
             return 1
         fi
