@@ -35,13 +35,12 @@ else
     CPU_COUNT="4"
 fi
 
-# Cap at 8 jobs to avoid resource exhaustion
-# Use 4 jobs in CI for stability, full CPU count locally
+# Use 4 jobs in CI for stability, cap at 8 jobs locally to avoid resource exhaustion
 if [[ -n "${CI:-}" ]]; then
     # CI: Use 4 parallel jobs for stability (GitHub runners typically have 2-4 cores)
     JOBS=4
 else
-    # Local: Use CPU count, capped at 8
+    # Local: Use CPU count, capped at 8 to avoid resource exhaustion
     JOBS=$((CPU_COUNT > 8 ? 8 : CPU_COUNT))
 fi
 

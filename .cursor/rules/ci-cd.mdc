@@ -46,17 +46,18 @@ Key learnings from CI optimization work (Issue #42, PR #58, Issue #22):
       echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
   ```
 
-- **npm tools**: Use `npx` with version pinning instead of global install, enable npm cache:
+- **npm tools**: Use `npx` with version pinning instead of global install:
 
   ```yaml
   - name: Setup Node.js
     uses: actions/setup-node@v4
     with:
       node-version: "20"
-      cache: 'npm'
   
   npx --yes markdownlint-cli@0.42.0 "**/*.md"
   ```
+  
+  Note: npm cache not used - requires package-lock.json which we don't have. npx doesn't benefit from npm cache.
 
 - **Stable cache keys**: Use package names, not file hashes to reduce cache churn.
 - **Clean up lock files**: Remove root-owned locks before cache save:
@@ -107,8 +108,9 @@ Phase 3 optimizations (PR #153) parallelized jobs and optimized setup:
   - **Savings**: ~30-60 seconds on build (cache miss)
 - **apt-get consolidation**: Combine update and install steps
   - **Savings**: ~8-9 seconds per Ubuntu job
-- **Node.js caching**: Enable npm cache in setup-node action
-  - **Savings**: ~5-10 seconds per lint job
+- **Node.js setup optimization**: Removed npm cache (not needed for npx usage)
+  - npm cache requires package-lock.json which we don't have
+  - npx doesn't benefit from npm cache
 - **Conditional verification**: Only run verification steps on failure
   - **Savings**: ~2-5 seconds per job
 
