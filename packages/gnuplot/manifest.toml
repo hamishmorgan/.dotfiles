@@ -6,4 +6,4 @@ method = "stow"
 target = "~"
 
 [validation]
-".gnuplot" = { command = "gnuplot", args = ["FILE"] }
+".gnuplot" = { command = "gnuplot", args = [] }

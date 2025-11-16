@@ -14,8 +14,6 @@ if [[ ! -f "$file" ]]; then
 fi
 
 # Use Python to strip comments and validate
-# Note: The '-' tells Python to read the script from stdin (the here-document below).
-# The "$file" argument becomes sys.argv[1] in the Python script.
 python3 - "$file" << 'PYEOF'
 import sys
 import json
@@ -74,4 +72,3 @@ except Exception as e:
     print(f"Error: {e}", file=sys.stderr)
     sys.exit(1)
 PYEOF
-

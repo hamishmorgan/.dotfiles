@@ -287,11 +287,8 @@ initialize_packages() {
 
 # Helper function to remove quotes and whitespace from strings
 # Used for cleaning file paths extracted from TOML arrays
-# Strip quotes and whitespace from a string
-# WARNING: This removes ALL quotes, including quotes that might be part of the value.
-# This function is intended for simple values where quotes are just delimiters.
-# For TOML values with complex quoting or escaped quotes, use get_toml_value() which handles quotes correctly.
-# This function is safe for file paths extracted from TOML arrays where quotes are delimiters only.
+# Note: This removes ALL quotes, including quotes that might be part of the value
+# For TOML values, use get_toml_value() which handles quotes correctly
 trim_quotes_and_whitespace() {
     local input="$1"
     # Remove leading/trailing whitespace, single quotes, and double quotes
@@ -3470,10 +3467,6 @@ validate_config_syntax() {
     local verbosity="${1:-0}"
     log_info "Validating configuration syntax..."
 
-    # Reset global validator flags at the start of each validation operation
-    VALIDATOR_ERROR_OUTPUT=""
-    VALIDATOR_SKIPPED=false
-
     local errors=0
 
     # Iterate through all packages
@@ -3551,13 +3544,13 @@ validate_config_syntax() {
 
                         # Handle escape sequences FIRST (before checking for quotes or patterns)
                         if [[ "$char" == "\\" ]] && [[ $i -lt $((${#args_string} - 1)) ]]; then
-                            # Escape character - consume the backslash and add the escaped character
+                            # Escape character - consume both the backslash and next char
                             # This handles \" (escaped quote) and other escapes
-                            # For escaped quotes inside strings, we add just the quote (not the backslash)
-                            # to preserve the escape sequence for later unescaping
+                            current_arg="$current_arg$char"
                             ((i++))
-                            local esc_char="${args_string:$i:1}"
-                            current_arg="$current_arg$esc_char"
+                            if [[ $i -lt ${#args_string} ]]; then
+                                current_arg="$current_arg${args_string:$i:1}"
+                            fi
                             ((i++))
                             continue
                         fi
@@ -5905,7 +5898,7 @@ is_valid_command() {
 #   -s, --silent     → -1
 #   -v, --verbose    → 1
 #   -vv              → 2
-# Note: When multiple verbosity flags are specified, the last one wins (sets absolute level)
+# Note: Multiple flags set the highest level (last one wins)
 parse_verbosity() {
     local flag="$1"
 
@@ -5988,18 +5981,9 @@ parse_arguments() {
                 COMMAND="$1"
                 shift
                 # Collect remaining arguments for commands that need them
-                # Filter out verbosity flags to prevent commands from receiving them
                 while [[ $# -gt 0 ]]; do
-                    case "$1" in
-                        -v*|--verbose|-s|--silent)
-                            # Skip global verbosity flags
-                            shift
-                            ;;
-                        *)
                     COMMAND_ARGS+=("$1")
                     shift
-                            ;;
-                    esac
                 done
                 ;;
             # Unknown option (unknown flag)
