@@ -2520,6 +2520,13 @@ check_symlink() {
     local file="$1"
     local package="$2"
 
+    # Validate package name (security: prevent path traversal)
+    # Package names should not contain path separators or traversal sequences
+    if [[ "$package" =~ [/] ]] || [[ "$package" =~ \.\. ]] || [[ "$package" =~ ^\.+$ ]]; then
+        log_error "Invalid package name: $package (contains path traversal characters)"
+        return 1
+    fi
+
     if [[ -L "$HOME/$file" ]]; then
         local target
         target=$(readlink "$HOME/$file")

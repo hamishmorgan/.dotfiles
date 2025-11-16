@@ -28,7 +28,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "  all         Test on all platforms (default, ~6-9 min)"
     echo ""
     echo "Options:"
-    echo "  --no-cleanup    Keep Docker images for debugging"
+    echo "  --no-cleanup    Keep container images for debugging"
     echo "  --help, -h      Show this help message"
     echo ""
     echo "Examples:"
