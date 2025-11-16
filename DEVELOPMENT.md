@@ -491,7 +491,7 @@ Check health | `./dot health` | instant
 Check status | `./dot status` | instant
 Smoke test | `./tests/smoke-test.sh` | 30s
 Full local CI | `./dev/ci` or `./dev/ci all` | 6-9m
-Single platform CI | `./dev/ci ubuntu\|alpine\|bash32` | 2-3m
+Single platform CI | `./dev/ci ubuntu, alpine, or bash32` | 2-3m
 Lint Markdown | `markdownlint "**/*.md"` | 5s
 Lint Bash | `shellcheck dot` | 5s
 Monitor CI | `gh pr checks <PR>` | instant

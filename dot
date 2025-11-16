@@ -2522,7 +2522,8 @@ check_symlink() {
 
     # Validate package name (security: prevent path traversal)
     # Package names should not contain path separators or traversal sequences
-    if [[ "$package" =~ [/] ]] || [[ "$package" =~ \.\. ]] || [[ "$package" =~ ^\.+$ ]]; then
+    # Block: / (path separator), .. (traversal), leading dot (hidden files/directories)
+    if [[ "$package" =~ [/] ]] || [[ "$package" =~ \.\. ]] || [[ "$package" =~ ^\. ]]; then
         log_error "Invalid package name: $package (contains path traversal characters)"
         return 1
     fi
@@ -2574,7 +2575,13 @@ check_symlink() {
                     resolved_dir=$(cd "$symlink_dir" 2>/dev/null && pwd 2>/dev/null)
                 else
                     # Target is in subdirectory - resolve relative to symlink
-                    resolved_dir=$(cd "$symlink_dir" 2>/dev/null && cd "$target_dir" 2>/dev/null && pwd 2>/dev/null)
+                    # Defensive: check if target_dir is absolute (shouldn't happen for relative targets)
+                    if [[ "$target_dir" = /* ]]; then
+                        # Defensive: should not happen for relative targets, but fail securely
+                        resolved_dir=""
+                    else
+                        resolved_dir=$(cd "$symlink_dir" 2>/dev/null && cd "$target_dir" 2>/dev/null && pwd 2>/dev/null)
+                    fi
                 fi
 
                 if [[ -n "$resolved_dir" ]]; then
@@ -2587,10 +2594,14 @@ check_symlink() {
             fi
         fi
 
-        # If canonical resolution failed, reject for security (fail secure)
-        # Broken symlinks or resolution failures should not pass validation
+        # If canonical resolution failed, check if it's a broken symlink or resolution failure
         if [[ -z "$canonical" ]]; then
-            log_warning "$file symlink target '$target' could not be resolved to canonical path (security check failed)"
+            # Distinguish between broken symlink and resolution failure for better error messages
+            if [[ ! -e "$target" ]] && [[ "$target" != /* ]] && [[ ! -e "$symlink_dir/$target" ]]; then
+                log_warning "$file is a broken symlink (points to non-existent: $target)"
+            else
+                log_warning "$file symlink target '$target' could not be resolved to canonical path (security check failed)"
+            fi
             return 1
         fi
 
@@ -2642,8 +2653,24 @@ check_symlink() {
 
         # Check if canonical path starts with either expected path (anchored match with trailing slash)
         # The trailing slash prevents false positives with sibling packages like git-evil/
+        # Skip redundant check if both paths are identical (e.g., when DOTFILES_DIR == $HOME/.dotfiles)
+        # Additional check: ensure symlink points to a file within the package, not the directory itself
+        local expected_path1_no_slash="${expected_path1%/}"
+        local expected_path2_no_slash=""
+        if [[ -n "$expected_path2" ]]; then
+            expected_path2_no_slash="${expected_path2%/}"
+        fi
+        
+        # Reject if symlink points exactly to package directory (edge case)
+        if [[ "$normalized_canonical" == "$expected_path1_no_slash" ]] || \
+           ([[ -n "$expected_path2_no_slash" ]] && [[ "$normalized_canonical" == "$expected_path2_no_slash" ]]); then
+            log_warning "$file symlink points to package directory itself, not a file within it"
+            return 1
+        fi
+        
+        # Check if canonical path starts with either expected path (anchored match with trailing slash)
         if [[ "$normalized_canonical" == "$expected_path1"* ]] || \
-           { [[ -n "$expected_path2" ]] && [[ "$normalized_canonical" == "$expected_path2"* ]]; }; then
+           { [[ -n "$expected_path2" ]] && [[ "$expected_path2" != "$expected_path1" ]] && [[ "$normalized_canonical" == "$expected_path2"* ]]; }; then
             log_success "$file is properly linked to $target"
             return 0
         else

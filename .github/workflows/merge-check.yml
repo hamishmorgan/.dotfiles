@@ -77,6 +77,10 @@ jobs:
             console.log(`   Base: ${pr.base.ref} ← Head: ${pr.head.ref}`);
 
             // Check if PR is behind base branch
+            // Note: GitHub API compareCommits uses non-intuitive parameter ordering:
+            // - base: the commit to compare FROM (PR head)
+            // - head: the commit to compare TO (base branch)
+            // behind_by > 0 means the base (PR) is behind the head (target branch)
             const { data: compare } = await github.rest.repos.compareCommits({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -98,28 +102,38 @@ jobs:
 
             // Summary
             const issues = [];
+            const warnings = [];
+            
             if (pr.draft) {
               issues.push('PR is in draft status');
             }
             if (pr.mergeable === false) {
               issues.push('Merge conflicts detected');
             }
-            if (isBehind) {
-              issues.push(`PR is ${compare.behind_by} commit(s) behind base branch`);
-            }
             if (status.state === 'failure') {
               issues.push('CI checks are failing');
             }
+            
+            // Being behind is a warning, not a critical failure (can be resolved by rebase)
+            if (isBehind) {
+              warnings.push(`PR is ${compare.behind_by} commit(s) behind base branch`);
+            }
 
-            if (issues.length === 0) {
+            if (issues.length === 0 && warnings.length === 0) {
               console.log('\n✅ PR appears mergeable!');
               console.log('   (Final mergeability depends on branch protection rules and approvals)');
             } else {
-              console.log('\n⚠️  PR mergeability issues:');
-              issues.forEach(issue => console.log(`   - ${issue}`));
+              if (issues.length > 0) {
+                console.log('\n❌ PR mergeability issues:');
+                issues.forEach(issue => console.log(`   - ${issue}`));
+              }
+              if (warnings.length > 0) {
+                console.log('\n⚠️  PR mergeability warnings:');
+                warnings.forEach(warning => console.log(`   - ${warning}`));
+              }
             }
 
-            // Exit with error if critical issues found
+            // Exit with error if critical issues found (warnings don't cause failure)
             if (pr.draft || pr.mergeable === false || status.state === 'failure') {
               core.setFailed('PR is not ready to merge');
             }
