@@ -5,9 +5,9 @@ function gi -d "Generate .gitignore from gitignore.io templates"
     if test -z "$timeout"
         set timeout "30"
     end
-    
+
     set -l url "https://www.toptal.com/developers/gitignore/api/$argv"
-    
+
     if curl -sLw "\n" --max-time "$timeout" "$url"
         return 0
     else
