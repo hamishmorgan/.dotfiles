@@ -2523,25 +2523,25 @@ check_symlink() {
     if [[ -L "$HOME/$file" ]]; then
         local target
         target=$(readlink "$HOME/$file")
-        
+
         # Resolve to canonical path (with fallback for macOS)
         # realpath is preferred but not available on macOS by default
         # readlink -f works on Linux but not macOS
         local canonical
         local symlink_path="$HOME/$file"
-        
+
         if command -v realpath >/dev/null 2>&1; then
             # Use realpath if available (Linux, or macOS with coreutils)
             canonical=$(realpath "$symlink_path" 2>/dev/null || echo "")
-        elif readlink -f "$symlink_path" >/dev/null 2>&1; then
-            # Use readlink -f on Linux
+        elif command -v readlink >/dev/null 2>&1 && readlink -f / >/dev/null 2>&1; then
+            # Test if readlink supports -f flag (Linux supports it, macOS doesn't)
             canonical=$(readlink -f "$symlink_path" 2>/dev/null || echo "")
         else
             # Fallback for macOS: resolve path manually using cd
             # This handles both absolute and relative symlink targets
             local symlink_dir
             symlink_dir=$(dirname "$symlink_path")
-            
+
             if [[ "$target" = /* ]]; then
                 # Absolute path - resolve directly
                 local target_dir target_base resolved_dir
@@ -2555,38 +2555,53 @@ check_symlink() {
                 fi
             else
                 # Relative path - resolve from symlink directory
+                # Handle edge cases: ".", "..", empty dirname
                 local target_dir target_base resolved_dir
                 target_dir=$(dirname "$target")
                 target_base=$(basename "$target")
-                resolved_dir=$(cd "$symlink_dir" 2>/dev/null && cd "$target_dir" 2>/dev/null && pwd 2>/dev/null)
+                
+                # Handle special cases for dirname
+                if [[ "$target_dir" == "." ]] || [[ -z "$target_dir" ]]; then
+                    # Target is in same directory as symlink
+                    resolved_dir=$(cd "$symlink_dir" 2>/dev/null && pwd 2>/dev/null)
+                else
+                    # Target is in subdirectory - resolve relative to symlink
+                    resolved_dir=$(cd "$symlink_dir" 2>/dev/null && cd "$target_dir" 2>/dev/null && pwd 2>/dev/null)
+                fi
+                
                 if [[ -n "$resolved_dir" ]]; then
                     canonical="$resolved_dir/$target_base"
                 else
-                    canonical=""
-                fi
-                # If cd failed, construct path manually
-                if [[ -z "$canonical" ]]; then
+                    # If cd failed, construct path manually (last resort)
                     canonical="$symlink_dir/$target"
                 fi
             fi
         fi
-        
-        # If canonical resolution failed, use target as-is (shouldn't happen in normal cases)
+
+        # If canonical resolution failed, reject for security (fail secure)
+        # Broken symlinks or resolution failures should not pass validation
         if [[ -z "$canonical" ]]; then
-            canonical="$target"
+            log_warning "$file symlink target '$target' could not be resolved to canonical path (security check failed)"
+            return 1
         fi
         
+        # Verify resolved path exists (check for broken symlinks)
+        if [[ ! -e "$canonical" ]]; then
+            log_warning "$file is a broken symlink (points to non-existent: $target)"
+            return 1
+        fi
+
         # Expected canonical path: $HOME/.dotfiles/packages/$package/
         # Use $HOME/.dotfiles instead of $DOTFILES_DIR to handle worktrees correctly
         # Symlinks always point to $HOME/.dotfiles, not worktree directories
         local expected_path="$HOME/.dotfiles/packages/$package/"
-        
+
         # Verify canonical path starts with expected dotfiles packages directory
         # Use anchored string comparison to prevent substring bypass attacks
         # Normalize both paths (remove trailing slashes for comparison)
         local normalized_canonical="${canonical%/}"
         local normalized_expected="${expected_path%/}"
-        
+
         # Check if canonical path starts with expected path (anchored match)
         if [[ "$normalized_canonical" == "$normalized_expected"* ]]; then
             log_success "$file is properly linked to $target"
