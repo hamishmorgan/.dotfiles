@@ -13,6 +13,12 @@ if [[ ! -f "$file" ]]; then
     exit 1
 fi
 
+# Check for Python 3
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: python3 is required for JSONC validation" >&2
+    exit 1
+fi
+
 # Use Python to strip comments and validate
 # Note: The '-' tells Python to read the script from stdin (the here-document below).
 # The "$file" argument becomes sys.argv[1] in the Python script.

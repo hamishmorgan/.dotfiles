@@ -3551,10 +3551,10 @@ validate_config_syntax() {
 
                         # Handle escape sequences FIRST (before checking for quotes or patterns)
                         if [[ "$char" == "\\" ]] && [[ $i -lt $((${#args_string} - 1)) ]]; then
-                            # Escape character - consume the backslash and add the escaped character
+                            # Escape character - consume the backslash and add only the escaped character
                             # This handles \" (escaped quote) and other escapes
-                            # For escaped quotes inside strings, we add just the quote (not the backslash)
-                            # to preserve the escape sequence for later unescaping
+                            # The backslash is consumed and not added to current_arg
+                            # The escaped character is added directly (e.g., \" becomes ")
                             ((i++))
                             local esc_char="${args_string:$i:1}"
                             current_arg="$current_arg$esc_char"
@@ -3640,8 +3640,18 @@ validate_config_syntax() {
                     fi
                 done
                 # If FILE placeholder wasn't found, append full file path as last argument
+                # but only if it's not already present in the arguments
                 if [[ "$found_file_placeholder" == false ]]; then
-                    expanded_args+=("$full_path")
+                    local file_path_already_present=false
+                    for arg in "${expanded_args[@]}"; do
+                        if [[ "$arg" == "$full_path" ]]; then
+                            file_path_already_present=true
+                            break
+                        fi
+                    done
+                    if [[ "$file_path_already_present" == false ]]; then
+                        expanded_args+=("$full_path")
+                    fi
                 fi
 
                 # Execute validator
