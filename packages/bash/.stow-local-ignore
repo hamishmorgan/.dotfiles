@@ -1,3 +1,12 @@
 # Package metadata (not stowed)
 ^manifest\.toml$
 ^README\.md$
+
+# Legacy platform-specific files (migrated to .config/bash/conf.d/)
+^\.bashrc\.osx$
+^\.bashrc\.linux$
+^\.bashrc\.local$
+^\.bashrc\.local\.example$
+
+# Note: User-created files in .config/bash/conf.d/ should not be added to the package directory,
+# to avoid being tracked in git and stowed to target machines.
