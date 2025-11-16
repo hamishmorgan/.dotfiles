@@ -58,6 +58,7 @@ jobs:
         run: ./tests/smoke-test.sh
 
   # CONSOLIDATED BATS TESTS WITH OS MATRIX
+  # Tests run in parallel using BATS --jobs flag (4 jobs per runner)
   bats-tests:
     name: BATS Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

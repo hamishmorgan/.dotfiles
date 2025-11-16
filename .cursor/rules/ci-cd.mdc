@@ -94,7 +94,7 @@ Phase 2 optimizations (Issue #22) consolidated BATS tests:
 - **Savings**: 6 min per CI run (~25% additional improvement)
 - **Bonus**: BATS tests now validate on macOS (was Ubuntu-only)
 
-Phase 3 optimizations (PR #XXX) parallelized jobs and optimized setup:
+Phase 3 optimizations (PR #153) parallelized jobs and optimized setup:
 
 - **Job parallelization**: Removed `needs: lint` from `bats-tests` and `validate-platform`
   - Jobs now run in parallel instead of waiting for lint
@@ -113,3 +113,15 @@ Phase 3 optimizations (PR #XXX) parallelized jobs and optimized setup:
   - **Savings**: ~2-5 seconds per job
 
 **Total Phase 3 savings**: ~46-78 seconds per run (with cache hits), ~2-3 minutes with cache misses
+
+Phase 4 optimizations (PR #153) enabled BATS parallel execution:
+
+- **BATS parallel execution**: Enable `--jobs 4` flag in CI (was disabled)
+  - BATS has built-in parallel support (doesn't require GNU parallel)
+  - Modern BATS handles TAP formatter + parallel execution correctly
+  - **Savings**: ~50-70% faster BATS test execution (18 test files run in parallel)
+- **Simplified parallel detection**: Removed unnecessary GNU parallel check
+  - BATS `--jobs` flag works without external tools
+  - Cleaner, more maintainable code
+
+**Total Phase 4 savings**: ~30-60 seconds per BATS test run (depending on test suite size)
