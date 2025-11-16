@@ -37,7 +37,7 @@ jobs:
       - name: Run linting
         run: |
           npx --yes markdownlint-cli@0.42.0 "**/*.md"
-          shellcheck dot packages/bash/.bashrc* packages/bash/.bash_profile packages/zsh/.zshrc* packages/zsh/.zprofile
+          shellcheck dot packages/bash/.bashrc* packages/bash/.bash_profile packages/bash/.config/bash/conf.d/*.bash packages/bash/.config/bash/functions/*.bash packages/zsh/.zshrc* packages/zsh/.zprofile
 
   smoke-test:
     name: Smoke Tests
