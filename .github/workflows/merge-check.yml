@@ -1,13 +1,15 @@
-name: PR Merge Check
+name: PR Mergeability Check
 permissions:
   contents: read
+  pull-requests: read
 
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
-  merge-check:
+  merge-conflict-check:
     name: Merge Conflict Check
     runs-on: ubuntu-latest
     steps:
@@ -52,3 +54,74 @@ jobs:
             git merge --abort 2>/dev/null || true
             exit 1
           fi
+
+  mergeability-check:
+    name: Mergeability Status
+    runs-on: ubuntu-latest
+    needs: merge-conflict-check
+    steps:
+      - name: Check PR mergeability
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+            
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            console.log('📋 PR Mergeability Status:');
+            console.log(`   Draft: ${pr.draft ? '❌ Yes (must be ready for review)' : '✅ No'}`);
+            console.log(`   Mergeable: ${pr.mergeable === true ? '✅ Yes' : pr.mergeable === false ? '❌ No (conflicts)' : '⏳ Checking...'}`);
+            console.log(`   State: ${pr.state}`);
+            console.log(`   Base: ${pr.base.ref} ← Head: ${pr.head.ref}`);
+
+            // Check if PR is behind base branch
+            const { data: compare } = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: pr.head.sha,
+              head: pr.base.sha,
+            });
+
+            const isBehind = compare.behind_by > 0;
+            console.log(`   Up to date: ${!isBehind ? '✅ Yes' : `⚠️  No (${compare.behind_by} commits behind)`}`);
+
+            // Check commit status
+            const { data: status } = await github.rest.repos.getCombinedStatusForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pr.head.sha,
+            });
+
+            console.log(`   CI Status: ${status.state === 'success' ? '✅ Passing' : status.state === 'failure' ? '❌ Failing' : status.state === 'pending' ? '⏳ Pending' : '⚠️  ' + status.state}`);
+
+            // Summary
+            const issues = [];
+            if (pr.draft) {
+              issues.push('PR is in draft status');
+            }
+            if (pr.mergeable === false) {
+              issues.push('Merge conflicts detected');
+            }
+            if (isBehind) {
+              issues.push(`PR is ${compare.behind_by} commit(s) behind base branch`);
+            }
+            if (status.state === 'failure') {
+              issues.push('CI checks are failing');
+            }
+
+            if (issues.length === 0) {
+              console.log('\n✅ PR appears mergeable!');
+              console.log('   (Final mergeability depends on branch protection rules and approvals)');
+            } else {
+              console.log('\n⚠️  PR mergeability issues:');
+              issues.forEach(issue => console.log(`   - ${issue}`));
+            }
+
+            // Exit with error if critical issues found
+            if (pr.draft || pr.mergeable === false || status.state === 'failure') {
+              core.setFailed('PR is not ready to merge');
+            }
