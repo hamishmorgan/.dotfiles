@@ -5953,7 +5953,7 @@ die() {
 # Verbosity levels: -1 (silent), 0 (normal), 1 (verbose), 2 (very verbose)
 parse_arguments() {
     COMMAND=""
-    VERBOSITY=0
+    VERBOSITY=0    # Verbosity levels: -1=silent, 0=normal, 1=verbose, 2=very verbose
     COMMAND_ARGS=()
 
     while [[ $# -gt 0 ]]; do

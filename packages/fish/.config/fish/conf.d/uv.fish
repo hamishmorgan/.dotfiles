@@ -4,6 +4,6 @@ if command -v uv >/dev/null 2>&1
     # Generate uv completions
     if not test -f "$completions_dir/uv.fish"
         mkdir -p "$completions_dir"
-        uv generate-shell-completion fish >"$completions_dir/uv.fish" 2>/dev/null
+        uv generate-shell-completion fish >"$completions_dir/uv.fish"
     end
 end
