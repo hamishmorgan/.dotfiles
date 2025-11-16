@@ -18,9 +18,14 @@ if [[ -d "$BASH_CONFIG_DIR/conf.d" ]]; then
   for config_file in "$BASH_CONFIG_DIR/conf.d"/*.bash; do
     if [[ -f "$config_file" ]] && [[ -r "$config_file" ]]; then
       # Source with error handling - continue loading other files if one fails
-      if ! source "$config_file" 2>/dev/null; then
-        # Only show error if BASH_DEBUG is set (for debugging)
-        [[ -n "${BASH_DEBUG:-}" ]] && echo "Warning: Failed to load $(basename "$config_file")" >&2
+      if [[ -n "${BASH_DEBUG:-}" ]]; then
+        # Show actual error when debugging
+        if ! source "$config_file" 2>&1; then
+          echo "Warning: Failed to load $(basename "$config_file")" >&2
+        fi
+      else
+        # Suppress errors in normal operation
+        source "$config_file" 2>/dev/null || true
       fi
     fi
   done
@@ -30,8 +35,14 @@ fi
 if [[ -d "$BASH_CONFIG_DIR/functions" ]]; then
   for func_file in "$BASH_CONFIG_DIR/functions"/*.bash; do
     if [[ -f "$func_file" ]] && [[ -r "$func_file" ]]; then
-      if ! source "$func_file" 2>/dev/null; then
-        [[ -n "${BASH_DEBUG:-}" ]] && echo "Warning: Failed to load function $(basename "$func_file")" >&2
+      if [[ -n "${BASH_DEBUG:-}" ]]; then
+        # Show actual error when debugging
+        if ! source "$func_file" 2>&1; then
+          echo "Warning: Failed to load function $(basename "$func_file")" >&2
+        fi
+      else
+        # Suppress errors in normal operation
+        source "$func_file" 2>/dev/null || true
       fi
     fi
   done

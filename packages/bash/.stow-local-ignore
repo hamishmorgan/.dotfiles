@@ -8,5 +8,5 @@
 ^\.bashrc\.local$
 ^\.bashrc\.local\.example$
 
-# Note: User-created files in .config/bash/conf.d/ are not stowed
-# (they don't exist in the package directory, so stow ignores them automatically)
+# Note: User-created files in .config/bash/conf.d/ should not be added to the package directory,
+# to avoid being tracked in git and stowed to target machines.

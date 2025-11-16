@@ -48,7 +48,8 @@ The bash configuration is organized into modular files stored in `~/.config/bash
 - **Platform detection** - Automatically loads OS-specific configs
 - **Machine-specific configs** - Any `.bash` file created in `~/.config/bash/conf.d/` is automatically loaded (git-ignored)
 - **Error handling** - Failed files don't break shell initialization (set `BASH_DEBUG=1` to see warnings)
-- **Load order** - Files load alphabetically (no dependencies between files)
+- **Load order** - Files are loaded in the order returned by the shell glob (typically alphabetical);
+  explicit ordering via numeric prefixes is not officially supported or necessary (no dependencies between files)
 
 ## Installation
 
