@@ -2518,16 +2518,81 @@ suggest_fixes() {
 # Check if file is properly linked
 check_symlink() {
     local file="$1"
-    local expected_target="$2"
+    local package="$2"
 
     if [[ -L "$HOME/$file" ]]; then
         local target
         target=$(readlink "$HOME/$file")
-        if [[ "$target" == *"$expected_target"* ]]; then
+        
+        # Resolve to canonical path (with fallback for macOS)
+        # realpath is preferred but not available on macOS by default
+        # readlink -f works on Linux but not macOS
+        local canonical
+        local symlink_path="$HOME/$file"
+        
+        if command -v realpath >/dev/null 2>&1; then
+            # Use realpath if available (Linux, or macOS with coreutils)
+            canonical=$(realpath "$symlink_path" 2>/dev/null || echo "")
+        elif readlink -f "$symlink_path" >/dev/null 2>&1; then
+            # Use readlink -f on Linux
+            canonical=$(readlink -f "$symlink_path" 2>/dev/null || echo "")
+        else
+            # Fallback for macOS: resolve path manually using cd
+            # This handles both absolute and relative symlink targets
+            local symlink_dir
+            symlink_dir=$(dirname "$symlink_path")
+            
+            if [[ "$target" = /* ]]; then
+                # Absolute path - resolve directly
+                local target_dir target_base resolved_dir
+                target_dir=$(dirname "$target")
+                target_base=$(basename "$target")
+                resolved_dir=$(cd "$target_dir" 2>/dev/null && pwd 2>/dev/null)
+                if [[ -n "$resolved_dir" ]]; then
+                    canonical="$resolved_dir/$target_base"
+                else
+                    canonical="$target"
+                fi
+            else
+                # Relative path - resolve from symlink directory
+                local target_dir target_base resolved_dir
+                target_dir=$(dirname "$target")
+                target_base=$(basename "$target")
+                resolved_dir=$(cd "$symlink_dir" 2>/dev/null && cd "$target_dir" 2>/dev/null && pwd 2>/dev/null)
+                if [[ -n "$resolved_dir" ]]; then
+                    canonical="$resolved_dir/$target_base"
+                else
+                    canonical=""
+                fi
+                # If cd failed, construct path manually
+                if [[ -z "$canonical" ]]; then
+                    canonical="$symlink_dir/$target"
+                fi
+            fi
+        fi
+        
+        # If canonical resolution failed, use target as-is (shouldn't happen in normal cases)
+        if [[ -z "$canonical" ]]; then
+            canonical="$target"
+        fi
+        
+        # Expected canonical path: $HOME/.dotfiles/packages/$package/
+        # Use $HOME/.dotfiles instead of $DOTFILES_DIR to handle worktrees correctly
+        # Symlinks always point to $HOME/.dotfiles, not worktree directories
+        local expected_path="$HOME/.dotfiles/packages/$package/"
+        
+        # Verify canonical path starts with expected dotfiles packages directory
+        # Use anchored string comparison to prevent substring bypass attacks
+        # Normalize both paths (remove trailing slashes for comparison)
+        local normalized_canonical="${canonical%/}"
+        local normalized_expected="${expected_path%/}"
+        
+        # Check if canonical path starts with expected path (anchored match)
+        if [[ "$normalized_canonical" == "$normalized_expected"* ]]; then
             log_success "$file is properly linked to $target"
             return 0
         else
-            log_warning "$file is linked to $target (expected $expected_target)"
+            log_warning "$file is linked to $target (canonical: $canonical, expected under $expected_path)"
             return 1
         fi
     elif [[ -d "$HOME/$file" ]]; then
@@ -2578,11 +2643,9 @@ validate_package() {
     for file in "${file_array[@]}"; do
         # Trim whitespace from file path (handles leading/trailing spaces from TOML parsing)
         file=$(echo "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-        # Check symlinks contain .dotfiles/packages/$package/ with trailing slash
-        # - .dotfiles/packages/ matches the packages/ directory structure
-        # - trailing slash prevents false positives with siblings like git-old/
-        # Note: Uses substring matching, not canonical path verification (Issue #100)
-        if ! check_symlink "$file" ".dotfiles/packages/$package/"; then
+        # Check symlinks point to canonical path under .dotfiles/packages/$package/
+        # Uses canonical path verification to prevent substring bypass attacks (Issue #100)
+        if ! check_symlink "$file" "$package"; then
             # check_symlink already logs the error, but we need to track it
             ((errors++))
         fi
