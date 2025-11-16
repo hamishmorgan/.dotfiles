@@ -13,7 +13,7 @@ Bash shell configuration with modular structure (similar to Fish shell) and tool
 
 The bash configuration is organized into modular files stored in `~/.config/bash/` (following XDG Base Directory Specification):
 
-```
+```text
 ~/.config/bash/
 ├── conf.d/              # Modular configuration files
 │   ├── history.bash     # History settings
@@ -60,7 +60,8 @@ The bash configuration is organized into modular files stored in `~/.config/bash
 
 ### Machine-Specific Configuration
 
-Create any `.bash` file in `~/.config/bash/conf.d/` for machine-specific customizations. All `.bash` files in this directory are automatically loaded:
+Create any `.bash` file in `~/.config/bash/conf.d/` for machine-specific customizations.
+All `.bash` files in this directory are automatically loaded:
 
 ```bash
 # Example: Create a custom config file
@@ -72,11 +73,13 @@ nano ~/.config/bash/conf.d/my-custom-config.bash
 ### Platform-Specific Configuration
 
 Platform-specific configs are automatically loaded:
+
 - macOS: `~/.config/bash/conf.d/darwin.bash`
 
 ### Tool Integrations
 
 All tool integrations are conditional (only load if the tool is installed):
+
 - **git** - Git aliases and worktree shortcuts
 - **eza** - Modern `ls` replacement
 - **bat** - Syntax highlighting for `cat`
@@ -90,6 +93,7 @@ All tool integrations are conditional (only load if the tool is installed):
 ## Migration Notes
 
 This package was restructured from a single `.bashrc` file into modular components:
+
 - Old platform-specific files (`.bashrc.osx`, `.bashrc.linux`) have been migrated to `.config/bash/conf.d/darwin.bash`
 - All tool integrations are now in individual files organized by tool name
 - Machine-specific configs can be created as any `.bash` file in `~/.config/bash/conf.d/`

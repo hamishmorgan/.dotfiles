@@ -1297,7 +1297,8 @@ Some configurations support optional tools through stow + manual activation:
 
 ### Platform-Specific Configs
 
-- OS-specific configs: Bash uses `.config/bash/conf.d/darwin.bash` (migrated from `.bashrc.osx`), Zsh uses `.zshrc.osx`, `.zshrc.linux`
+- OS-specific configs: Bash uses `.config/bash/conf.d/darwin.bash` (migrated from `.bashrc.osx`),
+  Zsh uses `.zshrc.osx`, `.zshrc.linux`
 
 ## Logging System
 
