@@ -1,0 +1,7 @@
+files = [".config/ripgrep/ripgreprc"]
+
+name = "Ripgrep"
+description = "Ripgrep configuration"
+method = "stow"
+target = "~"
+

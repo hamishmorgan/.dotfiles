@@ -287,8 +287,11 @@ initialize_packages() {
 
 # Helper function to remove quotes and whitespace from strings
 # Used for cleaning file paths extracted from TOML arrays
-# Note: This removes ALL quotes, including quotes that might be part of the value
-# For TOML values, use get_toml_value() which handles quotes correctly
+# Strip quotes and whitespace from a string
+# WARNING: This removes ALL quotes, including quotes that might be part of the value.
+# This function is intended for simple values where quotes are just delimiters.
+# For TOML values with complex quoting or escaped quotes, use get_toml_value() which handles quotes correctly.
+# This function is safe for file paths extracted from TOML arrays where quotes are delimiters only.
 trim_quotes_and_whitespace() {
     local input="$1"
     # Remove leading/trailing whitespace, single quotes, and double quotes
@@ -1051,15 +1054,15 @@ get_toml_inline_table() {
             ',')
                 if [[ "$in_quotes" == false && "$in_table" == true && "$in_array" == false ]]; then
                     # Field separator (only if not inside array)
-                            local trimmed_field_name
-                            trimmed_field_name=$(echo "$field_name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-                            if [[ "$trimmed_field_name" == "command" ]]; then
-                                command_value=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
-                            elif [[ "$trimmed_field_name" == "args" ]]; then
-                                args_array=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//')
-                            fi
-                            field_name=""
-                            current_field=""
+                    local trimmed_field_name
+                    trimmed_field_name=$(echo "$field_name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                    if [[ "$trimmed_field_name" == "command" ]]; then
+                        command_value=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//' | sed 's/^["'\'']//; s/["'\'']$//')
+                    elif [[ "$trimmed_field_name" == "args" ]]; then
+                        args_array=$(echo "$current_field" | sed 's/^\s*//; s/\s*$//')
+                    fi
+                    field_name=""
+                    current_field=""
                 else
                     current_field="$current_field$char"
                 fi
@@ -3467,6 +3470,10 @@ validate_config_syntax() {
     local verbosity="${1:-0}"
     log_info "Validating configuration syntax..."
 
+    # Reset global validator flags at the start of each validation operation
+    VALIDATOR_ERROR_OUTPUT=""
+    VALIDATOR_SKIPPED=false
+
     local errors=0
 
     # Iterate through all packages
@@ -3544,13 +3551,13 @@ validate_config_syntax() {
 
                         # Handle escape sequences FIRST (before checking for quotes or patterns)
                         if [[ "$char" == "\\" ]] && [[ $i -lt $((${#args_string} - 1)) ]]; then
-                            # Escape character - consume both the backslash and next char
+                            # Escape character - consume the backslash and add only the escaped character
                             # This handles \" (escaped quote) and other escapes
-                            current_arg="$current_arg$char"
+                            # The backslash is consumed and not added to current_arg
+                            # The escaped character is added directly (e.g., \" becomes ")
                             ((i++))
-                            if [[ $i -lt ${#args_string} ]]; then
-                                current_arg="$current_arg${args_string:$i:1}"
-                            fi
+                            local esc_char="${args_string:$i:1}"
+                            current_arg="$current_arg$esc_char"
                             ((i++))
                             continue
                         fi
@@ -3633,8 +3640,18 @@ validate_config_syntax() {
                     fi
                 done
                 # If FILE placeholder wasn't found, append full file path as last argument
+                # but only if it's not already present in the arguments
                 if [[ "$found_file_placeholder" == false ]]; then
-                    expanded_args+=("$full_path")
+                    local file_path_already_present=false
+                    for arg in "${expanded_args[@]}"; do
+                        if [[ "$arg" == "$full_path" ]]; then
+                            file_path_already_present=true
+                            break
+                        fi
+                    done
+                    if [[ "$file_path_already_present" == false ]]; then
+                        expanded_args+=("$full_path")
+                    fi
                 fi
 
                 # Execute validator
@@ -5898,7 +5915,7 @@ is_valid_command() {
 #   -s, --silent     → -1
 #   -v, --verbose    → 1
 #   -vv              → 2
-# Note: Multiple flags set the highest level (last one wins)
+# Note: When multiple verbosity flags are specified, the last one wins (sets absolute level)
 parse_verbosity() {
     local flag="$1"
 
@@ -5936,7 +5953,7 @@ die() {
 # Verbosity levels: -1 (silent), 0 (normal), 1 (verbose), 2 (very verbose)
 parse_arguments() {
     COMMAND=""
-    VERBOSITY=0
+    VERBOSITY=0    # Verbosity levels: -1=silent, 0=normal, 1=verbose, 2=very verbose
     COMMAND_ARGS=()
 
     while [[ $# -gt 0 ]]; do
@@ -5981,9 +5998,18 @@ parse_arguments() {
                 COMMAND="$1"
                 shift
                 # Collect remaining arguments for commands that need them
+                # Filter out verbosity flags to prevent commands from receiving them
                 while [[ $# -gt 0 ]]; do
-                    COMMAND_ARGS+=("$1")
-                    shift
+                    case "$1" in
+                        -v*|--verbose|-s|--silent)
+                            # Skip global verbosity flags
+                            shift
+                            ;;
+                        *)
+                            COMMAND_ARGS+=("$1")
+                            shift
+                            ;;
+                    esac
                 done
                 ;;
             # Unknown option (unknown flag)

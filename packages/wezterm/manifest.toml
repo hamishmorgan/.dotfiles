@@ -6,4 +6,4 @@ method = "stow"
 target = "~"
 
 [validation]
-".wezterm.lua" = { command = "lua", args = ["-l"] }
+".wezterm.lua" = { command = "lua", args = ["FILE"] }
