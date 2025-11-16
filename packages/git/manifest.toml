@@ -6,7 +6,12 @@ method = "stow"
 target = "~"
 
 [validation]
-".gitconfig" = { command = "git", args = ["config", "--list"] }
+".gitconfig" = { command = "git", args = [
+  "config",
+  "--file",
+  "FILE",
+  "--list",
+] }
 
 [update]
 command = "dev/update-gitignore"
