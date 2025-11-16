@@ -9,7 +9,8 @@
 export BASH_HOST_OS=$(uname | tr '[:upper:]' '[:lower:]')
 
 # XDG Base Directory support
-readonly BASH_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/bash"
+# Only set if not already set (allows re-sourcing without errors)
+[[ -z "$BASH_CONFIG_DIR" ]] && readonly BASH_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/bash"
 
 # Load modular configuration files
 # Files are loaded in alphabetical order. If one file fails, others continue loading.
