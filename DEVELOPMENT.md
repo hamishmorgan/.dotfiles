@@ -258,14 +258,12 @@ Run cross-platform tests locally using Docker/Podman:
 ```
 
 **Platform selection:**
-
 - **`ubuntu`**: Ubuntu 22.04 (matches GitHub Actions environment)
 - **`alpine`**: Alpine Linux (BSD-like coreutils, catches macOS compatibility issues)
 - **`bash32`**: Bash 3.2 (macOS default bash version)
 - **`all`**: All platforms (comprehensive validation)
 
 **When to use:**
-
 - Single platform: During development for quick iteration
 - All platforms: Before pushing to GitHub for comprehensive validation
 

@@ -100,7 +100,6 @@ Full installation and validation in clean environments:
 - **`all`**: Test on all platforms (comprehensive validation)
 
 **When to run:**
-
 - Single platform: During development for quick iteration
 - All platforms: Before pushing to GitHub for comprehensive validation
 
