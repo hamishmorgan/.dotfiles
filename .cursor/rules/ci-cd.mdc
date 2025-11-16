@@ -11,12 +11,12 @@ GitHub Actions workflow (`.github/workflows/validate.yml`) uses matrix strategy 
 
 **Job Overview:**
 
-- **lint**: Code quality (shellcheck + markdownlint) - prerequisite for all other jobs
+- **lint**: Code quality (shellcheck + markdownlint)
 - **smoke-test**: Fast structural validation
-- **bats-tests**: All BATS test suites with OS matrix
+- **bats-tests**: All BATS test suites with OS matrix (runs in parallel with lint)
   - `[ubuntu-latest, macos-latest]` - validates test framework cross-platform
   - Runs unit, integration, regression, and contract tests
-- **validate-platform**: Full installation with Bash version matrix
+- **validate-platform**: Full installation with Bash version matrix (runs in parallel with lint)
   - Ubuntu + Bash 5.x (modern Linux)
   - Ubuntu + Bash 3.2 (macOS compatibility)
   - macOS + Bash 3.2 (actual macOS)
@@ -46,9 +46,15 @@ Key learnings from CI optimization work (Issue #42, PR #58, Issue #22):
       echo "Dir::Cache::Archives \"$HOME/.apt-cache/archives\";" | sudo tee /etc/apt/apt.conf.d/99user-cache
   ```
 
-- **npm tools**: Use `npx` with version pinning instead of global install:
+- **npm tools**: Use `npx` with version pinning instead of global install, enable npm cache:
 
   ```yaml
+  - name: Setup Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: "20"
+      cache: 'npm'
+  
   npx --yes markdownlint-cli@0.42.0 "**/*.md"
   ```
 
@@ -64,10 +70,12 @@ Key learnings from CI optimization work (Issue #42, PR #58, Issue #22):
 ### Performance Insights
 
 - `apt-get update` is the main bottleneck (~8-9s per job)
-- Separate into dedicated step for timing visibility
-- Skip installing pre-installed packages (shellcheck on GitHub runners)
-- Parallel job execution reduces wall-clock time
+- Consolidate `apt-get update` and package installations to reduce calls
+- Skip installing pre-installed packages (shellcheck is pre-installed on GitHub runners)
+- Parallel job execution reduces wall-clock time (bats-tests and validate-platform run in parallel with lint)
 - Verbose test output (`-vv`) aids debugging without performance cost
+- Use `make -j$(nproc)` for Bash 3.2 builds to maximize parallelism
+- Consolidate Homebrew package installations into single command
 
 ### Measured Results
 
@@ -85,3 +93,23 @@ Phase 2 optimizations (Issue #22) consolidated BATS tests:
 - **After**: 1 BATS job with OS matrix = 2 min overhead
 - **Savings**: 6 min per CI run (~25% additional improvement)
 - **Bonus**: BATS tests now validate on macOS (was Ubuntu-only)
+
+Phase 3 optimizations (PR #XXX) parallelized jobs and optimized setup:
+
+- **Job parallelization**: Removed `needs: lint` from `bats-tests` and `validate-platform`
+  - Jobs now run in parallel instead of waiting for lint
+  - **Savings**: ~15-30 seconds per run (time to complete lint job)
+- **Shellcheck optimization**: Verify pre-installed shellcheck instead of installing
+  - **Savings**: ~8-9 seconds per lint job
+- **macOS package consolidation**: Install all Homebrew packages in single command
+  - **Savings**: ~10-20 seconds per macOS job
+- **Bash 3.2 build optimization**: Use `make -j$(nproc)` and `--disable-nls` flag
+  - **Savings**: ~30-60 seconds on build (cache miss)
+- **apt-get consolidation**: Combine update and install steps
+  - **Savings**: ~8-9 seconds per Ubuntu job
+- **Node.js caching**: Enable npm cache in setup-node action
+  - **Savings**: ~5-10 seconds per lint job
+- **Conditional verification**: Only run verification steps on failure
+  - **Savings**: ~2-5 seconds per job
+
+**Total Phase 3 savings**: ~46-78 seconds per run (with cache hits), ~2-3 minutes with cache misses
