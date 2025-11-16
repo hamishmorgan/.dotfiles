@@ -3,16 +3,13 @@
 
 case $BASH_HOST_OS in
 	darwin*)
-		# macOS-specific configuration
-
-		# Faster keyboard repeat rate
-		defaults write NSGlobalDomain KeyRepeat -int 1
-		defaults write NSGlobalDomain InitialKeyRepeat -int 12
-
-		# Show hidden files in finder
-		defaults write com.apple.finder AppleShowAllFiles YES
-
+		# Homebrew shell environment
 		[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
 	;;
 esac
+
+# Note: System settings (keyboard repeat, finder) should be configured once via:
+# - System Preferences
+# - A one-time setup script
+# - Not in shell config (runs on every shell startup)
 
