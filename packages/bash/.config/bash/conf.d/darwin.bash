@@ -15,3 +15,4 @@ case $BASH_HOST_OS in
 		[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
 	;;
 esac
+

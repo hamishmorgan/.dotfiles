@@ -1,8 +1,0 @@
-# shellcheck shell=bash
-# Linux-specific bash configuration
-
-case $BASH_HOST_OS in
-	linux*)
-		# Linux-specific
-	;;
-esac

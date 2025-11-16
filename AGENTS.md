@@ -117,7 +117,8 @@ branch complexity.
 
 ```bash
 ~/.bashrc               # Symlinked from repo, contains base config + conditional integrations
-~/.bashrc.local         # Git-ignored, machine-specific customizations
+~/.bashrc.local         # Git-ignored, machine-specific customizations (backward compatible)
+~/.config/bash/conf.d/*.bash  # Machine-specific configs (any .bash file auto-loaded)
 ~/.gitconfig            # Generated from template + secret
 ~/.gitconfig.local      # Git-ignored, machine-specific git settings
 ```
@@ -1296,7 +1297,7 @@ Some configurations support optional tools through stow + manual activation:
 
 ### Platform-Specific Configs
 
-- OS-specific configs use suffixes: `.bashrc.osx`, `.bashrc.linux`, `.zshrc.osx`, `.zshrc.linux`
+- OS-specific configs: Bash uses `.config/bash/conf.d/darwin.bash` (migrated from `.bashrc.osx`), Zsh uses `.zshrc.osx`, `.zshrc.linux`
 
 ## Logging System
 

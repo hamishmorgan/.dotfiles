@@ -1,4 +1,25 @@
-files = [".bashrc", ".bash_profile"]
+files = [
+  ".bashrc",
+  ".bash_profile",
+  ".config/bash/conf.d/history.bash",
+  ".config/bash/conf.d/options.bash",
+  ".config/bash/conf.d/completion.bash",
+  ".config/bash/conf.d/prompt.bash",
+  ".config/bash/conf.d/editor.bash",
+  ".config/bash/conf.d/cd.bash",
+  ".config/bash/conf.d/git.bash",
+  ".config/bash/conf.d/eza.bash",
+  ".config/bash/conf.d/bat.bash",
+  ".config/bash/conf.d/fzf.bash",
+  ".config/bash/conf.d/zoxide.bash",
+  ".config/bash/conf.d/graphite.bash",
+  ".config/bash/conf.d/shadowenv.bash",
+  ".config/bash/conf.d/dotfiles.bash",
+  ".config/bash/conf.d/shopify.bash",
+  ".config/bash/conf.d/rust.bash",
+  ".config/bash/conf.d/darwin.bash",
+  ".config/bash/functions/gi.bash",
+]
 
 name = "Bash"
 description = "Bash shell configuration"
@@ -8,3 +29,33 @@ target = "~"
 [validation]
 ".bashrc" = { command = "bash", args = ["-n", "FILE"] }
 ".bash_profile" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/history.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/options.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/completion.bash" = { command = "bash", args = [
+  "-n",
+  "FILE",
+] }
+".config/bash/conf.d/prompt.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/editor.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/cd.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/git.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/eza.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/bat.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/fzf.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/zoxide.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/graphite.bash" = { command = "bash", args = [
+  "-n",
+  "FILE",
+] }
+".config/bash/conf.d/shadowenv.bash" = { command = "bash", args = [
+  "-n",
+  "FILE",
+] }
+".config/bash/conf.d/dotfiles.bash" = { command = "bash", args = [
+  "-n",
+  "FILE",
+] }
+".config/bash/conf.d/shopify.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/rust.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/darwin.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/functions/gi.bash" = { command = "bash", args = ["-n", "FILE"] }
