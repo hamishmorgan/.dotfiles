@@ -2605,7 +2605,7 @@ check_symlink() {
         else
             dotfiles_canonical=$(cd "$DOTFILES_DIR" 2>/dev/null && pwd 2>/dev/null || echo "$DOTFILES_DIR")
         fi
-        
+
         # Also resolve $HOME/.dotfiles (standard location) for comparison
         # Symlinks may point to either the current DOTFILES_DIR or $HOME/.dotfiles
         local home_dotfiles_canonical
@@ -2620,23 +2620,23 @@ check_symlink() {
         else
             home_dotfiles_canonical=""
         fi
-        
+
         # Check against both possible locations (current DOTFILES_DIR and $HOME/.dotfiles)
         local expected_path1="$dotfiles_canonical/packages/$package/"
         local expected_path2=""
         if [[ -n "$home_dotfiles_canonical" ]]; then
             expected_path2="$home_dotfiles_canonical/packages/$package/"
         fi
-        
+
         # Verify canonical path starts with expected dotfiles packages directory
         # Use anchored string comparison to prevent substring bypass attacks
         # Keep trailing slash in expected_path to prevent sibling package bypass (e.g., git-evil/)
         local normalized_canonical="${canonical%/}"
-        
+
         # Check if canonical path starts with either expected path (anchored match with trailing slash)
         # The trailing slash prevents false positives with sibling packages like git-evil/
         if [[ "$normalized_canonical" == "$expected_path1"* ]] || \
-           ([[ -n "$expected_path2" ]] && [[ "$normalized_canonical" == "$expected_path2"* ]]); then
+           { [[ -n "$expected_path2" ]] && [[ "$normalized_canonical" == "$expected_path2"* ]]; }; then
             log_success "$file is properly linked to $target"
             return 0
         else
