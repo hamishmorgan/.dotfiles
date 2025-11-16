@@ -2663,7 +2663,7 @@ check_symlink() {
         
         # Reject if symlink points exactly to package directory (edge case)
         if [[ "$normalized_canonical" == "$expected_path1_no_slash" ]] || \
-           ([[ -n "$expected_path2_no_slash" ]] && [[ "$normalized_canonical" == "$expected_path2_no_slash" ]]); then
+           { [[ -n "$expected_path2_no_slash" ]] && [[ "$normalized_canonical" == "$expected_path2_no_slash" ]]; }; then
             log_warning "$file symlink points to package directory itself, not a file within it"
             return 1
         fi
