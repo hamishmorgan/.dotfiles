@@ -35,27 +35,28 @@ else
     CPU_COUNT="4"
 fi
 
-# Cap at 8 jobs to avoid resource exhaustion
-JOBS=$((CPU_COUNT > 8 ? 8 : CPU_COUNT))
-
-# Check if parallel execution is available (requires GNU parallel or rush)
-HAS_PARALLEL=false
-if command -v parallel >/dev/null 2>&1 || command -v rush >/dev/null 2>&1; then
-    HAS_PARALLEL=true
+# Use 4 jobs in CI for stability, cap at 8 jobs locally to avoid resource exhaustion
+if [[ -n "${CI:-}" ]]; then
+    # CI: Use 4 parallel jobs for stability (GitHub runners typically have 2-4 cores)
+    JOBS=4
+else
+    # Local: Use CPU count, capped at 8 to avoid resource exhaustion
+    JOBS=$((CPU_COUNT > 8 ? 8 : CPU_COUNT))
 fi
 
 # Build bats command with optimal flags
 # Use TAP formatter in CI (no terminal required), pretty formatter locally
+# BATS has built-in parallel support via --jobs flag (doesn't require GNU parallel)
 if $IS_CI; then
-    # CI environment: use TAP formatter (works without terminal)
+    # CI environment: use TAP formatter with parallel execution
+    # Modern BATS handles parallel execution with TAP formatter correctly
     BATS_ARGS=(
         --formatter tap
         --timing
         --print-output-on-failure
         --recursive
+        --jobs "$JOBS"
     )
-    # Disable parallel execution in CI to avoid broken pipe issues
-    # TAP formatter + parallel execution can cause pipe issues in CI
 else
     # Local environment: use pretty formatter with parallel execution
     BATS_ARGS=(
@@ -63,11 +64,8 @@ else
         --timing
         --print-output-on-failure
         --recursive
+        --jobs "$JOBS"
     )
-    # Enable parallel execution if available (works well locally)
-    if $HAS_PARALLEL; then
-        BATS_ARGS+=(--jobs "$JOBS")
-    fi
 fi
 
 # Run all test suites with timing and automatic failure output
@@ -76,7 +74,7 @@ fi
 #   --timing: Show timing information for each test
 #   --print-output-on-failure: Automatically show output when tests fail
 #   --recursive: Include tests in subdirectories
-#   --jobs: Run tests in parallel (local only, disabled in CI)
+#   --jobs: Run tests in parallel (4 jobs in CI, CPU count locally)
 #
 # Note: bats exits with code 1 if there's a mismatch between expected and executed tests
 # (e.g., skipped tests), even if all executed tests pass. We need to distinguish between

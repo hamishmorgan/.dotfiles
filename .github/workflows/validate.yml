@@ -27,12 +27,13 @@ jobs:
           echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
           echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
 
-      - name: Install shellcheck
+      - name: Verify shellcheck
         run: |
           if ! command -v shellcheck &> /dev/null; then
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq shellcheck
+            echo "::error::shellcheck not found on runner"
+            exit 1
           fi
+          shellcheck --version
 
       - name: Run linting
         run: |
@@ -57,10 +58,10 @@ jobs:
         run: ./tests/smoke-test.sh
 
   # CONSOLIDATED BATS TESTS WITH OS MATRIX
+  # Tests run in parallel using BATS --jobs flag (4 jobs per runner)
   bats-tests:
     name: BATS Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    needs: lint
     permissions:
       contents: read
     strategy:
@@ -104,16 +105,11 @@ jobs:
       - name: Install BATS (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          # Install bats-core first
-          brew install bats-core stow git
-
-          # Tap the bats-core tap for helper libraries
           brew tap bats-core/bats-core
-
-          # Install helper libraries from tap
-          brew install bats-support bats-assert bats-file
+          brew install bats-core bats-support bats-assert bats-file stow git
 
       - name: Verify BATS installation
+        if: failure()
         run: |
           bats --version
           echo "BATS helper libraries:"
@@ -139,7 +135,6 @@ jobs:
     permissions:
       contents: read
     runs-on: ${{ matrix.os }}
-    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -198,32 +193,32 @@ jobs:
           echo 'path-exclude=/usr/share/doc/*' | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
           echo 'path-exclude=/usr/share/man/*' | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
 
-      - name: Update apt (Ubuntu)
+      - name: Update apt and install dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update -qq
+        run: |
+          sudo apt-get update -qq
+          if [[ "${{ matrix.setup-bash }}" == "true" && "${{ steps.cache-bash32.outputs.cache-hit }}" != "true" ]]; then
+            sudo apt-get install -y -qq build-essential stow git tmux zsh
+          else
+            sudo apt-get install -y -qq stow git tmux zsh
+          fi
 
       # Build Bash 3.2 if needed (Ubuntu)
       - name: Build Bash 3.2
         if: matrix.setup-bash && steps.cache-bash32.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get install -y -qq build-essential
           cd /tmp
           curl -LO https://ftp.gnu.org/gnu/bash/bash-3.2.57.tar.gz
           echo "3fa9daf85ebf35068f090ce51283ddeeb3c75eb5bc70b1a4a7cb05868bfe06a4  bash-3.2.57.tar.gz" | sha256sum -c -
           tar xzf bash-3.2.57.tar.gz
           cd bash-3.2.57
-          ./configure --prefix=/tmp/bash-3.2.57-install
-          make -j4
+          ./configure --prefix=/tmp/bash-3.2.57-install --disable-nls
+          make -j$(nproc)
           make install
 
       - name: Install Bash 3.2
         if: matrix.setup-bash
         run: sudo cp -r /tmp/bash-3.2.57-install/* /usr/local/
-
-      # Install dependencies (platform-specific)
-      - name: Install dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install -y -qq stow git tmux zsh
 
       - name: Install dependencies (macOS)
         if: matrix.os == 'macos-latest'
@@ -231,8 +226,9 @@ jobs:
           brew install stow git tmux zsh ncurses
           brew link --overwrite --force ncurses || true
 
-      # Verify environment
+      # Verify environment (only on failure for debugging)
       - name: Verify bash version
+        if: failure()
         run: |
           if [[ "${{ matrix.setup-bash }}" == "true" ]]; then
             /usr/local/bin/bash --version
