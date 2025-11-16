@@ -1,11 +1,11 @@
 # zoxide - smarter cd command
 # Tracks your most used directories and lets you jump to them
-if type -q zoxide
+if type -q zoxide && status is-interactive
     zoxide init fish | source
-    alias zi='zoxide query -i'  # Interactive selection
 
-    # Usage:
-    # z <dir>     - jump to directory
-    # zi          - interactive directory selection with fzf
-    # z -         - go back to previous directory
+    # Alias cd to z for smart navigation
+    alias cd='z'
+
+    # Alias cdi to zi for interactive selection
+    alias cdi='zi'
 end
