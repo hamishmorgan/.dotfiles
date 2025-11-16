@@ -22,5 +22,6 @@ switch $FISH_HOST_OS
         end
 end
 
+# ━━━ Machine-Specific Configuration ━━━
 # Machine-specific configuration (not version-controlled)
 # should be added to ~/.config/fish/conf.d/

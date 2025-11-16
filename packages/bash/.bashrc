@@ -85,8 +85,11 @@ if command -v fzf &>/dev/null; then
     done
 fi
 
-# zoxide (smart cd)
-command -v zoxide &>/dev/null && eval "$(zoxide init bash)"
+# zoxide (smart cd replacement)
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init bash)"
+    alias zi='zoxide query -i'  # Interactive selection
+fi
 
 # Graphite (stacked PRs)
 if command -v gt &>/dev/null; then
@@ -162,4 +165,4 @@ alias c='clear'
 # ━━━ Machine-Specific Configuration ━━━
 [[ -f ~/.bashrc.local ]] && source ~/.bashrc.local
 
-[[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
+. "$HOME/.local/bin/env"

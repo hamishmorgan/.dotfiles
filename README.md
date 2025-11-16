@@ -225,23 +225,37 @@ cargo install eza     # Other platforms
 
 **Auto-configured aliases:** `ls`, `ll`, `la`, `lt`, `lta`, `lg`, `lm`, `lz` (falls back to standard `ls` if eza not installed)
 
-#### gitignore.io (gi command)
+#### zoxide (smart cd replacement)
 
-The `gi` command generates `.gitignore` files from [gitignore.io](https://gitignore.io) templates.
-Available in bash, zsh, and fish shells.
+[zoxide](https://github.com/ajeetdsouza/zoxide) - Smarter `cd` command with frecency-based directory jumping.
 
 ```bash
-# Generate gitignore for Python
-gi python > .gitignore
-
-# Generate gitignore for multiple types
-gi node,osx,vim > .gitignore
-
-# Append to existing gitignore
-gi python >> .gitignore
+brew install zoxide      # macOS
+cargo install zoxide    # Other platforms
+apk add zoxide          # Alpine
 ```
 
-**Configuration:** Uses `DOTFILES_CURL_TIMEOUT` environment variable (default: 30 seconds) for network timeouts.
+**Auto-configured:** Initializes automatically if installed. Provides `z` command for smart directory navigation and
+`zi` alias for interactive selection.
+
+**Usage:**
+
+```bash
+# Jump to frequently used directories
+z dotfiles              # Jumps to ~/.dotfiles
+z docs                  # Jumps to ~/Documents
+z proj python           # Jumps to ~/projects/python-app
+
+# Interactive selection
+zi dot                  # Shows options matching 'dot'
+
+# Manual database management (optional - zoxide auto-tracks directories)
+zoxide add .            # Add current directory to database
+zoxide remove /path/to/dir  # Remove from database
+```
+
+**Benefits:** Frecency-based navigation (frequent + recent), fuzzy matching, interactive selection, faster navigation
+than `cd`, learns from usage patterns.
 
 ## Verification
 
