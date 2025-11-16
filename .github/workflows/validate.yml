@@ -4,9 +4,9 @@ permissions:
 
 on:
   push:
-    branches: [main, simplify-validation-and-dependency-tracking]
+    branches: [main]
   pull_request:
-    branches: [main, simplify-validation-and-dependency-tracking]
+    branches: [main]
 
 jobs:
   lint:
