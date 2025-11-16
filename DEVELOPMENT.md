@@ -238,6 +238,39 @@ See [tests/README.md](tests/README.md) for comprehensive testing documentation.
 See [tests/README.md](tests/README.md) and [.cursor/rules/testing-workflow.mdc](.cursor/rules/testing-workflow.mdc)
 for comprehensive testing documentation and TDD patterns.
 
+### Local CI Testing
+
+Run cross-platform tests locally using Docker/Podman:
+
+```bash
+# Test all platforms (comprehensive, ~6-9 minutes)
+./dev/ci
+# or
+./dev/ci all
+
+# Test single platform for quick iteration (~2-3 minutes)
+./dev/ci ubuntu      # Quick Ubuntu check
+./dev/ci alpine      # BSD compatibility check
+./dev/ci bash32      # macOS compatibility check
+
+# Keep test images for debugging
+./dev/ci all --no-cleanup
+```
+
+**Platform selection:**
+
+- **`ubuntu`**: Ubuntu 22.04 (matches GitHub Actions environment)
+- **`alpine`**: Alpine Linux (BSD-like coreutils, catches macOS compatibility issues)
+- **`bash32`**: Bash 3.2 (macOS default bash version)
+- **`all`**: All platforms (comprehensive validation)
+
+**When to use:**
+
+- Single platform: During development for quick iteration
+- All platforms: Before pushing to GitHub for comprehensive validation
+
+See [tests/README.md](tests/README.md) for detailed testing documentation.
+
 ---
 
 ## Continuous Integration
@@ -457,7 +490,8 @@ Update dotfiles | `./dot update` | 1-2m
 Check health | `./dot health` | instant
 Check status | `./dot status` | instant
 Smoke test | `./tests/smoke-test.sh` | 30s
-Full local CI | `./tests/run-local-ci.sh` | 2-3m
+Full local CI | `./dev/ci` or `./dev/ci all` | 6-9m
+Single platform CI | `./dev/ci ubuntu\|alpine\|bash32` | 2-3m
 Lint Markdown | `markdownlint "**/*.md"` | 5s
 Lint Bash | `shellcheck dot` | 5s
 Monitor CI | `gh pr checks <PR>` | instant

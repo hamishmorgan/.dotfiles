@@ -78,16 +78,31 @@ Full installation and validation in clean environments:
 **Usage:**
 
 ```bash
-# Test all platforms
+# Test all platforms (default, ~6-9 minutes)
 ./tests/run-local-ci.sh
+# or
+./dev/ci
 
-# Test specific platform
-./tests/run-local-ci.sh ubuntu
-./tests/run-local-ci.sh alpine
-./tests/run-local-ci.sh bash32
+# Test specific platform for quick iteration (~2-3 minutes)
+./dev/ci ubuntu      # Quick Ubuntu check
+./dev/ci alpine      # BSD compatibility check
+./dev/ci bash32      # macOS compatibility check
+
+# Keep test images for debugging
+./dev/ci all --no-cleanup
 ```
 
-**When to run:** Before pushing to GitHub
+**Platform Selection:**
+
+- **`ubuntu`**: Test on Ubuntu 22.04 (matches GitHub Actions environment)
+- **`alpine`**: Test on Alpine (BSD-like coreutils, catches macOS compatibility issues)
+- **`bash32`**: Test on Bash 3.2 (macOS default bash version)
+- **`all`**: Test on all platforms (comprehensive validation)
+
+**When to run:**
+
+- Single platform: During development for quick iteration
+- All platforms: Before pushing to GitHub for comprehensive validation
 
 ## Testing Workflow
 
