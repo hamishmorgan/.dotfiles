@@ -37,7 +37,14 @@ jobs:
       - name: Run linting
         run: |
           npx --yes markdownlint-cli@0.42.0 "**/*.md"
-          shellcheck dot packages/bash/.bashrc* packages/bash/.bash_profile packages/bash/.config/bash/conf.d/*.bash packages/bash/.config/bash/functions/*.bash packages/zsh/.zshrc* packages/zsh/.zprofile
+          shellcheck dot packages/bash/.bashrc* packages/bash/.bash_profile packages/zsh/.zshrc* packages/zsh/.zprofile
+          # Check modular bash files if they exist
+          if ls packages/bash/.config/bash/conf.d/*.bash 1> /dev/null 2>&1; then
+            shellcheck packages/bash/.config/bash/conf.d/*.bash
+          fi
+          if ls packages/bash/.config/bash/functions/*.bash 1> /dev/null 2>&1; then
+            shellcheck packages/bash/.config/bash/functions/*.bash
+          fi
 
   smoke-test:
     name: Smoke Tests
