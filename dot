@@ -2551,7 +2551,8 @@ check_symlink() {
                 if [[ -n "$resolved_dir" ]]; then
                     canonical="$resolved_dir/$target_base"
                 else
-                    canonical="$target"
+                    # If resolution failed, do not use non-canonical target (fail securely)
+                    canonical=""
                 fi
             else
                 # Relative path - resolve from symlink directory
@@ -2559,7 +2560,7 @@ check_symlink() {
                 local target_dir target_base resolved_dir
                 target_dir=$(dirname "$target")
                 target_base=$(basename "$target")
-                
+
                 # Handle special cases for dirname
                 if [[ "$target_dir" == "." ]] || [[ -z "$target_dir" ]]; then
                     # Target is in same directory as symlink
@@ -2568,12 +2569,13 @@ check_symlink() {
                     # Target is in subdirectory - resolve relative to symlink
                     resolved_dir=$(cd "$symlink_dir" 2>/dev/null && cd "$target_dir" 2>/dev/null && pwd 2>/dev/null)
                 fi
-                
+
                 if [[ -n "$resolved_dir" ]]; then
                     canonical="$resolved_dir/$target_base"
                 else
-                    # If cd failed, construct path manually (last resort)
-                    canonical="$symlink_dir/$target"
+                    # If cd failed, do not use a non-canonical fallback (fail securely)
+                    # This prevents path traversal attacks when resolution fails
+                    canonical=""
                 fi
             fi
         fi
@@ -2584,30 +2586,61 @@ check_symlink() {
             log_warning "$file symlink target '$target' could not be resolved to canonical path (security check failed)"
             return 1
         fi
-        
+
         # Verify resolved path exists (check for broken symlinks)
         if [[ ! -e "$canonical" ]]; then
             log_warning "$file is a broken symlink (points to non-existent: $target)"
             return 1
         fi
 
-        # Expected canonical path: $HOME/.dotfiles/packages/$package/
-        # Use $HOME/.dotfiles instead of $DOTFILES_DIR to handle worktrees correctly
-        # Symlinks always point to $HOME/.dotfiles, not worktree directories
-        local expected_path="$HOME/.dotfiles/packages/$package/"
-
+        # Expected canonical path: resolve DOTFILES_DIR to canonical path
+        # This handles worktrees and custom installation paths correctly
+        # Stow creates symlinks relative to PACKAGES_DIR, which is DOTFILES_DIR/packages
+        # However, symlinks may point to $HOME/.dotfiles (standard location) or worktree
+        local dotfiles_canonical
+        if command -v realpath >/dev/null 2>&1; then
+            dotfiles_canonical=$(realpath "$DOTFILES_DIR" 2>/dev/null || echo "$DOTFILES_DIR")
+        elif command -v readlink >/dev/null 2>&1 && readlink -f / >/dev/null 2>&1; then
+            dotfiles_canonical=$(readlink -f "$DOTFILES_DIR" 2>/dev/null || echo "$DOTFILES_DIR")
+        else
+            dotfiles_canonical=$(cd "$DOTFILES_DIR" 2>/dev/null && pwd 2>/dev/null || echo "$DOTFILES_DIR")
+        fi
+        
+        # Also resolve $HOME/.dotfiles (standard location) for comparison
+        # Symlinks may point to either the current DOTFILES_DIR or $HOME/.dotfiles
+        local home_dotfiles_canonical
+        if [[ -d "$HOME/.dotfiles" ]]; then
+            if command -v realpath >/dev/null 2>&1; then
+                home_dotfiles_canonical=$(realpath "$HOME/.dotfiles" 2>/dev/null || echo "$HOME/.dotfiles")
+            elif command -v readlink >/dev/null 2>&1 && readlink -f / >/dev/null 2>&1; then
+                home_dotfiles_canonical=$(readlink -f "$HOME/.dotfiles" 2>/dev/null || echo "$HOME/.dotfiles")
+            else
+                home_dotfiles_canonical=$(cd "$HOME/.dotfiles" 2>/dev/null && pwd 2>/dev/null || echo "$HOME/.dotfiles")
+            fi
+        else
+            home_dotfiles_canonical=""
+        fi
+        
+        # Check against both possible locations (current DOTFILES_DIR and $HOME/.dotfiles)
+        local expected_path1="$dotfiles_canonical/packages/$package/"
+        local expected_path2=""
+        if [[ -n "$home_dotfiles_canonical" ]]; then
+            expected_path2="$home_dotfiles_canonical/packages/$package/"
+        fi
+        
         # Verify canonical path starts with expected dotfiles packages directory
         # Use anchored string comparison to prevent substring bypass attacks
-        # Normalize both paths (remove trailing slashes for comparison)
+        # Keep trailing slash in expected_path to prevent sibling package bypass (e.g., git-evil/)
         local normalized_canonical="${canonical%/}"
-        local normalized_expected="${expected_path%/}"
-
-        # Check if canonical path starts with expected path (anchored match)
-        if [[ "$normalized_canonical" == "$normalized_expected"* ]]; then
+        
+        # Check if canonical path starts with either expected path (anchored match with trailing slash)
+        # The trailing slash prevents false positives with sibling packages like git-evil/
+        if [[ "$normalized_canonical" == "$expected_path1"* ]] || \
+           ([[ -n "$expected_path2" ]] && [[ "$normalized_canonical" == "$expected_path2"* ]]); then
             log_success "$file is properly linked to $target"
             return 0
         else
-            log_warning "$file is linked to $target (canonical: $canonical, expected under $expected_path)"
+            log_warning "$file is linked to $target (canonical: $canonical, expected under $expected_path1${expected_path2:+ or $expected_path2})"
             return 1
         fi
     elif [[ -d "$HOME/$file" ]]; then
