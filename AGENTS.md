@@ -1396,6 +1396,9 @@ This documentation loads automatically when editing `.github/workflows/**` files
 | Check tmux | `make check-tmux` | varies |
 | Smoke tests | `make test-smoke` | 30s |
 | BATS tests | `make test-bats` | 30s |
+| Clean caches | `make clean` | varies |
+| Docker prune | `CLEAN_DOCKER=1 make clean-docker` | varies |
+| Podman prune | `CLEAN_PODMAN=1 make clean-podman` | varies |
 | Local CI | `make ci` (set `PLATFORM`) | 2-3m |
 | Setup dev env | `make deps` | varies |
 | Show all commands | `make help` | instant |
@@ -1436,6 +1439,7 @@ This documentation loads automatically when editing `.github/workflows/**` files
 - Specific checks: `make check-markdown`, `make check-shell`, or `make check-make`
 - Specific testing: `make test-smoke` or `make test-bats`
 - Setup environment: `make deps`
+- Cleanup caches: `CLEAN_DOCKER=1 make clean-docker` or `CLEAN_PODMAN=1 make clean-podman`
 - Show all commands: `make help`
 
 **Development Examples:**
