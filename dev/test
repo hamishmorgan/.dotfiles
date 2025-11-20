@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-# Run all tests (smoke + BATS)
-
-set -o pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-"$SCRIPT_DIR/smoke" && "$SCRIPT_DIR/bats"
-

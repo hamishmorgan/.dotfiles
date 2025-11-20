@@ -1,25 +1,14 @@
 # Development Directory
 
-Contains atomic and composite commands for development workflow.
+Contains atomic development scripts located in this directory.
 
-## Atomic commands (single responsibility)
+## Scripts
 
-- `dev/lint-markdown` - Markdown linting only
-- `dev/lint-shell` - Shell script linting only
-- `dev/smoke` - Smoke tests only
-- `dev/bats` - BATS tests only
+- `dev/test-smoke` - Smoke tests only
+- `dev/test-bats` - BATS tests only
 - `dev/ci` - Local CI only
-- `dev/setup` - Development environment setup
-- `dev/clean` - Clean temporary files
+- `dev/update-gitignore` - Refresh global gitignore patterns
+- `dev/validate-jsonc` - Validate JSONC configs
+- `dev/validate-tmux` - Validate tmux configs
 
-## Composite commands (orchestration)
-
-- `dev/lint` - All linting (calls lint-markdown && lint-shell)
-- `dev/test` - All tests (calls smoke && bats)
-- `dev/check` - Complete validation (calls lint && test && ci)
-- `dev/help` - Show available commands
-
-## Design principle
-
-Atomic commands do one thing, composite commands orchestrate multiple atomic commands.
-This enables flexible workflows: use atomic commands for fast iteration, composite for comprehensive checks.
+Each script is single-responsibility and can be composed by tooling (e.g., `make`) outside this directory.

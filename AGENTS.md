@@ -35,7 +35,10 @@ Instructions for AI agents working with this dotfiles repository.
     - [Bash 3.2 Compatibility](#bash-32-compatibility)
   - [Git Commit Attribution](#git-commit-attribution)
   - [File Organization](#file-organization)
+    - [Package Manifests](#package-manifests)
     - [Component-Specific Documentation](#component-specific-documentation)
+    - [Individual File Listing (Best Practice)](#individual-file-listing-best-practice)
+    - [Mixed Config+Data Directories (`packages/rust/` and similar)](#mixed-configdata-directories-packagesrust-and-similar)
     - [Stow Ignore Files](#stow-ignore-files)
     - [Configuration Files](#configuration-files)
     - [Optional Enhancement Configs](#optional-enhancement-configs)
@@ -1384,16 +1387,18 @@ This documentation loads automatically when editing `.github/workflows/**` files
 
 | Task | Command | Time |
 |------|---------|------|
-| Complete validation | `./dev/check` | 3-4m |
-| All linting | `./dev/lint` | 10s |
-| All tests | `./dev/test` | 1m |
-| Lint Markdown | `./dev/lint-markdown` | 5s |
-| Lint Shell | `./dev/lint-shell` | 5s |
-| Smoke tests | `./dev/smoke` | 30s |
-| BATS tests | `./dev/bats` | 30s |
-| Local CI | `./dev/ci` | 2-3m |
-| Setup dev env | `./dev/setup` | varies |
-| Show all commands | `./dev/help` | instant |
+| Fast checks | `make check` | 1m |
+| All tests | `make test` | 1m |
+| Check Markdown | `make check-markdown` | 5s |
+| Check Makefile | `make check-make` | 1s |
+| Check Shell | `make check-shell` | 5s |
+| Check JSONC | `make check-jsonc` | varies |
+| Check tmux | `make check-tmux` | varies |
+| Smoke tests | `make test-smoke` | 30s |
+| BATS tests | `make test-bats` | 30s |
+| Local CI | `make ci` (set `PLATFORM`) | 2-3m |
+| Setup dev env | `make deps` | varies |
+| Show all commands | `make help` | instant |
 
 ### GitHub Commands
 
@@ -1425,31 +1430,32 @@ This documentation loads automatically when editing `.github/workflows/**` files
 
 ### Development Workflow
 
-- Complete validation: `./dev/check` (lint + test + ci)
-- Before commit: `./dev/lint && ./dev/test` (fast, ~1m)
-- Fast iteration: `./dev/lint-shell` or `./dev/smoke` (seconds)
-- Specific linting: `./dev/lint-markdown` or `./dev/lint-shell`
-- Specific testing: `./dev/smoke` or `./dev/bats`
-- Setup environment: `./dev/setup`
-- Show all commands: `./dev/help`
+- Fast validation: `make check` (lint + config validation)
+- Before commit: `make check && make test` (fast, ~1m)
+- Fast iteration: `make check-shell` or `make test-smoke` (seconds)
+- Specific checks: `make check-markdown`, `make check-shell`, or `make check-make`
+- Specific testing: `make test-smoke` or `make test-bats`
+- Setup environment: `make deps`
+- Show all commands: `make help`
 
 **Development Examples:**
 
 ```bash
 # First time setup
-./dev/setup
+make deps
 
 # Fast iteration on shell code
-./dev/lint-shell        # ~5s
+make check-shell        # ~5s
+make check-make         # ~1s
 
 # Before commit (recommended)
-./dev/lint && ./dev/test   # ~1m
+make check && make test    # ~1m
 
-# Before push (comprehensive)
-./dev/check             # ~3-4m
+# Before push (fast validation)
+make check              # ~1m
 
 # Test specific platform
-./dev/ci alpine         # BSD-like coreutils
+PLATFORM=alpine make ci   # BSD-like coreutils
 ```
 
 ## Testing

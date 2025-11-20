@@ -16,7 +16,7 @@ cd ~/.dotfiles
 git remote add upstream git@github.com:hamishmorgan/.dotfiles.git
 
 # Setup development environment
-./dev/setup
+make deps
 ```
 
 ## Before You Start
@@ -48,14 +48,15 @@ Follow these principles:
 
 ```bash
 # Fast iteration (recommended during development)
-./dev/lint-shell      # ~5s - Shellcheck only
-./dev/smoke           # ~30s - Basic validation
+make check-shell      # ~5s - Shellcheck only
+make check-make       # ~1s - Makefile syntax check
+make test-smoke       # ~30s - Basic validation
 
 # Before commit (comprehensive)
-./dev/lint && ./dev/test  # ~1m - All linting + tests
+make check && make test  # ~1m - Checks + tests
 
-# Before push (complete validation)
-./dev/check           # ~3-4m - Lint + test + local CI
+# Before push (fast validation)
+make check            # ~1m - Lint + config validation
 ```
 
 ### 4. Commit Changes
@@ -159,13 +160,13 @@ bats tests/integration/     # Command tests
 bats tests/contract/        # Output validation
 
 # All BATS tests
-./dev/bats
+make test-bats
 
 # Smoke tests
-./dev/smoke
+make test-smoke
 
 # Local CI (cross-platform)
-./dev/ci
+make ci
 ```
 
 See [tests/README.md](tests/README.md) for comprehensive testing documentation.
@@ -174,9 +175,9 @@ See [tests/README.md](tests/README.md) for comprehensive testing documentation.
 
 ### Before Creating PR
 
-1. ✅ Run `./dev/lint` - All linting must pass
-2. ✅ Run `./dev/test` - All tests must pass
-3. ✅ Run `./dev/ci` - Local CI must pass
+1. ✅ Run `make check` - Fast checks must pass
+2. ✅ Run `make test` - All tests must pass
+3. ✅ Run `make ci` - Local CI must pass (set `PLATFORM` as needed)
 4. ✅ Update documentation for user-facing changes
 5. ✅ Add regression test for bug fixes
 6. ✅ Follow conventional commit format
