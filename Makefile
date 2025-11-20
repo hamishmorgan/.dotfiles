@@ -60,10 +60,10 @@ check-make:
 		(make -nB -f Makefile >/dev/null && printf "✓ make -n syntax check passed (checkmake not installed)\n")
 
 check-jsonc: deps-python3
-	./dev/validate-jsonc
+	./dev/check-jsonc
 
 check-tmux: deps-tmux
-	./dev/validate-tmux
+	./dev/check-tmux
 
 check: check-shell check-markdown check-make check-jsonc check-tmux
 

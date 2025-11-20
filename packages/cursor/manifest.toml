@@ -8,5 +8,5 @@ target.macos = "~/Library/Application Support/Cursor/User"
 target.linux = "~/.config/Cursor/User"
 
 [validation]
-"settings.json" = { command = "dev/validate-jsonc", args = ["FILE"] }
-"keybindings.json" = { command = "dev/validate-jsonc", args = ["FILE"] }
+"settings.json" = { command = "dev/check-jsonc", args = ["FILE"] }
+"keybindings.json" = { command = "dev/check-jsonc", args = ["FILE"] }

@@ -319,11 +319,11 @@ EOF
         skip "tmux not available"
     fi
 
-    # Test tmux validation using dev/validate-tmux script
+    # Test tmux validation using dev/check-tmux script
     local test_file="$TEST_DOTFILES_DIR/test_tmux.conf"
     echo "set -g default-terminal \"screen-256color\"" > "$test_file"
 
-    run run_validator "dev/validate-tmux" "$test_file"
+    run run_validator "dev/check-tmux" "$test_file"
 
     # Should clean up test session
     # Verify no test session remains

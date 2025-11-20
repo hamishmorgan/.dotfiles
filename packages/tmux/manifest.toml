@@ -6,4 +6,4 @@ method = "stow"
 target = "~"
 
 [validation]
-".tmux.conf" = { command = "dev/validate-tmux", args = ["FILE"] }
+".tmux.conf" = { command = "dev/check-tmux", args = ["FILE"] }
