@@ -347,6 +347,8 @@ stow --verbose --delete --dir=packages --target=$HOME system git zsh bash fish t
 make deps                # Setup environment
 make check && make test  # Before commit
 make check               # Before push (fast lint + config validation)
+CLEAN_DOCKER=1 make clean-docker  # Prune Docker cache (opt-in)
+CLEAN_PODMAN=1 make clean-podman  # Prune Podman cache (opt-in)
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [DEVELOPMENT.md](DEVELOPMENT.md) for comprehensive developer documentation.
