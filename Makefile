@@ -43,11 +43,20 @@ $(COLOR_SECTION)Available targets:$(COLOR_RESET)
   $(COLOR_TARGET)deps$(COLOR_RESET)              $(COLOR_DESC)Check developer dependencies$(COLOR_RESET)
 endef
 
-.PHONY: help check check-shell check-markdown check-make check-jsonc check-tmux test-smoke test-bats test ci clean update-gitignore \
-	deps deps-shellcheck deps-npx deps-bats deps-container deps-gh deps-jq
+# --- Phony targets -----------------------------------------------------------
+
+.PHONY: help check check-shell check-markdown check-make check-jsonc check-tmux \
+	test-smoke test-bats test ci clean clean-docker clean-podman update-gitignore \
+	deps deps-shellcheck deps-npx deps-bats deps-docker deps-podman deps-python3 deps-tmux deps-gh deps-jq
+
+# --- Help --------------------------------------------------------------------
 
 help:
 	@printf "%b\n" "$(HELP_TEXT)"
+
+# --- Check targets -----------------------------------------------------------
+
+check: check-shell check-markdown check-make check-jsonc check-tmux
 
 check-shell: deps-shellcheck
 	shellcheck dot packages/bash/.bashrc* packages/bash/.bash_profile packages/zsh/.zshrc* packages/zsh/.zprofile tests/**/*.sh
@@ -62,10 +71,7 @@ check-make:
 check-jsonc: deps-python3
 	./dev/check-jsonc
 
-check-tmux: deps-tmux
-	./dev/check-tmux
-
-check: check-shell check-markdown check-make check-jsonc check-tmux
+# --- Test targets ------------------------------------------------------------
 
 test-smoke:
 	./dev/test-smoke
@@ -74,6 +80,8 @@ test-bats: deps-bats
 	./dev/test-bats
 
 test: test-smoke test-bats
+
+# --- CI targets --------------------------------------------------------------
 
 ci: deps-container
 	@if [[ -z "$${PLATFORM:-}" ]]; then \
@@ -110,8 +118,12 @@ else \
   printf "⚠ Podman not installed (skipping CLEAN_PODMAN)\n"; \
 fi'
 
+# --- Utility targets ---------------------------------------------------------
+
 update-gitignore:
 	./dev/update-gitignore
+
+# --- Dependency targets ------------------------------------------------------
 
 deps: deps-shellcheck deps-npx deps-bats deps-docker deps-podman deps-python3 deps-tmux deps-gh deps-jq
 
