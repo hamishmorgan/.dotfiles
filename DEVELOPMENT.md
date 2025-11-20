@@ -4,19 +4,36 @@ Developer documentation for the .dotfiles repository.
 
 ## Table of Contents
 
-- [Getting Started](#getting-started)
-- [Development Environment](#development-environment)
-- [Git Workflow](#git-workflow)
-- [Code Standards](#code-standards)
-- [Testing](#testing)
-- [Continuous Integration](#continuous-integration)
-- [Linting](#linting)
-- [Debugging](#debugging)
-- [Release Process](#release-process)
-- [Architecture](#architecture)
-- [Additional Resources](#additional-resources)
-- [Quick Reference](#quick-reference)
-- [Questions](#questions)
+- [Development Guide](#development-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Clone for Development](#clone-for-development)
+  - [Development Environment](#development-environment)
+    - [Recommended Tools](#recommended-tools)
+    - [Editor Setup](#editor-setup)
+  - [Git Workflow](#git-workflow)
+  - [Code Standards](#code-standards)
+    - [Bash Style Guide](#bash-style-guide)
+    - [Documentation Style](#documentation-style)
+  - [Testing](#testing)
+    - [Writing Tests](#writing-tests)
+    - [Local CI Testing](#local-ci-testing)
+  - [Continuous Integration](#continuous-integration)
+  - [Checks](#checks)
+  - [Debugging](#debugging)
+  - [Release Process](#release-process)
+    - [Version Tracking](#version-tracking)
+    - [Creating Releases](#creating-releases)
+    - [Changelog](#changelog)
+  - [Architecture](#architecture)
+    - [Project Structure](#project-structure)
+    - [Key Components](#key-components)
+    - [Design Principles](#design-principles)
+    - [Helper Functions](#helper-functions)
+  - [Additional Resources](#additional-resources)
+  - [Quick Reference](#quick-reference)
+  - [Questions?](#questions)
 
 ---
 
@@ -114,7 +131,7 @@ let g:ale_linters = {
 
 **Branch:** Single `main` branch. Machine-specific configs use `.local` files (git-ignored).
 
-**Workflow:** Create feature branch, make changes, test (`./dev/lint && ./dev/test`), create PR, iterate.
+**Workflow:** Create feature branch, make changes, test (`make check && make test`), create PR, iterate.
 
 **Commits:** Use [conventional commits](https://www.conventionalcommits.org/) - `type(scope): description`
 
@@ -224,9 +241,11 @@ function_name() {
 **Quick workflow:**
 
 ```bash
-./dev/lint-shell           # Fast (~5s)
-./dev/lint && ./dev/test   # Before commit (~1m)
-./dev/check                # Before push (~3-4m)
+make check-shell           # Fast (~5s)
+make check-make            # Makefile syntax (~1s)
+make check-markdown        # Markdownlint (~5s)
+make check && make test    # Before commit (~1m)
+make check                 # Before push (~1m, lint + config validation)
 ```
 
 **Test categories:** Regression (one per bug), unit, integration, contract.
@@ -244,20 +263,21 @@ Run cross-platform tests locally using Docker/Podman:
 
 ```bash
 # Test all platforms (comprehensive, ~6-9 minutes)
-./dev/ci
+make ci
 # or
-./dev/ci all
+PLATFORM=all make ci
 
 # Test single platform for quick iteration (~2-3 minutes)
-./dev/ci ubuntu      # Quick Ubuntu check
-./dev/ci alpine      # BSD compatibility check
-./dev/ci bash32      # macOS compatibility check
+PLATFORM=ubuntu make ci      # Quick Ubuntu check
+PLATFORM=alpine make ci      # BSD compatibility check
+PLATFORM=bash32 make ci      # macOS compatibility check
 
 # Keep test images for debugging
-./dev/ci all --no-cleanup
+PLATFORM=all CI_ARGS="--no-cleanup" make ci
 ```
 
-**Platform selection:**
+**Platform selection:** set the `PLATFORM` environment variable (defaults to `all` if unset).
+Use `CI_ARGS` for extra flags passed through to the underlying `./dev/ci` script.
 
 - **`ubuntu`**: Ubuntu 22.04 (matches GitHub Actions environment)
 - **`alpine`**: Alpine Linux (BSD-like coreutils, catches macOS compatibility issues)
@@ -285,12 +305,15 @@ See [.cursor/rules/ci-cd.mdc](.cursor/rules/ci-cd.mdc) for comprehensive CI docu
 
 ---
 
-## Linting
+## Checks
 
 ```bash
-./dev/lint              # All (~10s)
-./dev/lint-shell        # Shellcheck (~5s)
-./dev/lint-markdown     # Markdownlint (~5s)
+make check             # All (~1m)
+make check-shell       # Shellcheck (~5s)
+make check-markdown    # Markdownlint (~5s)
+make check-make        # Makefile syntax (~1s)
+make check-jsonc       # JSONC validation
+make check-tmux        # tmux config validation
 ```
 
 **Configuration:** `.shellcheckrc`, `.markdownlint.yml`
@@ -489,9 +512,9 @@ Install dotfiles | `./dot install` | 1-2m
 Update dotfiles | `./dot update` | 1-2m
 Check health | `./dot health` | instant
 Check status | `./dot status` | instant
-Smoke test | `./tests/smoke-test.sh` | 30s
-Full local CI | `./dev/ci` or `./dev/ci all` | 6-9m
-Single platform CI | `./dev/ci ubuntu, alpine, or bash32` | 2-3m
+Smoke test | `make test-smoke` | 30s
+Full local CI | `make ci` or `PLATFORM=all make ci` | 6-9m
+Single platform CI | ``PLATFORM=ubuntu\|alpine\|bash32 make ci`` | 2-3m
 Lint Markdown | `markdownlint "**/*.md"` | 5s
 Lint Bash | `shellcheck dot` | 5s
 Monitor CI | `gh pr checks <PR>` | instant

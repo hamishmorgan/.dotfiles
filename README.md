@@ -11,20 +11,35 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 
 ## Table of Contents
 
-- [Why This Dotfiles Setup?](#why-this-dotfiles-setup)
-- [Quick Reference](#quick-reference)
-- [Packages](#packages)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Optional Enhancements](#optional-enhancements)
-- [Verification](#verification)
-- [Machine-Specific Configuration](#machine-specific-configuration)
-- [Updating](#updating)
-- [Package Management](#package-management)
-- [Advanced](#advanced)
-- [Development](#development)
-- [Contributing](#contributing)
+- [.dotfiles](#dotfiles)
+  - [Table of Contents](#table-of-contents)
+  - [Why This Dotfiles Setup?](#why-this-dotfiles-setup)
+  - [Contents](#contents)
+  - [Compatibility](#compatibility)
+  - [Quick Reference](#quick-reference)
+    - [Common Commands](#common-commands)
+    - [Documentation](#documentation)
+    - [Quick Links](#quick-links)
+  - [Packages](#packages)
+  - [Prerequisites](#prerequisites)
+    - [macOS](#macos)
+    - [Linux](#linux)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+  - [Optional Enhancements](#optional-enhancements)
+    - [Git Delta - Enhanced Diff Viewer](#git-delta---enhanced-diff-viewer)
+    - [Set Default Shell](#set-default-shell)
+    - [Modern CLI Tools](#modern-cli-tools)
+      - [eza (modern ls replacement)](#eza-modern-ls-replacement)
+      - [zoxide (smart cd replacement)](#zoxide-smart-cd-replacement)
+  - [Verification](#verification)
+  - [Machine-Specific Configuration](#machine-specific-configuration)
+  - [Updating](#updating)
+  - [Package Management](#package-management)
+  - [Advanced](#advanced)
+  - [Development](#development)
+  - [Disk Cleanup Utility](#disk-cleanup-utility)
+  - [Contributing](#contributing)
 
 ## Why This Dotfiles Setup?
 
@@ -329,9 +344,9 @@ stow --verbose --delete --dir=packages --target=$HOME system git zsh bash fish t
 ## Development
 
 ```bash
-./dev/setup              # Setup environment
-./dev/lint && ./dev/test # Before commit
-./dev/check              # Before push (complete validation)
+make deps                # Setup environment
+make check && make test  # Before commit
+make check               # Before push (fast lint + config validation)
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [DEVELOPMENT.md](DEVELOPMENT.md) for comprehensive developer documentation.
@@ -355,8 +370,8 @@ See [bin/README.md](bin/README.md) for complete documentation.
 
 ```bash
 git clone git@github.com:YOUR_USERNAME/.dotfiles.git ~/.dotfiles
-./dev/setup
-./dev/lint && ./dev/test
+make deps
+make check && make test
 gh pr create
 ```
 
