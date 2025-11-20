@@ -7,7 +7,7 @@ MAKEFLAGS += --no-builtin-rules
 DEFAULT_GOAL := help
 
 .PHONY: help check check-shell check-markdown check-make check-jsonc check-tmux test-smoke test-bats test ci clean clean-docker clean-podman \
-	update-gitignore deps deps-shellcheck deps-npx deps-bats deps-docker deps-podman deps-gh deps-jq
+	update-gitignore deps deps-shellcheck deps-npx deps-bats deps-docker deps-podman deps-python3 deps-tmux deps-gh deps-jq
 
 HELP_COLOR ?= 1
 CLEAN_DOCKER ?= 0
@@ -59,10 +59,10 @@ check-make:
 	@command -v checkmake >/dev/null 2>&1 && checkmake Makefile || \
 		(make -nB -f Makefile >/dev/null && printf "✓ make -n syntax check passed (checkmake not installed)\n")
 
-check-jsonc:
+check-jsonc: deps-python3
 	./dev/validate-jsonc
 
-check-tmux:
+check-tmux: deps-tmux
 	./dev/validate-tmux
 
 check: check-shell check-markdown check-make check-jsonc check-tmux
@@ -113,7 +113,7 @@ fi'
 update-gitignore:
 	./dev/update-gitignore
 
-deps: deps-shellcheck deps-npx deps-bats deps-docker deps-podman deps-gh deps-jq
+deps: deps-shellcheck deps-npx deps-bats deps-docker deps-podman deps-python3 deps-tmux deps-gh deps-jq
 
 deps-shellcheck:
 	@if command -v shellcheck >/dev/null 2>&1; then \
@@ -153,6 +153,21 @@ deps-podman:
 		printf "✓ podman installed\n"; \
 	else \
 		printf "⚠ podman not found (optional). Install: brew install podman / apt-get install podman\n"; \
+	fi
+
+deps-python3:
+	@if command -v python3 >/dev/null 2>&1; then \
+		printf "✓ python3 installed\n"; \
+	else \
+		printf "✗ python3 not found. Install: brew install python / apt-get install python3\n" >&2; \
+		exit 1; \
+	fi
+
+deps-tmux:
+	@if command -v tmux >/dev/null 2>&1; then \
+		printf "✓ tmux installed\n"; \
+	else \
+		printf "⚠ tmux not found (optional). Install: brew install tmux / apt-get install tmux\n"; \
 	fi
 
 deps-gh:
