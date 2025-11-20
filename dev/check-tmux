@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Validate tmux configuration file
-# Usage: dev/validate-tmux <config-file>
+# Usage: dev/check-tmux <config-file>
 
 set -euo pipefail
 

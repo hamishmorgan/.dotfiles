@@ -1321,7 +1321,7 @@ run_validator() {
     shift
     local args=("$@")
 
-    # Resolve relative paths (e.g., "dev/validate-tmux") relative to DOTFILES_DIR
+    # Resolve relative paths (e.g., "dev/check-tmux") relative to DOTFILES_DIR
     if [[ "$command" == */* ]] && [[ ! "$command" == /* ]]; then
         # Relative path - resolve relative to DOTFILES_DIR
         local resolved_command="$DOTFILES_DIR/$command"
