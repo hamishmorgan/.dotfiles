@@ -97,24 +97,26 @@
 	textconv = unzip -p
 	binary = true
 
+# Compression tools - wrapped for graceful fallback if not installed
 [diff "gz"]
-	textconv = gzcat
+	textconv = sh -c 'command -v gzcat >/dev/null 2>&1 && gzcat "$@" || cat' sh
 	binary = true
 
 [diff "bz2"]
-	textconv = bzcat
+	textconv = sh -c 'command -v bzcat >/dev/null 2>&1 && bzcat "$@" || cat' sh
 	binary = true
 
 [diff "xz"]
-	textconv = xzcat
+	textconv = sh -c 'command -v xzcat >/dev/null 2>&1 && xzcat "$@" || cat' sh
 	binary = true
 
+# Archive tools - tar is standard on macOS
 [diff "tar"]
 	textconv = tar -O -xf
 	binary = true
 
 [diff "tar-bz2"]
-	textconv = tar -O -xjf
+	textconv = sh -c 'command -v bzcat >/dev/null 2>&1 && tar -O -xjf "$@" || cat' sh
 	binary = true
 
 [diff "tar-gz"]
@@ -122,14 +124,15 @@
 	binary = true
 
 [diff "tar-xz"]
-	textconv = tar -O -xJf
+	textconv = sh -c 'command -v xzcat >/dev/null 2>&1 && tar -O -xJf "$@" || cat' sh
 	binary = true
 
+# Document tools - wrapped for graceful fallback if not installed
 [diff "odf"]
-	textconv = odt2txt
+	textconv = sh -c 'command -v odt2txt >/dev/null 2>&1 && odt2txt "$@" || cat' sh
 
 [diff "pdf"]
-	textconv = pdfinfo
+	textconv = sh -c 'command -v pdfinfo >/dev/null 2>&1 && pdfinfo "$@" || cat' sh
 
 [diff "bin"]
 	textconv = hexdump -v -C
@@ -176,7 +179,9 @@
 
 [credential "https://github.com"]
 	helper =
-	helper = !/usr/bin/gh auth git-credential
+	helper = !/usr/bin/env gh auth git-credential
 [credential "https://gist.github.com"]
 	helper =
-	helper = !/usr/bin/gh auth git-credential
+	helper = !/usr/bin/env gh auth git-credential
+[maintenance]
+	repo = /Users/hamish/world/trees/root/src

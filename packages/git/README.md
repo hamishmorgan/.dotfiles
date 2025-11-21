@@ -13,9 +13,32 @@ Git configuration with aliases, diff tools, and platform-specific settings.
 
 - **Aliases and shortcuts** - Common git operations
 - **Color configuration** - Enhanced diff and status colors
-- **Diff tools** - Configured for various file types
+- **Diff tools** - Configured for various file types with graceful fallbacks
 - **Shopify-specific configuration** - Pre-configured for Shopify development
 - **Git-delta support** - Optional enhanced diff viewer (requires manual activation)
+
+### Textconv Tools
+
+Git is configured to display readable diffs for binary/compressed files using textconv tools. These tools are **optional** - if not installed, Git falls back to raw file display.
+
+**Standard tools** (included with macOS):
+- `tar`, `unzip`, `hexdump`
+
+**Optional tools** (enhanced diffs, install via Homebrew):
+- `gzcat`, `bzcat`, `xzcat` - Compressed file viewing
+  ```bash
+  brew install gzip bzip2 xz
+  ```
+- `odt2txt` - OpenDocument format diffs
+  ```bash
+  brew install odt2txt
+  ```
+- `pdfinfo` - PDF metadata viewing
+  ```bash
+  brew install poppler
+  ```
+
+The health check (`./dot health`) will warn about missing optional tools.
 
 ## Installation
 
