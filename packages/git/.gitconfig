@@ -183,5 +183,3 @@
 [credential "https://gist.github.com"]
 	helper =
 	helper = !/usr/bin/env gh auth git-credential
-[maintenance]
-	repo = /Users/hamish/world/trees/root/src
