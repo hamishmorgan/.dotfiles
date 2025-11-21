@@ -3927,6 +3927,43 @@ validate_all_manifests() {
     fi
 }
 
+# Check Git textconv tool availability
+# Verifies that optional tools configured for git diff textconv are installed
+check_git_textconv_tools() {
+    local missing_tools=()
+    
+    # Optional compression tools (might not be on fresh macOS)
+    local optional_tools=("gzcat" "bzcat" "xzcat" "odt2txt" "pdfinfo")
+    
+    for tool in "${optional_tools[@]}"; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            missing_tools+=("$tool")
+        fi
+    done
+    
+    if [[ ${#missing_tools[@]} -gt 0 ]]; then
+        log_warning "Optional git textconv tools not installed:"
+        for tool in "${missing_tools[@]}"; do
+            case "$tool" in
+                gzcat|bzcat|xzcat)
+                    log_info "  - $tool (install via: brew install gzip bzip2 xz)"
+                    ;;
+                odt2txt)
+                    log_info "  - $tool (install via: brew install odt2txt)"
+                    ;;
+                pdfinfo)
+                    log_info "  - $tool (install via: brew install poppler)"
+                    ;;
+            esac
+        done
+        log_info "Git will fall back to raw file display for these formats"
+        return "${#missing_tools[@]}"
+    fi
+    
+    log_success "All git textconv tools installed"
+    return 0
+}
+
 # Check backup directory health
 check_backup_health() {
     log_info "Checking backup directory health..."
@@ -4680,8 +4717,25 @@ cmd_health() {
         show_health_table_row "6" "Configuration Syntax" "pass" "All configs valid" "$verbosity"
     fi
 
-    # 7. File permissions (security)
-    show_health_check_spinner "7" "File Permissions" "$verbosity"
+    # 7. Git textconv tools (nice to have for better diffs)
+    show_health_check_spinner "7" "Git Textconv Tools" "$verbosity"
+    output=$(check_git_textconv_tools 2>&1)
+    result=$?
+    if [[ $result -ne 0 ]]; then
+        check_statuses+=("warn")
+        check_details+=("$result tool(s) missing")
+        check_outputs+=("$output")
+        ((total_warnings += result))
+        show_health_table_row "7" "Git Textconv Tools" "warn" "$result tool(s) missing" "$verbosity"
+    else
+        check_statuses+=("pass")
+        check_details+=("All tools installed")
+        check_outputs+=("")
+        show_health_table_row "7" "Git Textconv Tools" "pass" "All tools installed" "$verbosity"
+    fi
+
+    # 8. File permissions (security)
+    show_health_check_spinner "8" "File Permissions" "$verbosity"
     output=$(check_file_permissions 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4689,16 +4743,16 @@ cmd_health() {
         check_details+=("Insecure permissions")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "7" "File Permissions" "fail" "Insecure permissions" "$verbosity"
+        show_health_table_row "8" "File Permissions" "fail" "Insecure permissions" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("Secrets secured")
         check_outputs+=("")
-        show_health_table_row "7" "File Permissions" "pass" "Secrets secured" "$verbosity"
+        show_health_table_row "8" "File Permissions" "pass" "Secrets secured" "$verbosity"
     fi
 
-    # 8. Submodule health (important but not blocking)
-    show_health_check_spinner "8" "Submodule Health" "$verbosity"
+    # 9. Submodule health (important but not blocking)
+    show_health_check_spinner "9" "Submodule Health" "$verbosity"
     output=$(check_submodule_health 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
@@ -4706,16 +4760,16 @@ cmd_health() {
         check_details+=("Issues found")
         check_outputs+=("$output")
         ((total_errors += result))
-        show_health_table_row "8" "Submodule Health" "fail" "Issues found" "$verbosity"
+        show_health_table_row "9" "Submodule Health" "fail" "Issues found" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("All submodules clean")
         check_outputs+=("")
-        show_health_table_row "8" "Submodule Health" "pass" "All submodules clean" "$verbosity"
+        show_health_table_row "9" "Submodule Health" "pass" "All submodules clean" "$verbosity"
     fi
 
-    # 9. Template/secret config consistency (important but not blocking)
-    show_health_check_spinner "9" "Template Consistency" "$verbosity"
+    # 10. Template/secret config consistency (important but not blocking)
+    show_health_check_spinner "10" "Template Consistency" "$verbosity"
     output=$(check_template_consistency 2>&1)
     result=$?
     local template_count=0
@@ -4725,16 +4779,16 @@ cmd_health() {
         check_details+=("Stale configs")
         check_outputs+=("$output")
         ((total_warnings += result))
-        show_health_table_row "9" "Template Consistency" "warn" "Stale configs" "$verbosity"
+        show_health_table_row "10" "Template Consistency" "warn" "Stale configs" "$verbosity"
     else
         check_statuses+=("pass")
         check_details+=("$template_count template(s) synced")
         check_outputs+=("")
-        show_health_table_row "9" "Template Consistency" "pass" "$template_count template(s) synced" "$verbosity"
+        show_health_table_row "10" "Template Consistency" "pass" "$template_count template(s) synced" "$verbosity"
     fi
 
-    # 10. Shell integration (nice to have)
-    show_health_check_spinner "10" "Shell Integration" "$verbosity"
+    # 11. Shell integration (nice to have)
+    show_health_check_spinner "11" "Shell Integration" "$verbosity"
     output=$(check_shell_integration 2>&1)
     result=$?
 
@@ -4786,7 +4840,7 @@ cmd_health() {
         check_details+=("Issues detected")
         check_outputs+=("$output")
         ((total_warnings += result))
-        show_health_table_row "10" "Shell Integration" "warn" "Issues detected" "$verbosity"
+        show_health_table_row "11" "Shell Integration" "warn" "Issues detected" "$verbosity"
     else
         check_statuses+=("pass")
         if [[ -n "$shell_name" ]]; then
@@ -4796,31 +4850,31 @@ cmd_health() {
         fi
         check_outputs+=("")
         if [[ -n "$shell_name" ]]; then
-            show_health_table_row "10" "Shell Integration" "pass" "$shell_name active" "$verbosity"
+            show_health_table_row "11" "Shell Integration" "pass" "$shell_name active" "$verbosity"
         else
-            show_health_table_row "10" "Shell Integration" "pass" "Shell active" "$verbosity"
+            show_health_table_row "11" "Shell Integration" "pass" "Shell active" "$verbosity"
         fi
     fi
 
-    # 11. Orphaned symlinks (cleanup/maintenance)
-    show_health_check_spinner "11" "Orphaned Symlinks" "$verbosity"
+    # 12. Orphaned symlinks (cleanup/maintenance)
+    show_health_check_spinner "12" "Orphaned Symlinks" "$verbosity"
     output=$(check_orphaned_symlinks 2>&1)
     result=$?
     if [[ $result -ne 0 ]]; then
         check_statuses+=("warn")
         check_details+=("$result found")
         check_outputs+=("$output")
-        show_health_table_row "11" "Orphaned Symlinks" "warn" "$result found" "$verbosity"
+        show_health_table_row "12" "Orphaned Symlinks" "warn" "$result found" "$verbosity"
         # Don't count as error, just warning
     else
         check_statuses+=("pass")
         check_details+=("None found")
         check_outputs+=("")
-        show_health_table_row "11" "Orphaned Symlinks" "pass" "None found" "$verbosity"
+        show_health_table_row "12" "Orphaned Symlinks" "pass" "None found" "$verbosity"
     fi
 
-    # 12. Backup health (maintenance)
-    show_health_check_spinner "12" "Backup Health" "$verbosity"
+    # 13. Backup health (maintenance)
+    show_health_check_spinner "13" "Backup Health" "$verbosity"
     local backup_count backup_size_kb
     read -r backup_count backup_size_kb <<< "$(get_backup_stats)"
 
@@ -4828,12 +4882,12 @@ cmd_health() {
         check_statuses+=("pass")
         check_details+=("No backups")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "pass" "No backups" "$verbosity"
+        show_health_table_row "13" "Backup Health" "pass" "No backups" "$verbosity"
     else
         check_statuses+=("info")
         check_details+=("$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)")
         check_outputs+=("")
-        show_health_table_row "11" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
+        show_health_table_row "13" "Backup Health" "info" "$backup_count backups ($((backup_size_kb / KB_TO_MB))MB)" "$verbosity"
     fi
 
     # Calculate duration
@@ -4854,7 +4908,7 @@ cmd_health() {
 
     # Check if we have maintenance items to show
     local has_maintenance=false
-    if [[ "${check_statuses[8]}" == "warn" ]] || [[ "${check_statuses[10]}" == "info" && $backup_count -gt 10 ]]; then
+    if [[ "${check_statuses[9]}" == "warn" ]] || [[ "${check_statuses[12]}" == "info" && $backup_count -gt 10 ]]; then
         has_maintenance=true
     fi
 
