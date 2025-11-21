@@ -19,21 +19,30 @@ Git configuration with aliases, diff tools, and platform-specific settings.
 
 ### Textconv Tools
 
-Git is configured to display readable diffs for binary/compressed files using textconv tools. These tools are **optional** - if not installed, Git falls back to raw file display.
+Git is configured to display readable diffs for binary/compressed files using
+textconv tools. These tools are **optional** - if not installed, Git falls back
+to raw file display.
 
 **Standard tools** (included with macOS):
+
 - `tar`, `unzip`, `hexdump`
 
 **Optional tools** (enhanced diffs, install via Homebrew):
+
 - `gzcat`, `bzcat`, `xzcat` - Compressed file viewing
+
   ```bash
   brew install gzip bzip2 xz
   ```
+
 - `odt2txt` - OpenDocument format diffs
+
   ```bash
   brew install odt2txt
   ```
+
 - `pdfinfo` - PDF metadata viewing
+
   ```bash
   brew install poppler
   ```
