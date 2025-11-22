@@ -10,6 +10,7 @@ files = [
   ".config/bash/conf.d/git.bash",
   ".config/bash/conf.d/eza.bash",
   ".config/bash/conf.d/bat.bash",
+  ".config/bash/conf.d/pager.bash",
   ".config/bash/conf.d/fzf.bash",
   ".config/bash/conf.d/zoxide.bash",
   ".config/bash/conf.d/graphite.bash",
@@ -41,6 +42,7 @@ target = "~"
 ".config/bash/conf.d/git.bash" = { command = "bash", args = ["-n", "FILE"] }
 ".config/bash/conf.d/eza.bash" = { command = "bash", args = ["-n", "FILE"] }
 ".config/bash/conf.d/bat.bash" = { command = "bash", args = ["-n", "FILE"] }
+".config/bash/conf.d/pager.bash" = { command = "bash", args = ["-n", "FILE"] }
 ".config/bash/conf.d/fzf.bash" = { command = "bash", args = ["-n", "FILE"] }
 ".config/bash/conf.d/zoxide.bash" = { command = "bash", args = ["-n", "FILE"] }
 ".config/bash/conf.d/graphite.bash" = { command = "bash", args = [
