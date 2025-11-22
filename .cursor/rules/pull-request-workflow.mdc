@@ -21,64 +21,17 @@ For all code changes:
 
    **CRITICAL: Non-Interactive Rebasing**
 
-   Git rebase will get stuck if it tries to open an interactive editor (e.g., for commit messages).
-   **ALWAYS** set `GIT_EDITOR=true` or `GIT_EDITOR=:` to make rebase non-interactive:
+   See `.cursor/rules/git-workflow.mdc` for comprehensive non-interactive git patterns.
+
+   **Quick reference:**
 
    ```bash
-   # ✅ CORRECT: Non-interactive rebase (recommended)
-   GIT_EDITOR=true git rebase origin/main
-   # Or alternatively:
-   git -c core.editor=true rebase origin/main
-   ```
-
-   **If rebase gets stuck or conflicts occur:**
-
-   1. **If stuck in interactive mode**: Press Ctrl+C and abort the rebase:
-
-      ```bash
-      git rebase --abort
-      ```
-
-   2. **Resolve conflicts non-interactively**:
-
-      ```bash
-      # Resolve conflicts in files (edit files manually)
-      git add <resolved-files>
-      GIT_EDITOR=true git rebase --continue
-      ```
-
-   3. **Skip problematic commits** (use with caution):
-
-      ```bash
-      GIT_EDITOR=true git rebase --skip
-      ```
-
-   **Best practice workflow:**
-
-   ```bash
-   # 1. Set non-interactive editor before any rebase
+   # Always set GIT_EDITOR=true before rebasing
    export GIT_EDITOR=true
-   
-   # 2. Fetch latest main
    git fetch origin main
-   
-   # 3. Rebase (will be non-interactive)
    git rebase origin/main
-   
-   # 4. If conflicts occur, resolve and continue
-   # Edit conflicted files, then:
-   git add <resolved-files>
-   git rebase --continue  # Uses GIT_EDITOR from environment
-   
-   # 5. Force push after successful rebase
-   git push --force-with-lease origin <branch-name>
+   git push --force-with-lease
    ```
-
-   **Why this matters:**
-   - Git will try to open an editor for commit messages during rebase
-   - Interactive editors block agent execution
-   - Setting `GIT_EDITOR=true` makes git accept default commit messages
-   - This prevents getting stuck waiting for user input
 
 3. **Self-Review**: Critically review your own changes before requesting external review
    - Read the full diff: `gh pr diff <PR_NUMBER>`
@@ -114,7 +67,7 @@ For all code changes:
     # If BEHIND: export GIT_EDITOR=true && git fetch && git rebase origin/main && git push --force-with-lease
     ```
 
-    **CRITICAL**: Always use `GIT_EDITOR=true` when rebasing to avoid interactive mode.
+    **CRITICAL**: Always use `GIT_EDITOR=true` when rebasing. See `.cursor/rules/git-workflow.mdc` for details.
 
 13. **Push and Wait for Re-Review**: Push fixes and wait for CI and Copilot to re-review
 14. **Repeat Steps 7-13**: Continue until both CI and Copilot approve with no new issues

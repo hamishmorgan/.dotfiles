@@ -1,0 +1,289 @@
+---
+description: "Git workflow patterns and non-interactive operations for agents"
+alwaysApply: true
+---
+
+# Git Workflow
+
+**CRITICAL:** Git commands that open interactive editors will block agent execution and cause tasks to hang indefinitely.
+**ALWAYS** use non-interactive flags or environment variables.
+
+## Non-Interactive Git Operations
+
+### Setting Non-Interactive Editor
+
+**Always set `GIT_EDITOR=true` before operations that might open an editor:**
+
+```bash
+# Set for entire session (recommended)
+export GIT_EDITOR=true
+
+# Or set per-command
+GIT_EDITOR=true git <command>
+
+# Alternative: Use git config
+git -c core.editor=true <command>
+```
+
+### Non-Interactive Rebase
+
+**Problem:** `git rebase` opens an interactive editor for commit messages, blocking agent execution.
+
+**Solution:** Always use `GIT_EDITOR=true` when rebasing:
+
+```bash
+# ✅ CORRECT: Non-interactive rebase (always use this)
+export GIT_EDITOR=true
+git fetch origin main
+git rebase origin/main
+
+# Or in one command:
+GIT_EDITOR=true git rebase origin/main
+
+# Alternative syntax:
+git -c core.editor=true rebase origin/main
+```
+
+**Complete non-interactive rebase workflow:**
+
+```bash
+# 1. Set non-interactive editor (do this first)
+export GIT_EDITOR=true
+
+# 2. Fetch latest changes
+git fetch origin main
+
+# 3. Rebase (non-interactive)
+git rebase origin/main
+
+# 4. If conflicts occur, resolve manually:
+#    - Edit conflicted files
+#    - Stage resolved files: git add <files>
+#    - Continue (non-interactive): git rebase --continue
+
+# 5. Force push after successful rebase
+git push --force-with-lease origin <branch-name>
+```
+
+**Recovery from stuck rebase:**
+
+If a rebase gets stuck waiting for editor input:
+
+1. **Abort and restart:**
+
+   ```bash
+   git rebase --abort
+   export GIT_EDITOR=true
+   git rebase origin/main
+   ```
+
+2. **If already in conflicted state:**
+
+   ```bash
+   # Resolve conflicts manually
+   git add <resolved-files>
+   GIT_EDITOR=true git rebase --continue
+   ```
+
+3. **Skip problematic commits** (use with caution):
+
+   ```bash
+   GIT_EDITOR=true git rebase --skip
+   ```
+
+### Non-Interactive Commit Amend
+
+**Problem:** `git commit --amend` opens an editor to modify the commit message.
+
+**Solution:** Use `--no-edit` flag or provide message with `-m`:
+
+```bash
+# ✅ CORRECT: Amend commit without changing message
+git commit --amend --no-edit
+
+# ✅ CORRECT: Amend commit with new message
+git commit --amend -m "New commit message" --author="Cursor <cursor@noreply.local>"
+
+# ✅ CORRECT: Amend commit without opening editor (alternative)
+GIT_EDITOR=true git commit --amend
+```
+
+**Common patterns:**
+
+```bash
+# Amend last commit with new author (agent attribution)
+git commit --amend --no-edit --author="Cursor <cursor@noreply.local>"
+
+# Amend commit and add forgotten files
+git add <forgotten-file>
+git commit --amend --no-edit
+```
+
+### Non-Interactive Cherry-Pick
+
+**Problem:** `git cherry-pick` opens an editor for commit messages when conflicts occur.
+
+**Solution:** Use `--no-commit` for conflict resolution, or set `GIT_EDITOR=true`:
+
+```bash
+# ✅ CORRECT: Cherry-pick without opening editor
+GIT_EDITOR=true git cherry-pick <commit-sha>
+
+# ✅ CORRECT: Cherry-pick without committing (resolve conflicts first)
+git cherry-pick --no-commit <commit-sha>
+# ... resolve conflicts ...
+git add <resolved-files>
+GIT_EDITOR=true git cherry-pick --continue
+
+# ✅ CORRECT: Cherry-pick multiple commits
+GIT_EDITOR=true git cherry-pick <commit1> <commit2> <commit3>
+```
+
+### Non-Interactive Merge
+
+**Problem:** `git merge` opens an editor for merge commit messages.
+
+**Solution:** Provide message with `-m` or set `GIT_EDITOR=true`:
+
+```bash
+# ✅ CORRECT: Merge with explicit message
+git merge <branch> -m "Merge branch into main" --no-edit
+
+# ✅ CORRECT: Merge without opening editor
+GIT_EDITOR=true git merge <branch>
+
+# ✅ CORRECT: Fast-forward merge (no editor needed)
+git merge --ff-only <branch>
+```
+
+### Non-Interactive Tag Creation
+
+**Problem:** `git tag` opens an editor for annotated tag messages.
+
+**Solution:** Use `-m` flag for message or create lightweight tag:
+
+```bash
+# ✅ CORRECT: Create annotated tag with message
+git tag -a v1.0.0 -m "Release version 1.0.0"
+
+# ✅ CORRECT: Create lightweight tag (no message, no editor)
+git tag v1.0.0
+
+# ✅ CORRECT: Tag without opening editor (alternative)
+GIT_EDITOR=true git tag -a v1.0.0
+```
+
+### Non-Interactive Interactive Rebase
+
+**Problem:** `git rebase -i` (interactive rebase) always opens an editor.
+
+**Solution:** Use `GIT_SEQUENCE_EDITOR=true` for automated rebases:
+
+```bash
+# ✅ CORRECT: Interactive rebase without opening editor (for automation)
+GIT_SEQUENCE_EDITOR=true git rebase -i <base-commit>
+
+# ✅ CORRECT: Autosquash rebase without opening editor
+GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash <base-commit>
+
+# Common use: Automatically squash fixup commits
+git commit --fixup=<commit-sha>
+GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash <base-commit>
+```
+
+**Note:** For automated fixup squashing, consider setting:
+
+```bash
+git config --global rebase.autosquash true
+```
+
+This allows autosquash without the `--autosquash` flag.
+
+### Non-Interactive Commit (Always Use -m)
+
+**Always use `-m` flag to provide commit message directly:**
+
+```bash
+# ✅ CORRECT: Commit with message (no editor)
+git commit -m "Commit message" --author="Cursor <cursor@noreply.local>"
+
+# ✅ CORRECT: Multi-line commit message
+git commit -m "Type: Short description
+
+Detailed explanation of changes made." --author="Cursor <cursor@noreply.local>"
+
+# ❌ BAD: Will open editor
+git commit
+```
+
+### Why Non-Interactive Operations Matter
+
+**Why this happens:**
+
+- Git tries to open `$EDITOR` or `$GIT_EDITOR` for commit message editing
+- Interactive editors block until user input
+- Agents cannot interact with editors, causing infinite wait
+- Setting `GIT_EDITOR=true` makes git accept default messages without opening an editor
+
+**Best practices:**
+
+- Always set `GIT_EDITOR=true` before any git operation that might open an editor
+- Set it at the start of a session if you'll be doing multiple git operations
+- Use `git push --force-with-lease` (not `--force`) for safety
+- Abort and restart if operations get stuck rather than waiting
+- Always use `-m` flag for commits to avoid opening editor
+
+### Environment Variables Summary
+
+```bash
+# Set for entire session
+export GIT_EDITOR=true              # Commit message editor
+export GIT_SEQUENCE_EDITOR=true     # Interactive rebase editor
+
+# Or use git config
+git config --global core.editor true
+git config --global sequence.editor true
+```
+
+### Quick Reference
+
+| Operation | Non-Interactive Command |
+|-----------|------------------------|
+| Rebase | `GIT_EDITOR=true git rebase <branch>` |
+| Commit | `git commit -m "message"` |
+| Amend | `git commit --amend --no-edit` |
+| Cherry-pick | `GIT_EDITOR=true git cherry-pick <commit>` |
+| Merge | `git merge <branch> -m "message"` or `GIT_EDITOR=true git merge <branch>` |
+| Tag | `git tag -a v1.0.0 -m "message"` or `git tag v1.0.0` |
+| Interactive rebase | `GIT_SEQUENCE_EDITOR=true git rebase -i <commit>` |
+
+### Common Patterns
+
+**Standard commit workflow:**
+
+```bash
+git add <files>
+git commit -m "Type: description" --author="Cursor <cursor@noreply.local>"
+git push
+```
+
+**Rebase workflow:**
+
+```bash
+export GIT_EDITOR=true
+git fetch origin main
+git rebase origin/main
+# ... resolve conflicts if needed ...
+git push --force-with-lease
+```
+
+**Fixup commit workflow:**
+
+```bash
+# Create fixup commit
+git commit --fixup=<commit-sha>
+
+# Automatically squash it
+GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash <base-commit>
+git push --force-with-lease
+```

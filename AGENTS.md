@@ -1095,101 +1095,14 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 
 ## Git Workflow
 
-### Non-Interactive Git Operations
+See `.cursor/rules/git-workflow.mdc` for comprehensive git workflow patterns and non-interactive operations.
 
-**CRITICAL:** Git commands that open interactive editors (rebase, cherry-pick, commit --amend, etc.)
-will block agent execution and cause tasks to hang indefinitely. **ALWAYS** use non-interactive
-flags or environment variables to prevent this.
+**Quick reference:**
 
-### Non-Interactive Rebasing
-
-**Problem:** `git rebase` opens an interactive editor for commit messages, blocking agent execution.
-
-**Solution:** Set `GIT_EDITOR=true` or `GIT_EDITOR=:` to make rebase non-interactive:
-
-```bash
-# ✅ CORRECT: Non-interactive rebase (always use this)
-GIT_EDITOR=true git rebase origin/main
-
-# Alternative syntax:
-git -c core.editor=true rebase origin/main
-
-# Or set for entire session:
-export GIT_EDITOR=true
-git rebase origin/main
-git rebase --continue  # Uses GIT_EDITOR from environment
-```
-
-**Complete non-interactive rebase workflow:**
-
-```bash
-# 1. Set non-interactive editor (do this first)
-export GIT_EDITOR=true
-
-# 2. Fetch latest changes
-git fetch origin main
-
-# 3. Rebase (non-interactive)
-git rebase origin/main
-
-# 4. If conflicts occur, resolve manually:
-#    - Edit conflicted files
-#    - Stage resolved files: git add <files>
-#    - Continue (non-interactive): git rebase --continue
-
-# 5. Force push after successful rebase
-git push --force-with-lease origin <branch-name>
-```
-
-**Recovery from stuck rebase:**
-
-If a rebase gets stuck waiting for editor input:
-
-1. **Abort and restart:**
-
-   ```bash
-   git rebase --abort
-   export GIT_EDITOR=true
-   git rebase origin/main
-   ```
-
-2. **If already in conflicted state:**
-
-   ```bash
-   # Resolve conflicts manually
-   git add <resolved-files>
-   GIT_EDITOR=true git rebase --continue
-   ```
-
-**Why this happens:**
-
-- Git tries to open `$EDITOR` or `$GIT_EDITOR` for commit message editing
-- Interactive editors block until user input
-- Agents cannot interact with editors, causing infinite wait
-- Setting `GIT_EDITOR=true` makes git accept default messages without opening an editor
-
-**Best practices:**
-
-- Always set `GIT_EDITOR=true` before any rebase operation
-- Set it at the start of a session if you'll be rebasing multiple times
-- Use `git push --force-with-lease` (not `--force`) for safety
-- Abort and restart if rebase gets stuck rather than waiting
-
-**Other non-interactive git commands:**
-
-```bash
-# Commit without opening editor (use -m flag)
-git commit -m "Commit message" --author="Cursor <cursor@noreply.local>"
-
-# Amend commit non-interactively
-GIT_EDITOR=true git commit --amend --no-edit
-
-# Cherry-pick non-interactively
-GIT_EDITOR=true git cherry-pick <commit-sha>
-
-# Merge non-interactively (creates merge commit)
-GIT_EDITOR=true git merge <branch>
-```
+- Always use `GIT_EDITOR=true` for operations that might open an editor (rebase, cherry-pick, merge, etc.)
+- Always use `-m` flag for commits: `git commit -m "message"`
+- Always use `--no-edit` for amend: `git commit --amend --no-edit`
+- See git-workflow.mdc for complete patterns and best practices
 
 ## File Organization
 
