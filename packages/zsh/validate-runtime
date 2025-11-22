@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Runtime validation for zsh configuration
+# Tests syntax and runtime behavior of zsh configs
+
+set -e
+
+PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+errors=0
+
+# Test .zshrc syntax and runtime
+if [[ -f "$PACKAGE_DIR/.zshrc" ]]; then
+    # Syntax check
+    if ! zsh -n "$PACKAGE_DIR/.zshrc"; then
+        echo "Error: .zshrc failed syntax validation" >&2
+        ((errors++))
+    fi
+    # Runtime check
+    error_output=$(zsh -c "source '$PACKAGE_DIR/.zshrc' 2>&1" 2>&1 | grep -iE "error|failed|command not found|no matches found|unknown file attribute" | head -5)
+    if [[ -n "$error_output" ]]; then
+        echo "Error: .zshrc failed runtime validation" >&2
+        echo "$error_output" >&2
+        ((errors++))
+    fi
+fi
+
+# Test .zprofile syntax and runtime
+if [[ -f "$PACKAGE_DIR/.zprofile" ]]; then
+    # Syntax check
+    if ! zsh -n "$PACKAGE_DIR/.zprofile"; then
+        echo "Error: .zprofile failed syntax validation" >&2
+        ((errors++))
+    fi
+    # Runtime check
+    error_output=$(zsh -c "source '$PACKAGE_DIR/.zprofile' 2>&1" 2>&1 | grep -iE "error|failed|command not found|no matches found|unknown file attribute" | head -5)
+    if [[ -n "$error_output" ]]; then
+        echo "Error: .zprofile failed runtime validation" >&2
+        echo "$error_output" >&2
+        ((errors++))
+    fi
+fi
+
+if [[ $errors -gt 0 ]]; then
+    exit 1
+fi
+
+exit 0
+

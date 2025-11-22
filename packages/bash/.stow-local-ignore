@@ -10,3 +10,6 @@
 
 # Note: User-created files in .config/bash/conf.d/ should not be added to the package directory,
 # to avoid being tracked in git and stowed to target machines.
+
+# Validation scripts (not stowed, used by framework only)
+^validate-runtime$

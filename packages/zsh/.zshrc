@@ -124,7 +124,7 @@ fi
 command -v shadowenv &>/dev/null && eval "$(shadowenv init zsh)"
 
 # Dotfiles completions
-[[ -f ~/.dotfiles/dot ]] && source <(~/.dotfiles/dot --completion zsh 2>/dev/null)
+[[ -f ~/.dotfiles/dot ]] && source <(~/.dotfiles/dot completion zsh 2>/dev/null)
 
 # Shopify dev
 [[ -f /opt/dev/dev.sh ]] && [[ $- == *i* ]] && source /opt/dev/dev.sh

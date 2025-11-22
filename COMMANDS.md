@@ -194,7 +194,7 @@ DOTFILES_MAX_BACKUPS_TO_KEEP=20 ./dot clean
 
 **Help:** `-h, --help`
 
-**Shell Completion:** `./dot --completion <bash|zsh|fish>` - Add to shell config: `source <(./dot --completion bash)`
+**Shell Completion:** `./dot completion <bash|zsh|fish>` - Add to shell config: `source <(./dot completion bash)`
 
 **Environment Variables:** See [README.md § Configuration](README.md#configuration)
 

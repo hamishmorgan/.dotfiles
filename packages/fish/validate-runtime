@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Runtime validation for fish configuration
+# Tests syntax and runtime behavior of fish configs
+
+set -e
+
+PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+errors=0
+
+# Test main config.fish syntax and runtime
+if [[ -f "$PACKAGE_DIR/.config/fish/config.fish" ]]; then
+    # Syntax check
+    if ! fish -n "$PACKAGE_DIR/.config/fish/config.fish"; then
+        echo "Error: config.fish failed syntax validation" >&2
+        ((errors++))
+    fi
+    # Runtime check - fish sources config automatically, test by checking for errors
+    error_output=$(fish -c "source '$PACKAGE_DIR/.config/fish/config.fish' 2>&1" 2>&1 | grep -iE "error|failed|command not found|unknown|syntax error" | head -5)
+    if [[ -n "$error_output" ]]; then
+        echo "Error: config.fish failed runtime validation" >&2
+        echo "$error_output" >&2
+        ((errors++))
+    fi
+fi
+
+# Test config.osx.fish syntax and runtime
+if [[ -f "$PACKAGE_DIR/.config/fish/config.osx.fish" ]]; then
+    # Syntax check
+    if ! fish -n "$PACKAGE_DIR/.config/fish/config.osx.fish"; then
+        echo "Error: config.osx.fish failed syntax validation" >&2
+        ((errors++))
+    fi
+    # Runtime check
+    error_output=$(fish -c "source '$PACKAGE_DIR/.config/fish/config.osx.fish' 2>&1" 2>&1 | grep -iE "error|failed|command not found|unknown|syntax error" | head -5)
+    if [[ -n "$error_output" ]]; then
+        echo "Error: config.osx.fish failed runtime validation" >&2
+        echo "$error_output" >&2
+        ((errors++))
+    fi
+fi
+
+# Test config.linux.fish syntax and runtime
+if [[ -f "$PACKAGE_DIR/.config/fish/config.linux.fish" ]]; then
+    # Syntax check
+    if ! fish -n "$PACKAGE_DIR/.config/fish/config.linux.fish"; then
+        echo "Error: config.linux.fish failed syntax validation" >&2
+        ((errors++))
+    fi
+    # Runtime check
+    error_output=$(fish -c "source '$PACKAGE_DIR/.config/fish/config.linux.fish' 2>&1" 2>&1 | grep -iE "error|failed|command not found|unknown|syntax error" | head -5)
+    if [[ -n "$error_output" ]]; then
+        echo "Error: config.linux.fish failed runtime validation" >&2
+        echo "$error_output" >&2
+        ((errors++))
+    fi
+fi
+
+# Test conf.d/dotfiles.fish completions
+if [[ -f "$PACKAGE_DIR/.config/fish/conf.d/dotfiles.fish" ]]; then
+    # Syntax check
+    if ! fish -n "$PACKAGE_DIR/.config/fish/conf.d/dotfiles.fish"; then
+        echo "Error: conf.d/dotfiles.fish failed syntax validation" >&2
+        ((errors++))
+    fi
+    # Runtime check
+    error_output=$(fish -c "source '$PACKAGE_DIR/.config/fish/conf.d/dotfiles.fish' 2>&1" 2>&1 | grep -iE "error|failed|command not found|unknown|syntax error" | head -5)
+    if [[ -n "$error_output" ]]; then
+        echo "Error: conf.d/dotfiles.fish failed runtime validation" >&2
+        echo "$error_output" >&2
+        ((errors++))
+    fi
+fi
+
+if [[ $errors -gt 0 ]]; then
+    exit 1
+fi
+
+exit 0
+
