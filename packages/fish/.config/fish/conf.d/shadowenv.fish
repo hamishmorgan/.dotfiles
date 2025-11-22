@@ -1,4 +1,4 @@
 # shadowenv - Directory-based environment management (Shopify)
-if type -q shadowenv
+if command -q shadowenv
     shadowenv init fish | source
 end

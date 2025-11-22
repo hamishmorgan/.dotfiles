@@ -12,10 +12,11 @@ end
 set -gx LESS '-R -F -X -S -M'
 
 # Use bat as primary pager if available (syntax highlighting)
-if type -q bat
+# Use command -q to check for actual executables, not aliases/functions
+if command -q bat
     set -gx PAGER 'bat --paging=always'
     set -gx BAT_PAGER 'less -RFXSM'
-else if type -q batcat
+else if command -q batcat
     set -gx PAGER 'batcat --paging=always'
     set -gx BAT_PAGER 'less -RFXSM'
 else
@@ -30,9 +31,9 @@ end
 if not set -q LESSOPEN
     # Try lesspipe or lesspipe.sh (check command availability, not specific paths)
     set -l lesspipe_cmd
-    if type -q lesspipe
+    if command -q lesspipe
         set lesspipe_cmd lesspipe
-    else if type -q lesspipe.sh
+    else if command -q lesspipe.sh
         set lesspipe_cmd lesspipe.sh
     end
 

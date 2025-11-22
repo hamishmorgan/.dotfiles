@@ -1,5 +1,5 @@
 function lg --wraps eza --description 'Git-aware listing'
-    if command -v eza >/dev/null
+    if command -q eza
         eza --long --git --git-ignore --icons $argv
     else
         echo "lg: requires eza (brew install eza)" >&2

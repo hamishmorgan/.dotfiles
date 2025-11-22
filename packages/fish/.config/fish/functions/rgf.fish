@@ -21,11 +21,11 @@ function rgf -d "Search code with ripgrep and fzf, open in editor"
         # Use EDITOR if set, otherwise try common editors
         if test -n "$EDITOR"
             $EDITOR "+$line" "$file"
-        else if type -q nvim
+        else if command -q nvim
             nvim "+$line" "$file"
-        else if type -q vim
+        else if command -q vim
             vim "+$line" "$file"
-        else if type -q code
+        else if command -q code
             code --goto "$file:$line"
         else
             echo "Opened: $file:$line"

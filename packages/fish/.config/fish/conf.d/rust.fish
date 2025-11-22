@@ -1,5 +1,5 @@
 # Rust environment
-if type -q rustup
+if command -q rustup
     rustup completions fish rustup | source
 end
 

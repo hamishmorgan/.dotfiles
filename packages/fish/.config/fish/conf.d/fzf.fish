@@ -1,8 +1,8 @@
 # fzf fuzzy finder integration
-if type -q fzf
+if command -q fzf
     # Use fd for file search if available (faster and respects .gitignore)
     # Falls back to find if fd is not installed
-    if type -q fd
+    if command -q fd
         set -gx FZF_DEFAULT_COMMAND 'fd --type f --hidden --follow --exclude .git'
         set -gx FZF_CTRL_T_COMMAND "$FZF_DEFAULT_COMMAND"
         set -gx FZF_ALT_C_COMMAND 'fd --type d --hidden --follow --exclude .git'
@@ -11,10 +11,10 @@ if type -q fzf
         set -gx FZF_CTRL_T_COMMAND "$FZF_DEFAULT_COMMAND"
         set -gx FZF_ALT_C_COMMAND 'find . -type d -not -path "*/\.git/*"'
     end
-    
+
     # Better colors and layout
     set -gx FZF_DEFAULT_OPTS '--height 40% --layout=reverse --border --color=16'
-    
+
     # Enable fish key bindings if available
     # Ctrl-R: command history
     # Ctrl-T: file search

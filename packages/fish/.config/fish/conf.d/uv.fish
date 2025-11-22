@@ -1,5 +1,5 @@
 # Generate uv and uvx completions if uv is installed
-if command -v uv >/dev/null 2>&1
+if command -q uv
     set -l completions_dir "$__fish_config_dir/completions"
     # Generate uv completions
     if not test -f "$completions_dir/uv.fish"
