@@ -8,28 +8,25 @@ end
 
 # ━━━ Helper Functions ━━━
 
-# Reuse existing helper if available, otherwise define it
-if not functions -q _is_installed
-    function _is_installed
-        type -q "$argv[1]"
-    end
-end
-
-# Check if bat is available (handles both bat and batcat)
-function _is_bat_available
-    type -q bat; or type -q batcat
+# Check if command is installed
+function _is_installed
+    type -q "$argv[1]"
 end
 
 # ━━━ Pager Selection ━━━
 
+# Enhanced less options (always set for consistency)
+set -gx LESS '-R -F -X -S -M'
+
 # Use bat as primary pager if available (syntax highlighting)
-if _is_bat_available
+if type -q bat
     set -gx PAGER 'bat --paging=always'
+    set -gx BAT_PAGER 'less -RFXSM'
+else if type -q batcat
+    set -gx PAGER 'batcat --paging=always'
     set -gx BAT_PAGER 'less -RFXSM'
 else
     set -gx PAGER less
-    # Enhanced less options (conservative set)
-    set -gx LESS '-R -F -X -S -M'
 end
 
 # ━━━ File Type Detection (lesspipe) ━━━
@@ -37,31 +34,18 @@ end
 # Enable lesspipe for better file type handling (only if not already configured)
 # lesspipe sets LESSOPEN and LESSCLOSE to enable automatic decompression
 if not set -q LESSOPEN
-    switch (uname)
-        case Linux
-            if test -f /usr/bin/lesspipe; and test -x /usr/bin/lesspipe
-                set -l lesspipe_output (SHELL=/bin/sh /usr/bin/lesspipe 2>/dev/null)
-                if test -n "$lesspipe_output"
-                    eval "$lesspipe_output" 2>/dev/null
-                end
-            else if test -f /usr/bin/lesspipe.sh; and test -x /usr/bin/lesspipe.sh
-                set -l lesspipe_output (SHELL=/bin/sh /usr/bin/lesspipe.sh 2>/dev/null)
-                if test -n "$lesspipe_output"
-                    eval "$lesspipe_output" 2>/dev/null
-                end
-            end
-        case Darwin
-            # macOS: check for Homebrew installation
-            if test -f /opt/homebrew/bin/lesspipe; and test -x /opt/homebrew/bin/lesspipe
-                set -l lesspipe_output (SHELL=/bin/sh /opt/homebrew/bin/lesspipe 2>/dev/null)
-                if test -n "$lesspipe_output"
-                    eval "$lesspipe_output" 2>/dev/null
-                end
-            else if test -f /usr/local/bin/lesspipe; and test -x /usr/local/bin/lesspipe
-                set -l lesspipe_output (SHELL=/bin/sh /usr/local/bin/lesspipe 2>/dev/null)
-                if test -n "$lesspipe_output"
-                    eval "$lesspipe_output" 2>/dev/null
-                end
-            end
+    # Try lesspipe or lesspipe.sh (check command availability, not specific paths)
+    set -l lesspipe_cmd
+    if command -v lesspipe >/dev/null 2>&1
+        set lesspipe_cmd lesspipe
+    else if command -v lesspipe.sh >/dev/null 2>&1
+        set lesspipe_cmd lesspipe.sh
+    end
+    
+    if test -n "$lesspipe_cmd"
+        set -l lesspipe_output (SHELL=/bin/sh $lesspipe_cmd 2>/dev/null)
+        if test -n "$lesspipe_output"
+            eval "$lesspipe_output" 2>/dev/null
+        end
     end
 end
