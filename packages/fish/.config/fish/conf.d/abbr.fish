@@ -55,8 +55,7 @@ abbr -a ..... "cd ../../../.."
 
 # ━━━ Common Commands ━━━
 abbr -a c clear
-abbr -a e nvim
-abbr -a v nvim
+# e and v are defined as functions in editor.fish to use EDITOR with fallback
 abbr -a mkd "mkdir -p"
 
 # ━━━ eza (modern ls) ━━━
