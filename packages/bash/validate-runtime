@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Runtime validation for bash configuration
+# Tests that bash configs can be sourced without errors
+
+set -e
+
+PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_DIR="$(cd "$PACKAGE_DIR/../.." && pwd)"
+
+errors=0
+
+# Test .bashrc syntax and runtime
+if [[ -f "$PACKAGE_DIR/.bashrc" ]]; then
+    # Syntax check
+    if ! bash -n "$PACKAGE_DIR/.bashrc" 2>&1; then
+        echo "Error: .bashrc failed syntax validation" >&2
+        ((errors++))
+    fi
+    # Runtime check
+    if ! bash -c "source '$PACKAGE_DIR/.bashrc' 2>&1" >/dev/null 2>&1; then
+        echo "Error: .bashrc failed runtime validation" >&2
+        bash -c "source '$PACKAGE_DIR/.bashrc'" 2>&1 | head -10 >&2
+        ((errors++))
+    fi
+fi
+
+# Test .bash_profile syntax and runtime
+if [[ -f "$PACKAGE_DIR/.bash_profile" ]]; then
+    # Syntax check
+    if ! bash -n "$PACKAGE_DIR/.bash_profile" 2>&1; then
+        echo "Error: .bash_profile failed syntax validation" >&2
+        ((errors++))
+    fi
+    # Runtime check
+    if ! bash -c "source '$PACKAGE_DIR/.bash_profile' 2>&1" >/dev/null 2>&1; then
+        echo "Error: .bash_profile failed runtime validation" >&2
+        bash -c "source '$PACKAGE_DIR/.bash_profile'" 2>&1 | head -10 >&2
+        ((errors++))
+    fi
+fi
+
+# Test dotfiles.bash (the one with the broken completion)
+if [[ -f "$PACKAGE_DIR/.config/bash/conf.d/dotfiles.bash" ]]; then
+    error_output=$(bash -c "source '$PACKAGE_DIR/.config/bash/conf.d/dotfiles.bash' 2>&1" 2>&1 | grep -iE "error|failed|command not found|Usage:" | head -5)
+    if [[ -n "$error_output" ]]; then
+        echo "Error: .config/bash/conf.d/dotfiles.bash failed runtime validation" >&2
+        echo "$error_output" >&2
+        ((errors++))
+    fi
+fi
+
+if [[ $errors -gt 0 ]]; then
+    exit 1
+fi
+
+exit 0
+
