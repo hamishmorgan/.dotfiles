@@ -34,7 +34,8 @@ function _get_parent_pid
     set -l pid "$argv[1]"
     set -l parent_pid (_get_process_info "$pid" ppid)
 
-    if test -z "$parent_pid"; or test "$parent_pid" = 1
+    # Stop at init (PID 1) or kernel processes (PID 0)
+    if test -z "$parent_pid"; or test "$parent_pid" -le 1
         return 1
     end
 
@@ -165,7 +166,7 @@ function _find_terminal_editor
             return 0
         end
     end
-    echo vi # POSIX requires vi to exist (final fallback)
+    echo vi # POSIX requires vi to exist (absolute final fallback after nano)
 end
 
 # Resolve editor command with arguments from context

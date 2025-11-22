@@ -190,7 +190,8 @@ _get_parent_pid() {
     local parent_pid
 
     parent_pid=$(_get_process_info "$pid" ppid)
-    if [[ -z "$parent_pid" ]] || [[ "$parent_pid" == "1" ]]; then
+    # Stop at init (PID 1) or kernel processes (PID 0)
+    if [[ -z "$parent_pid" ]] || [[ "$parent_pid" -le 1 ]]; then
         return 1
     fi
 
@@ -329,7 +330,7 @@ _find_terminal_editor() {
             return 0
         fi
     done
-    echo "vi"  # POSIX requires vi to exist (final fallback)
+    echo "vi"  # POSIX requires vi to exist (absolute final fallback after nano)
 }
 
 # Resolve editor command with arguments from context
