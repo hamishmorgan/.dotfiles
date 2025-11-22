@@ -1,4 +1,28 @@
-files = [".zshrc", ".zprofile"]
+files = [
+  ".zshenv",
+  ".config/zsh/.zshrc",
+  ".config/zsh/.zprofile",
+  ".config/zsh/conf.d/aliases.zsh",
+  ".config/zsh/conf.d/bat.zsh",
+  ".config/zsh/conf.d/completion.zsh",
+  ".config/zsh/conf.d/darwin.zsh",
+  ".config/zsh/conf.d/directory.zsh",
+  ".config/zsh/conf.d/dotfiles.zsh",
+  ".config/zsh/conf.d/editor.zsh",
+  ".config/zsh/conf.d/eza.zsh",
+  ".config/zsh/conf.d/fzf.zsh",
+  ".config/zsh/conf.d/git.zsh",
+  ".config/zsh/conf.d/graphite.zsh",
+  ".config/zsh/conf.d/history.zsh",
+  ".config/zsh/conf.d/keybindings.zsh",
+  ".config/zsh/conf.d/linux.zsh",
+  ".config/zsh/conf.d/prompt.zsh",
+  ".config/zsh/conf.d/rust.zsh",
+  ".config/zsh/conf.d/shadowenv.zsh",
+  ".config/zsh/conf.d/shopify.zsh",
+  ".config/zsh/conf.d/zoxide.zsh",
+  ".config/zsh/functions/gi.zsh",
+]
 
 name = "Zsh"
 description = "Zsh shell configuration"
@@ -6,5 +30,27 @@ method = "stow"
 target = "~"
 
 [validation]
-".zshrc" = { command = "zsh", args = ["-n", "FILE"] }
-".zprofile" = { command = "packages/zsh/validate-runtime", args = [] }
+".zshenv" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/.zshrc" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/.zprofile" = { command = "packages/zsh/validate-runtime", args = [] }
+".config/zsh/conf.d/aliases.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/bat.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/completion.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/darwin.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/directory.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/dotfiles.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/editor.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/eza.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/fzf.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/git.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/graphite.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/history.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/keybindings.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/linux.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/prompt.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/rust.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/shadowenv.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/shopify.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/zoxide.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/functions/gi.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+"*.zsh*" = { command = "packages/zsh/validate-runtime", args = [] }

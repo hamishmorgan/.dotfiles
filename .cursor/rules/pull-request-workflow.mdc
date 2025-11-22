@@ -13,6 +13,21 @@ For all code changes:
    ```bash
    gh pr view <PR> --json mergeStateStatus --jq '.mergeStateStatus'
    # If "BEHIND": rebase immediately
+   export GIT_EDITOR=true
+   git fetch origin main
+   git rebase origin/main
+   git push --force-with-lease
+   ```
+
+   **CRITICAL: Non-Interactive Rebasing**
+
+   See `.cursor/rules/git-workflow.mdc` for comprehensive non-interactive git patterns.
+
+   **Quick reference:**
+
+   ```bash
+   # Always set GIT_EDITOR=true before rebasing
+   export GIT_EDITOR=true
    git fetch origin main
    git rebase origin/main
    git push --force-with-lease
@@ -49,8 +64,10 @@ For all code changes:
 
     ```bash
     gh pr view <PR> --json mergeStateStatus --jq '.mergeStateStatus'
-    # If BEHIND: git fetch && git rebase origin/main && git push --force-with-lease
+    # If BEHIND: export GIT_EDITOR=true && git fetch && git rebase origin/main && git push --force-with-lease
     ```
+
+    **CRITICAL**: Always use `GIT_EDITOR=true` when rebasing. See `.cursor/rules/git-workflow.mdc` for details.
 
 13. **Push and Wait for Re-Review**: Push fixes and wait for CI and Copilot to re-review
 14. **Repeat Steps 7-13**: Continue until both CI and Copilot approve with no new issues

@@ -23,8 +23,10 @@ teardown() {
     assert_output --partial "Installation Status"
     assert_output --regexp "(backup|Backup)"
 
-    # Status should be brief (< 100 lines typically)
+    # Status should be brief (< 200 lines typically)
+    # Note: Output length increased as more packages and modular configs were added
+    # (e.g., zsh conf.d files are now listed individually)
     line_count=$(echo "$output" | wc -l)
-    [ "$line_count" -lt 100 ]
+    [ "$line_count" -lt 200 ]
 }
 

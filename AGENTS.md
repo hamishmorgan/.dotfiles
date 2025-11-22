@@ -1093,6 +1093,17 @@ Copilot <copilot@noreply.local> - Add validation checks
 Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 ```
 
+## Git Workflow
+
+See `.cursor/rules/git-workflow.mdc` for comprehensive git workflow patterns and non-interactive operations.
+
+**Quick reference:**
+
+- Always use `GIT_EDITOR=true` for operations that might open an editor (rebase, cherry-pick, merge, etc.)
+- Always use `-m` flag for commits: `git commit -m "message"`
+- Always use `--no-edit` for amend: `git commit --amend --no-edit`
+- See git-workflow.mdc for complete patterns and best practices
+
 ## File Organization
 
 - **User tool**: `dot` script in root

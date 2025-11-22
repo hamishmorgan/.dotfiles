@@ -38,13 +38,26 @@ jobs:
       - name: Run linting
         run: |
           npx --yes markdownlint-cli@0.42.0 "**/*.md"
-          shellcheck dot packages/bash/.bashrc* packages/bash/.bash_profile packages/zsh/.zshrc* packages/zsh/.zprofile
+          shellcheck dot packages/bash/.bashrc* packages/bash/.bash_profile packages/zsh/.zshenv
           # Check modular bash files if they exist (use compgen for robust glob checking)
           if compgen -G "packages/bash/.config/bash/conf.d/*.bash" > /dev/null; then
             shellcheck packages/bash/.config/bash/conf.d/*.bash
           fi
           if compgen -G "packages/bash/.config/bash/functions/*.bash" > /dev/null; then
             shellcheck packages/bash/.config/bash/functions/*.bash
+          fi
+          # Check modular zsh files if they exist (use compgen for robust glob checking)
+          if [[ -f "packages/zsh/.config/zsh/.zshrc" ]]; then
+            shellcheck packages/zsh/.config/zsh/.zshrc
+          fi
+          if [[ -f "packages/zsh/.config/zsh/.zprofile" ]]; then
+            shellcheck packages/zsh/.config/zsh/.zprofile
+          fi
+          if compgen -G "packages/zsh/.config/zsh/conf.d/*.zsh" > /dev/null; then
+            shellcheck packages/zsh/.config/zsh/conf.d/*.zsh
+          fi
+          if compgen -G "packages/zsh/.config/zsh/functions/*.zsh" > /dev/null; then
+            shellcheck packages/zsh/.config/zsh/functions/*.zsh
           fi
 
   smoke-test:
