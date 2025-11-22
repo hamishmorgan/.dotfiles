@@ -23,11 +23,10 @@ fi
 
 # ━━━ File Type Detection (lesspipe) ━━━
 
-# Enable lesspipe for better file type handling (only if not already configured)
+# Configure lesspipe for better file type handling
 # lesspipe sets LESSOPEN and LESSCLOSE to enable automatic decompression
-if [[ -z "${LESSOPEN:-}" ]]; then
-    # Try lesspipe or lesspipe.sh (check command availability, not specific paths)
-    lesspipe_cmd=""
+_configure_lesspipe() {
+    local lesspipe_cmd=""
     if command -v lesspipe &>/dev/null; then
         lesspipe_cmd="lesspipe"
     elif command -v lesspipe.sh &>/dev/null; then
@@ -35,11 +34,16 @@ if [[ -z "${LESSOPEN:-}" ]]; then
     fi
     
     if [[ -n "$lesspipe_cmd" ]]; then
+        local lesspipe_output
         lesspipe_output=$(SHELL=/bin/sh "$lesspipe_cmd" 2>/dev/null)
         if [[ -n "$lesspipe_output" ]]; then
             eval "$lesspipe_output" 2>/dev/null
         fi
     fi
-    unset lesspipe_cmd lesspipe_output
+}
+
+# Enable lesspipe (only if not already configured)
+if [[ -z "${LESSOPEN:-}" ]]; then
+    _configure_lesspipe
 fi
 
