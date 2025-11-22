@@ -7,39 +7,54 @@ set -e
 PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 errors=0
 
-# Test .zshenv (bootstrap file)
-if [[ -f "$HOME/.zshenv" ]]; then
-    if ! zsh -c "source '$HOME/.zshenv'" >/dev/null 2>&1; then
-        echo "Error: .zshenv failed runtime validation" >&2
-        zsh -c "source '$HOME/.zshenv'" 2>&1 | head -10 >&2
+# Test .zshenv (bootstrap file) - syntax check only
+# Runtime check not needed as it only sets ZDOTDIR
+if [[ -f "$PACKAGE_DIR/.zshenv" ]]; then
+    if ! zsh -n "$PACKAGE_DIR/.zshenv"; then
+        echo "Error: .zshenv failed syntax validation" >&2
         ((errors++))
     fi
 else
-    echo "Error: ~/.zshenv not found" >&2
+    echo "Error: packages/zsh/.zshenv not found" >&2
     ((errors++))
 fi
 
-# Test .zshrc (requires .zshenv for ZDOTDIR)
-if [[ -f "$HOME/.config/zsh/.zshrc" ]]; then
-    if ! zsh -c "source '$HOME/.zshenv' && source '$HOME/.config/zsh/.zshrc'" >/dev/null 2>&1; then
-        echo "Error: .config/zsh/.zshrc failed runtime validation" >&2
-        zsh -c "source '$HOME/.zshenv'; source '$HOME/.config/zsh/.zshrc'" 2>&1 | head -10 >&2
+# Test .zshrc (requires ZDOTDIR to be set to PACKAGE_DIR/.config/zsh for validation)
+if [[ -f "$PACKAGE_DIR/.config/zsh/.zshrc" ]]; then
+    # Syntax check first
+    if ! zsh -n "$PACKAGE_DIR/.config/zsh/.zshrc"; then
+        echo "Error: .config/zsh/.zshrc failed syntax validation" >&2
         ((errors++))
+    else
+        # Runtime check - temporarily set ZDOTDIR to PACKAGE_DIR/.config/zsh for validation
+        # This allows .zshrc to find conf.d and functions directories
+        if ! zsh -c "export ZDOTDIR='$PACKAGE_DIR/.config/zsh' && source '$PACKAGE_DIR/.config/zsh/.zshrc'" >/dev/null 2>&1; then
+            echo "Error: .config/zsh/.zshrc failed runtime validation" >&2
+            zsh -c "export ZDOTDIR='$PACKAGE_DIR/.config/zsh' && source '$PACKAGE_DIR/.config/zsh/.zshrc'" 2>&1 | head -10 >&2
+            ((errors++))
+        fi
     fi
 else
-    echo "Error: ~/.config/zsh/.zshrc not found" >&2
+    echo "Error: packages/zsh/.config/zsh/.zshrc not found" >&2
     ((errors++))
 fi
 
-# Test .zprofile (requires .zshenv for ZDOTDIR)
-if [[ -f "$HOME/.config/zsh/.zprofile" ]]; then
-    if ! zsh -c "source '$HOME/.zshenv' && source '$HOME/.config/zsh/.zprofile'" >/dev/null 2>&1; then
-        echo "Error: .config/zsh/.zprofile failed runtime validation" >&2
-        zsh -c "source '$HOME/.zshenv'; source '$HOME/.config/zsh/.zprofile'" 2>&1 | head -10 >&2
+# Test .zprofile (requires ZDOTDIR to be set to PACKAGE_DIR/.config/zsh for validation)
+if [[ -f "$PACKAGE_DIR/.config/zsh/.zprofile" ]]; then
+    # Syntax check first
+    if ! zsh -n "$PACKAGE_DIR/.config/zsh/.zprofile"; then
+        echo "Error: .config/zsh/.zprofile failed syntax validation" >&2
         ((errors++))
+    else
+        # Runtime check - temporarily set ZDOTDIR to PACKAGE_DIR/.config/zsh for validation
+        if ! zsh -c "export ZDOTDIR='$PACKAGE_DIR/.config/zsh' && source '$PACKAGE_DIR/.config/zsh/.zprofile'" >/dev/null 2>&1; then
+            echo "Error: .config/zsh/.zprofile failed runtime validation" >&2
+            zsh -c "export ZDOTDIR='$PACKAGE_DIR/.config/zsh' && source '$PACKAGE_DIR/.config/zsh/.zprofile'" 2>&1 | head -10 >&2
+            ((errors++))
+        fi
     fi
 else
-    echo "Error: ~/.config/zsh/.zprofile not found" >&2
+    echo "Error: packages/zsh/.config/zsh/.zprofile not found" >&2
     ((errors++))
 fi
 

@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2296
-# SC2296: Zsh parameter expansion syntax (zsh-specific)
+# SC2296: Zsh parameter expansion syntax (zsh-specific, used in case statement)
 # ~/.zprofile: executed by zsh(1) for login shells.
 # Environment variables and PATH configuration.
 # See SHELL_CONFIG_GUIDE.md for detailed explanation of shell configuration files.

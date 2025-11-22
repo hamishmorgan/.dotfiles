@@ -1,6 +1,5 @@
 # shellcheck shell=bash
-# Zsh environment file (bootstrap)
-# Zsh environment - bootstrap file (must be in $HOME)
+# Zsh environment bootstrap file (must be in $HOME)
 # Sets ZDOTDIR to use XDG-compliant location
 
 # Replace ZDOTDIR even if already set (aggressive migration)
@@ -10,4 +9,3 @@ if [[ -n "$ZDOTDIR" ]]; then
 fi
 
 export ZDOTDIR="$HOME/.config/zsh"
-
