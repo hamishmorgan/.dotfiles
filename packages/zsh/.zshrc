@@ -407,36 +407,8 @@ _set_editor_env() {
 # Always detect context and set appropriately, even if already set
 # Context can change (e.g., switching between terminal and Cursor's integrated terminal)
 # so we re-detect to ensure VISUAL/EDITOR match the current environment
-_set_editors_from_context() {
-    local context
-    context=$(_detect_editor)
-
-    if [[ -n "$context" ]]; then
-        # Context detected - use it if installed
-        local context_cmd
-        context_cmd=$(_resolve_context_editor_command "$context" 2>/dev/null)
-        if [[ -n "$context_cmd" ]]; then
-            # Validate that the editor command is executable
-            local editor_cmd
-            editor_cmd="${context_cmd%% *}"  # Extract first word (command name)
-            if command -v "$editor_cmd" &>/dev/null; then
-                export VISUAL="$context_cmd"
-                export EDITOR="$context_cmd"
-            else
-                # Context detected but command not executable - set sensible defaults
-                _set_editor_env "$context"
-            fi
-        else
-            # Context detected but not installed - set sensible defaults
-            _set_editor_env "$context"
-        fi
-    else
-        # No context detected - use _set_editor_env which handles all cases
-        _set_editor_env
-    fi
-}
-
-_set_editors_from_context
+# Use _set_editor_env to handle all context detection and environment variable setting
+_set_editor_env
 
 # GIT_EDITOR defaults to EDITOR
 if [[ -z "${GIT_EDITOR:-}" ]]; then

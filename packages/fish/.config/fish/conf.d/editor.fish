@@ -64,7 +64,7 @@ end
 # This is necessary because:
 # - Shells can be nested (e.g., fish inside tmux inside Cursor)
 # - Only checking PPID misses editors that are further up the tree
-# - Bash/zsh's simple PPID check fails in nested scenarios
+# - All three shells (fish, bash, zsh) now use process tree walking to handle nested scenarios
 function _find_editor_in_process_tree
     set -l pattern "$argv[1]"
     set -l max_depth
@@ -239,29 +239,8 @@ end
 # Always detect context and set appropriately, even if already set
 # Context can change (e.g., switching between terminal and Cursor's integrated terminal)
 # so we re-detect to ensure VISUAL/EDITOR match the current environment
-set -l context (_detect_editor_context)
-
-if test -n "$context"
-    # Context detected - use it if installed
-    set -l context_cmd (_resolve_context_editor_command "$context" 2>/dev/null)
-    if test -n "$context_cmd"
-        # Validate that the editor command is executable
-        set -l editor_cmd (string split " " -- "$context_cmd")[1]
-        if type -q "$editor_cmd"
-            set -gx VISUAL "$context_cmd"
-            set -gx EDITOR "$context_cmd"
-        else
-            # Context detected but command not executable - set sensible defaults
-            _set_editor_env "$context"
-        end
-    else
-        # Context detected but not installed - set sensible defaults
-        _set_editor_env "$context"
-    end
-else
-    # No context detected - use _set_editor_env which handles all cases
-    _set_editor_env
-end
+# Use _set_editor_env to handle all context detection and environment variable setting
+_set_editor_env
 
 # GIT_EDITOR defaults to EDITOR
 if test -z "$GIT_EDITOR"
