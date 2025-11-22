@@ -5,21 +5,21 @@
 set -e
 
 PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_DIR="$(cd "$PACKAGE_DIR/../.." && pwd)"
 
 errors=0
 
 # Test .bashrc syntax and runtime
 if [[ -f "$PACKAGE_DIR/.bashrc" ]]; then
     # Syntax check
-    if ! bash -n "$PACKAGE_DIR/.bashrc" 2>&1; then
+    if ! bash -n "$PACKAGE_DIR/.bashrc"; then
         echo "Error: .bashrc failed syntax validation" >&2
         ((errors++))
     fi
     # Runtime check
-    if ! bash -c "source '$PACKAGE_DIR/.bashrc' 2>&1" >/dev/null 2>&1; then
+    error_output=$(bash -c "source '$PACKAGE_DIR/.bashrc' 2>&1" 2>&1 | grep -iE "error|failed|command not found|Usage:" | head -5)
+    if [[ -n "$error_output" ]]; then
         echo "Error: .bashrc failed runtime validation" >&2
-        bash -c "source '$PACKAGE_DIR/.bashrc'" 2>&1 | head -10 >&2
+        echo "$error_output" >&2
         ((errors++))
     fi
 fi
@@ -27,20 +27,27 @@ fi
 # Test .bash_profile syntax and runtime
 if [[ -f "$PACKAGE_DIR/.bash_profile" ]]; then
     # Syntax check
-    if ! bash -n "$PACKAGE_DIR/.bash_profile" 2>&1; then
+    if ! bash -n "$PACKAGE_DIR/.bash_profile"; then
         echo "Error: .bash_profile failed syntax validation" >&2
         ((errors++))
     fi
     # Runtime check
-    if ! bash -c "source '$PACKAGE_DIR/.bash_profile' 2>&1" >/dev/null 2>&1; then
+    error_output=$(bash -c "source '$PACKAGE_DIR/.bash_profile' 2>&1" 2>&1 | grep -iE "error|failed|command not found|Usage:" | head -5)
+    if [[ -n "$error_output" ]]; then
         echo "Error: .bash_profile failed runtime validation" >&2
-        bash -c "source '$PACKAGE_DIR/.bash_profile'" 2>&1 | head -10 >&2
+        echo "$error_output" >&2
         ((errors++))
     fi
 fi
 
-# Test dotfiles.bash (the one with the broken completion)
+# Test dotfiles.bash completions
 if [[ -f "$PACKAGE_DIR/.config/bash/conf.d/dotfiles.bash" ]]; then
+    # Syntax check
+    if ! bash -n "$PACKAGE_DIR/.config/bash/conf.d/dotfiles.bash"; then
+        echo "Error: .config/bash/conf.d/dotfiles.bash failed syntax validation" >&2
+        ((errors++))
+    fi
+    # Runtime check
     error_output=$(bash -c "source '$PACKAGE_DIR/.config/bash/conf.d/dotfiles.bash' 2>&1" 2>&1 | grep -iE "error|failed|command not found|Usage:" | head -5)
     if [[ -n "$error_output" ]]; then
         echo "Error: .config/bash/conf.d/dotfiles.bash failed runtime validation" >&2

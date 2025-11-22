@@ -5,14 +5,13 @@
 set -e
 
 PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_DIR="$(cd "$PACKAGE_DIR/../.." && pwd)"
 
 errors=0
 
 # Test .zshrc syntax and runtime
 if [[ -f "$PACKAGE_DIR/.zshrc" ]]; then
     # Syntax check
-    if ! zsh -n "$PACKAGE_DIR/.zshrc" 2>&1; then
+    if ! zsh -n "$PACKAGE_DIR/.zshrc"; then
         echo "Error: .zshrc failed syntax validation" >&2
         ((errors++))
     fi
@@ -28,14 +27,15 @@ fi
 # Test .zprofile syntax and runtime
 if [[ -f "$PACKAGE_DIR/.zprofile" ]]; then
     # Syntax check
-    if ! zsh -n "$PACKAGE_DIR/.zprofile" 2>&1; then
+    if ! zsh -n "$PACKAGE_DIR/.zprofile"; then
         echo "Error: .zprofile failed syntax validation" >&2
         ((errors++))
     fi
     # Runtime check
-    if ! zsh -c "source '$PACKAGE_DIR/.zprofile' 2>&1" >/dev/null 2>&1; then
+    error_output=$(zsh -c "source '$PACKAGE_DIR/.zprofile' 2>&1" 2>&1 | grep -iE "error|failed|command not found|no matches found|unknown file attribute" | head -5)
+    if [[ -n "$error_output" ]]; then
         echo "Error: .zprofile failed runtime validation" >&2
-        zsh -c "source '$PACKAGE_DIR/.zprofile'" 2>&1 | head -10 >&2
+        echo "$error_output" >&2
         ((errors++))
     fi
 fi

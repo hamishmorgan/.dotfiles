@@ -5,14 +5,13 @@
 set -e
 
 PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_DIR="$(cd "$PACKAGE_DIR/../.." && pwd)"
 
 errors=0
 
 # Test main config.fish syntax and runtime
 if [[ -f "$PACKAGE_DIR/.config/fish/config.fish" ]]; then
     # Syntax check
-    if ! fish -n "$PACKAGE_DIR/.config/fish/config.fish" 2>&1; then
+    if ! fish -n "$PACKAGE_DIR/.config/fish/config.fish"; then
         echo "Error: config.fish failed syntax validation" >&2
         ((errors++))
     fi
@@ -28,7 +27,7 @@ fi
 # Test config.osx.fish syntax and runtime
 if [[ -f "$PACKAGE_DIR/.config/fish/config.osx.fish" ]]; then
     # Syntax check
-    if ! fish -n "$PACKAGE_DIR/.config/fish/config.osx.fish" 2>&1; then
+    if ! fish -n "$PACKAGE_DIR/.config/fish/config.osx.fish"; then
         echo "Error: config.osx.fish failed syntax validation" >&2
         ((errors++))
     fi
@@ -44,7 +43,7 @@ fi
 # Test config.linux.fish syntax and runtime
 if [[ -f "$PACKAGE_DIR/.config/fish/config.linux.fish" ]]; then
     # Syntax check
-    if ! fish -n "$PACKAGE_DIR/.config/fish/config.linux.fish" 2>&1; then
+    if ! fish -n "$PACKAGE_DIR/.config/fish/config.linux.fish"; then
         echo "Error: config.linux.fish failed syntax validation" >&2
         ((errors++))
     fi
@@ -57,10 +56,10 @@ if [[ -f "$PACKAGE_DIR/.config/fish/config.linux.fish" ]]; then
     fi
 fi
 
-# Test conf.d files (especially dotfiles.fish which might have completion issues)
+# Test conf.d/dotfiles.fish completions
 if [[ -f "$PACKAGE_DIR/.config/fish/conf.d/dotfiles.fish" ]]; then
     # Syntax check
-    if ! fish -n "$PACKAGE_DIR/.config/fish/conf.d/dotfiles.fish" 2>&1; then
+    if ! fish -n "$PACKAGE_DIR/.config/fish/conf.d/dotfiles.fish"; then
         echo "Error: conf.d/dotfiles.fish failed syntax validation" >&2
         ((errors++))
     fi

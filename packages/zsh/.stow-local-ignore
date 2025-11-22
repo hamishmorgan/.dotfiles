@@ -1,3 +1,6 @@
 # Package metadata (not stowed)
 ^manifest\.toml$
 ^README\.md$
+
+# Validation scripts (not stowed, used by framework only)
+^validate-runtime$
