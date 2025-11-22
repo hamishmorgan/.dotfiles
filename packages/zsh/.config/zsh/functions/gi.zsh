@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # gitignore.io function
 
 gi() {

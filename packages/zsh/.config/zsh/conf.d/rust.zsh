@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Rust toolchain integration
 
 if command -v rustup &>/dev/null; then

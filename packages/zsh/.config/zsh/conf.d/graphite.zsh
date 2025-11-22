@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Graphite (stacked PRs) integration
 
 if command -v gt &>/dev/null; then

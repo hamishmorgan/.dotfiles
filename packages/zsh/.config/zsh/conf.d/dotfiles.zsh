@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Dotfiles completions
 
 [[ -f ~/.dotfiles/dot ]] && source <(~/.dotfiles/dot --completion zsh 2>/dev/null)

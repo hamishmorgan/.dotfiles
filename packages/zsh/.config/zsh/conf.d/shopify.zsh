@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Shopify dev tools integration
 
 # Shopify dev

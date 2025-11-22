@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Key bindings
 
 bindkey -e                    # Emacs key bindings

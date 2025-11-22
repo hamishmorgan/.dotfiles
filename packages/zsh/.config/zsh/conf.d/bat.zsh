@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Bat (syntax highlighting cat) integration
 
 if command -v batcat &>/dev/null; then

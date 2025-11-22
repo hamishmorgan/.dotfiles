@@ -1,4 +1,6 @@
 # shellcheck shell=bash
+# shellcheck disable=SC2296
+# SC2296: Zsh parameter expansion syntax
 # Zsh shell configuration
 # ~/.config/zsh/.zshrc
 

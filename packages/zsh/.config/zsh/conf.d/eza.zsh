@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # eza (modern ls) aliases
 
 if command -v eza &>/dev/null; then

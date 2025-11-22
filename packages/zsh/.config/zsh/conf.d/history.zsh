@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # History configuration
 
 HISTFILE=~/.zsh_history

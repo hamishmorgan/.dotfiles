@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # fzf (fuzzy finder) configuration
 
 if command -v fzf &>/dev/null; then

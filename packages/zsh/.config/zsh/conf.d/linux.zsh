@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Linux-specific configuration
 
 # Fallback OS detection if ZSH_HOST_OS not set

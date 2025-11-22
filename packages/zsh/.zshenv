@@ -1,4 +1,5 @@
 # shellcheck shell=bash
+# Zsh environment file (bootstrap)
 # Zsh environment - bootstrap file (must be in $HOME)
 # Sets ZDOTDIR to use XDG-compliant location
 

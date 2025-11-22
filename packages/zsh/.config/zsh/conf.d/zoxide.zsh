@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # zoxide (smart cd replacement) integration
 
 if command -v zoxide &>/dev/null; then

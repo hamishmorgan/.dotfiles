@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Editor detection and configuration
 
 # ━━━ Helper Functions ━━━

@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Navigation aliases
 
 alias ..='cd ..'

@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Prompt configuration
 
 autoload -Uz vcs_info

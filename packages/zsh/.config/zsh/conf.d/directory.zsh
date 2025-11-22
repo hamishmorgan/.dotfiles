@@ -1,4 +1,4 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
 # Directory navigation options
 
 setopt autocd                 # cd by typing directory name

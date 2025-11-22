@@ -1,4 +1,6 @@
-# shellcheck shell=zsh
+# shellcheck shell=bash
+# shellcheck disable=SC1036,SC1073,SC1072,SC1009
+# SC1036,SC1073,SC1072,SC1009: Zsh glob qualifiers for completion caching
 # Completion system configuration
 
 autoload -Uz compinit
