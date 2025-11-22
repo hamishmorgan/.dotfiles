@@ -14,4 +14,4 @@ target = "~"
 [validation]
 ".config/fish/config.fish" = { command = "fish", args = ["-n", "FILE"] }
 ".config/fish/config.osx.fish" = { command = "fish", args = ["-n", "FILE"] }
-".config/fish/config.linux.fish" = { command = "fish", args = ["-n", "FILE"] }
+".config/fish/config.linux.fish" = { command = "packages/fish/validate-runtime", args = [] }
