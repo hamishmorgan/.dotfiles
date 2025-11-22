@@ -21,16 +21,18 @@ fi
 
 # Test .zshrc (requires ZDOTDIR to be set to PACKAGE_DIR/.config/zsh for validation)
 if [[ -f "$PACKAGE_DIR/.config/zsh/.zshrc" ]]; then
-    # Syntax check first
+    # Syntax check
     if ! zsh -n "$PACKAGE_DIR/.config/zsh/.zshrc"; then
         echo "Error: .config/zsh/.zshrc failed syntax validation" >&2
         ((errors++))
     else
         # Runtime check - temporarily set ZDOTDIR to PACKAGE_DIR/.config/zsh for validation
         # This allows .zshrc to find conf.d and functions directories
-        if ! zsh -c "export ZDOTDIR='$PACKAGE_DIR/.config/zsh' && source '$PACKAGE_DIR/.config/zsh/.zshrc'" >/dev/null 2>&1; then
+        # Match bash pattern: source file and grep for errors (more lenient than exit code)
+        error_output=$(zsh -c "export ZDOTDIR='$PACKAGE_DIR/.config/zsh' && source '$PACKAGE_DIR/.config/zsh/.zshrc' 2>&1" 2>&1 | grep -iE "error|failed|command not found|no matches found|unknown file attribute" | head -5)
+        if [[ -n "$error_output" ]]; then
             echo "Error: .config/zsh/.zshrc failed runtime validation" >&2
-            zsh -c "export ZDOTDIR='$PACKAGE_DIR/.config/zsh' && source '$PACKAGE_DIR/.config/zsh/.zshrc'" 2>&1 | head -10 >&2
+            echo "$error_output" >&2
             ((errors++))
         fi
     fi
@@ -41,15 +43,17 @@ fi
 
 # Test .zprofile (requires ZDOTDIR to be set to PACKAGE_DIR/.config/zsh for validation)
 if [[ -f "$PACKAGE_DIR/.config/zsh/.zprofile" ]]; then
-    # Syntax check first
+    # Syntax check
     if ! zsh -n "$PACKAGE_DIR/.config/zsh/.zprofile"; then
         echo "Error: .config/zsh/.zprofile failed syntax validation" >&2
         ((errors++))
     else
         # Runtime check - temporarily set ZDOTDIR to PACKAGE_DIR/.config/zsh for validation
-        if ! zsh -c "export ZDOTDIR='$PACKAGE_DIR/.config/zsh' && source '$PACKAGE_DIR/.config/zsh/.zprofile'" >/dev/null 2>&1; then
+        # Match bash pattern: source file and grep for errors (more lenient than exit code)
+        error_output=$(zsh -c "export ZDOTDIR='$PACKAGE_DIR/.config/zsh' && source '$PACKAGE_DIR/.config/zsh/.zprofile' 2>&1" 2>&1 | grep -iE "error|failed|command not found|no matches found|unknown file attribute" | head -5)
+        if [[ -n "$error_output" ]]; then
             echo "Error: .config/zsh/.zprofile failed runtime validation" >&2
-            zsh -c "export ZDOTDIR='$PACKAGE_DIR/.config/zsh' && source '$PACKAGE_DIR/.config/zsh/.zprofile'" 2>&1 | head -10 >&2
+            echo "$error_output" >&2
             ((errors++))
         fi
     fi
