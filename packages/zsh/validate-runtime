@@ -9,7 +9,7 @@ errors=0
 
 # Test .zshenv (bootstrap file)
 if [[ -f "$HOME/.zshenv" ]]; then
-    if ! zsh -c "source '$HOME/.zshenv' 2>&1" >/dev/null 2>&1; then
+    if ! zsh -c "source '$HOME/.zshenv'" >/dev/null 2>&1; then
         echo "Error: .zshenv failed runtime validation" >&2
         zsh -c "source '$HOME/.zshenv'" 2>&1 | head -10 >&2
         ((errors++))
@@ -21,9 +21,9 @@ fi
 
 # Test .zshrc (requires .zshenv for ZDOTDIR)
 if [[ -f "$HOME/.config/zsh/.zshrc" ]]; then
-    if ! zsh -c "source '$HOME/.zshenv' 2>&1 && source '$HOME/.config/zsh/.zshrc' 2>&1" >/dev/null 2>&1; then
+    if ! zsh -c "source '$HOME/.zshenv' && source '$HOME/.config/zsh/.zshrc'" >/dev/null 2>&1; then
         echo "Error: .config/zsh/.zshrc failed runtime validation" >&2
-        zsh -c "source '$HOME/.zshenv' 2>&1; source '$HOME/.config/zsh/.zshrc'" 2>&1 | head -10 >&2
+        zsh -c "source '$HOME/.zshenv'; source '$HOME/.config/zsh/.zshrc'" 2>&1 | head -10 >&2
         ((errors++))
     fi
 else
@@ -33,9 +33,9 @@ fi
 
 # Test .zprofile (requires .zshenv for ZDOTDIR)
 if [[ -f "$HOME/.config/zsh/.zprofile" ]]; then
-    if ! zsh -c "source '$HOME/.zshenv' 2>&1 && source '$HOME/.config/zsh/.zprofile' 2>&1" >/dev/null 2>&1; then
+    if ! zsh -c "source '$HOME/.zshenv' && source '$HOME/.config/zsh/.zprofile'" >/dev/null 2>&1; then
         echo "Error: .config/zsh/.zprofile failed runtime validation" >&2
-        zsh -c "source '$HOME/.zshenv' 2>&1; source '$HOME/.config/zsh/.zprofile'" 2>&1 | head -10 >&2
+        zsh -c "source '$HOME/.zshenv'; source '$HOME/.config/zsh/.zprofile'" 2>&1 | head -10 >&2
         ((errors++))
     fi
 else

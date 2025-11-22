@@ -18,7 +18,7 @@ alias gwtl='git worktree list'
 alias gwtr='git worktree remove'
 
 # Shopify dev
-alias d='dev'
+command -v dev &>/dev/null && alias d='dev'
 
 # Common
 alias c='clear'

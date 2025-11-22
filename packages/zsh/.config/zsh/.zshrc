@@ -19,7 +19,7 @@ if [[ -d "$ZSH_CONFIG_DIR/conf.d" ]]; then
       # Source with error handling - continue loading other files if one fails
       if [[ -n "${ZSH_DEBUG:-}" ]]; then
         # Show actual error when debugging
-        if ! source "$config_file" 2>&1; then
+        if ! source "$config_file"; then
           echo "Warning: Failed to load $(basename "$config_file")" >&2
         fi
       else
@@ -35,7 +35,7 @@ if [[ -d "$ZSH_CONFIG_DIR/functions" ]]; then
   for func_file in "$ZSH_CONFIG_DIR/functions"/*.zsh; do
     if [[ -f "$func_file" ]] && [[ -r "$func_file" ]]; then
       if [[ -n "${ZSH_DEBUG:-}" ]]; then
-        if ! source "$func_file" 2>&1; then
+        if ! source "$func_file"; then
           echo "Warning: Failed to load function $(basename "$func_file")" >&2
         fi
       else

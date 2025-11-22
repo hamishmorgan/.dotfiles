@@ -2148,7 +2148,6 @@ migrate_zsh_config() {
         ".zprofile"
         ".zshrc.osx"
         ".zshrc.linux"
-        ".zshenv"
     )
 
     local backed_up=0
