@@ -25,7 +25,7 @@ end
 # Use bat as primary pager if available (syntax highlighting)
 if _is_bat_available
     set -gx PAGER 'bat --paging=always'
-    set -gx BAT_PAGER 'less -RFX'
+    set -gx BAT_PAGER 'less -RFXSM'
 else
     set -gx PAGER less
     # Enhanced less options (conservative set)
@@ -41,12 +41,12 @@ if not set -q LESSOPEN
         case Linux
             if test -f /usr/bin/lesspipe; and test -x /usr/bin/lesspipe
                 set -l lesspipe_output (SHELL=/bin/sh /usr/bin/lesspipe 2>/dev/null)
-                if test -n "$lesspipe_output"; and test $status -eq 0
+                if test -n "$lesspipe_output"
                     eval "$lesspipe_output" 2>/dev/null
                 end
             else if test -f /usr/bin/lesspipe.sh; and test -x /usr/bin/lesspipe.sh
                 set -l lesspipe_output (SHELL=/bin/sh /usr/bin/lesspipe.sh 2>/dev/null)
-                if test -n "$lesspipe_output"; and test $status -eq 0
+                if test -n "$lesspipe_output"
                     eval "$lesspipe_output" 2>/dev/null
                 end
             end
@@ -54,12 +54,12 @@ if not set -q LESSOPEN
             # macOS: check for Homebrew installation
             if test -f /opt/homebrew/bin/lesspipe; and test -x /opt/homebrew/bin/lesspipe
                 set -l lesspipe_output (SHELL=/bin/sh /opt/homebrew/bin/lesspipe 2>/dev/null)
-                if test -n "$lesspipe_output"; and test $status -eq 0
+                if test -n "$lesspipe_output"
                     eval "$lesspipe_output" 2>/dev/null
                 end
             else if test -f /usr/local/bin/lesspipe; and test -x /usr/local/bin/lesspipe
                 set -l lesspipe_output (SHELL=/bin/sh /usr/local/bin/lesspipe 2>/dev/null)
-                if test -n "$lesspipe_output"; and test $status -eq 0
+                if test -n "$lesspipe_output"
                     eval "$lesspipe_output" 2>/dev/null
                 end
             end
