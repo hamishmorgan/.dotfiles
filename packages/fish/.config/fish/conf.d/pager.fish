@@ -6,13 +6,6 @@ if not status is-interactive
     return
 end
 
-# ━━━ Helper Functions ━━━
-
-# Check if command is installed
-function _is_installed
-    type -q "$argv[1]"
-end
-
 # ━━━ Pager Selection ━━━
 
 # Enhanced less options (always set for consistency)
@@ -33,15 +26,16 @@ end
 
 # Enable lesspipe for better file type handling (only if not already configured)
 # lesspipe sets LESSOPEN and LESSCLOSE to enable automatic decompression
+# Note: set -l variables are automatically scoped to the block, so no cleanup needed
 if not set -q LESSOPEN
     # Try lesspipe or lesspipe.sh (check command availability, not specific paths)
     set -l lesspipe_cmd
-    if command -v lesspipe >/dev/null 2>&1
+    if type -q lesspipe
         set lesspipe_cmd lesspipe
-    else if command -v lesspipe.sh >/dev/null 2>&1
+    else if type -q lesspipe.sh
         set lesspipe_cmd lesspipe.sh
     end
-    
+
     if test -n "$lesspipe_cmd"
         set -l lesspipe_output (SHELL=/bin/sh $lesspipe_cmd 2>/dev/null)
         if test -n "$lesspipe_output"
