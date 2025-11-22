@@ -8,8 +8,9 @@
 # ━━━ Helper Functions ━━━
 
 # Check if command is installed
+# Use command -q to check for actual executables, not aliases/functions
 function _is_installed
-    type -q "$argv[1]"
+    command -q "$argv[1]"
 end
 
 # Get process info from PID (command or args)
@@ -17,7 +18,7 @@ function _get_process_info
     set -l pid "$argv[1]"
     set -l field "$argv[2]"
 
-    if not type -q ps; or test -z "$pid"
+    if not command -q ps; or test -z "$pid"
         return 1
     end
 
@@ -218,7 +219,7 @@ function _set_editor_env
     if test -n "$context_cmd"
         # Validate that the editor command is executable
         set -l editor_cmd (string split " " -- "$context_cmd")[1]
-        if type -q "$editor_cmd"
+        if command -q "$editor_cmd"
             set -gx VISUAL "$context_cmd"
             set -gx EDITOR "$context_cmd"
             return
@@ -263,7 +264,7 @@ function e --description "Edit file with EDITOR"
 
     # Validate editor command exists (extract command name, ignore args)
     set -l editor_cmd (string split " " -- "$editor")[1]
-    if not type -q "$editor_cmd"
+    if not command -q "$editor_cmd"
         echo "Error: Editor command not found: $editor_cmd" >&2
         return 1
     end

@@ -1,5 +1,5 @@
 function lz --wraps eza --description 'Sort by size'
-    if command -v eza >/dev/null
+    if command -q eza
         eza --long --sort=size --reverse --icons $argv
     else
         echo "lz: requires eza (brew install eza)" >&2

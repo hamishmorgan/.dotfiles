@@ -59,7 +59,7 @@ abbr -a c clear
 abbr -a mkd "mkdir -p"
 
 # ━━━ eza (modern ls) ━━━
-if type -q eza
+if command -q eza
     abbr -a tree "eza --tree"
     abbr -a l1 "eza --tree --level=1"
     abbr -a l2 "eza --tree --level=2"
@@ -67,7 +67,7 @@ if type -q eza
 end
 
 # ━━━ Shopify dev shortcuts ━━━
-if type -q dev
+if command -q dev
     abbr -a d dev
     abbr -a ds "dev style"
     abbr -a dt "dev test"
@@ -78,7 +78,7 @@ if type -q dev
 end
 
 # ━━━ Docker (if you use it) ━━━
-if type -q docker
+if command -q docker
     abbr -a dk docker
     abbr -a dkps "docker ps"
     abbr -a dkpsa "docker ps -a"
@@ -88,13 +88,13 @@ if type -q docker
 end
 
 # ━━━ Process Management ━━━
-if type -q procs
+if command -q procs
     abbr -a ps procs
 end
 
-if type -q btop
+if command -q btop
     abbr -a top btop
-else if type -q htop
+else if command -q htop
     abbr -a top htop
 end
 

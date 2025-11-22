@@ -1,5 +1,5 @@
 # Graphite (gt) - Shopify's stacked PR workflow tool
-if type -q gt
+if command -q gt
     # Load completions if available
     gt fish 2>/dev/null | source
 
