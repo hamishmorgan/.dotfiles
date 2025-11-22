@@ -209,7 +209,8 @@ _find_best_visual_editor() {
 # ━━━ Environment Setup ━━━
 
 # Set VISUAL and EDITOR based on detected editor
-# Accepts optional context parameter to avoid redundant detection
+# Accepts optional context parameter to avoid redundant detection (currently unused but kept for flexibility)
+# shellcheck disable=SC2120  # Optional parameter is intentional for future use
 _set_editor_env() {
   local context="${1:-}"
   if [[ -z "$context" ]]; then
