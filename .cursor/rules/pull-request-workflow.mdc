@@ -13,6 +13,7 @@ For all code changes:
    ```bash
    gh pr view <PR> --json mergeStateStatus --jq '.mergeStateStatus'
    # If "BEHIND": rebase immediately
+   export GIT_EDITOR=true
    git fetch origin main
    git rebase origin/main
    git push --force-with-lease
@@ -110,7 +111,7 @@ For all code changes:
 
     ```bash
     gh pr view <PR> --json mergeStateStatus --jq '.mergeStateStatus'
-    # If BEHIND: git fetch && GIT_EDITOR=true git rebase origin/main && git push --force-with-lease
+    # If BEHIND: export GIT_EDITOR=true && git fetch && git rebase origin/main && git push --force-with-lease
     ```
 
     **CRITICAL**: Always use `GIT_EDITOR=true` when rebasing to avoid interactive mode.

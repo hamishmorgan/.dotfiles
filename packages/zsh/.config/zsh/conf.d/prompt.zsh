@@ -1,4 +1,6 @@
 # shellcheck shell=bash
+# shellcheck disable=SC2016
+# SC2016: Zsh prompt uses single quotes intentionally for proper expansion
 # Prompt configuration
 
 autoload -Uz vcs_info
