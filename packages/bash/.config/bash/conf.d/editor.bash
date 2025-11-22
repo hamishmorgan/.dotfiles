@@ -247,7 +247,7 @@ _set_editor_env() {
 # Always detect context and set appropriately, even if already set
 # Context can change (e.g., switching between terminal and Cursor's integrated terminal)
 # so we re-detect to ensure VISUAL/EDITOR match the current environment
-{
+_set_editors_from_context() {
   local context
   context=$(detect_editor)
 
@@ -275,6 +275,8 @@ _set_editor_env() {
     _set_editor_env
   fi
 }
+
+_set_editors_from_context
 
 # GIT_EDITOR defaults to EDITOR
 if [[ -z "${GIT_EDITOR:-}" ]]; then
