@@ -4,6 +4,7 @@ files = [
   ".config/zsh/.zprofile",
   ".config/zsh/conf.d/aliases.zsh",
   ".config/zsh/conf.d/bat.zsh",
+  ".config/zsh/conf.d/pager.zsh",
   ".config/zsh/conf.d/completion.zsh",
   ".config/zsh/conf.d/darwin.zsh",
   ".config/zsh/conf.d/directory.zsh",
@@ -35,6 +36,7 @@ target = "~"
 ".config/zsh/.zprofile" = { command = "packages/zsh/validate-runtime", args = [] }
 ".config/zsh/conf.d/aliases.zsh" = { command = "zsh", args = ["-n", "FILE"] }
 ".config/zsh/conf.d/bat.zsh" = { command = "zsh", args = ["-n", "FILE"] }
+".config/zsh/conf.d/pager.zsh" = { command = "zsh", args = ["-n", "FILE"] }
 ".config/zsh/conf.d/completion.zsh" = { command = "zsh", args = ["-n", "FILE"] }
 ".config/zsh/conf.d/darwin.zsh" = { command = "zsh", args = ["-n", "FILE"] }
 ".config/zsh/conf.d/directory.zsh" = { command = "zsh", args = ["-n", "FILE"] }
