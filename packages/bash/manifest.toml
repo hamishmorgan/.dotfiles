@@ -55,6 +55,7 @@ target = "~"
   "-n",
   "FILE",
 ] }
+"*.bash*" = { command = "packages/bash/validate-runtime", args = [] }
 ".config/bash/conf.d/shopify.bash" = { command = "bash", args = ["-n", "FILE"] }
 ".config/bash/conf.d/rust.bash" = { command = "bash", args = ["-n", "FILE"] }
 ".config/bash/conf.d/darwin.bash" = { command = "bash", args = ["-n", "FILE"] }

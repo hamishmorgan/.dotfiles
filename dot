@@ -2140,6 +2140,67 @@ backup_existing() {
     return 0
 }
 
+# Migrate zsh configuration from old structure to new XDG-compliant structure
+# Backs up and removes old files (not in new manifest) before installation
+migrate_zsh_config() {
+    local old_files=(
+        ".zshrc"
+        ".zprofile"
+        ".zshrc.osx"
+        ".zshrc.linux"
+        ".zshenv"
+    )
+
+    local backed_up=0
+
+    # Check for existing ZDOTDIR in environment
+    if [[ -n "${ZDOTDIR:-}" ]]; then
+        log_warning "ZDOTDIR is already set to '$ZDOTDIR'"
+        log_info "Will be replaced with '$HOME/.config/zsh'"
+    fi
+
+    # Check for existing .zshenv with ZDOTDIR
+    if [[ -f "$HOME/.zshenv" ]]; then
+        if grep -q "ZDOTDIR" "$HOME/.zshenv" 2>/dev/null; then
+            local existing_zdotdir
+            existing_zdotdir=$(grep "ZDOTDIR" "$HOME/.zshenv" | head -1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' || echo "")
+            if [[ -n "$existing_zdotdir" ]]; then
+                log_warning "Existing .zshenv contains: $existing_zdotdir"
+                log_info "Will be replaced with new XDG-compliant structure"
+            fi
+        fi
+    fi
+
+    # Backup and remove old files
+    for file in "${old_files[@]}"; do
+        if [[ -e "$HOME/$file" ]]; then
+            log_info "Migrating: backing up $file"
+            if [[ -d "$HOME/$file" ]]; then
+                if ! cp -r "$HOME/$file" "$BACKUP_DIR/" 2>/dev/null; then
+                    log_error "Failed to backup $file"
+                    return 1
+                fi
+            else
+                if ! cp "$HOME/$file" "$BACKUP_DIR/" 2>/dev/null; then
+                    log_error "Failed to backup $file"
+                    return 1
+                fi
+            fi
+            if ! rm -f "$HOME/$file" 2>/dev/null; then
+                log_error "Failed to remove $file"
+                return 1
+            fi
+            ((backed_up++))
+        fi
+    done
+
+    if [[ $backed_up -gt 0 ]]; then
+        log_success "Migrated $backed_up old zsh file(s) to backup"
+    fi
+
+    return 0
+}
+
 # Initialize submodules
 init_submodules() {
     log_info "Initializing git submodules..."
@@ -2660,14 +2721,14 @@ check_symlink() {
         if [[ -n "$expected_path2" ]]; then
             expected_path2_no_slash="${expected_path2%/}"
         fi
-        
+
         # Reject if symlink points exactly to package directory (edge case)
         if [[ "$normalized_canonical" == "$expected_path1_no_slash" ]] || \
            { [[ -n "$expected_path2_no_slash" ]] && [[ "$normalized_canonical" == "$expected_path2_no_slash" ]]; }; then
             log_warning "$file symlink points to package directory itself, not a file within it"
             return 1
         fi
-        
+
         # Check if canonical path starts with either expected path (anchored match with trailing slash)
         if [[ "$normalized_canonical" == "$expected_path1"* ]] || \
            { [[ -n "$expected_path2" ]] && [[ "$expected_path2" != "$expected_path1" ]] && [[ "$normalized_canonical" == "$expected_path2"* ]]; }; then
@@ -3573,6 +3634,23 @@ cmd_install() {
         return 1
     fi
 
+    # Step 1.5: Migrate zsh configuration (if zsh package is being installed)
+    local zsh_in_packages=false
+    for package in "${PACKAGES[@]}"; do
+        if [[ "$package" == "zsh" ]]; then
+            zsh_in_packages=true
+            break
+        fi
+    done
+
+    if [[ "$zsh_in_packages" == true ]]; then
+        if ! migrate_zsh_config; then
+            log_error "Zsh migration failed"
+            INSTALLATION_IN_PROGRESS=false
+            return 1
+        fi
+    fi
+
     # Step 2: Install
     show_numbered_section "2" "Installation Pipeline"
     if ! run_with_verbosity "$verbosity" 1 "" run_installation_pipeline "$verbosity"; then
@@ -3931,16 +4009,16 @@ validate_all_manifests() {
 # Verifies that optional tools configured for git diff textconv are installed
 check_git_textconv_tools() {
     local missing_tools=()
-    
+
     # Optional compression tools (might not be on fresh macOS)
     local optional_tools=("gzcat" "bzcat" "xzcat" "odt2txt" "pdfinfo")
-    
+
     for tool in "${optional_tools[@]}"; do
         if ! command -v "$tool" >/dev/null 2>&1; then
             missing_tools+=("$tool")
         fi
     done
-    
+
     if [[ ${#missing_tools[@]} -gt 0 ]]; then
         log_warning "Optional git textconv tools not installed:"
         for tool in "${missing_tools[@]}"; do
@@ -3959,7 +4037,7 @@ check_git_textconv_tools() {
         log_info "Git will fall back to raw file display for these formats"
         return "${#missing_tools[@]}"
     fi
-    
+
     log_success "All git textconv tools installed"
     return 0
 }
