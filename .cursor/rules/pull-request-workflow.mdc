@@ -33,11 +33,13 @@ For all code changes:
    **If rebase gets stuck or conflicts occur:**
 
    1. **If stuck in interactive mode**: Press Ctrl+C and abort the rebase:
+
       ```bash
       git rebase --abort
       ```
 
    2. **Resolve conflicts non-interactively**:
+
       ```bash
       # Resolve conflicts in files (edit files manually)
       git add <resolved-files>
@@ -45,11 +47,13 @@ For all code changes:
       ```
 
    3. **Skip problematic commits** (use with caution):
+
       ```bash
       GIT_EDITOR=true git rebase --skip
       ```
 
    **Best practice workflow:**
+
    ```bash
    # 1. Set non-interactive editor before any rebase
    export GIT_EDITOR=true

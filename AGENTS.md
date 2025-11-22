@@ -1095,9 +1095,9 @@ Hamish Morgan <hamish.morgan@gmail.com> - Manual user commit
 
 ## Git Workflow
 
-**CRITICAL: Non-Interactive Git Operations**
+### Non-Interactive Git Operations
 
-Git commands that open interactive editors (rebase, cherry-pick, commit --amend, etc.)
+**CRITICAL:** Git commands that open interactive editors (rebase, cherry-pick, commit --amend, etc.)
 will block agent execution and cause tasks to hang indefinitely. **ALWAYS** use non-interactive
 flags or environment variables to prevent this.
 
@@ -1146,6 +1146,7 @@ git push --force-with-lease origin <branch-name>
 If a rebase gets stuck waiting for editor input:
 
 1. **Abort and restart:**
+
    ```bash
    git rebase --abort
    export GIT_EDITOR=true
@@ -1153,6 +1154,7 @@ If a rebase gets stuck waiting for editor input:
    ```
 
 2. **If already in conflicted state:**
+
    ```bash
    # Resolve conflicts manually
    git add <resolved-files>
