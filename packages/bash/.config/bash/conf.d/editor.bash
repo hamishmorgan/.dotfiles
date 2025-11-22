@@ -306,6 +306,7 @@ e() {
 
   # Use eval to properly handle EDITOR with arguments and paths containing spaces
   # This safely executes: editor_command editor_args user_args
+  # shellcheck disable=SC2294  # eval is necessary to handle EDITOR with arguments (e.g., "cursor --wait")
   eval "$editor" "$@"
 }
 
