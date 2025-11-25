@@ -1,7 +1,11 @@
 # Git Delta Configuration
-# Enhanced diff viewer with syntax highlighting and side-by-side view
-# Only active when delta is installed and included by .gitconfig
-# https://github.com/dandavison/delta
+# Enhanced diff viewer with syntax highlighting
+# https://dandavison.github.io/delta/
+#
+# Features can be toggled via:
+#   - Edit the `features` line below
+#   - Environment: DELTA_FEATURES=+side-by-side (temporarily add)
+#   - Environment: DELTA_FEATURES=+              (reset to config)
 
 [core]
 	pager = delta
@@ -9,24 +13,103 @@
 [interactive]
 	diffFilter = delta --color-only
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Main Delta Settings
+# ═══════════════════════════════════════════════════════════════════════════════
 [delta]
+	# Active features (space-separated)
+	features = line-numbers decorations word-diff blame grep
+
+	# Core
 	navigate = true
 	light = false
-	side-by-side = true
-	line-numbers = true
 	syntax-theme = Dracula
+	true-color = always
+	paging = auto
+	tabs = 4
+	relative-paths = true
+	keep-plus-minus-markers = true
 
-	# Decorations
-	file-style = bold yellow
+	# Width & wrapping
+	width = variable
+	wrap-max-lines = unlimited
+
+	# Performance
+	max-line-length = 3000
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature: line-numbers
+# ═══════════════════════════════════════════════════════════════════════════════
+[delta "line-numbers"]
+	line-numbers = true
+	line-numbers-left-format = "{nm:>4}┊"
+	line-numbers-right-format = "{np:>4}│"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature: decorations
+# File headers, hunk headers, commit styling
+# ═══════════════════════════════════════════════════════════════════════════════
+[delta "decorations"]
+	# File headers
+	file-style = bold yellow ul
 	file-decoration-style = yellow box
+	file-added-label = "[+]"
+	file-modified-label = "[~]"
+	file-removed-label = "[-]"
+	file-renamed-label = "[→]"
+
+	# Hunk headers
 	hunk-header-style = file line-number syntax
+	hunk-header-decoration-style = blue box
 
-	# Better diff markers
-	plus-style = syntax "#003800"
-	minus-style = syntax "#3f0001"
+	# Commit display
+	commit-style = bold yellow
+	commit-decoration-style = bold yellow box ul
 
-	# Whitespace highlighting
-	whitespace-error-style = reverse red
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature: word-diff
+# Within-line word-level highlighting
+# ═══════════════════════════════════════════════════════════════════════════════
+[delta "word-diff"]
+	word-diff-regex = "\\w+"
+	max-line-distance = 0.6
 
-[merge]
-	conflictstyle = diff3
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature: blame
+# Git blame styling
+# ═══════════════════════════════════════════════════════════════════════════════
+[delta "blame"]
+	blame-code-style = syntax
+	blame-format = "{author:<15} {commit:<8} {timestamp:<15}"
+	blame-separator-format = "│{n:^4}│"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature: grep
+# Git grep styling
+# ═══════════════════════════════════════════════════════════════════════════════
+[delta "grep"]
+	grep-match-word-style = bold reverse
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature: side-by-side
+# Use: DELTA_FEATURES=+side-by-side git diff
+# ═══════════════════════════════════════════════════════════════════════════════
+[delta "side-by-side"]
+	side-by-side = true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature: hyperlinks
+# Add to features to enable (requires terminal support)
+# ═══════════════════════════════════════════════════════════════════════════════
+[delta "hyperlinks"]
+	hyperlinks = true
+	hyperlinks-file-link-format = "cursor://file/{path}:{line}"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature: minimal
+# Clean look with no decorations
+# ═══════════════════════════════════════════════════════════════════════════════
+[delta "minimal"]
+	file-decoration-style = none
+	hunk-header-decoration-style = none
+	commit-decoration-style = none

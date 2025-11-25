@@ -92,6 +92,8 @@
 [diff]
 	renames = copies
 	algorithm = patience
+	colorMoved = default
+	colorMovedWS = ignore-all-space
 
 [diff "zip"]
 	textconv = unzip -p
@@ -162,7 +164,7 @@
 
 [merge]
 	tool = vimdiff
-	conflictstyle = diff3
+	conflictstyle = zdiff3
 
 [rebase]
 	autosquash = true
@@ -183,3 +185,5 @@
 [credential "https://gist.github.com"]
 	helper =
 	helper = !/usr/bin/env gh auth git-credential
+[maintenance]
+	repo = /Users/hamish/world/trees/root/src
