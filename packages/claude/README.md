@@ -2,12 +2,12 @@
 
 Manages [Claude Code](https://claude.ai/code) CLI configuration using GNU Stow.
 
-## What's Managed
+## Files Managed
 
 - `.claude/settings.json` - Global settings (model, permissions, preferences)
 - `.claude/CLAUDE.md` - Global instructions loaded for every session
 
-## What's NOT Managed
+## What's Not Managed
 
 - `.claude/settings.local.json` - Machine-specific permissions (auto-ignored by Claude Code)
 - `.claude/projects/` - Project conversation history
