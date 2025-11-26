@@ -51,11 +51,11 @@ function _process_matches_pattern
     set -l cmd (_get_process_info "$pid" comm)
     set -l args (_get_process_info "$pid" args)
 
-    if test -n "$cmd"; and string match -q "*$pattern*" "$cmd"
+    if test -n "$cmd"; and string match -q -- "*$pattern*" "$cmd"
         return 0
     end
 
-    if test -n "$args"; and string match -q "*$pattern*" "$args"
+    if test -n "$args"; and string match -q -- "*$pattern*" "$args"
         return 0
     end
 
@@ -107,9 +107,11 @@ function _find_editor_in_process_tree
     return 1
 end
 
-# Check if editor is in process tree
+# Check if editor is in context (fast path: env vars only, slow path: process tree)
+# Use skip_process_tree=1 for fast startup, omit for full detection
 function _is_editor_in_context
     set -l editor "$argv[1]"
+    set -l skip_process_tree "$argv[2]"
     set -l pattern
 
     switch "$editor"
@@ -125,9 +127,18 @@ function _is_editor_in_context
             end
             set pattern code
         case nvim vim
+            # No fast env var check for terminal editors
+            if test -n "$skip_process_tree"
+                return 1
+            end
             set pattern "$editor"
         case '*'
             return 1
+    end
+
+    # Skip expensive process tree walking if requested
+    if test -n "$skip_process_tree"
+        return 1
     end
 
     # Fallback: check process tree
@@ -138,9 +149,11 @@ end
 # ━━━ Editor Detection ━━━
 
 # Detect which editor context we're running in (priority: cursor, code, nvim, vim)
+# Use fast_mode=1 to skip process tree walking (for startup)
 function _detect_editor_context
+    set -l fast_mode "$argv[1]"
     for editor in cursor code nvim vim
-        if _is_editor_in_context "$editor"
+        if _is_editor_in_context "$editor" "$fast_mode"
             echo "$editor"
             return 0
         end
@@ -206,12 +219,14 @@ end
 
 # Set VISUAL and EDITOR based on detected editor
 # Accepts optional context parameter to avoid redundant detection
+# Use fast_mode=1 as second arg to skip process tree walking (for startup)
 function _set_editor_env
     set -l context
+    set -l fast_mode "$argv[2]"
     if test -n "$argv[1]"
         set context "$argv[1]"
     else
-        set context (_detect_editor_context)
+        set context (_detect_editor_context "$fast_mode")
     end
 
     # Priority 1: Use in-context editor for both if it exists
@@ -237,12 +252,10 @@ function _set_editor_env
     set -gx VISUAL "$visual_editor"
 end
 
-# Set editors based on context detection
-# Always detect context and set appropriately, even if already set
-# Context can change (e.g., switching between terminal and Cursor's integrated terminal)
-# so we re-detect to ensure VISUAL/EDITOR match the current environment
-# Use _set_editor_env to handle all context detection and environment variable setting
-_set_editor_env
+# Set editors based on context detection (fast mode - env vars only, no process tree walking)
+# This runs on every shell startup, so we only check fast env vars (TERM_PROGRAM, etc.)
+# The e/v functions will do full detection if needed when actually editing
+_set_editor_env "" 1
 
 # GIT_EDITOR defaults to EDITOR
 if test -z "$GIT_EDITOR"

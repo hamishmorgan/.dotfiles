@@ -1,7 +1,11 @@
 # Graphite (gt) - Shopify's stacked PR workflow tool
 if command -q gt
-    # Load completions if available
-    gt fish 2>/dev/null | source
+    # Cache completions for fast startup (auto-loaded from completions/ by fish)
+    set -l _gt_completion_cache "$__fish_config_dir/completions/gt.fish"
+    if not test -f $_gt_completion_cache
+        mkdir -p (dirname $_gt_completion_cache)
+        gt fish > $_gt_completion_cache 2>/dev/null
+    end
 
     # Common abbreviations
     abbr -a gts "gt stack"
