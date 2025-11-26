@@ -5,6 +5,8 @@ if command -q gt
     if not test -f $_gt_completion_cache
         mkdir -p (dirname $_gt_completion_cache)
         gt fish > $_gt_completion_cache 2>/dev/null
+        and test -s $_gt_completion_cache
+        or rm -f $_gt_completion_cache
     end
 
     # Common abbreviations

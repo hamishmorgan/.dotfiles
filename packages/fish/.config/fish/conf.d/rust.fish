@@ -6,6 +6,8 @@ if command -q rustup
     if not test -f $_rustup_cache
         mkdir -p (dirname $_rustup_cache)
         rustup completions fish rustup > $_rustup_cache 2>/dev/null
+        and test -s $_rustup_cache
+        or rm -f $_rustup_cache
     end
 end
 
