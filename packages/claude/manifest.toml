@@ -1,0 +1,14 @@
+files = [".claude/settings.json", ".claude/CLAUDE.md"]
+
+name = "Claude Code"
+description = "Claude Code CLI configuration"
+method = "stow"
+target = "~"
+
+[validation]
+".claude/settings.json" = { command = "python3", args = [
+  "-m",
+  "json.tool",
+  "FILE",
+] }
+".claude/CLAUDE.md" = { command = "test", args = ["-f", "FILE"] }
