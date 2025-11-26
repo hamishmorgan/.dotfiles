@@ -4,9 +4,3 @@
 
 # Validation scripts (not stowed, used by framework only)
 ^validate-runtime$
-
-# Old files (migrated to .config/zsh/ structure)
-^\.zshrc$
-^\.zprofile$
-^\.zshrc\.osx$
-^\.zshrc\.linux$

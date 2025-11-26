@@ -105,8 +105,10 @@ if command -v shellcheck >/dev/null 2>&1; then
     if shellcheck "$DOTFILES_DIR/dot" \
         "$DOTFILES_DIR"/packages/bash/.bashrc* \
         "$DOTFILES_DIR"/packages/bash/.bash_profile \
-        "$DOTFILES_DIR"/packages/zsh/.zshrc* \
-        "$DOTFILES_DIR"/packages/zsh/.zprofile >/dev/null 2>&1; then
+        "$DOTFILES_DIR"/packages/zsh/.zshenv \
+        "$DOTFILES_DIR"/packages/zsh/.config/zsh/.zshrc \
+        "$DOTFILES_DIR"/packages/zsh/.config/zsh/.zprofile \
+        "$DOTFILES_DIR"/packages/zsh/.config/zsh/conf.d/*.zsh >/dev/null 2>&1; then
         echo -e "${GREEN}✓${NC}"
     else
         echo -e "${RED}✗${NC}"
