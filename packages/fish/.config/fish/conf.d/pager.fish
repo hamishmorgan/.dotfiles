@@ -40,6 +40,9 @@ if not set -q LESSOPEN
     if test -n "$lesspipe_cmd"
         set -l lesspipe_output (SHELL=/bin/sh $lesspipe_cmd 2>/dev/null)
         if test -n "$lesspipe_output"
+            # lesspipe outputs shell variable assignments (LESSOPEN/LESSCLOSE)
+            # that must be executed. eval is safe here because lesspipe is a
+            # well-known, trusted utility.
             eval "$lesspipe_output" 2>/dev/null
         end
     end
