@@ -12,3 +12,4 @@ tmp/
 .bash_profile.local
 .zprofile.local
 config_private.fish
+result
