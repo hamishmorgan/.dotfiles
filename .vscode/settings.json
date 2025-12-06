@@ -32,10 +32,7 @@
   "editor.formatOnSave": true,
   "editor.insertSpaces": true,
   "editor.tabSize": 2,
-  "editor.rulers": [
-    80,
-    120
-  ],
+  "editor.rulers": [80, 120],
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
   "files.eol": "\n",
@@ -83,9 +80,7 @@
   "shellcheck.enable": true,
   "shellcheck.run": "onType",
   "shellcheck.useWorkspaceRootAsCwd": true,
-  "shellcheck.customArgs": [
-    "-x"
-  ],
+  "shellcheck.customArgs": ["-x"],
   "markdownlint.config": {
     "extends": ".markdownlint.yml"
   },
@@ -96,5 +91,15 @@
   "scm.defaultViewMode": "tree",
   "git.confirmSync": false,
   "git.enableSmartCommit": true,
-  "git.untrackedChanges": "separate"
+  "git.untrackedChanges": "separate",
+  // we try to make semantic highlighting look good
+  "editor.semanticHighlighting.enabled": true,
+  // prevent VSCode from modifying the terminal colors
+  "terminal.integrated.minimumContrastRatio": 1,
+  // make the window's titlebar use the workbench colors
+  "window.titleBarStyle": "custom",
+  // applicable if you use Go, this is an opt-in flag!
+  "gopls": {
+    "ui.semanticTokens": true
+  }
 }

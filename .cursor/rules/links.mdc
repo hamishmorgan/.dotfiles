@@ -1,0 +1,51 @@
+---
+alwaysApply: true
+---
+
+# Link Presentation Rules
+
+## Link Format
+
+When presenting links to users, the link text MUST be identical to the URL.
+
+**Format:**
+
+```markdown
+[https://example.com/path](https://example.com/path)
+```
+
+**Why:**
+
+- Users can see the exact URL they're clicking
+- Links are clearly clickable in markdown
+- URL is visible for copy/paste if needed
+- Consistent presentation across all links
+
+**Examples:**
+
+✅ **CORRECT:**
+
+```markdown
+[https://example.com/page](https://example.com/page)
+```
+
+❌ **INCORRECT:**
+
+```markdown
+[Click here](https://example.com/page)
+[Open link](https://example.com/page)
+https://example.com/page (plain text, not clickable)
+```
+
+**When to use:**
+
+- All external links
+- Search query URLs
+- API documentation links
+- Any URL that should be clickable
+
+**Exception:**
+
+Only use descriptive link text when the URL itself is not meaningful or user-friendly
+(e.g., shortened URLs, internal IDs). In such cases, still include the URL in parentheses
+or nearby for reference.
