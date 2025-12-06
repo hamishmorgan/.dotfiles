@@ -1,0 +1,19 @@
+# .envrc.local.example
+# Copy to .envrc.local for local customizations (git-ignored)
+#
+# Example customizations:
+
+# Disable all direnv output
+# export DIRENV_QUIET=1
+
+# Custom PATH additions
+# PATH_add ~/my-custom-scripts
+
+# Override environment variables
+# export HELP_COLOR=0
+
+# Add project-specific aliases (if your shell sources this)
+# alias quick-test='make test-smoke'
+
+# Watch additional files for auto-reload
+# watch_file custom-config.yml
