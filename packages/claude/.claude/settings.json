@@ -1,6 +1,9 @@
 {
+  "includeCoAuthoredBy": true,
   "permissions": {
     "allow": [
+      "Bash(env)",
+      "Bash(readlink:*)",
       "Bash(git:*)",
       "Bash(gh:*)",
       "Bash(gt:*)",
@@ -55,13 +58,8 @@
       "Read(**/*.key)",
       "Bash(dd:*)"
     ],
-    "ask": [
-      "Bash(git push --force:*)",
-      "Bash(rm -rf:*)"
-    ]
+    "ask": ["Bash(git push --force:*)", "Bash(rm -rf:*)"]
   },
-  "includeCoAuthoredBy": true,
-  "autoUpdaterStatus": "enabled",
-  "alwaysThinkingEnabled": true,
-  "model": "sonnet[1m]"
+  "alwaysThinkingEnabled": false,
+  "autoUpdaterStatus": "enabled"
 }

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": ["Bash(dot:*)", "Bash(disk-cleanup:*)"],
+    "deny": [],
+    "ask": []
+  }
+}
