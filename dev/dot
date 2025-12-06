@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Wrapper script to call main dot script from dev/ directory
+# This allows 'dot' to be in PATH via direnv without security risks
+
+set -euo pipefail
+
+# Get the real dotfiles directory (parent of dev/)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Execute the real dot script
+exec "${DOTFILES_DIR}/dot" "$@"
