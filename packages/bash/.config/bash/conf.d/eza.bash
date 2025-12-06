@@ -7,6 +7,7 @@ if command -v eza &>/dev/null; then
   alias la='eza --long --all --header --icons --group-directories-first --git'
   alias lt='eza --tree --level=2 --icons'
   alias lta='eza --tree --level=2 --all --icons'
+  alias tree='eza --tree'
   alias lg='eza --long --git --git-ignore --icons'
   alias lm='eza --long --sort=modified --reverse --icons'
   alias lz='eza --long --sort=size --reverse --icons'
