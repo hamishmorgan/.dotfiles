@@ -1,4 +1,8 @@
 {
+  "env": {
+    "CLAUDE_SKIP_FEEDBACK_SURVEY": "1",
+    "DISABLE_TELEMETRY": "1"
+  },
   "includeCoAuthoredBy": true,
   "permissions": {
     "allow": [
@@ -58,8 +62,12 @@
       "Read(**/*.key)",
       "Bash(dd:*)"
     ],
-    "ask": ["Bash(git push --force:*)", "Bash(rm -rf:*)"]
+    "ask": [
+      "Bash(git push --force:*)",
+      "Bash(rm -rf:*)"
+    ]
   },
-  "alwaysThinkingEnabled": false,
-  "autoUpdaterStatus": "enabled"
+  "alwaysThinkingEnabled": true,
+  "autoUpdaterStatus": "enabled",
+  "model": "sonnet"
 }
