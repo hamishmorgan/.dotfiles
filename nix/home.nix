@@ -12,5 +12,6 @@
     ./bat.nix
     ./git.nix
     ./ripgrep.nix
+    ./zed.nix
   ];
 }
