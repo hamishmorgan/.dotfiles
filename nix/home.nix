@@ -1,9 +1,8 @@
-{ config, pkgs, ... }:
+{ config, pkgs, username, homeDirectory, ... }:
 
 {
-  # Home Manager needs these
-  home.username = "hamish";
-  home.homeDirectory = "/Users/hamish";
+  home.username = username;
+  home.homeDirectory = homeDirectory;
   home.stateVersion = "24.11";
 
   # Let Home Manager manage itself

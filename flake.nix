@@ -22,6 +22,10 @@
         # Work machine (macOS, Apple Silicon)
         "hamish" = home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.aarch64-darwin;
+          extraSpecialArgs = {
+            username = "hamish";
+            homeDirectory = "/Users/hamish";
+          };
           modules = [
             ./nix/home.nix
           ];
