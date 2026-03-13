@@ -64,7 +64,7 @@ end
 
 # Walk up process tree to find editor (handles nested shells)
 # This is necessary because:
-# - Shells can be nested (e.g., fish inside tmux inside Cursor)
+# - Shells can be nested (e.g., fish inside tmux inside Zed)
 # - Only checking PPID misses editors that are further up the tree
 # - All three shells (fish, bash, zsh) now use process tree walking to handle nested scenarios
 function _find_editor_in_process_tree
@@ -118,12 +118,12 @@ function _is_editor_in_context
     set -l pattern
 
     switch "$editor"
-        case cursor
+        case zed
             # Check environment variables first
-            if test -n "$CURSOR_INJECTION"; or test "$TERM_PROGRAM" = cursor
+            if test -n "$ZED_TERM"; or test "$TERM_PROGRAM" = zed
                 return 0
             end
-            set pattern cursor
+            set pattern zed
         case code
             if test -n "$VSCODE_INJECTION"; or test "$TERM_PROGRAM" = vscode
                 return 0
@@ -151,10 +151,10 @@ end
 
 # ━━━ Editor Detection ━━━
 
-# Detect which editor context we're running in (priority: cursor, code, nvim, vim)
+# Detect which editor context we're running in (priority: zed, code, nvim, vim)
 # Pass --fast-mode flag to skip process tree walking (for startup)
 function _detect_editor_context
-    for editor in cursor code nvim vim
+    for editor in zed code nvim vim
         if _is_editor_in_context "$editor" $argv
             echo "$editor"
             return 0
@@ -167,7 +167,7 @@ end
 function _is_editor_installed
     set -l editor "$argv[1]"
     switch "$editor"
-        case cursor code nvim vim vi nano
+        case zed code nvim vim vi nano
             _is_installed "$editor"
         case '*'
             return 1
@@ -194,10 +194,10 @@ function _resolve_context_editor_command
     end
 
     switch "$context"
-        case cursor code
-            # Note: --reuse-window flag doesn't work on Linux (Cursor bug)
-            # Even with the flag, Cursor creates new windows instead of reusing existing ones
-            # This is a known limitation of Cursor's Linux implementation
+        case zed code
+            # Note: --reuse-window flag doesn't work on Linux (Zed bug)
+            # Even with the flag, Zed creates new windows instead of reusing existing ones
+            # This is a known limitation of Zed's Linux implementation
             echo "$context --wait"
         case '*'
             echo "$context"
@@ -206,9 +206,9 @@ end
 
 # Find best visual editor (GUI preferred, then terminal)
 function _find_best_visual_editor
-    if _is_installed cursor
-        # Note: --reuse-window flag doesn't work on Linux (Cursor bug)
-        echo "cursor --wait"
+    if _is_installed zed
+        # Note: --reuse-window flag doesn't work on Linux (Zed bug)
+        echo "zed --wait"
     else if _is_installed code
         # VSCode typically handles workspace detection better on Linux
         echo "code --wait"
@@ -272,7 +272,7 @@ end
 # ━━━ User Functions ━━━
 
 # Edit file with EDITOR
-# Handles EDITOR values that contain arguments (e.g., "cursor --wait")
+# Handles EDITOR values that contain arguments (e.g., "zed --wait")
 # Uses eval to properly handle paths with spaces and complex commands
 function e --description "Edit file with EDITOR"
     set -l editor "$EDITOR"
