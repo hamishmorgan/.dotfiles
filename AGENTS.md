@@ -3,7 +3,7 @@
 ## Project Context
 
 GNU Stow-managed dotfiles. Packages under `packages/`:
-bash, bat, claude, cursor, fish, gh, git, gnuplot, ripgrep, rust, system, tmux, wezterm, zsh.
+bash, bat, claude, fish, gh, git, gnuplot, ripgrep, rust, system, tmux, wezterm, zsh.
 
 **Repository layout:**
 
