@@ -31,9 +31,10 @@
     {
       # Usage: home-manager switch --flake .#hamish
       # Add new machines/users as needed
+      # Usage: home-manager switch --flake .#work
       homeConfigurations = {
-        "hamish" = mkHome { system = "aarch64-darwin"; username = "hamish"; };
-        # "hamish@linux" = mkHome { system = "x86_64-linux"; username = "hamish"; };
+        "work" = mkHome { system = "aarch64-darwin"; username = "hamish"; };
+        # "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; };
       };
 
       # Allow `nix fmt`
