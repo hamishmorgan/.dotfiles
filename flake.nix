@@ -29,8 +29,6 @@
         };
     in
     {
-      # Usage: home-manager switch --flake .#hamish
-      # Add new machines/users as needed
       # Usage: home-manager switch --flake .#shopify
       homeConfigurations = {
         "shopify" = mkHome { system = "aarch64-darwin"; username = "hamish"; };

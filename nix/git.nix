@@ -1,9 +1,8 @@
-{ config, lib, pkgs, ... }:
+{ ... }:
 
 {
   programs.git = {
     enable = true;
-    package = pkgs.git;
 
     # User info configured per-machine in ~/.gitconfig.local
     # (included via settings.include below)
@@ -228,33 +227,9 @@
     };
   };
 
-  # Commit message template — not supported by programs.git directly
-  xdg.configFile."git/message".text = ''
-    # Summary (imperative, 50 chars max)
-    #
-    # Why this change is needed
-    #
-    # Additional context or implementation notes
-    #
-    # Refs: #123
+  # Commit message template
+  xdg.configFile."git/message".source = ./git/message;
 
-    # Guidelines:
-    # - Use imperative mood: "add" not "added" or "adds"
-    # - Keep first line under 50 characters
-    # - Separate subject from body with blank line
-    # - Wrap body at 72 characters
-    # - Focus on why, not what (code shows what)
-    # - Reference issues/PRs: "fixes #123", "closes #456", or "(#123)"
-    # - Breaking changes: Explain impact in body
-    # - Co-authored-by: Name <email> (for pair programming)
-    # - AI commits: Use --author="Agent Name <agent@noreply.local>"
-    #
-    # Examples:
-    # Add disk space cleanup utility (#106)
-    # Fix health check validation after packages/ migration (#99)
-    # Remove backups/.gitkeep in favor of dynamic directory creation
-  '';
-
-  # Delta config — separate file, user opts in via .gitconfig.local
-  xdg.configFile."git/delta".source = ../packages/git/.config/git/delta;
+  # Delta config — user opts in via .gitconfig.local
+  xdg.configFile."git/delta".source = ./git/delta;
 }
