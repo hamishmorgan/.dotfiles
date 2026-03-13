@@ -11,25 +11,29 @@
 
   outputs = { nixpkgs, home-manager, ... }:
     let
-      # Support both macOS (aarch64-darwin) and Linux (x86_64-linux)
-      forAllSystems = nixpkgs.lib.genAttrs [
-        "aarch64-darwin"
-        "x86_64-linux"
-      ];
+      supportedSystems = [ "aarch64-darwin" "x86_64-linux" ];
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+
+      mkHome = { system, username }:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          isDarwin = pkgs.stdenv.isDarwin;
+        in
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          extraSpecialArgs = {
+            inherit username;
+            homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
+          };
+          modules = [ ./nix/home.nix ];
+        };
     in
     {
+      # Usage: home-manager switch --flake .#hamish
+      # Add new machines/users as needed
       homeConfigurations = {
-        # Work machine (macOS, Apple Silicon)
-        "hamish" = home-manager.lib.homeManagerConfiguration {
-          pkgs = nixpkgs.legacyPackages.aarch64-darwin;
-          extraSpecialArgs = {
-            username = "hamish";
-            homeDirectory = "/Users/hamish";
-          };
-          modules = [
-            ./nix/home.nix
-          ];
-        };
+        "hamish" = mkHome { system = "aarch64-darwin"; username = "hamish"; };
+        # "hamish@linux" = mkHome { system = "x86_64-linux"; username = "hamish"; };
       };
 
       # Allow `nix fmt`
