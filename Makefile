@@ -125,7 +125,11 @@ update-gitignore:
 
 # --- Dependency targets ------------------------------------------------------
 
-deps: deps-shellcheck deps-npx deps-bats deps-docker deps-podman deps-python3 deps-tmux deps-gh deps-jq
+deps: deps-hooks deps-shellcheck deps-npx deps-bats deps-docker deps-podman deps-python3 deps-tmux deps-gh deps-jq
+
+deps-hooks:
+	@git config core.hooksPath .githooks
+	@printf "✓ git hooks configured (.githooks)\n"
 
 deps-shellcheck:
 	@if command -v shellcheck >/dev/null 2>&1; then \
