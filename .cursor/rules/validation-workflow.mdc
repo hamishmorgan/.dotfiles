@@ -5,52 +5,12 @@ alwaysApply: true
 
 # Validation Workflow
 
-**CRITICAL: Always run linting before every commit. Do not commit files with linting errors.**
+**Run `make check` before every commit. Zero tolerance for linting errors.**
 
-Before committing changes, verify in this order:
+Pre-commit checklist:
 
-## 1. Linting passes (MANDATORY)
+1. `make check` — lint all modified files (shell + markdown)
+2. `make test-smoke` — smoke tests (30s)
+3. `make test` — full test suite if changes are non-trivial
 
-Run linting on all modified files before committing:
-
-```bash
-# Markdown files
-markdownlint "**/*.md"
-
-# Shell scripts
-shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh
-
-# Both together
-markdownlint "**/*.md" && shellcheck dot bash/.bashrc* bash/.bash_profile zsh/.zshrc* zsh/.zprofile tests/**/*.sh
-```
-
-**If linting fails, fix all errors before committing. Zero tolerance for linting errors.**
-
-## 2. Smoke tests pass (30 seconds)
-
-```bash
-./tests/smoke-test.sh
-```
-
-## 3. Full CI passes (2-3 minutes)
-
-```bash
-./tests/run-local-ci.sh
-```
-
-## Pre-commit checklist
-
-- [ ] Run linting on all modified files
-- [ ] Fix all linting errors (zero errors required)
-- [ ] Run smoke tests
-- [ ] Verify changes work as expected
-- [ ] Update AGENTS.md if new patterns are added (see update-instructions-workflow.mdc for details)
-
-## What gets validated
-
-- Symlinks point to dotfiles repository (not copies)
-- Required dependencies are installed
-- Backup functionality works correctly
-- Cross-platform compatibility (Ubuntu, Alpine, macOS)
-- Bash 3.2 compatibility
-- Package stowing completes without errors
+Fix all linting errors before committing. If adding new patterns, update AGENTS.md.
