@@ -299,8 +299,6 @@ See [tests/README.md](tests/README.md) for detailed testing documentation.
 
 **Monitoring:** `gh pr checks <PR>`, `gh run view --log-failed`
 
-
-
 ---
 
 ## Checks
@@ -498,6 +496,7 @@ When modifying commands, prefer using these helpers over duplicating logic.
 - **[README.md](README.md)** - User documentation
 - **[AGENTS.md](AGENTS.md)** - AI agent instructions
 - **[tests/README.md](tests/README.md)** - Testing framework
+
 ---
 
 ## Quick Reference

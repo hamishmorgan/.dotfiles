@@ -59,7 +59,7 @@ help:
 check: check-shell check-markdown check-make check-jsonc check-tmux
 
 check-shell: deps-shellcheck
-	shellcheck dot packages/bash/.bashrc* packages/bash/.bash_profile packages/zsh/.zshrc* packages/zsh/.zprofile tests/**/*.sh
+	shellcheck dot packages/bash/.bashrc packages/bash/.bash_profile packages/zsh/.config/zsh/.zshrc packages/zsh/.config/zsh/.zprofile tests/**/*.sh
 
 check-markdown: deps-npx
 	npx --yes markdownlint-cli@0.42.0 "**/*.md"
@@ -69,7 +69,7 @@ check-make:
 		(make -nB -f Makefile >/dev/null && printf "✓ make -n syntax check passed (checkmake not installed)\n")
 
 check-jsonc: deps-python3
-	./dev/check-jsonc
+	./dev/check-jsonc .vscode/settings.json
 
 # --- Test targets ------------------------------------------------------------
 

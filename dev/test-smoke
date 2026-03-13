@@ -60,7 +60,7 @@ fi
 
 # Test 4: Configuration files exist
 echo -n "Test 4: Configuration files exist... "
-if [[ -f "$DOTFILES_DIR/packages/git/.gitconfig" ]] && \
+if [[ -f "$DOTFILES_DIR/packages/git/.config/git/config" ]] && \
    [[ -f "$DOTFILES_DIR/packages/gh/.config/gh/config.yml" ]]; then
     echo -e "${GREEN}✓${NC}"
 else

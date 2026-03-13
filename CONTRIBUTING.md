@@ -128,8 +128,6 @@ gh pr create
 4. Verify test passes
 5. Commit test and fix together
 
-
-
 ## Code Standards
 
 **Bash:** 3.2 compatible, 2-space indent, explicit error handling, no `set -e`
@@ -201,8 +199,6 @@ The PR template includes an automatic checklist. Ensure all items are checked:
 4. **Iterate** - Address feedback, update PR
 5. **Merge** - After approval from all reviewers
 
-
-
 ## Documentation
 
 Update relevant files for changes:
@@ -223,4 +219,3 @@ Open issues for questions, bugs, or feature requests. Use GitHub Discussions for
 - [COMMANDS.md](COMMANDS.md) - Command reference
 - [AGENTS.md](AGENTS.md) - AI agent instructions
 - [tests/README.md](tests/README.md) - Testing framework
-
