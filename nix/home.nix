@@ -9,6 +9,8 @@
   programs.home-manager.enable = true;
 
   imports = [
+    ./bat.nix
     ./git.nix
+    ./ripgrep.nix
   ];
 }
