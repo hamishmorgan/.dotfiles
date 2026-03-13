@@ -20,8 +20,8 @@ Complete reference for all `./dot` commands.
 | `clean` | Clean old backups | `./dot clean` |
 | `security` | Security audit | `./dot security` |
 | `uninstall` | Remove all symlinks | `./dot uninstall` |
-| `sync` | Sync package to system | `./dot sync cursor` |
-| `pull` | Pull package from system | `./dot pull cursor` |
+| `sync` | Sync package to system | `./dot sync <package>` |
+| `pull` | Pull package from system | `./dot pull <package>` |
 
 ## Installation Commands
 
@@ -90,10 +90,10 @@ Disable (uninstall) a specific package.
 
 ### `./dot sync PACKAGE`
 
-Sync package files from dotfiles to system (for copy-sync packages like cursor).
+Sync package files from dotfiles to system (for copy-sync packages).
 
 ```bash
-./dot sync cursor
+./dot sync <package>
 ```
 
 **Use when:** After pulling dotfiles changes or modifying package files in repository.
@@ -103,9 +103,9 @@ Sync package files from dotfiles to system (for copy-sync packages like cursor).
 Pull package files from system back to dotfiles (for copy-sync packages).
 
 ```bash
-./dot pull cursor
-git add packages/cursor
-git commit -m "update cursor settings"
+./dot pull <package>
+git add packages/<package>
+git commit -m "update <package> settings"
 ```
 
 ## Status and Diagnostics

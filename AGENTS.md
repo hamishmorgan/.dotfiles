@@ -88,7 +88,6 @@ AI agent commits must use `--author` flag:
 
 ```bash
 git commit --author="Claude <claude@noreply.local>" -m "message"
-git commit --author="Cursor <cursor@noreply.local>" -m "message"
 ```
 
 ## File Organization
