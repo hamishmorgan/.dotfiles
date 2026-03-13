@@ -28,7 +28,6 @@ tt = "test --all-targets --all-features"
 # dev = "watch -x check"  # Requires cargo-watch: cargo install cargo-watch
 fmt-check = "fmt -- --check"
 lint = "clippy --all-targets --all-features -- -D warnings"
-outdated = "outdated --root-deps-only"
 tree = "tree --depth 3"
 
 [cargo-new]
