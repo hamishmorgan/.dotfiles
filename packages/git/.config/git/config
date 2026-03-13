@@ -52,13 +52,13 @@
 
 	# Push and pull
 	forcepush = push --force-with-lease
-	visual = !cursor
+	visual = !zed
 
 [core]
-	editor = cursor -w
-	excludesfile = ~/.gitignore-globals
-	attributesFile = ~/.gitattributes
-	commitTemplate = ~/.gitmessage
+	editor = zed --wait
+	excludesfile = ~/.config/git/ignore
+	attributesFile = ~/.config/git/attributes
+
 
 	# Line ending configuration
 	eol = native
@@ -173,11 +173,7 @@
 # GPG signing enabled, but method configured per-machine in ~/.gitconfig.local
 [commit]
 	gpgsign = true
-
-# Machine-specific configuration (not version-controlled)
-# Configure signing method here (1Password, Yubikey, etc.)
-[include]
-	path = ~/.gitconfig.local
+	template = ~/.config/git/message
 
 [credential "https://github.com"]
 	helper =
@@ -191,3 +187,8 @@
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
+
+# Machine-specific configuration (not version-controlled)
+# Configure signing method, user info, etc.
+[include]
+	path = ~/.gitconfig.local

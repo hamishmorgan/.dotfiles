@@ -128,7 +128,7 @@ gh pr create
 4. Verify test passes
 5. Commit test and fix together
 
-See [.cursor/rules/testing-workflow.mdc](.cursor/rules/testing-workflow.mdc) for detailed pattern and examples.
+
 
 ## Code Standards
 
@@ -201,7 +201,7 @@ The PR template includes an automatic checklist. Ensure all items are checked:
 4. **Iterate** - Address feedback, update PR
 5. **Merge** - After approval from all reviewers
 
-See [.cursor/rules/pull-request-workflow.mdc](.cursor/rules/pull-request-workflow.mdc) for detailed PR workflow.
+
 
 ## Documentation
 
@@ -223,4 +223,4 @@ Open issues for questions, bugs, or feature requests. Use GitHub Discussions for
 - [COMMANDS.md](COMMANDS.md) - Command reference
 - [AGENTS.md](AGENTS.md) - AI agent instructions
 - [tests/README.md](tests/README.md) - Testing framework
-- [.cursor/rules/](.cursor/rules/) - Workflow procedures
+

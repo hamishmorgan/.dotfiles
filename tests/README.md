@@ -245,7 +245,4 @@ cd ~/.dotfiles
 
 ## Reference
 
-For procedural testing workflow (when to write tests, TDD pattern, critical principles, running tests),
-see `.cursor/rules/testing-workflow.mdc`.
-
 For comprehensive testing framework documentation, see DEVELOPMENT.md Testing section.

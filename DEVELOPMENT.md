@@ -135,8 +135,7 @@ let g:ale_linters = {
 
 **Commits:** Use [conventional commits](https://www.conventionalcommits.org/) - `type(scope): description`
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution workflow and
-[.cursor/rules/pull-request-workflow.mdc](.cursor/rules/pull-request-workflow.mdc) for PR process.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution workflow.
 
 ---
 
@@ -254,8 +253,7 @@ See [tests/README.md](tests/README.md) for comprehensive testing documentation.
 ### Writing Tests
 
 **Pattern:** Write failing regression test before fixing bugs.
-See [tests/README.md](tests/README.md) and [.cursor/rules/testing-workflow.mdc](.cursor/rules/testing-workflow.mdc)
-for comprehensive testing documentation and TDD patterns.
+See [tests/README.md](tests/README.md) for comprehensive testing documentation and TDD patterns.
 
 ### Local CI Testing
 
@@ -301,7 +299,7 @@ See [tests/README.md](tests/README.md) for detailed testing documentation.
 
 **Monitoring:** `gh pr checks <PR>`, `gh run view --log-failed`
 
-See [.cursor/rules/ci-cd.mdc](.cursor/rules/ci-cd.mdc) for comprehensive CI documentation and optimization patterns.
+
 
 ---
 
@@ -500,8 +498,6 @@ When modifying commands, prefer using these helpers over duplicating logic.
 - **[README.md](README.md)** - User documentation
 - **[AGENTS.md](AGENTS.md)** - AI agent instructions
 - **[tests/README.md](tests/README.md)** - Testing framework
-- **[.cursor/rules/](.cursor/rules/)** - Workflow procedures
-
 ---
 
 ## Quick Reference

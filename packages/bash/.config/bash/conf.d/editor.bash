@@ -61,7 +61,7 @@ _process_matches_pattern() {
 
 # Walk up process tree to find editor (handles nested shells)
 # This is necessary because:
-# - Shells can be nested (e.g., bash inside tmux inside Cursor)
+# - Shells can be nested (e.g., bash inside tmux inside Zed)
 # - Only checking PPID misses editors that are further up the tree
 # - Simple PPID check fails in nested scenarios
 _find_editor_in_process_tree() {
@@ -101,26 +101,40 @@ _find_editor_in_process_tree() {
   return 1
 }
 
+# Known terminal emulators that are definitely not IDE integrated terminals
+_is_standalone_terminal() {
+  case "${TERM_PROGRAM:-}" in
+    WezTerm|iTerm.app|Apple_Terminal|Alacritty|kitty|Hyper|Ghostty)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
 # Check if editor is in process tree
 _is_editor_in_context() {
   local editor="$1"
   local pattern=""
 
   case "$editor" in
-    cursor)
-      # Check environment variables first
-      if [[ -n "${CURSOR_INJECTION:-}" ]] || [[ "${TERM_PROGRAM:-}" == "cursor" ]]; then
+    zed)
+      # Zed sets TERM_PROGRAM when running in its integrated terminal
+      if [[ "${TERM_PROGRAM:-}" == "zed" ]]; then
         return 0
       fi
-      pattern="cursor"
+      _is_standalone_terminal && return 1
+      pattern="zed"
       ;;
     code)
       if [[ -n "${VSCODE_INJECTION:-}" ]] || [[ "${TERM_PROGRAM:-}" == "vscode" ]]; then
         return 0
       fi
+      _is_standalone_terminal && return 1
       pattern="code"
       ;;
     nvim|vim)
+      # Skip process tree for nvim/vim in standalone terminals
+      _is_standalone_terminal && return 1
       pattern="$editor"
       ;;
     *)
@@ -128,7 +142,7 @@ _is_editor_in_context() {
       ;;
   esac
 
-  # Fallback: check process tree
+  # Fallback: check process tree (only for unknown terminal contexts)
   local editor_pid
   editor_pid=$(_find_editor_in_process_tree "$pattern" 10)
   [[ -n "$editor_pid" ]]
@@ -136,10 +150,10 @@ _is_editor_in_context() {
 
 # ━━━ Editor Detection ━━━
 
-# Detect which editor context we're running in (priority: cursor, code, nvim, vim)
+# Detect which editor context we're running in (priority: zed, code, nvim, vim)
 detect_editor() {
   local editor
-  for editor in cursor code nvim vim; do
+  for editor in zed code nvim vim; do
     if _is_editor_in_context "$editor"; then
       echo "$editor"
       return 0
@@ -152,7 +166,7 @@ detect_editor() {
 _is_editor_installed() {
   local editor="$1"
   case "$editor" in
-    cursor|code|nvim|vim|vi|nano)
+    zed|code|nvim|vim|vi|nano)
       command -v "$editor" &>/dev/null
       ;;
     *)
@@ -182,10 +196,7 @@ _resolve_context_editor_command() {
   fi
 
   case "$context" in
-    cursor|code)
-      # Note: --reuse-window flag doesn't work on Linux (Cursor bug)
-      # Even with the flag, Cursor creates new windows instead of reusing existing ones
-      # This is a known limitation of Cursor's Linux implementation
+    zed|code)
       echo "$context --wait"
       ;;
     *)
@@ -196,11 +207,9 @@ _resolve_context_editor_command() {
 
 # Find best visual editor (GUI preferred, then terminal)
 _find_best_visual_editor() {
-  if _is_editor_installed cursor; then
-    # Note: --reuse-window flag doesn't work on Linux (Cursor bug)
-    echo "cursor --wait"
+  if _is_editor_installed zed; then
+    echo "zed --wait"
   elif _is_editor_installed code; then
-    # VSCode typically handles workspace detection better on Linux
     echo "code --wait"
   else
     _find_terminal_editor
@@ -247,7 +256,7 @@ _set_editor_env() {
 
 # Set editors based on context detection
 # Always detect context and set appropriately, even if already set
-# Context can change (e.g., switching between terminal and Cursor's integrated terminal)
+# Context can change (e.g., switching between terminal and Zed's integrated terminal)
 # so we re-detect to ensure VISUAL/EDITOR match the current environment
 # Use _set_editor_env to handle all context detection and environment variable setting
 _set_editor_env
@@ -260,7 +269,7 @@ fi
 # ━━━ User Functions ━━━
 
 # Edit file with EDITOR
-# Handles EDITOR values that contain arguments (e.g., "cursor --wait")
+# Handles EDITOR values that contain arguments (e.g., "zed --wait")
 # Uses eval to properly handle paths with spaces and complex commands
 e() {
   local editor="${EDITOR:-}"
@@ -280,7 +289,7 @@ e() {
 
   # Use eval to properly handle EDITOR with arguments and paths containing spaces
   # This safely executes: editor_command editor_args user_args
-  # shellcheck disable=SC2294  # eval is necessary to handle EDITOR with arguments (e.g., "cursor --wait")
+  # shellcheck disable=SC2294  # eval is necessary to handle EDITOR with arguments (e.g., "zed --wait")
   eval "$editor" "$@"
 }
 

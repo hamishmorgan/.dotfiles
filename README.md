@@ -57,7 +57,7 @@ Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - Template-based secrets management
 - macOS and Linux support
 - Health check system for diagnostics and validation
-- Packages: system, git, bash, zsh, fish, tmux, gh, gnuplot, wezterm, bat, rust, ripgrep, cursor
+- Packages: system, git, bash, zsh, fish, tmux, gh, gnuplot, wezterm, bat, rust, ripgrep
 - CI/CD validation with GitHub Actions
 
 ## Compatibility
@@ -116,7 +116,6 @@ All configurations are organized as packages in the `packages/` directory:
 | **bat** | Bat syntax highlighter |
 | **rust** | Rust toolchain configuration |
 | **ripgrep** | Ripgrep configuration |
-| **cursor** | Cursor IDE (uses copy-sync) |
 
 Each package has:
 
@@ -321,9 +320,6 @@ Manage individual packages after installation:
 ./dot enable rust      # Enable a package
 ./dot disable fish     # Disable a package
 ```
-
-**Copy-sync packages:** The `cursor` package uses copy-sync instead of symlinks. Use `./dot sync cursor`
-to sync settings to Cursor and `./dot pull cursor` to pull changes back.
 
 See [COMMANDS.md](COMMANDS.md) for complete command documentation.
 

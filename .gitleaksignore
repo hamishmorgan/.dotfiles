@@ -1,0 +1,12 @@
+# oh-my-zsh vendored docs/examples (not real secrets)
+c5f379d34fec75e6abdcc0492ed9123a51a4c68a:zsh/.oh-my-zsh/plugins/dotenv/README.md:generic-api-key:20
+c5f379d34fec75e6abdcc0492ed9123a51a4c68a:zsh/.oh-my-zsh/plugins/dotenv/README.md:generic-api-key:21
+c5f379d34fec75e6abdcc0492ed9123a51a4c68a:zsh/.oh-my-zsh/plugins/dotenv/README.md:generic-api-key:29
+c5f379d34fec75e6abdcc0492ed9123a51a4c68a:zsh/.oh-my-zsh/plugins/dotenv/README.md:generic-api-key:30
+c5f379d34fec75e6abdcc0492ed9123a51a4c68a:zsh/.oh-my-zsh/plugins/genpass/genpass-monkey:generic-api-key:8
+c5f379d34fec75e6abdcc0492ed9123a51a4c68a:zsh/.oh-my-zsh/plugins/genpass/genpass-apple:generic-api-key:8
+c5f379d34fec75e6abdcc0492ed9123a51a4c68a:zsh/.oh-my-zsh/plugins/macos/spotify:generic-api-key:57
+
+# Revoked Homebrew GitHub API token (2017, long expired)
+fb1ea2e235f50b4ab6d0034226937878c8e3cbae:modules/zsh/.zshrc:generic-api-key:114
+410667eb353cc19c29a2148e5eb5ea78ff70eff6:modules/zsh/.zshrc:generic-api-key:114
