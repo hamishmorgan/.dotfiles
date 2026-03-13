@@ -11,20 +11,12 @@
   "files.associations": {
     "*.bats": "shellscript",
     "dot": "shellscript",
-    ".bashrc.linux": "shellscript",
-    ".bashrc.osx": "shellscript",
     ".bash_profile": "shellscript",
-    ".zshrc.linux": "shellscript",
-    ".zshrc.osx": "shellscript",
     ".zprofile": "shellscript",
     "*.fish": "fish",
     "config.linux.fish": "fish",
     "config.osx.fish": "fish",
-    ".gitconfig.template": "properties",
-    ".gitconfig.secret": "properties",
-    ".gitconfig*.example": "properties",
     "*.yml.template": "yaml",
-    "*.yml.secret": "yaml",
     "*.yml.example": "yaml",
     ".stow-*-ignore": "ignore",
     ".stowrc": "properties"
@@ -66,11 +58,7 @@
   "explorer.sortOrder": "type",
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.patterns": {
-    ".bashrc": ".bashrc.linux, .bashrc.osx, .bash_profile",
-    ".zshrc": ".zshrc.linux, .zshrc.osx, .zprofile",
-    "config.fish": "config.linux.fish, config.osx.fish, config_private.fish",
-    ".gitconfig.template": ".gitconfig.secret, .gitconfig.secret.example, .gitconfig.shopify.secret",
-    "*.yml.template": "*.yml.secret, *.yml.example"
+    "config.fish": "config.linux.fish, config.osx.fish"
   },
   "diffEditor.ignoreTrimWhitespace": false,
   "diffEditor.renderSideBySide": true,
@@ -86,20 +74,5 @@
   },
   "github-actions.workflows.pinned.workflows": [
     ".github/workflows/validate.yml"
-  ],
-  "workbench.editor.languageDetection": true,
-  "scm.defaultViewMode": "tree",
-  "git.confirmSync": false,
-  "git.enableSmartCommit": true,
-  "git.untrackedChanges": "separate",
-  // we try to make semantic highlighting look good
-  "editor.semanticHighlighting.enabled": true,
-  // prevent VSCode from modifying the terminal colors
-  "terminal.integrated.minimumContrastRatio": 1,
-  // make the window's titlebar use the workbench colors
-  "window.titleBarStyle": "custom",
-  // applicable if you use Go, this is an opt-in flag!
-  "gopls": {
-    "ui.semanticTokens": true
-  }
+  ]
 }
