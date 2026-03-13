@@ -25,3 +25,6 @@ end
 # ━━━ Machine-Specific Configuration ━━━
 # Machine-specific configuration (not version-controlled)
 # should be added to ~/.config/fish/conf.d/
+
+# tec agent (pre-included to prevent auto-append noise)
+test -x ~/.local/state/tec/profiles/base/current/global/init && ~/.local/state/tec/profiles/base/current/global/init fish | source
