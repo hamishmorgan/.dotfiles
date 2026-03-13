@@ -7,7 +7,7 @@ Git configuration with aliases, diff tools, and platform-specific settings.
 - `.gitconfig` - Main git configuration
 - `.gitattributes` - Git attributes for file handling
 - `.gitignore-globals` - Global gitignore patterns
-- `.gitconfig.delta` - Optional git-delta diff viewer configuration
+- `.config/git/delta` - Optional git-delta diff viewer configuration
 
 ## Features
 
@@ -81,7 +81,7 @@ For enhanced diff viewing, install [git-delta](https://github.com/dandavison/del
 
 ```gitconfig
 [include]
-    path = ~/.gitconfig.delta
+    path = ~/.config/git/delta
 ```
 
 ## Update

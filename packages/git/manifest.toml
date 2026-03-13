@@ -1,4 +1,4 @@
-files = [".config/git/config", ".gitattributes", ".gitignore-globals"]
+files = [".config/git/config", ".config/git/ignore", ".config/git/attributes", ".config/git/message", ".config/git/delta"]
 
 name = "Git"
 description = "Git configuration and aliases"
