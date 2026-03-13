@@ -186,3 +186,8 @@
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
+
+# Machine-specific configuration (not version-controlled)
+# Configure signing method, user info, etc.
+[include]
+	path = ~/.gitconfig.local

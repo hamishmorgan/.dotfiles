@@ -1,5 +1,0 @@
-# Thin shim — real config lives in ~/.config/git/config
-# Tools that auto-append to ~/.gitconfig won't pollute the real config.
-[include]
-	path = ~/.config/git/config
-	path = ~/.gitconfig.local
