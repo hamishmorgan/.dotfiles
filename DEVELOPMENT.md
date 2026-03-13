@@ -408,30 +408,19 @@ Manual changelog updates in release notes:
 ├── backups/              # Installation backups (git-ignored)
 ├── tmp/                  # Temporary files and proposals (git-ignored)
 │   └── *PROPOSAL*.md     # Development proposals (not committed)
-├── system/               # System-wide configs
-│   └── .stow-global-ignore
-├── git/                  # Git configuration package
-│   ├── .gitconfig.template
-│   ├── .gitconfig.secret.example
-│   ├── .gitconfig.secret      # git-ignored
-│   └── .stow-local-ignore
-├── zsh/                  # Zsh configuration package
-│   ├── .zshrc
-│   ├── .zprofile
-│   ├── .zshrc.osx
-│   ├── .zshrc.linux
-│   └── .stow-local-ignore
-├── tmux/                 # Tmux configuration package
+├── bash/                 # Bash shell configuration
+├── bat/                  # Bat syntax highlighter
+├── claude/               # Claude Code settings
+├── fish/                 # Fish shell configuration
 ├── gh/                   # GitHub CLI configuration
-│   └── .config/gh/
-│       ├── config.yml.template
-│       ├── config.yml.secret.example
-│       ├── config.yml.secret  # git-ignored
-│       └── .stow-local-ignore
+├── git/                  # Git configuration (XDG: ~/.config/git/)
 ├── gnuplot/              # Gnuplot configuration
-└── bash/                 # Bash configuration package
-    ├── .bashrc
-    └── .bash_profile
+├── ripgrep/              # Ripgrep configuration
+├── rust/                 # Rust toolchain configuration
+├── system/               # System-wide configs (.editorconfig, .inputrc, etc.)
+├── tmux/                 # Tmux configuration
+├── wezterm/              # WezTerm terminal emulator
+└── zsh/                  # Zsh shell configuration
 ```
 
 ### Key Components
