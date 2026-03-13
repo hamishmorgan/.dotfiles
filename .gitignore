@@ -13,3 +13,4 @@ tmp/
 .zprofile.local
 config_private.fish
 /.claude/settings.local.json
+result
