@@ -10,4 +10,4 @@ if ! command -v gitleaks >/dev/null 2>&1; then
   exit 0
 fi
 
-gitleaks git --pre-commit --verbose
+gitleaks git --verbose
