@@ -9,6 +9,7 @@ __cmdlog_start=""
 
 __cmdlog_hook() {
     local event="$1"
+    local last_exit=$?
     
     if [[ "$event" == "preexec" ]]; then
         # Ignore everything until shell is ready (first prompt shown)
@@ -22,7 +23,7 @@ __cmdlog_hook() {
         __cmdlog_captured=1
         
     elif [[ "$event" == "precmd" ]]; then
-        local exit_code=$?
+        local exit_code=$last_exit
         
         # First precmd = shell ready, start capturing from next cycle
         if [[ "$__cmdlog_ready" != "1" ]]; then
