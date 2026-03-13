@@ -204,7 +204,7 @@ cargo install git-delta # Other platforms
 
 # Enable in ~/.gitconfig.local
 echo '[include]
-    path = ~/.gitconfig.delta' >> ~/.gitconfig.local
+    path = ~/.config/git/delta' >> ~/.gitconfig.local
 ```
 
 See [packages/git/README.md](packages/git/README.md) for detailed git-delta configuration.

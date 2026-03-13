@@ -4,9 +4,12 @@ Git configuration with aliases, diff tools, and platform-specific settings.
 
 ## Files Managed
 
-- `.gitconfig` - Main git configuration
-- `.gitattributes` - Git attributes for file handling
-- `.gitignore-globals` - Global gitignore patterns
+All files live under `~/.config/git/` (XDG):
+
+- `.config/git/config` - Main git configuration
+- `.config/git/attributes` - Git attributes for file handling
+- `.config/git/ignore` - Global gitignore patterns
+- `.config/git/message` - Commit message template
 - `.config/git/delta` - Optional git-delta diff viewer configuration
 
 ## Features
@@ -95,5 +98,5 @@ Global gitignore patterns can be updated:
 Or manually:
 
 ```bash
-curl -sLw "\n" https://www.toptal.com/developers/gitignore/api/linux,osx,vscode,vim,jetbrains > ~/.gitignore-globals
+curl -sLw "\n" https://www.toptal.com/developers/gitignore/api/linux,osx,vscode,vim,jetbrains > ~/.config/git/ignore
 ```
