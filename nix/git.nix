@@ -190,7 +190,10 @@
         autostash = true;
       };
 
-      commit.gpgsign = true;
+      commit = {
+        gpgsign = true;
+        template = "~/.config/git/message";
+      };
 
       credential = {
         "https://github.com" = {
