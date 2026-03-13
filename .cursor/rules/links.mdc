@@ -1,8 +1,0 @@
----
-description: "Link formatting preference"
-alwaysApply: false
----
-
-# Links
-
-When presenting links, the link text should be the URL itself: `[https://example.com](https://example.com)`.
