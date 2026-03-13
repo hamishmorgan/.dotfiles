@@ -7,7 +7,20 @@
 [![GNU Stow](https://img.shields.io/badge/GNU-Stow-orange.svg)](https://www.gnu.org/software/stow/)
 [![Shell](https://img.shields.io/github/languages/top/hamishmorgan/.dotfiles)](https://github.com/hamishmorgan/.dotfiles)
 
-Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
+Dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/),
+migrating to [Home Manager](https://nix-community.github.io/home-manager/) (Nix).
+
+> **Migration in progress.** Git is now managed by Home Manager (`nix/git.nix`).
+> Everything else still uses stow via `./dot install`. The two systems coexist —
+> stow manages `packages/`, Home Manager manages `nix/`.
+>
+> ```bash
+> # Stow packages (most things)
+> ./dot install
+>
+> # Home Manager (git, and more over time)
+> home-manager switch --flake .#shopify
+> ```
 
 ## Table of Contents
 
