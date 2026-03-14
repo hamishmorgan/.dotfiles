@@ -82,7 +82,6 @@ in
       (readZsh "mise.zsh")
       (readZsh "rust.zsh")
       (readZsh "editor.zsh")
-      (readZsh "gi.zsh")
 
       # Platform (needs Nix interpolation)
       (lib.optionalString isDarwin ''
