@@ -32,7 +32,7 @@
       # Usage: home-manager switch --flake .#shopify
       homeConfigurations = {
         "shopify" = mkHome { system = "aarch64-darwin"; username = "hamish"; };
-        # "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; };
+        "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; };
       };
 
       # Allow `nix fmt`
