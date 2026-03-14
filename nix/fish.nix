@@ -249,7 +249,6 @@ in
       ${readFish "pager.fish"}
       ${readFish "fzf.fish"}
       ${readFish "direnv.fish"}
-      ${readFish "zoxide.fish"}
       ${readFish "mise.fish"}
       ${readFish "rust.fish"}
       ${readFish "uv.fish"}

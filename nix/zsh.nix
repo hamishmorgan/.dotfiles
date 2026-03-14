@@ -52,7 +52,6 @@ in
       (readZsh "fzf.zsh")
       (readZsh "pager.zsh")
       (readZsh "direnv.zsh")
-      (readZsh "zoxide.zsh")
       # Note: graphite (gt) only provides bash completions, no zsh support yet
       (readZsh "mise.zsh")
       (readZsh "rust.zsh")

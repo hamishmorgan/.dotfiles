@@ -29,6 +29,7 @@
     ./tmux.nix
     ./wezterm.nix
     ./zed.nix
+    ./zoxide.nix
     ./zsh.nix
   ];
 }
