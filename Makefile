@@ -6,7 +6,7 @@ MAKEFLAGS += --no-builtin-rules
 
 PROFILE ?= shopify
 
-.PHONY: help check check-shell check-markdown check-nix check-nix-lint build switch
+.PHONY: help check check-shell check-markdown check-nix check-nix-lint build switch news
 
 help:
 	@printf '\033[1;34mAvailable targets:\033[0m\n'
@@ -38,3 +38,6 @@ build:
 
 switch:
 	nix run home-manager -- switch --flake .#$(PROFILE)
+
+news:
+	nix run home-manager -- news --flake .#$(PROFILE)
