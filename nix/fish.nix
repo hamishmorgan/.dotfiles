@@ -77,12 +77,6 @@ in
       mkd = "mkdir -p";
       dotcd = "cd ~/.dotfiles";
 
-      # Eza tree
-      tree = "eza --tree";
-      l1 = "eza --tree --level=1";
-      l2 = "eza --tree --level=2";
-      l3 = "eza --tree --level=3";
-
       # Shopify dev (note: 'd' is a dotfiles function, use 'dev' directly)
       ds = "dev style";
       dt = "dev test";
@@ -102,101 +96,6 @@ in
 
     # Typed functions (each becomes ~/.config/fish/functions/NAME.fish)
     functions = {
-      # Eza wrappers
-      ls = {
-        wraps = "eza";
-        description = "List directory contents with eza";
-        body = ''
-          if command -q eza
-              eza --icons --group-directories-first $argv
-          else
-              command ls $argv
-          end
-        '';
-      };
-      ll = {
-        wraps = "eza";
-        description = "Long listing with git status";
-        body = ''
-          if command -q eza
-              eza --long --header --icons --group-directories-first --git $argv
-          else
-              command ls -alF $argv
-          end
-        '';
-      };
-      la = {
-        wraps = "eza";
-        description = "Long listing including hidden files";
-        body = ''
-          if command -q eza
-              eza --long --all --header --icons --group-directories-first --git $argv
-          else
-              command ls -A $argv
-          end
-        '';
-      };
-      lt = {
-        wraps = "eza";
-        description = "Tree view (2 levels)";
-        body = ''
-          if command -q eza
-              eza --tree --level=2 --icons $argv
-          else
-              echo "lt: requires eza" >&2
-              return 1
-          end
-        '';
-      };
-      lta = {
-        wraps = "eza";
-        description = "Tree view including hidden (2 levels)";
-        body = ''
-          if command -q eza
-              eza --tree --level=2 --all --icons $argv
-          else
-              echo "lta: requires eza" >&2
-              return 1
-          end
-        '';
-      };
-      lg = {
-        wraps = "eza";
-        description = "Git-aware listing";
-        body = ''
-          if command -q eza
-              eza --long --git --git-ignore --icons $argv
-          else
-              echo "lg: requires eza" >&2
-              return 1
-          end
-        '';
-      };
-      lm = {
-        wraps = "eza";
-        description = "Sort by modification time";
-        body = ''
-          if command -q eza
-              eza --long --sort=modified --reverse --icons $argv
-          else
-              echo "lm: requires eza" >&2
-              return 1
-          end
-        '';
-      };
-      lz = {
-        wraps = "eza";
-        description = "Sort by size";
-        body = ''
-          if command -q eza
-              eza --long --sort=size --reverse --icons $argv
-          else
-              echo "lz: requires eza" >&2
-              return 1
-          end
-        '';
-      };
-
       # Editor functions
       e = {
         description = "Edit file with EDITOR";

@@ -17,6 +17,7 @@
   imports = [
     ./bash.nix
     ./bat.nix
+    ./eza.nix
     ./claude.nix
     ./fish.nix
     ./gh.nix

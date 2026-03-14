@@ -49,7 +49,6 @@ in
 
       # Shell config (one file per tool, default order 1000)
       (readZsh "prompt.zsh")
-      (readZsh "eza.zsh")
       (readZsh "fzf.zsh")
       (readZsh "pager.zsh")
       (readZsh "direnv.zsh")
