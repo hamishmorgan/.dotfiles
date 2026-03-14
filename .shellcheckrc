@@ -1,3 +1,2 @@
 # Shellcheck configuration
 disable=SC1090  # Can't follow non-constant source
-disable=SC1091  # Not following external files
