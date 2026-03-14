@@ -62,14 +62,6 @@ make check-markdown    # markdownlint-cli2
 make check-nix         # nixpkgs-fmt
 ```
 
-## Machine-Specific Overrides
-
-Create `.local` files (git-ignored) for anything that varies per machine:
-
-- `~/.gitconfig.local` — work email, signing key
-- `~/.zshrc.local` / `~/.bashrc.local` — extra shell config
-- `~/.claude/settings.local.json` — API keys, enterprise proxy
-
 ## License
 
 MIT
