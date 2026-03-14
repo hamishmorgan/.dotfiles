@@ -1,3 +1,0 @@
-# shellcheck shell=bash
-# Direnv (directory environments)
-command -v direnv &>/dev/null && eval "$(direnv hook zsh)"

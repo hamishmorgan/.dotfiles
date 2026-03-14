@@ -36,7 +36,6 @@ in
       ${readBash "fzf.bash"}
       ${readBash "pager.bash"}
       ${readBash "editor.bash"}
-      ${readBash "direnv.bash"}
       ${readBash "graphite.bash"}
       ${readBash "rust.bash"}
       ${readBash "shopify.bash"}
