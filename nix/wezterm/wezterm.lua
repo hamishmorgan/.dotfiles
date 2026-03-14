@@ -1,3 +1,4 @@
+local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
 -- Font configuration with Nerd Font for icons
