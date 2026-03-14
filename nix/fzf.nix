@@ -4,10 +4,11 @@
   programs.fzf = {
     enable = true;
 
-    # Use fd for file/directory search (faster, respects .gitignore)
-    defaultCommand = "fd --type f --hidden --follow --exclude .git";
-    fileWidgetCommand = "fd --type f --hidden --follow --exclude .git";
-    changeDirWidgetCommand = "fd --type d --hidden --follow --exclude .git";
+    # Use fd for file/directory search (faster, respects .gitignore).
+    # fd's global config (fd.nix) already sets --hidden and ignores.
+    defaultCommand = "fd --type f --follow";
+    fileWidgetCommand = "fd --type f --follow";
+    changeDirWidgetCommand = "fd --type d --follow";
 
     defaultOptions = [
       "--height 40%"

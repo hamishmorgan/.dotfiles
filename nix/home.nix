@@ -10,10 +10,6 @@
     ];
   };
 
-  # Runtime dependencies used by other modules
-  programs.fd.enable = true; # fzf file/directory search (fzf.nix)
-  programs.jq.enable = true; # command logging JSON escaping (cmdlog)
-
   xdg.enable = true;
 
   programs.home-manager.enable = true;
@@ -25,10 +21,12 @@
     ./claude.nix
     ./direnv.nix
     ./eza.nix
+    ./fd.nix
     ./fish.nix
     ./fzf.nix
     ./gh.nix
     ./git.nix
+    ./jq.nix
     ./mise.nix
     ./ripgrep.nix
     ./rust.nix
