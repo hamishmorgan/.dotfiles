@@ -1,7 +1,9 @@
 # shellcheck shell=bash
 # Rust toolchain integration
+# shellcheck disable=SC1090
 [[ -f ~/.cargo/env ]] && source ~/.cargo/env
 if command -v rustup &>/dev/null; then
+    # shellcheck disable=SC1090
     source <(rustup completions zsh rustup 2>/dev/null)
     # cargo completions call _arguments at source time, so can't be eval'd.
     # Write to a user-writable fpath dir and let compinit pick it up on next load.

@@ -12,6 +12,7 @@ if command -v fzf &>/dev/null; then
         /opt/homebrew/opt/fzf/shell/key-bindings.zsh \
         /usr/local/opt/fzf/shell/key-bindings.zsh \
         ~/.fzf/shell/key-bindings.zsh; do
+        # shellcheck disable=SC1090
         [[ -f "$fzf_bindings" ]] && { source "$fzf_bindings" 2>/dev/null; break; }
     done
 fi
