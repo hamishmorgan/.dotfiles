@@ -1,6 +1,0 @@
-files = [".config/bat/config"]
-
-name = "Bat"
-description = "Bat syntax highlighter"
-method = "stow"
-target = "~"

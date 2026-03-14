@@ -1,9 +1,0 @@
-# shellcheck shell=bash
-# Machine-specific zsh configuration
-# Copy to ~/.zshrc.local and customize
-
-# Example: Machine-specific aliases
-# alias custom='echo "custom alias"'
-
-# Example: Machine-specific environment variables
-# export CUSTOM_VAR="value"
