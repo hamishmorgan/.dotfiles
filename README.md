@@ -62,21 +62,12 @@ make check-markdown    # markdownlint-cli2
 make check-nix         # nixpkgs-fmt
 ```
 
-## Design Decisions
+## Machine-Specific Overrides
 
-- **One file per tool** for shell configs (`nix/zsh/editor.zsh`, `nix/fish/fzf.fish`, etc.)
-- **Shared aliases** between bash and zsh via `aliases.nix`; fish uses abbreviations instead
-- **Platform conditionals** via `isDarwin` at Nix build time, not runtime `uname` checks
-- **Machine-specific overrides** via `.local` files (`~/.zshrc.local`, `~/.bashrc.local`, etc.)
-- **Named configs by role** (`homeConfigurations.shopify`), not by username
-
-## Machine-Specific Files
-
-These are git-ignored and never committed:
+Create `.local` files (git-ignored) for anything that varies per machine:
 
 - `~/.gitconfig.local` — work email, signing key
-- `~/.zshrc.local` / `~/.bashrc.local` — machine-specific shell config
-- `~/.zprofile.local` / `~/.bash_profile.local` — machine-specific login config
+- `~/.zshrc.local` / `~/.bashrc.local` — extra shell config
 - `~/.claude/settings.local.json` — API keys, enterprise proxy
 
 ## License
