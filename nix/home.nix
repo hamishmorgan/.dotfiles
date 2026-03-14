@@ -25,6 +25,7 @@
     ./fzf.nix
     ./gh.nix
     ./git.nix
+    ./mise.nix
     ./ripgrep.nix
     ./rust.nix
     ./system.nix

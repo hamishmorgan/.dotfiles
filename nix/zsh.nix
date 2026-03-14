@@ -49,7 +49,6 @@ in
       (readZsh "prompt.zsh")
       (readZsh "pager.zsh")
       # Note: graphite (gt) only provides bash completions, no zsh support yet
-      (readZsh "mise.zsh")
       (readZsh "rust.zsh")
       (readZsh "editor.zsh")
 
