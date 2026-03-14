@@ -17,14 +17,13 @@
   imports = [
     ./bash.nix
     ./bat.nix
-    ./eza.nix
-    ./fzf.nix
     ./claude.nix
     ./direnv.nix
+    ./eza.nix
     ./fish.nix
+    ./fzf.nix
     ./gh.nix
     ./git.nix
-
     ./ripgrep.nix
     ./rust.nix
     ./system.nix
