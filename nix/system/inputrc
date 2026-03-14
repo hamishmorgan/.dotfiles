@@ -1,0 +1,55 @@
+# Readline configuration
+# Affects bash, Python REPL, MySQL client, and other readline-enabled programs
+# See: man 3 readline
+
+# Use Emacs-style key bindings (default)
+# To use Vi mode instead: set editing-mode vi
+set editing-mode emacs
+
+# Case-insensitive tab completion
+set completion-ignore-case on
+
+# Treat hyphens and underscores as equivalent for completion
+set completion-map-case on
+
+# Show all completions immediately if ambiguous
+set show-all-if-ambiguous on
+
+# Show common prefix of completions in color
+set colored-completion-prefix on
+
+# Color file type indicators in completion list
+set colored-stats on
+
+# Append slash to symlinked directories
+set mark-symlinked-directories on
+
+# Show file type indicators (*/=>@|) in completions
+set visible-stats on
+
+# Immediately show completions without bell
+set bell-style none
+
+# Pagination prompt for long completion lists
+set page-completions on
+
+# Number of completions to show before asking
+set completion-query-items 200
+
+# Allow UTF-8 input and output
+set input-meta on
+set output-meta on
+set convert-meta off
+
+# Word navigation with Ctrl+arrow keys
+"\e[1;5C": forward-word
+"\e[1;5D": backward-word
+
+# Delete word with Ctrl+Backspace and Ctrl+Delete
+"\e[3;5~": kill-word
+"\C-H": backward-kill-word
+
+# History search with arrow keys
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+

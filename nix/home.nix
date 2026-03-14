@@ -22,6 +22,7 @@
 
     ./ripgrep.nix
     ./rust.nix
+    ./system.nix
     ./tmux.nix
     ./zed.nix
     ./zsh.nix
