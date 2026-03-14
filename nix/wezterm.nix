@@ -1,8 +1,6 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
-  programs.wezterm = {
-    enable = true;
-    extraConfig = builtins.readFile ./wezterm/wezterm.lua;
-  };
+  home.packages = [ pkgs.wezterm ];
+  home.file.".wezterm.lua".source = ./wezterm/wezterm.lua;
 }
