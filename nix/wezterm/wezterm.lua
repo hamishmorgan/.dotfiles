@@ -1,9 +1,13 @@
 local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
--- Font configuration with Nerd Font for icons
+-- Font configuration
 -- config.font = wezterm.font 'JetBrainsMono Nerd Font'
-config.font_size = 10.0
+if wezterm.target_triple:find('darwin') then
+  config.font_size = 14.0
+else
+  config.font_size = 10.0
+end
 
 -- Color scheme
 -- Try these built-in themes: 'Afterglow', 'BatDark', 'Blazer', 'Builtin Dark'
