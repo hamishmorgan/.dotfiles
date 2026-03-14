@@ -1,16 +1,12 @@
-# Backup directories
-backups/
+# Nix build output
+result
 
-# Temporary files and proposals (not committed to git)
+# Machine-specific overrides (not committed)
+*.local
+.claude/settings.local.json
+
+# Temporary files
 tmp/
 
-# Machine-specific configuration files (contain sensitive/private information)
-*.local
-.gitconfig.local
-.bashrc.local
-.zshrc.local
-.bash_profile.local
-.zprofile.local
-config_private.fish
-/.claude/settings.local.json
-result
+# Old stow backups
+backups/

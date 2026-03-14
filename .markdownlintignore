@@ -1,12 +1,2 @@
-# Markdownlint ignore patterns
-# Submodules and external dependencies
-packages/zsh/.oh-my-zsh/
-
-# Node modules
 node_modules/
-
-# Backups directory (contains old files from previous installations)
-backups/
-
-# Temporary files and proposals
 tmp/
