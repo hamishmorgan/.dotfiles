@@ -4,7 +4,6 @@
   "..." = "cd ../..";
   "...." = "cd ../../..";
   c = "clear";
-  dot = "~/.dotfiles/dot";
 
   # Git
   g = "git";
