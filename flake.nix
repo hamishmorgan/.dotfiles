@@ -35,6 +35,33 @@
         "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; };
       };
 
+      # nix develop
+      devShells = forAllSystems (system:
+        let pkgs = nixpkgs.legacyPackages.${system}; in {
+          default = pkgs.mkShell {
+            packages = with pkgs; [
+              # Linting
+              shellcheck
+              markdownlint-cli
+
+              # Testing
+              bats
+
+              # Security
+              gitleaks
+
+              # Validation
+              python3
+
+              # Dotfiles management (legacy)
+              stow
+
+              # Formatting
+              nixpkgs-fmt
+            ];
+          };
+        });
+
       # Allow `nix fmt`
       formatter = forAllSystems
         (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
