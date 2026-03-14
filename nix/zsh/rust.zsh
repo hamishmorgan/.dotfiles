@@ -11,6 +11,9 @@ if command -v rustup &>/dev/null; then
     [[ -d "$_cargo_comp_dir" ]] || mkdir -p "$_cargo_comp_dir"
     # shellcheck disable=SC2206 # zsh array assignment, not bash
     fpath=("$_cargo_comp_dir" $fpath)
-    rustup completions zsh cargo > "$_cargo_comp_dir/_cargo" 2>/dev/null
+    # Only regenerate if missing (cached across shell startups)
+    if [[ ! -f "$_cargo_comp_dir/_cargo" ]]; then
+        rustup completions zsh cargo > "$_cargo_comp_dir/_cargo" 2>/dev/null
+    fi
     unset _cargo_comp_dir
 fi

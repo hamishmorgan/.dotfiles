@@ -191,6 +191,7 @@ in
                   --delimiter ':' \
                   --preview 'bat --color=always {1} --highlight-line {2}' \
                   --preview-window 'up,60%,border-bottom,+{2}+3/3,~3')
+          or return
           if test -n "$result"
               set -l file (echo $result | cut -d: -f1)
               set -l line (echo $result | cut -d: -f2)

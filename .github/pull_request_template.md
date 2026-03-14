@@ -16,10 +16,8 @@
 
 ## Documentation
 
-- [ ] **AGENTS.md updated** (if applicable - see [Update Instructions](../AGENTS.md#update-instructions))
+- [ ] **AGENTS.md updated** (if applicable)
   - New patterns or best practices documented
-  - Performance data included
-  - Issue/PR referenced
 
 ## Checklist
 

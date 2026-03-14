@@ -21,7 +21,7 @@ jobs:
       - name: Lint (shellcheck + markdownlint + nixpkgs-fmt)
         run: nix develop -c make check
 
-      - name: Evaluate Home Manager configs
+      - name: Build Home Manager configs
         run: |
-          nix eval .#homeConfigurations.shopify.activationPackage
-          nix eval .#homeConfigurations.personal.activationPackage
+          nix build .#homeConfigurations.shopify.activationPackage --no-link
+          nix build .#homeConfigurations.personal.activationPackage --no-link
