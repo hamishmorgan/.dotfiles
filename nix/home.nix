@@ -25,6 +25,7 @@
     ./rust.nix
     ./system.nix
     ./tmux.nix
+    ./wezterm.nix
     ./zed.nix
     ./zsh.nix
   ];
