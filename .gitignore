@@ -1,6 +1,9 @@
 # Nix build output
 result
 
+# nix-direnv cached environment
+.direnv/
+
 # Machine-specific overrides (not committed)
 *.local
 .claude/settings.local.json

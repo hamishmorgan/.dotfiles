@@ -21,7 +21,7 @@ check-shell:
 	shellcheck nix/bash/*.bash nix/zsh/*.zsh
 
 check-markdown:
-	markdownlint-cli2 "**/*.md"
+	markdownlint-cli2 "*.md" "nix/**/*.md" ".github/**/*.md"
 
 check-nix:
 	nixpkgs-fmt --check nix/*.nix flake.nix
