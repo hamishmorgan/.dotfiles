@@ -18,6 +18,7 @@
     ./bash.nix
     ./bat.nix
     ./eza.nix
+    ./fzf.nix
     ./claude.nix
     ./direnv.nix
     ./fish.nix

@@ -33,7 +33,6 @@ in
 
     initExtra = ''
       ${readBash "prompt.bash"}
-      ${readBash "fzf.bash"}
       ${readBash "pager.bash"}
       ${readBash "editor.bash"}
       ${readBash "graphite.bash"}

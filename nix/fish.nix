@@ -247,7 +247,6 @@ in
       ${readFish "theme.fish"}
       ${readFish "editor.fish"}
       ${readFish "pager.fish"}
-      ${readFish "fzf.fish"}
       ${readFish "mise.fish"}
       ${readFish "rust.fish"}
       ${readFish "uv.fish"}
