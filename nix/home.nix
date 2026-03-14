@@ -15,6 +15,7 @@
   programs.home-manager.enable = true;
 
   imports = [
+    ./bash.nix
     ./bat.nix
     ./gh.nix
     ./git.nix
