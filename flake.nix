@@ -17,7 +17,7 @@
       mkHome = { system, username }:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-          isDarwin = pkgs.stdenv.isDarwin;
+          inherit (pkgs.stdenv) isDarwin;
         in
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
@@ -53,7 +53,8 @@
               # Utilities
               python3
 
-              # Formatting
+              # Nix linting + formatting
+              statix
               nixpkgs-fmt
             ];
           };

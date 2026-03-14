@@ -1,7 +1,7 @@
 # Shared shell aliases — applied to all enabled shells (bash, zsh, fish).
 # Fish also has a richer abbreviation superset in fish.nix;
 # abbreviations expand inline and take precedence when typing.
-{ ... }:
+_:
 
 {
   home.shellAliases = {

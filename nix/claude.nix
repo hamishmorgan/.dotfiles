@@ -1,4 +1,4 @@
-{ ... }:
+_:
 
 {
   # Claude Code config — only manage the two config files.

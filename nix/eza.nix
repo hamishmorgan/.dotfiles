@@ -1,4 +1,4 @@
-{ ... }:
+_:
 
 let
   # Extra aliases beyond what programs.eza provides (ls, ll, la, lt, lla).
@@ -12,30 +12,32 @@ let
   };
 in
 {
-  programs.eza = {
-    enable = true;
-    icons = "auto";
-    git = true;
-    extraOptions = [
-      "--group-directories-first"
-      "--header"
-    ];
-  };
+  programs = {
+    eza = {
+      enable = true;
+      icons = "auto";
+      git = true;
+      extraOptions = [
+        "--group-directories-first"
+        "--header"
+      ];
+    };
 
-  programs.bash.shellAliases = extraAliases // {
-    tree = "eza --tree";
-  };
+    bash.shellAliases = extraAliases // {
+      tree = "eza --tree";
+    };
 
-  programs.zsh.shellAliases = extraAliases // {
-    tree = "eza --tree";
-  };
+    zsh.shellAliases = extraAliases // {
+      tree = "eza --tree";
+    };
 
-  # Fish gets tree/l1-l3 as abbreviations (expand inline, visible before executing)
-  programs.fish.shellAliases = extraAliases;
-  programs.fish.shellAbbrs = {
-    tree = "eza --tree";
-    l1 = "eza --tree --level=1";
-    l2 = "eza --tree --level=2";
-    l3 = "eza --tree --level=3";
+    # Fish gets tree/l1-l3 as abbreviations (expand inline, visible before executing)
+    fish.shellAliases = extraAliases;
+    fish.shellAbbrs = {
+      tree = "eza --tree";
+      l1 = "eza --tree --level=1";
+      l2 = "eza --tree --level=2";
+      l3 = "eza --tree --level=3";
+    };
   };
 }

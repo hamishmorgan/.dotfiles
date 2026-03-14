@@ -64,6 +64,7 @@ make check
 make check-shell       # shellcheck
 make check-markdown    # markdownlint-cli2
 make check-nix         # nixpkgs-fmt
+make check-nix-lint    # statix
 ```
 
 ## License
