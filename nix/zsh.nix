@@ -20,12 +20,10 @@ in
       "PROMPT_SUBST"
     ];
 
-    # History
+    # History (path defaults to dotDir/.zsh_history)
     history = {
-      path = "${config.home.homeDirectory}/.zsh_history";
       size = 10000;
       save = 10000;
-      append = true;
       share = true;
       ignoreDups = true;
       findNoDups = true;
@@ -83,11 +81,6 @@ in
       (readZsh "rust.zsh")
       (readZsh "editor.zsh")
 
-      # Platform (needs Nix interpolation)
-      (lib.optionalString isDarwin ''
-        [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
-      '')
-
       # Shopify
       (readZsh "shopify.zsh")
 
@@ -107,6 +100,9 @@ in
 
     # Login shell (.zprofile)
     profileExtra = ''
+      ${lib.optionalString isDarwin ''
+        [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+      ''}
       # Machine-specific
       [ -f ~/.zprofile.local ] && source ~/.zprofile.local
     '';
