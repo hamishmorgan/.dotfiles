@@ -53,9 +53,6 @@
               # Validation
               python3
 
-              # Dotfiles management (legacy)
-              stow
-
               # Formatting
               nixpkgs-fmt
             ];
