@@ -7,8 +7,8 @@ in
   programs.fish = {
     enable = true;
 
-    shellAliases = import ./aliases.nix;
-
+    # Fish uses abbreviations instead of aliases (expand inline, visible before executing)
+    # Don't import shared aliases — they'd shadow the abbreviations
     shellAbbrs = {
       # Git (richer set than aliases — fish abbreviations expand inline)
       g = "git";
@@ -100,9 +100,7 @@ in
       dkrm = "docker rm";
       dkrmi = "docker rmi";
 
-      # Process management
-      ps = "procs";
-      top = "btop";
+
     };
 
     # Typed functions (each becomes ~/.config/fish/functions/NAME.fish)
@@ -342,9 +340,10 @@ in
         onEvent = "fish_postexec";
         description = "Log every command for DX analysis";
         body = ''
+          set -l exit_code $status
           set -l ts (date -u +"%Y-%m-%dT%H:%M:%SZ")
           set -l cmd_escaped (printf '%s' $argv[1] | jq -Rs .)
-          echo "{\"ts\":\"$ts\",\"exit\":$status,\"ms\":$CMD_DURATION,\"cwd\":\"$PWD\",\"sid\":$fish_pid,\"cmd\":$cmd_escaped}" >> ~/.cmdlog.jsonl
+          echo "{\"ts\":\"$ts\",\"exit\":$exit_code,\"ms\":$CMD_DURATION,\"cwd\":\"$PWD\",\"sid\":$fish_pid,\"cmd\":$cmd_escaped}" >> ~/.cmdlog.jsonl
         '';
       };
 
@@ -358,18 +357,21 @@ in
     # Nix environment (runs for all shells, before interactive init)
     shellInit = readFish "nix-env.fish";
 
-    loginShellInit = ''
-      ${lib.optionalString isDarwin ''
-        if test -x /opt/homebrew/bin/brew
-            eval (/opt/homebrew/bin/brew shellenv)
-        else if test -x /usr/local/bin/brew
-            eval (/usr/local/bin/brew shellenv)
-        end
-      ''}
+    loginShellInit = lib.optionalString isDarwin ''
+      if test -x /opt/homebrew/bin/brew
+          eval (/opt/homebrew/bin/brew shellenv)
+      else if test -x /usr/local/bin/brew
+          eval (/usr/local/bin/brew shellenv)
+      end
     '';
 
     interactiveShellInit = ''
       set -g fish_greeting
+
+      # Process management (conditional on tool availability)
+      command -q procs; and abbr -a ps procs
+      command -q btop; and abbr -a top btop
+      or command -q htop; and abbr -a top htop
 
       ${readFish "theme.fish"}
       ${readFish "editor.fish"}
