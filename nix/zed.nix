@@ -1,7 +1,7 @@
 { pkgs, lib, isDarwin, ... }:
 
 {
-  home.packages = lib.optionals isDarwin [ pkgs.nixd ];
+  home.packages = lib.optionals isDarwin [ pkgs.nixd pkgs.nil ];
 
   programs.zed-editor = {
     enable = isDarwin;
@@ -119,6 +119,7 @@
 
       # Language servers
       lsp.nixd.binary.path = "${pkgs.nixd}/bin/nixd";
+      lsp.nil.binary.path = "${pkgs.nil}/bin/nil";
 
       # Language-specific
       languages = {
