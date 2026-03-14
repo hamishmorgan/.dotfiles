@@ -1,6 +1,8 @@
-{ lib, isDarwin, ... }:
+{ pkgs, lib, isDarwin, ... }:
 
 {
+  home.packages = lib.optionals isDarwin [ pkgs.nixd ];
+
   programs.zed-editor = {
     enable = isDarwin;
     mutableUserSettings = true;
@@ -114,6 +116,9 @@
         light = "One Light";
         dark = "Catppuccin Mocha";
       };
+
+      # Language servers
+      lsp.nixd.binary.path = "${pkgs.nixd}/bin/nixd";
 
       # Language-specific
       languages = {
