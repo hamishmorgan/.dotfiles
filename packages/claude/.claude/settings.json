@@ -100,5 +100,6 @@
   "alwaysThinkingEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "autoUpdaterStatus": "enabled",
-  "hasCompletedOnboarding": true
+  "hasCompletedOnboarding": true,
+  "skipDangerousModePermissionPrompt": true
 }
