@@ -1,3 +1,6 @@
+# Historical false positives (files removed during Nix migration, but
+# gitleaks scans full git history so these suppressions are still needed)
+
 # oh-my-zsh vendored docs/examples (not real secrets)
 c5f379d34fec75e6abdcc0492ed9123a51a4c68a:zsh/.oh-my-zsh/plugins/dotenv/README.md:generic-api-key:20
 c5f379d34fec75e6abdcc0492ed9123a51a4c68a:zsh/.oh-my-zsh/plugins/dotenv/README.md:generic-api-key:21

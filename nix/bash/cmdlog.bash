@@ -1,57 +1,40 @@
 # Log every command for DX analysis
 # Format matches fish/zsh in ~/.cmdlog.jsonl
-
-__cmdlog_ready=0
-__cmdlog_captured=0
-__cmdlog_cmd=""
-__cmdlog_start=""
-
-__cmdlog_hook() {
-    local event="$1"
-    local last_exit=$?
-
-    if [[ "$event" == "preexec" ]]; then
-        [[ "$__cmdlog_ready" != "1" ]] && return
-        [[ "$__cmdlog_captured" == "1" ]] && return
-        __cmdlog_cmd="$BASH_COMMAND"
-        __cmdlog_start=${EPOCHREALTIME:-$SECONDS}
-        __cmdlog_captured=1
-
-    elif [[ "$event" == "precmd" ]]; then
-        local exit_code=$last_exit
-
-        if [[ "$__cmdlog_ready" != "1" ]]; then
-            __cmdlog_ready=1
-            __cmdlog_captured=0
-            return
-        fi
-
-        if [[ "$__cmdlog_captured" == "1" && -n "$__cmdlog_cmd" && -n "$__cmdlog_start" ]]; then
-            local ts end duration_ms cmd_escaped
-            ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-            end=${EPOCHREALTIME:-$SECONDS}
-            if [[ -n "$EPOCHREALTIME" ]]; then
-                duration_ms=$(awk "BEGIN {printf \"%.0f\", ($end - $__cmdlog_start) * 1000}")
-            else
-                duration_ms=$(( (end - __cmdlog_start) * 1000 ))
-            fi
-            cmd_escaped=$(printf '%s' "$__cmdlog_cmd" | jq -Rs .)
-            echo "{\"ts\":\"$ts\",\"exit\":$exit_code,\"ms\":$duration_ms,\"cwd\":\"$PWD\",\"sid\":$$,\"cmd\":$cmd_escaped}" >> ~/.cmdlog.jsonl
-        fi
-
-        __cmdlog_captured=0
-        __cmdlog_cmd=""
-        __cmdlog_start=""
-    fi
-}
-
-__cmdlog_exit() {
-    [[ "$__cmdlog_captured" == "1" ]] && __cmdlog_hook precmd
-}
+#
+# Uses DEBUG trap for preexec (capture command + start time) and
+# PROMPT_COMMAND for precmd (log result after execution).
 
 if [[ $- == *i* ]]; then
-    if [[ -n "${__hookbook_functions+x}" ]]; then
-        __hookbook_functions+=("__cmdlog_hook")
-    fi
-    trap '__cmdlog_exit' EXIT
+    __cmdlog_cmd=""
+    __cmdlog_start=""
+
+    __cmdlog_preexec() {
+        # Only capture the first command in a pipeline/compound
+        [[ -n "$__cmdlog_cmd" ]] && return
+        __cmdlog_cmd="$BASH_COMMAND"
+        __cmdlog_start=${EPOCHREALTIME:-$SECONDS}
+    }
+
+    __cmdlog_precmd() {
+        local exit_code=$?
+        [[ -z "$__cmdlog_cmd" ]] && return
+
+        local ts end duration_ms cmd_escaped cwd_escaped
+        ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        end=${EPOCHREALTIME:-$SECONDS}
+        if [[ -n "$EPOCHREALTIME" ]]; then
+            duration_ms=$(awk "BEGIN {printf \"%.0f\", ($end - $__cmdlog_start) * 1000}")
+        else
+            duration_ms=$(( (end - __cmdlog_start) * 1000 ))
+        fi
+        cmd_escaped=$(printf '%s' "$__cmdlog_cmd" | jq -Rs .)
+        cwd_escaped=$(printf '%s' "$PWD" | jq -Rs .)
+        echo "{\"ts\":\"$ts\",\"exit\":$exit_code,\"ms\":$duration_ms,\"cwd\":$cwd_escaped,\"sid\":$$,\"cmd\":$cmd_escaped}" >> ~/.cmdlog.jsonl
+
+        __cmdlog_cmd=""
+        __cmdlog_start=""
+    }
+
+    trap '__cmdlog_preexec' DEBUG
+    PROMPT_COMMAND="__cmdlog_precmd${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 fi

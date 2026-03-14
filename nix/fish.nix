@@ -213,7 +213,8 @@ in
           set -l exit_code $status
           set -l ts (date -u +"%Y-%m-%dT%H:%M:%SZ")
           set -l cmd_escaped (printf '%s' $argv[1] | jq -Rs .)
-          echo "{\"ts\":\"$ts\",\"exit\":$exit_code,\"ms\":$CMD_DURATION,\"cwd\":\"$PWD\",\"sid\":$fish_pid,\"cmd\":$cmd_escaped}" >> ~/.cmdlog.jsonl
+          set -l cwd_escaped (printf '%s' $PWD | jq -Rs .)
+          echo "{\"ts\":\"$ts\",\"exit\":$exit_code,\"ms\":$CMD_DURATION,\"cwd\":$cwd_escaped,\"sid\":$fish_pid,\"cmd\":$cmd_escaped}" >> ~/.cmdlog.jsonl
         '';
       };
 

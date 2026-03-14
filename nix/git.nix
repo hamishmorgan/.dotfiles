@@ -1,4 +1,4 @@
-{ ... }:
+{ isDarwin, lib, ... }:
 
 {
   programs.git = {
@@ -121,11 +121,12 @@
 
         # Push and pull
         forcepush = "push --force-with-lease";
-        visual = "!zed";
       };
 
       core = {
-        editor = "zed --wait";
+        # Shell scripts (editor.{bash,zsh,fish}) set $GIT_EDITOR dynamically
+        # based on terminal context; this is the fallback for non-interactive use.
+        editor = if isDarwin then "zed --wait" else "vim";
         eol = "native";
         autocrlf = "input";
         safecrlf = true;
@@ -190,7 +191,7 @@
       };
 
       commit = {
-        gpgsign = true;
+        # gpgsign = true;
         template = "~/.config/git/message";
       };
 
@@ -210,14 +211,38 @@
       };
 
       # Textconv for binary diffs
-      "diff \"zip\"" = { textconv = "unzip -p"; binary = true; };
-      "diff \"gz\"" = { textconv = "sh -c 'command -v gzcat >/dev/null 2>&1 && gzcat \"$@\" || cat' sh"; binary = true; };
-      "diff \"bz2\"" = { textconv = "sh -c 'command -v bzcat >/dev/null 2>&1 && bzcat \"$@\" || cat' sh"; binary = true; };
-      "diff \"xz\"" = { textconv = "sh -c 'command -v xzcat >/dev/null 2>&1 && xzcat \"$@\" || cat' sh"; binary = true; };
-      "diff \"tar\"" = { textconv = "tar -O -xf"; binary = true; };
-      "diff \"tar-bz2\"" = { textconv = "sh -c 'command -v bzcat >/dev/null 2>&1 && tar -O -xjf \"$@\" || cat' sh"; binary = true; };
-      "diff \"tar-gz\"" = { textconv = "tar -O -xzf"; binary = true; };
-      "diff \"tar-xz\"" = { textconv = "sh -c 'command -v xzcat >/dev/null 2>&1 && tar -O -xJf \"$@\" || cat' sh"; binary = true; };
+      "diff \"zip\"" = {
+        textconv = "unzip -p";
+        binary = true;
+      };
+      "diff \"gz\"" = {
+        textconv = "sh -c 'command -v gzcat >/dev/null 2>&1 && gzcat \"$@\" || cat' sh";
+        binary = true;
+      };
+      "diff \"bz2\"" = {
+        textconv = "sh -c 'command -v bzcat >/dev/null 2>&1 && bzcat \"$@\" || cat' sh";
+        binary = true;
+      };
+      "diff \"xz\"" = {
+        textconv = "sh -c 'command -v xzcat >/dev/null 2>&1 && xzcat \"$@\" || cat' sh";
+        binary = true;
+      };
+      "diff \"tar\"" = {
+        textconv = "tar -O -xf";
+        binary = true;
+      };
+      "diff \"tar-bz2\"" = {
+        textconv = "sh -c 'command -v bzcat >/dev/null 2>&1 && tar -O -xjf \"$@\" || cat' sh";
+        binary = true;
+      };
+      "diff \"tar-gz\"" = {
+        textconv = "tar -O -xzf";
+        binary = true;
+      };
+      "diff \"tar-xz\"" = {
+        textconv = "sh -c 'command -v xzcat >/dev/null 2>&1 && tar -O -xJf \"$@\" || cat' sh";
+        binary = true;
+      };
       "diff \"odf\"".textconv = "sh -c 'command -v odt2txt >/dev/null 2>&1 && odt2txt \"$@\" || cat' sh";
       "diff \"pdf\"".textconv = "sh -c 'command -v pdfinfo >/dev/null 2>&1 && pdfinfo \"$@\" || cat' sh";
       "diff \"bin\"".textconv = "hexdump -v -C";

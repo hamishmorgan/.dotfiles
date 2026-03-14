@@ -29,8 +29,8 @@ config.scrollback_lines = 10000
 -- Performance
 config.front_end = 'WebGpu'
 
--- Terminal type (install with install-terminfo.sh first)
-config.term = 'wezterm' -- Comment out if you have not run install-terminfo.sh
+-- Terminal type (requires wezterm terminfo to be installed on the system)
+config.term = 'wezterm'
 
 -- Cursor
 config.default_cursor_style = 'BlinkingBar'

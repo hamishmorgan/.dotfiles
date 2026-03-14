@@ -4,6 +4,8 @@ SHELL := /bin/bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
+PROFILE ?= shopify
+
 .PHONY: help check check-shell check-markdown check-nix build switch
 
 help:
@@ -27,7 +29,7 @@ check-nix:
 	nixpkgs-fmt --check nix/*.nix flake.nix
 
 build:
-	nix run home-manager -- build --flake .#shopify
+	nix run home-manager -- build --flake .#$(PROFILE)
 
 switch:
-	nix run home-manager -- switch --flake .#shopify
+	nix run home-manager -- switch --flake .#$(PROFILE)

@@ -10,6 +10,10 @@
     ];
   };
 
+  # Runtime dependencies used by other modules
+  programs.fd.enable = true; # fzf file/directory search (fzf.nix)
+  programs.jq.enable = true; # command logging JSON escaping (cmdlog)
+
   xdg.enable = true;
 
   programs.home-manager.enable = true;
