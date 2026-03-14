@@ -128,7 +128,6 @@ in
               echo "Not in a git repository"
               return 1
           end
-          set -l current_branch (git branch --show-current)
           set -l merged_branches (git branch --merged |
               grep -v "^\*" |
               grep -v "main\|master\|develop" |

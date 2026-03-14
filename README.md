@@ -27,7 +27,10 @@ nix/
 ├── bash.nix           # Bash config + nix/bash/*.bash
 ├── bat.nix            # Bat (syntax highlighting cat)
 ├── claude.nix         # Claude Code settings + CLAUDE.md
+├── direnv.nix         # Direnv + nix-direnv (cached dev shells)
+├── eza.nix            # Eza (modern ls) aliases + options
 ├── fish.nix           # Fish config + nix/fish/*.fish
+├── fzf.nix            # Fzf (fuzzy finder) config + key bindings
 ├── gh.nix             # GitHub CLI
 ├── git.nix            # Git config + delta + commit template
 ├── ripgrep.nix        # Ripgrep config
@@ -36,6 +39,7 @@ nix/
 ├── tmux.nix           # Tmux
 ├── wezterm.nix        # WezTerm terminal
 ├── zed.nix            # Zed editor (macOS only)
+├── zoxide.nix         # Zoxide (smart cd)
 ├── zsh.nix            # Zsh config + nix/zsh/*.zsh
 ├── bash/              # One file per tool (bash)
 ├── fish/              # One file per tool (fish)
