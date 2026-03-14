@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Pre-commit hook: scan staged changes for secrets using gitleaks
-# Installed via: git config core.hooksPath .githooks
-
+# Pre-commit hook: lint + secret scan
 set -euo pipefail
 
-if ! command -v gitleaks >/dev/null 2>&1; then
-  printf "⚠ gitleaks not installed — skipping secret scan\n"
-  printf "  Install: brew install gitleaks\n"
-  exit 0
+# Lint (shellcheck, markdownlint, nixpkgs-fmt)
+if command -v nix >/dev/null 2>&1; then
+  nix develop -c make check
 fi
 
-gitleaks git --pre-commit --staged --verbose
+# Secret scan
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --pre-commit --staged --verbose
+else
+  printf "⚠ gitleaks not installed — skipping secret scan\n"
+fi
