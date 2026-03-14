@@ -11,5 +11,5 @@ result
 # Temporary files
 tmp/
 
-# Old stow backups
+# Legacy (pre-Nix era)
 backups/

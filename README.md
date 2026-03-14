@@ -33,6 +33,7 @@ nix/
 ├── fzf.nix            # Fzf (fuzzy finder) config + key bindings
 ├── gh.nix             # GitHub CLI
 ├── git.nix            # Git config + delta + commit template
+├── mise.nix           # Mise (polyglot runtime manager)
 ├── ripgrep.nix        # Ripgrep config
 ├── rust.nix           # Cargo config + rustfmt
 ├── system.nix         # editorconfig + inputrc

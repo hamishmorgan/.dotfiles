@@ -7,8 +7,8 @@ in
   programs.fish = {
     enable = true;
 
-    # Fish uses abbreviations instead of aliases (expand inline, visible before executing)
-    # Don't import shared aliases — they'd shadow the abbreviations
+    # Fish abbreviations expand inline (visible before executing), richer than
+    # the shared aliases in aliases.nix which also apply here harmlessly.
     shellAbbrs = {
       # Git (richer set than aliases — fish abbreviations expand inline)
       g = "git";
