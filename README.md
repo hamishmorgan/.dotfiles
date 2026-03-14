@@ -23,7 +23,7 @@ make switch
 flake.nix              # Entry point — defines homeConfigurations.shopify
 nix/
 ├── home.nix           # Imports all modules, sets sessionPath + xdg
-├── aliases.nix        # Shared shell aliases (bash + zsh)
+├── aliases.nix        # Shared shell aliases (all shells)
 ├── bash.nix           # Bash config + nix/bash/*.bash
 ├── bat.nix            # Bat (syntax highlighting cat)
 ├── claude.nix         # Claude Code settings + CLAUDE.md

@@ -37,8 +37,6 @@ in
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
 
-    shellAliases = import ./aliases.nix;
-
     initContent = lib.mkMerge [
       # Completion styles (before compinit at 570)
       (lib.mkOrder 550 ''

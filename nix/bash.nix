@@ -21,8 +21,6 @@ in
     historyFileSize = 10000;
     historyControl = [ "ignoreboth" ];
 
-    shellAliases = import ./aliases.nix;
-
     profileExtra = ''
       ${lib.optionalString isDarwin ''
         [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"

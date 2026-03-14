@@ -15,6 +15,7 @@
   programs.home-manager.enable = true;
 
   imports = [
+    ./aliases.nix
     ./bash.nix
     ./bat.nix
     ./claude.nix
