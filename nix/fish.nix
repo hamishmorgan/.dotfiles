@@ -98,8 +98,6 @@ in
       dki = "docker images";
       dkrm = "docker rm";
       dkrmi = "docker rmi";
-
-
     };
 
     # Typed functions (each becomes ~/.config/fish/functions/NAME.fish)

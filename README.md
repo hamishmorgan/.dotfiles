@@ -42,7 +42,6 @@ nix/
 ├── zsh/               # One file per tool (zsh)
 ├── claude/            # Claude Code config files
 ├── git/               # Git delta theme, commit message template
-├── rust/              # Cargo config
 ├── system/            # editorconfig, inputrc
 └── wezterm/           # WezTerm lua config
 ```

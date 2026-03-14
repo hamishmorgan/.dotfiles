@@ -50,7 +50,7 @@
               # Security
               gitleaks
 
-              # Validation
+              # Utilities (jq used by cmdlog scripts)
               python3
 
               # Formatting

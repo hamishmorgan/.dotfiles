@@ -14,12 +14,6 @@
       };
     };
 
-    gitCredentialHelper = {
-      enable = true;
-      hosts = [
-        "https://github.com"
-        "https://gist.github.com"
-      ];
-    };
+    # Credential helper configured in git.nix (avoids duplicate gitconfig sections)
   };
 }

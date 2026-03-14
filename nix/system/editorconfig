@@ -9,8 +9,8 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-# Shell scripts, YAML, JSON
-[*.{sh,bash,zsh,yml,yaml,json}]
+# Shell scripts, YAML, JSON, Nix, TOML
+[*.{sh,bash,zsh,yml,yaml,json,nix,toml}]
 indent_style = space
 indent_size = 2
 
@@ -26,6 +26,16 @@ indent_style = tab
 # Markdown - preserve trailing whitespace (used for line breaks)
 [*.md]
 trim_trailing_whitespace = false
+
+# Fish
+[*.fish]
+indent_style = space
+indent_size = 4
+
+# Lua
+[*.lua]
+indent_style = space
+indent_size = 2
 
 # Go requires tabs
 [*.go]
