@@ -38,7 +38,6 @@ in
       ${readBash "pager.bash"}
       ${readBash "editor.bash"}
       ${readBash "direnv.bash"}
-      ${readBash "shadowenv.bash"}
       ${readBash "zoxide.bash"}
       ${readBash "graphite.bash"}
       ${readBash "rust.bash"}
