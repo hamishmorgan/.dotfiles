@@ -19,7 +19,7 @@ make switch
 
 ## Structure
 
-```
+```text
 flake.nix              # Entry point — defines homeConfigurations.shopify
 nix/
 ├── home.nix           # Imports all modules, sets sessionPath + xdg
