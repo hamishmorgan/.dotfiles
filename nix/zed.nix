@@ -1,8 +1,8 @@
-{ ... }:
+{ lib, isDarwin, ... }:
 
 {
   programs.zed-editor = {
-    enable = true;
+    enable = isDarwin;
     mutableUserSettings = true;
 
     extensions = [
