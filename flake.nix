@@ -22,7 +22,7 @@
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           extraSpecialArgs = {
-            inherit username;
+            inherit username isDarwin;
             homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
           };
           modules = [ ./nix/home.nix ];

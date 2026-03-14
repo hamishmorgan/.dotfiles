@@ -10,8 +10,12 @@
 
   imports = [
     ./bat.nix
+    ./gh.nix
     ./git.nix
+    ./gnuplot.nix
     ./ripgrep.nix
+    ./rust.nix
+    ./tmux.nix
     ./zed.nix
   ];
 }
