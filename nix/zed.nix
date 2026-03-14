@@ -1,11 +1,12 @@
-{ pkgs, lib, isDarwin, ... }:
+{ pkgs, isDarwin, ... }:
 
 {
-  home.packages = lib.optionals isDarwin [ pkgs.nixd pkgs.nil ];
-
   programs.zed-editor = {
     enable = isDarwin;
     mutableUserSettings = true;
+
+    # LSPs available to Zed without polluting home.packages
+    extraPackages = [ pkgs.nixd pkgs.nil ];
 
     extensions = [
       "catppuccin"

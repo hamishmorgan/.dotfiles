@@ -1,11 +1,114 @@
 _:
 
 {
-  # Claude Code config — only manage the two config files.
-  # ~/.claude/ contains runtime data (history, projects, cache) that Claude
-  # Code manages itself, so we use home.file for individual files only.
-  home.file = {
-    ".claude/settings.json".source = ./claude/settings.json;
-    ".claude/CLAUDE.md".source = ./claude/CLAUDE.md;
+  programs.claude-code = {
+    enable = true;
+    package = null; # Installed separately (auto-updates itself)
+
+    settings = {
+      env = {
+        CLAUDE_SKIP_FEEDBACK_SURVEY = "1";
+        DISABLE_TELEMETRY = "1";
+      };
+      includeCoAuthoredBy = true;
+      permissions = {
+        allow = [
+          "Bash(git:*)"
+          "Bash(gh:*)"
+          "Bash(gt:*)"
+          "Bash(ruby:*)"
+          "Bash(bundle:*)"
+          "Bash(gem:*)"
+          "Bash(rails:*)"
+          "Bash(bin/rails:*)"
+          "Bash(cargo:*)"
+          "Bash(rustc:*)"
+          "Bash(python:*)"
+          "Bash(python3:*)"
+          "Bash(pip:*)"
+          "Bash(uv:*)"
+          "Bash(uvx:*)"
+          "Bash(npm:*)"
+          "Bash(yarn:*)"
+          "Bash(nix:*)"
+          "Bash(make:*)"
+          "Bash(rg:*)"
+          "Bash(fd:*)"
+          "Bash(fzf:*)"
+          "Bash(grep:*)"
+          "Bash(find:*)"
+          "Bash(command -v:*)"
+          "Bash(cat:*)"
+          "Bash(head:*)"
+          "Bash(tail:*)"
+          "Bash(sort:*)"
+          "Bash(uniq:*)"
+          "Bash(cut:*)"
+          "Bash(tr:*)"
+          "Bash(sed:*)"
+          "Bash(awk:*)"
+          "Bash(jq:*)"
+          "Bash(yq:*)"
+          "Bash(wc:*)"
+          "Bash(diff:*)"
+          "Bash(tee:*)"
+          "Bash(printf:*)"
+          "Bash(ls:*)"
+          "Bash(tree:*)"
+          "Bash(stat:*)"
+          "Bash(file:*)"
+          "Bash(du:*)"
+          "Bash(readlink:*)"
+          "Bash(realpath:*)"
+          "Bash(dirname:*)"
+          "Bash(basename:*)"
+          "Bash(mkdir:*)"
+          "Bash(touch:*)"
+          "Bash(cp:*)"
+          "Bash(mv:*)"
+          "Bash(ln:*)"
+          "Bash(chmod:*)"
+          "Bash(tar:*)"
+          "Bash(shasum:*)"
+          "Bash(date:*)"
+          "Bash(uname:*)"
+          "Bash(curl:*)"
+          "Bash(stow:*)"
+          "Bash(shellcheck:*)"
+          "Bash(markdownlint-cli2:*)"
+          "Read(**)"
+          "WebSearch"
+          "WebFetch(domain:github.com)"
+        ];
+        deny = [
+          "Bash(sudo:*)"
+          "Bash(rm -rf /*)"
+          "Bash(rm -rf ~/*)"
+          "Bash(rm -rf .)"
+          "Bash(chmod 777:*)"
+          "Bash(dd:*)"
+          "Read(**/.env)"
+          "Read(**/.env.*)"
+          "Read(**/secrets/**)"
+          "Read(**/*.pem)"
+          "Read(**/*.key)"
+        ];
+        ask = [
+          "Bash(git push --force:*)"
+          "Bash(rm -rf:*)"
+          "Bash(pkill:*)"
+          "Bash(bash:*)"
+          "Bash(fish:*)"
+          "Bash(xargs:*)"
+        ];
+      };
+      model = "opus";
+      alwaysThinkingEnabled = true;
+      skipDangerousModePermissionPrompt = true;
+      autoUpdaterStatus = "enabled";
+      hasCompletedOnboarding = true;
+    };
+
+    memory.source = ./claude/CLAUDE.md;
   };
 }
