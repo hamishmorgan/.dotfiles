@@ -17,5 +17,6 @@
     ./rust.nix
     ./tmux.nix
     ./zed.nix
+    ./zsh.nix
   ];
 }
