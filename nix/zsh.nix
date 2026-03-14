@@ -107,22 +107,8 @@ in
 
     # Login shell (.zprofile)
     profileExtra = ''
-      ${lib.optionalString isDarwin ''
-        # GNU tools on macOS
-        if command -v brew &> /dev/null; then
-          PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH"
-          PATH="$(brew --prefix coreutils)/libexec/gnubin:$PATH"
-          MANPATH="$(brew --prefix coreutils)/libexec/gnuman:''${MANPATH:-}"
-          export PATH MANPATH
-        fi
-      ''}
-
-      export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
-
       # Machine-specific
       [ -f ~/.zprofile.local ] && source ~/.zprofile.local
-
-      export XDG_CONFIG_HOME="''${XDG_CONFIG_HOME:-$HOME/.config}"
     '';
   };
 }

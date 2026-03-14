@@ -4,7 +4,13 @@
   home = {
     inherit username homeDirectory;
     stateVersion = "25.11";
+    sessionPath = [
+      "$HOME/bin"
+      "$HOME/.local/bin"
+    ];
   };
+
+  xdg.enable = true;
 
   programs.home-manager.enable = true;
 
@@ -12,7 +18,7 @@
     ./bat.nix
     ./gh.nix
     ./git.nix
-    ./gnuplot.nix
+
     ./ripgrep.nix
     ./rust.nix
     ./tmux.nix
