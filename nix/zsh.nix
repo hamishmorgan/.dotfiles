@@ -47,7 +47,6 @@ in
 
       # Shell config (one file per tool, default order 1000)
       (readZsh "prompt.zsh")
-      (readZsh "pager.zsh")
       # Note: graphite (gt) only provides bash completions, no zsh support yet
       (readZsh "rust.zsh")
       (readZsh "editor.zsh")

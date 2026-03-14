@@ -20,7 +20,7 @@ Nix Home Manager dotfiles. Config modules under `nix/`, shell scripts under `nix
 
 `.local` file overrides (git-ignored):
 
-- `~/.gitconfig.local` — work email, signing key, delta opt-in
+- `~/.gitconfig.local` — work email, signing key
 - `~/.zshrc.local` / `~/.bashrc.local` — machine-specific shell config
 - `~/.claude/settings.local.json` — API keys, enterprise proxy
 

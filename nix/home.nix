@@ -10,6 +10,14 @@
     ];
   };
 
+  # Static environment variables — applied to all shells via hm-session-vars.
+  # bat is always installed (bat.nix), so no runtime detection needed.
+  home.sessionVariables = {
+    LESS = "-R -F -X -S -M";
+    PAGER = "bat --paging=always";
+    BAT_PAGER = "less -RFXSM";
+  };
+
   xdg.enable = true;
 
   programs.home-manager.enable = true;
@@ -19,6 +27,7 @@
     ./bash.nix
     ./bat.nix
     ./claude.nix
+    ./delta.nix
     ./direnv.nix
     ./eza.nix
     ./fd.nix

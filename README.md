@@ -46,7 +46,8 @@ nix/
 ├── fish/              # One file per tool (fish)
 ├── zsh/               # One file per tool (zsh)
 ├── claude/            # Claude Code config files
-├── git/               # Git delta theme, commit message template
+├── delta.nix          # Delta (git diff viewer) config + themes
+├── git/               # Git commit message template
 ├── system/            # editorconfig, inputrc
 └── wezterm/           # WezTerm lua config
 ```

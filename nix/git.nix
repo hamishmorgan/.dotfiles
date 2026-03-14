@@ -254,7 +254,4 @@
 
   # Commit message template
   xdg.configFile."git/message".source = ./git/message;
-
-  # Delta config — user opts in via .gitconfig.local
-  xdg.configFile."git/delta".source = ./git/delta;
 }
