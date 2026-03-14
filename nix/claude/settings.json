@@ -63,13 +63,12 @@
       "Bash(chmod:*)",
       "Bash(tar:*)",
       "Bash(shasum:*)",
-
       "Bash(date:*)",
       "Bash(uname:*)",
       "Bash(curl:*)",
       "Bash(stow:*)",
       "Bash(shellcheck:*)",
-      "Bash(markdownlint:*)",
+      "Bash(markdownlint-cli2:*)",
       "Read(**)",
       "WebSearch",
       "WebFetch(domain:github.com)"
@@ -100,6 +99,5 @@
   "alwaysThinkingEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "autoUpdaterStatus": "enabled",
-  "hasCompletedOnboarding": true,
-  "skipDangerousModePermissionPrompt": true
+  "hasCompletedOnboarding": true
 }
