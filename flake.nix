@@ -42,7 +42,7 @@
             packages = with pkgs; [
               # Linting
               shellcheck
-              markdownlint-cli
+              markdownlint-cli2
 
               # Testing
               bats

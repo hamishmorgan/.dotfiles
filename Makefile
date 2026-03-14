@@ -28,7 +28,7 @@ define HELP_TEXT
 $(COLOR_SECTION)Available targets:$(COLOR_RESET)
   $(COLOR_TARGET)check$(COLOR_RESET)             $(COLOR_DESC)Run all fast checks (lint + configs)$(COLOR_RESET)
   $(COLOR_TARGET)check-shell$(COLOR_RESET)       $(COLOR_DESC)Run shellcheck (bash/zsh/tests)$(COLOR_RESET)
-  $(COLOR_TARGET)check-markdown$(COLOR_RESET)    $(COLOR_DESC)Run markdownlint via npx$(COLOR_RESET)
+  $(COLOR_TARGET)check-markdown$(COLOR_RESET)    $(COLOR_DESC)Run markdownlint-cli2$(COLOR_RESET)
   $(COLOR_TARGET)check-make$(COLOR_RESET)        $(COLOR_DESC)Syntax check Makefile$(COLOR_RESET)
   $(COLOR_TARGET)check-jsonc$(COLOR_RESET)       $(COLOR_DESC)Validate JSONC configs$(COLOR_RESET)
   $(COLOR_TARGET)check-tmux$(COLOR_RESET)        $(COLOR_DESC)Validate tmux configs$(COLOR_RESET)
@@ -62,8 +62,8 @@ check: check-shell check-markdown check-make check-jsonc check-tmux
 check-shell: deps-shellcheck
 	shellcheck dot packages/bash/.bashrc packages/bash/.bash_profile packages/zsh/.config/zsh/.zshrc packages/zsh/.config/zsh/.zprofile tests/**/*.sh
 
-check-markdown: deps-npx
-	npx --yes markdownlint-cli@0.42.0 "**/*.md"
+check-markdown:
+	markdownlint-cli2 "**/*.md"
 
 check-make:
 	@command -v checkmake >/dev/null 2>&1 && checkmake Makefile || \

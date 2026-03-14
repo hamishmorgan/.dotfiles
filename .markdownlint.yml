@@ -40,3 +40,6 @@ MD033: true
 
 # MD041 - First line in file should be a top level heading
 MD041: true
+
+# MD060 - Table column style (too strict for separator lines)
+MD060: false
