@@ -31,6 +31,7 @@ check-nix:
 
 check-nix-lint:
 	statix check .
+	deadnix --fail .
 
 build:
 	nix run home-manager -- build --flake .#$(PROFILE)

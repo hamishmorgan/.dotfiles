@@ -54,6 +54,7 @@
               python3
 
               # Nix linting + formatting
+              deadnix
               statix
               nixpkgs-fmt
             ];

@@ -1,4 +1,4 @@
-{ isDarwin, lib, ... }:
+{ isDarwin, ... }:
 
 {
   programs.git = {
