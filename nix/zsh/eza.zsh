@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Eza (modern ls) aliases
 if command -v eza &>/dev/null; then
     alias ls='eza --icons --group-directories-first'

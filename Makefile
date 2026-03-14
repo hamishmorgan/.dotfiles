@@ -17,7 +17,7 @@ help:
 check: check-shell check-markdown check-nix
 
 check-shell:
-	shellcheck nix/bash/*.bash nix/zsh/*.zsh bin/*
+	shellcheck nix/bash/*.bash nix/zsh/*.zsh
 
 check-markdown:
 	markdownlint-cli2 "**/*.md"

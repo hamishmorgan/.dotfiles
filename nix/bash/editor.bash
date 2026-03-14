@@ -16,5 +16,6 @@ export VISUAL="$EDITOR"
 export GIT_EDITOR="$EDITOR"
 
 # Convenience functions
+# shellcheck disable=SC2294 # eval needed: EDITOR may contain args (e.g. "zed --wait")
 e() { eval "$EDITOR" "$@"; }
 v() { e "$@"; }

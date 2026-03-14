@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shopify dev tools integration
 if [[ -z "$__HM_SHOPIFY_INIT_DONE" ]]; then
   [[ -f /opt/dev/dev.sh ]] && source /opt/dev/dev.sh

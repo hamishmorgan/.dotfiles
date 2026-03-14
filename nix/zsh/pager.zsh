@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Pager configuration
 export LESS='-R -F -X -S -M'
 if command -v bat &>/dev/null; then

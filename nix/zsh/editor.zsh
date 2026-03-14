@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Editor detection
 # Use env vars set by editors in their integrated terminals
 # ZED_TERM survives tmux; TERM_PROGRAM doesn't
@@ -16,5 +17,6 @@ export VISUAL="$EDITOR"
 export GIT_EDITOR="$EDITOR"
 
 # Convenience functions
+# shellcheck disable=SC2294 # eval needed: EDITOR may contain args (e.g. "zed --wait")
 e() { eval "$EDITOR" "$@"; }
 v() { e "$@"; }

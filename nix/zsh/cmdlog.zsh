@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Log every command for DX analysis
 # Format matches fish in ~/.cmdlog.jsonl
 
