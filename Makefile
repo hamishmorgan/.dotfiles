@@ -42,7 +42,7 @@ build:
 	nix run home-manager -- build --flake .#$(PROFILE)
 
 switch:
-	nix run home-manager -- switch --flake .#$(PROFILE)
+	nix run home-manager -- switch -b hm-backup --flake .#$(PROFILE)
 
 news:
 	nix run home-manager -- news --flake .#$(PROFILE)
