@@ -82,7 +82,7 @@ option:
 ifndef OPT
 	$(error Usage: make option OPT=programs.git)
 endif
-	$(HM) option --recursive $(OPT) --flake .#$(PROFILE)
+	nix eval .#homeConfigurations.$(PROFILE).config.$(OPT) --json | jq .
 
 repl:
 	$(HM) repl --flake .#$(PROFILE)
