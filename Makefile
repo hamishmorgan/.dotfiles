@@ -80,9 +80,11 @@ gc:
 
 option:
 ifndef OPT
-	$(error Usage: make option OPT=programs.git)
+	$(error Usage: make option OPT=programs.git.settings.push)
 endif
-	nix eval .#homeConfigurations.$(PROFILE).config.$(OPT) --json | jq .
+	@json=$$(nix eval .#homeConfigurations.$(PROFILE).config.$(OPT) --json 2>/dev/null) \
+		&& printf '%s' "$$json" | jq . \
+		|| printf '\033[33mEvaluation failed — try a more specific path (e.g. programs.git.settings)\033[0m\n' >&2
 
 repl:
 	$(HM) repl --flake .#$(PROFILE)
