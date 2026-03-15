@@ -92,6 +92,11 @@ _:
           "Read(**/secrets/**)"
           "Read(**/*.pem)"
           "Read(**/*.key)"
+          "Read(**/.ssh/**)"
+          "Read(**/.aws/**)"
+          "Read(**/.netrc)"
+          "Read(**/.config/gh/hosts.yml)"
+          "Read(**/.claude/settings.local.json)"
         ];
         ask = [
           "Bash(git push --force:*)"

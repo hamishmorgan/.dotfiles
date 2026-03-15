@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Pre-push hook: scan all commits being pushed for secrets
 # Installed via: git config core.hooksPath .githooks
-
 set -euo pipefail
 
-if ! command -v gitleaks >/dev/null 2>&1; then
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --verbose
+elif command -v nix >/dev/null 2>&1; then
+  nix develop -c gitleaks git --verbose
+else
   printf "⚠ gitleaks not installed — skipping secret scan\n"
-  printf "  Install: brew install gitleaks\n"
-  exit 0
+  printf "  Install: nix develop, or brew install gitleaks\n"
 fi
-
-gitleaks git --verbose

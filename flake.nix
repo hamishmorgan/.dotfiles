@@ -42,6 +42,7 @@
             packages = with pkgs; [
               # Linting
               shellcheck
+              fish # fish --no-execute for syntax checking
               markdownlint-cli2
 
               # Testing

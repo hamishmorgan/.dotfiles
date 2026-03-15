@@ -2,14 +2,16 @@
 # Pre-commit hook: lint + secret scan
 set -euo pipefail
 
-# Lint (shellcheck, markdownlint, nixpkgs-fmt)
+# Lint (shellcheck, markdownlint, nixpkgs-fmt, statix, deadnix)
 if command -v nix >/dev/null 2>&1; then
   nix develop -c make check
 fi
 
-# Secret scan
+# Secret scan — prefer dev shell gitleaks, fall back to global
 if command -v gitleaks >/dev/null 2>&1; then
   gitleaks git --pre-commit --staged --verbose
+elif command -v nix >/dev/null 2>&1; then
+  nix develop -c gitleaks git --pre-commit --staged --verbose
 else
   printf "⚠ gitleaks not installed — skipping secret scan\n"
 fi

@@ -18,8 +18,11 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v30
 
-      - name: Lint (shellcheck + markdownlint + nixpkgs-fmt)
+      - name: Lint (shellcheck + fish + markdownlint + nixpkgs-fmt + statix + deadnix)
         run: nix develop -c make check
+
+      - name: Secret scan (gitleaks)
+        run: nix develop -c gitleaks git --verbose
 
       - name: Build Home Manager configs
         run: |

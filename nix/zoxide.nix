@@ -7,7 +7,7 @@ _:
     # Provides: z, zi commands + shell hooks for directory tracking.
   };
 
-  # Match current aliases: cd→z, cdi→zi in fish; zi alias in bash/zsh
+  # Fish abbreviations: cd→z, cdi→zi (expand inline)
   programs.fish.shellAbbrs = {
     cd = "z";
     cdi = "zi";

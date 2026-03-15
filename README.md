@@ -10,17 +10,21 @@ Cross-platform: macOS (aarch64-darwin) and Linux (x86_64-linux).
 ## Quick Start
 
 ```bash
-# Activate configuration
+# Activate configuration (macOS / Shopify)
 home-manager switch --flake ~/.dotfiles#shopify
 
-# Or use the Makefile shortcut
+# Activate configuration (Linux / personal)
+home-manager switch --flake ~/.dotfiles#personal
+
+# Or use the Makefile shortcut (PROFILE defaults to shopify)
 make switch
+make switch PROFILE=personal
 ```
 
 ## Structure
 
 ```text
-flake.nix              # Entry point — defines homeConfigurations.shopify
+flake.nix              # Entry point — defines homeConfigurations (shopify + personal)
 nix/
 ├── home.nix           # Imports all modules, sets sessionPath + xdg
 ├── aliases.nix        # Shared shell aliases (all shells)
@@ -36,7 +40,7 @@ nix/
 ├── mise.nix           # Mise (polyglot runtime manager)
 ├── ripgrep.nix        # Ripgrep config
 ├── rust.nix           # Cargo config + rustfmt
-├── system.nix         # editorconfig + inputrc
+├── system.nix         # EditorConfig (declarative) + inputrc
 ├── tmux.nix           # Tmux
 ├── wezterm.nix        # WezTerm terminal
 ├── zed.nix            # Zed editor (macOS only)
