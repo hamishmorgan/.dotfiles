@@ -247,9 +247,17 @@
       "diff \"pdf\"".textconv = "sh -c 'command -v pdfinfo >/dev/null 2>&1 && pdfinfo \"$@\" || cat' sh";
       "diff \"bin\"".textconv = "hexdump -v -C";
 
-      # Machine-specific overrides
-      include.path = "~/.gitconfig.local";
     };
+
+    # Machine-specific overrides (user info, gpg, maintenance repos)
+    # and Shopify dev tool config (credential helpers, URL rewrites,
+    # World-specific settings, git tracing). Including dev's gitconfig
+    # here avoids `dev up` needing to write to the Nix-managed global
+    # git config.
+    includes = [
+      { path = "~/.gitconfig.local"; }
+      { path = "~/.config/dev/gitconfig"; }
+    ];
   };
 
   # Commit message template
