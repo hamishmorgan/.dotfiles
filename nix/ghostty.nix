@@ -15,7 +15,10 @@
       scrollback-limit = 10000;
       cursor-style = "bar";
       cursor-style-blink = true;
-      keybind = "ctrl+v=paste_from_clipboard";
+      keybind = [
+        "performable:ctrl+c=copy_to_clipboard"
+        "ctrl+v=paste_from_clipboard"
+      ];
     };
   };
 }
