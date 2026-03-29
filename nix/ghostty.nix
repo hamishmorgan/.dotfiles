@@ -8,7 +8,7 @@ _:
     settings = {
       font-family = "JetBrainsMono Nerd Font";
       font-size = 10;
-      theme = "Tokyo Night";
+      theme = "TokyoNight";
       window-decoration = false;
       background-opacity = 0.95;
       scrollback-limit = 10000;
