@@ -607,6 +607,11 @@ binds {
     // Mod+Space       { switch-layout "next"; }
     // Mod+Shift+Space { switch-layout "prev"; }
 
+    // Screenshots (macOS-style keybinds)
+    Mod+Shift+3 { screenshot-screen; }
+    Mod+Shift+4 { screenshot; }
+    Mod+Shift+5 { screenshot-window; }
+
     Print { screenshot; }
     Ctrl+Print { screenshot-screen; }
     Alt+Print { screenshot-window; }
