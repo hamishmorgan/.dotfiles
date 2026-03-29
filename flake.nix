@@ -33,6 +33,7 @@
       homeConfigurations = {
         "shopify" = mkHome { system = "aarch64-darwin"; username = "hamish"; };
         "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; };
+        "odin" = mkHome { system = "x86_64-linux"; username = "hamish"; };
       };
 
       # nix develop
