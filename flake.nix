@@ -14,16 +14,18 @@
       supportedSystems = [ "aarch64-darwin" "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-      mkHome = { system, username, gitEmail }:
+      mkHome = { system, username, gitEmail, dotfilesPath ? null }:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           inherit (pkgs.stdenv) isDarwin;
+          homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
         in
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           extraSpecialArgs = {
-            inherit username isDarwin gitEmail;
-            homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
+            inherit username isDarwin gitEmail homeDirectory;
+            dotfilesPath = if dotfilesPath != null then dotfilesPath
+              else "${homeDirectory}/git/github.com/hamishmorgan/.dotfiles";
           };
           modules = [ ./nix/home.nix ];
         };

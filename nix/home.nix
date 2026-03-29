@@ -1,4 +1,4 @@
-{ username, homeDirectory, ... }:
+{ username, homeDirectory, dotfilesPath, ... }:
 
 {
   home = {
@@ -40,6 +40,7 @@
     ./git.nix
     ./jq.nix
     ./mise.nix
+    ./niri.nix
     ./ripgrep.nix
     ./rust.nix
     ./ssh.nix
