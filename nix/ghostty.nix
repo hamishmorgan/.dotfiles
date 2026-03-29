@@ -1,4 +1,4 @@
-_:
+{ lib, pkgs, ... }:
 
 {
   programs.ghostty = {
@@ -6,6 +6,7 @@ _:
     enableFishIntegration = true;
     enableBashIntegration = true;
     settings = {
+      command = lib.getExe pkgs.fish;
       font-family = "JetBrainsMono Nerd Font";
       font-size = 10;
       theme = "TokyoNight";
