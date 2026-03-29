@@ -1,8 +1,8 @@
-{ pkgs, isDarwin, ... }:
+{ pkgs, ... }:
 
 {
   programs.zed-editor = {
-    enable = isDarwin;
+    enable = true;
     mutableUserSettings = true;
 
     # LSPs available to Zed without polluting home.packages

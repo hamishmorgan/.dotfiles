@@ -1,4 +1,4 @@
-{ isDarwin, gitEmail, ... }:
+{ gitEmail, ... }:
 
 {
   programs.git = {
@@ -128,7 +128,7 @@
       core = {
         # Shell scripts (editor.{bash,zsh,fish}) set $GIT_EDITOR dynamically
         # based on terminal context; this is the fallback for non-interactive use.
-        editor = if isDarwin then "zed --wait" else "vim";
+        editor = "zeditor --wait";
         eol = "native";
         autocrlf = "input";
         safecrlf = true;

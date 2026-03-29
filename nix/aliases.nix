@@ -21,5 +21,6 @@ _:
     gwta = "git worktree add";
     gwtl = "git worktree list";
     gwtr = "git worktree remove";
+    zed = "zeditor";
   };
 }
