@@ -1,4 +1,6 @@
 {
+  lib,
+  pkgs,
   username,
   homeDirectory,
   dotfilesPath,
@@ -21,6 +23,7 @@
     LESS = "-R -F -X -S -M";
     PAGER = "bat --paging=always";
     BAT_PAGER = "less -RFXSM";
+    SHELL = "${lib.getExe pkgs.fish}"; # Use HM fish so terminals launch this, not the NixOS system one
   };
 
   nixpkgs.config.allowUnfree = true;
