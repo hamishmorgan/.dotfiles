@@ -14,7 +14,7 @@
       supportedSystems = [ "aarch64-darwin" "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-      mkHome = { system, username, gitEmail, dotfilesPath ? null }:
+      mkHome = { system, username, gitEmail, dotfilesRelPath ? "git/github.com/hamishmorgan/.dotfiles" }:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           inherit (pkgs.stdenv) isDarwin;
@@ -24,8 +24,7 @@
           inherit pkgs;
           extraSpecialArgs = {
             inherit username isDarwin gitEmail homeDirectory;
-            dotfilesPath = if dotfilesPath != null then dotfilesPath
-              else "${homeDirectory}/git/github.com/hamishmorgan/.dotfiles";
+            dotfilesPath = "${homeDirectory}/${dotfilesRelPath}";
           };
           modules = [ ./nix/home.nix ];
         };
@@ -33,8 +32,8 @@
     {
       # Usage: home-manager switch --flake .#shopify
       homeConfigurations = {
-        "shopify" = mkHome { system = "aarch64-darwin"; username = "hamish"; gitEmail = "hamish.morgan@shopify.com"; dotfilesPath = "/Users/hamish/.dotfiles"; };
-        "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; gitEmail = "hamish.morgan@gmail.com"; dotfilesPath = "/home/hamish/.dotfiles"; };
+        "shopify" = mkHome { system = "aarch64-darwin"; username = "hamish"; gitEmail = "hamish.morgan@shopify.com"; dotfilesRelPath = ".dotfiles"; };
+        "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; gitEmail = "hamish.morgan@gmail.com"; dotfilesRelPath = ".dotfiles"; };
         "odin" = mkHome { system = "x86_64-linux"; username = "hamish"; gitEmail = "hamish.morgan@gmail.com"; };
       };
 
