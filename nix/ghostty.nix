@@ -15,6 +15,10 @@
       scrollback-limit = 10000;
       cursor-style = "bar";
       cursor-style-blink = true;
+      keybind = [
+        "ctrl+c=copy_or_interrupt"
+        "ctrl+v=paste_from_clipboard"
+      ];
     };
   };
 }
