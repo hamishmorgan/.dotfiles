@@ -1,11 +1,11 @@
-{ isDarwin, ... }:
+{ isDarwin, gitEmail, ... }:
 
 {
   programs.git = {
     enable = true;
 
-    # User info configured per-machine in ~/.gitconfig.local
-    # (included via settings.include below)
+    userName = "Hamish Morgan";
+    userEmail = gitEmail;
 
     lfs.enable = true;
 

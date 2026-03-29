@@ -14,7 +14,7 @@
       supportedSystems = [ "aarch64-darwin" "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-      mkHome = { system, username }:
+      mkHome = { system, username, gitEmail }:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           inherit (pkgs.stdenv) isDarwin;
@@ -22,7 +22,7 @@
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           extraSpecialArgs = {
-            inherit username isDarwin;
+            inherit username isDarwin gitEmail;
             homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
           };
           modules = [ ./nix/home.nix ];
@@ -31,9 +31,9 @@
     {
       # Usage: home-manager switch --flake .#shopify
       homeConfigurations = {
-        "shopify" = mkHome { system = "aarch64-darwin"; username = "hamish"; };
-        "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; };
-        "odin" = mkHome { system = "x86_64-linux"; username = "hamish"; };
+        "shopify" = mkHome { system = "aarch64-darwin"; username = "hamish"; gitEmail = "hamish.morgan@shopify.com"; };
+        "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; gitEmail = "hamish.morgan@gmail.com"; };
+        "odin" = mkHome { system = "x86_64-linux"; username = "hamish"; gitEmail = "hamish.morgan@gmail.com"; };
       };
 
       # nix develop
