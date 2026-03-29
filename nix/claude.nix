@@ -3,7 +3,6 @@ _:
 {
   programs.claude-code = {
     enable = true;
-    package = null; # Installed separately (auto-updates itself)
 
     settings = {
       env = {
