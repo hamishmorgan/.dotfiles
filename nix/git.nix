@@ -4,8 +4,10 @@
   programs.git = {
     enable = true;
 
-    userName = "Hamish Morgan";
-    userEmail = gitEmail;
+    settings.user = {
+      name = "Hamish Morgan";
+      email = gitEmail;
+    };
 
     lfs.enable = true;
 
