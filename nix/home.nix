@@ -1,4 +1,9 @@
-{ username, homeDirectory, dotfilesPath, ... }:
+{
+  username,
+  homeDirectory,
+  dotfilesPath,
+  ...
+}:
 
 {
   home = {

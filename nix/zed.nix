@@ -6,7 +6,10 @@
     mutableUserSettings = true;
 
     # LSPs available to Zed without polluting home.packages
-    extraPackages = [ pkgs.nixd pkgs.nil ];
+    extraPackages = [
+      pkgs.nixd
+      pkgs.nil
+    ];
 
     extensions = [
       "catppuccin"
@@ -28,7 +31,10 @@
       vertical_scroll_margin = 5;
 
       # Visual guides
-      wrap_guides = [ 80 120 ];
+      wrap_guides = [
+        80
+        120
+      ];
       indent_guides = {
         enabled = true;
         coloring = "indent_aware";
@@ -108,7 +114,11 @@
 
       # Fonts & theme
       buffer_font_family = "JetBrainsMono Nerd Font Mono";
-      buffer_font_fallbacks = [ "Menlo" "Monaco" "Courier New" ];
+      buffer_font_fallbacks = [
+        "Menlo"
+        "Monaco"
+        "Courier New"
+      ];
       buffer_font_size = 15;
       ui_font_size = 16;
       base_keymap = "VSCode";
@@ -124,7 +134,12 @@
 
       # Language-specific
       languages = {
-        Ruby.language_servers = [ "ruby-lsp" "sorbet" "!solargraph" "!rubocop" ];
+        Ruby.language_servers = [
+          "ruby-lsp"
+          "sorbet"
+          "!solargraph"
+          "!rubocop"
+        ];
         Markdown = {
           soft_wrap = "editor_width";
           format_on_save = "off";

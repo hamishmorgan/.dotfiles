@@ -1,4 +1,9 @@
-{ config, isDarwin, lib, ... }:
+{
+  config,
+  isDarwin,
+  lib,
+  ...
+}:
 
 let
   readZsh = file: builtins.readFile ./zsh/${file};
