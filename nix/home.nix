@@ -41,6 +41,7 @@
     ./mise.nix
     ./ripgrep.nix
     ./rust.nix
+    ./ssh.nix
     ./system.nix
     ./tmux.nix
     ./wezterm.nix
