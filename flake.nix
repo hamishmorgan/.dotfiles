@@ -34,7 +34,7 @@
       # Usage: home-manager switch --flake .#shopify
       homeConfigurations = {
         "shopify" = mkHome { system = "aarch64-darwin"; username = "hamish"; gitEmail = "hamish.morgan@shopify.com"; dotfilesPath = "/Users/hamish/.dotfiles"; };
-        "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; gitEmail = "hamish.morgan@gmail.com"; };
+        "personal" = mkHome { system = "x86_64-linux"; username = "hamish"; gitEmail = "hamish.morgan@gmail.com"; dotfilesPath = "/home/hamish/.dotfiles"; };
         "odin" = mkHome { system = "x86_64-linux"; username = "hamish"; gitEmail = "hamish.morgan@gmail.com"; };
       };
 
