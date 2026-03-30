@@ -9,8 +9,9 @@
   programs.ghostty = {
     enable = true;
     package = if pkgs.stdenv.isDarwin then pkgs.ghostty-bin else pkgs.ghostty;
-    enableFishIntegration = true;
     enableBashIntegration = true;
+    enableFishIntegration = true;
+    enableZshIntegration = true;
     settings = {
       command = lib.getExe pkgs.fish;
       font-family = "JetBrainsMono Nerd Font";
@@ -18,6 +19,7 @@
       theme = "TokyoNight";
       macos-titlebar-style = "transparent";
       background-opacity = 0.95;
+      unfocused-split-opacity = 0.85;
       scrollback-limit = 10000;
       cursor-style = "bar";
       cursor-style-blink = true;
