@@ -19,6 +19,7 @@
       theme = "TokyoNight";
       macos-titlebar-style = "transparent";
       background-opacity = 0.95;
+      background-blur = 20;
       unfocused-split-opacity = 0.85;
       scrollback-limit = 10000;
       cursor-style = "bar";
