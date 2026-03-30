@@ -92,13 +92,13 @@
               # Nix linting + formatting
               deadnix
               statix
-              nixfmt-rfc-style
+              nixfmt
             ];
           };
         }
       );
 
       # Allow `nix fmt`
-      formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
+      formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
     };
 }
