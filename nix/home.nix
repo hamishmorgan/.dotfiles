@@ -1,7 +1,6 @@
 {
   username,
   homeDirectory,
-  dotfilesPath,
   ...
 }:
 
