@@ -15,7 +15,6 @@
       command = lib.getExe pkgs.fish;
       font-family = "JetBrainsMono Nerd Font";
       font-size = if isDarwin then 14 else 10;
-      font-thicken = isDarwin;
       theme = "TokyoNight";
       macos-titlebar-style = "transparent";
       background-opacity = 0.95;
