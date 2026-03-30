@@ -20,7 +20,7 @@
       macos-titlebar-style = "transparent";
       background-opacity = 0.95;
       background-blur = 20;
-      unfocused-split-opacity = 0.85;
+      quit-after-last-window-closed = true;
       scrollback-limit = 10000;
       cursor-style = "bar";
       cursor-style-blink = true;
