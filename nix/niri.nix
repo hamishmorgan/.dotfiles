@@ -1,4 +1,9 @@
-{ lib, pkgs, dotfilesPath, ... }:
+{
+  lib,
+  pkgs,
+  dotfilesPath,
+  ...
+}:
 
 {
   # Create a direct symlink (not through nix store) so niri's

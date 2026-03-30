@@ -1,4 +1,9 @@
-{ lib, pkgs, isDarwin, ... }:
+{
+  lib,
+  pkgs,
+  isDarwin,
+  ...
+}:
 
 {
   programs.ghostty = {
