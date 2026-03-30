@@ -5,7 +5,7 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
 PROFILE ?= shopify
-HM := nix run home-manager --
+HM := home-manager
 
 .PHONY: help check check-shell check-fish check-markdown check-nix check-nix-lint \
         build switch dry-run news packages generations gc option repl fmt
@@ -45,22 +45,22 @@ check-markdown:
 	markdownlint-cli2 "*.md" "nix/**/*.md" ".github/**/*.md"
 
 check-nix:
-	nixpkgs-fmt --check nix/*.nix flake.nix
+	nixfmt --check nix/*.nix flake.nix
 
 check-nix-lint:
 	statix check .
 	deadnix --fail .
 
 fmt:
-	nixpkgs-fmt nix/*.nix flake.nix
+	nixfmt nix/*.nix flake.nix
 
 # --- Home Manager ---
 
 build:
-	$(HM) build --flake .#$(PROFILE)
+	nix build .#homeConfigurations.$(PROFILE).activationPackage --offline --no-link
 
 switch:
-	$(HM) switch -b hm-backup --flake .#$(PROFILE)
+	@$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --offline --no-link --print-out-paths)/activate
 
 dry-run:
 	$(HM) switch -n --flake .#$(PROFILE)
