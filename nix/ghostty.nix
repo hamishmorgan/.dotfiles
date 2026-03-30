@@ -15,6 +15,7 @@
       command = lib.getExe pkgs.fish;
       font-family = "JetBrainsMono Nerd Font";
       font-size = if isDarwin then 14 else 10;
+      font-thicken = isDarwin;
       theme = "TokyoNight";
       window-decoration = false;
       background-opacity = 0.95;
