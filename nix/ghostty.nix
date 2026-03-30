@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ lib, pkgs, isDarwin, ... }:
 
 {
   programs.ghostty = {
@@ -9,7 +9,7 @@
     settings = {
       command = lib.getExe pkgs.fish;
       font-family = "JetBrainsMono Nerd Font";
-      font-size = 10;
+      font-size = if isDarwin then 14 else 10;
       theme = "TokyoNight";
       window-decoration = false;
       background-opacity = 0.95;
