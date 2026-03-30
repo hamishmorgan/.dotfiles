@@ -17,7 +17,7 @@
       font-size = if isDarwin then 14 else 10;
       font-thicken = isDarwin;
       theme = "TokyoNight";
-      window-decoration = false;
+      macos-titlebar-style = "transparent";
       background-opacity = 0.95;
       scrollback-limit = 10000;
       cursor-style = "bar";
