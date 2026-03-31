@@ -27,7 +27,8 @@
         "performable:ctrl+c=copy_to_clipboard"
         "ctrl+v=paste_from_clipboard"
       ];
-    } // lib.optionalAttrs isDarwin {
+    }
+    // lib.optionalAttrs isDarwin {
       macos-titlebar-style = "transparent";
     };
   };

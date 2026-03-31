@@ -1,5 +1,5 @@
 .ONESHELL:
-SHELL := /bin/bash
+SHELL := bash
 .SHELLFLAGS := -euo pipefail -c
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
