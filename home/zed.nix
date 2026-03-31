@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 {
+  home.shellAliases.zed = "zeditor";
+
   programs.zed-editor = {
     enable = true;
     mutableUserSettings = true;

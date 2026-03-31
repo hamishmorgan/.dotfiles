@@ -18,6 +18,13 @@
     LESS = "-R -F -X -S -M";
   };
 
+  home.shellAliases = {
+    ".." = "cd ..";
+    "..." = "cd ../..";
+    "...." = "cd ../../..";
+    c = "clear";
+  };
+
   nixpkgs.config.allowUnfree = true;
 
   xdg.enable = true;
@@ -25,7 +32,6 @@
   programs.home-manager.enable = true;
 
   imports = [
-    ./aliases.nix
     ./bash
     ./bat.nix
     ./claude
