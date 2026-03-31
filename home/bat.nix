@@ -1,6 +1,11 @@
 _:
 
 {
+  home.sessionVariables = {
+    PAGER = "bat --paging=always";
+    BAT_PAGER = "less -RFXSM";
+  };
+
   programs.bat = {
     enable = true;
     config = {
