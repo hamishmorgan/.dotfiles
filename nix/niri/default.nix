@@ -13,7 +13,7 @@ lib.mkIf pkgs.stdenv.isLinux {
     ln -sfn "${dotfilesPath}/nix/niri/config.kdl" "$HOME/.config/niri/config.kdl"
   '';
 
-  home.pointerCursor = lib.mkIf pkgs.stdenv.isLinux {
+  home.pointerCursor = {
     name = "phinger-cursors-light";
     package = pkgs.phinger-cursors;
     size = 32;

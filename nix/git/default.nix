@@ -263,5 +263,5 @@
   };
 
   # Commit message template
-  xdg.configFile."git/message".source = ./git/message;
+  xdg.configFile."git/message".source = ./message;
 }

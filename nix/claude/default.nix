@@ -113,6 +113,6 @@ _:
       hasCompletedOnboarding = true;
     };
 
-    memory.source = ./claude/CLAUDE.md;
+    memory.source = ./CLAUDE.md;
   };
 }

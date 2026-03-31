@@ -1,7 +1,7 @@
 { isDarwin, lib, ... }:
 
 let
-  readBash = file: builtins.readFile ./bash/${file};
+  readBash = file: builtins.readFile ./${file};
 in
 {
   programs.bash = {

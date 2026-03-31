@@ -6,7 +6,7 @@
 }:
 
 let
-  readZsh = file: builtins.readFile ./zsh/${file};
+  readZsh = file: builtins.readFile ./${file};
 in
 {
   programs.zsh = {

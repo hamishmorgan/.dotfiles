@@ -47,5 +47,5 @@ _:
   };
 
   # Readline configuration (bash, python REPL, etc.)
-  home.file.".inputrc".source = ./system/inputrc;
+  home.file.".inputrc".source = ./inputrc;
 }

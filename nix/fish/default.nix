@@ -1,7 +1,7 @@
 { isDarwin, lib, ... }:
 
 let
-  readFish = file: builtins.readFile ./fish/${file};
+  readFish = file: builtins.readFile ./${file};
 in
 {
   programs.fish = {
@@ -222,7 +222,7 @@ in
       # Prompt
       fish_prompt = {
         description = "Write out the prompt";
-        body = builtins.readFile ./fish/prompt.fish;
+        body = builtins.readFile ./prompt.fish;
       };
     };
 

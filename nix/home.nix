@@ -30,29 +30,29 @@
 
   imports = [
     ./aliases.nix
-    ./bash.nix
+    ./bash
     ./bat.nix
-    ./claude.nix
+    ./claude
     ./delta.nix
     ./direnv.nix
     ./eza.nix
     ./fd.nix
-    ./fish.nix
+    ./fish
     ./fzf.nix
     ./gh.nix
     ./ghostty.nix
-    ./git.nix
+    ./git
     ./jq.nix
     ./mise.nix
     ./niri
     ./ripgrep.nix
     ./rust.nix
     ./ssh.nix
-    ./system.nix
+    ./system
     ./tmux.nix
-    ./wezterm.nix
+    ./wezterm
     ./zed.nix
     ./zoxide.nix
-    ./zsh.nix
+    ./zsh
   ];
 }
