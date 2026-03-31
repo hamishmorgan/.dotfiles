@@ -18,6 +18,17 @@
       "toml"
       "ruby"
       "fish"
+      "html"
+      "kdl"
+      "make"
+      "git-firefile"
+      "dockerfile"
+      "yaml"
+      "json"
+      "markdown"
+      "csv"
+      "just"
+      "bash"
     ];
 
     userSettings = {
@@ -129,8 +140,10 @@
       };
 
       # Language servers
-      lsp.nixd.binary.path = "${pkgs.nixd}/bin/nixd";
-      lsp.nil.binary.path = "${pkgs.nil}/bin/nil";
+      lsp = {
+        nixd.binary.path = "${pkgs.nixd}/bin/nixd";
+        nil.binary.path = "${pkgs.nil}/bin/nil";
+      };
 
       # Language-specific
       languages = {
