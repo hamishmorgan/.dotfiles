@@ -9,7 +9,8 @@ PROFILE ?= shopify
 HM := home-manager
 
 .PHONY: help check check-shell check-fish check-lua check-toml check-yaml check-markdown \
-        check-nix check-nix-lint build switch dry-run news packages generations gc option repl fmt
+        check-nix check-nix-lint fmt fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml \
+        build switch dry-run news packages generations gc option repl
 
 help:
 	@printf '\033[1;34mLinting:\033[0m\n'
@@ -67,11 +68,21 @@ check-nix-lint:
 	statix check .
 	deadnix --fail .
 
-fmt:
+fmt: fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml
+
+fmt-nix:
 	nixfmt **/*.nix
+
+fmt-shell:
 	shfmt --write **/*.bash **/*.zsh
+
+fmt-fish:
 	@for f in home/fish/*.fish; do fish_indent --write "$$f"; done
+
+fmt-lua:
 	stylua **/*.lua
+
+fmt-toml:
 	git ls-files '*.toml' | xargs --no-run-if-empty taplo fmt
 
 # --- Home Manager ---
