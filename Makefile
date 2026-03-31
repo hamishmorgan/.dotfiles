@@ -1,6 +1,6 @@
 .ONESHELL:
 SHELL := bash
-.SHELLFLAGS := -euo pipefail -c
+.SHELLFLAGS := -euo pipefail -O globstar -c
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
@@ -45,14 +45,14 @@ check-markdown:
 	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md"
 
 check-nix:
-	nixfmt --check home/*.nix home/*/default.nix flake.nix
+	nixfmt --check *.nix **/*.nix
 
 check-nix-lint:
 	statix check .
 	deadnix --fail .
 
 fmt:
-	nixfmt home/*.nix home/*/default.nix flake.nix
+	nixfmt **/*.nix
 
 # --- Home Manager ---
 
