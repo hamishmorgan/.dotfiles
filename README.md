@@ -60,7 +60,7 @@ with a `default.nix`. Everything else is a single `.nix` file.
 |---------|--------|----------|
 | `shopify` | aarch64-darwin | Work laptop (macOS) |
 | `personal` | x86_64-linux | Personal desktop |
-| `odin` | x86_64-linux | Home server |
+| `odin` | x86_64-linux | Personal desktop |
 
 ## Development
 
