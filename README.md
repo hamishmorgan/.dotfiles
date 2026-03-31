@@ -10,65 +10,76 @@ Cross-platform: macOS (aarch64-darwin) and Linux (x86_64-linux).
 ## Quick Start
 
 ```bash
-# Activate configuration (macOS / Shopify)
-home-manager switch --flake ~/.dotfiles#shopify
-
-# Activate configuration (Linux / personal)
-home-manager switch --flake ~/.dotfiles#personal
-
-# Or use the Makefile shortcut (PROFILE defaults to shopify)
-make switch
+# Activate configuration (pick your profile)
+make switch                    # defaults to PROFILE=shopify
 make switch PROFILE=personal
+make switch PROFILE=odin
+
+# Or call home-manager directly
+home-manager switch --flake ~/.dotfiles#shopify
 ```
 
 ## Structure
 
 ```text
-flake.nix              # Entry point — defines homeConfigurations (shopify + personal)
-nix/
-├── home.nix           # Imports all modules, sets sessionPath + xdg
-├── aliases.nix        # Shared shell aliases (all shells)
-├── bash.nix           # Bash config + nix/bash/*.bash
-├── bat.nix            # Bat (syntax highlighting cat)
-├── claude.nix         # Claude Code settings + CLAUDE.md
-├── direnv.nix         # Direnv + nix-direnv (cached dev shells)
-├── eza.nix            # Eza (modern ls) aliases + options
-├── fish.nix           # Fish config + nix/fish/*.fish
-├── fzf.nix            # Fzf (fuzzy finder) config + key bindings
-├── gh.nix             # GitHub CLI
-├── git.nix            # Git config + delta + commit template
-├── mise.nix           # Mise (polyglot runtime manager)
-├── ripgrep.nix        # Ripgrep config
-├── rust.nix           # Cargo config + rustfmt
-├── system.nix         # EditorConfig (declarative) + inputrc
-├── tmux.nix           # Tmux
-├── wezterm.nix        # WezTerm terminal
-├── zed.nix            # Zed editor (macOS only)
-├── zoxide.nix         # Zoxide (smart cd)
-├── zsh.nix            # Zsh config + nix/zsh/*.zsh
-├── bash/              # One file per tool (bash)
-├── fish/              # One file per tool (fish)
-├── zsh/               # One file per tool (zsh)
-├── claude/            # Claude Code CLAUDE.md
-├── git/               # Git commit message template
-├── system/            # inputrc (readline config)
-└── wezterm/           # WezTerm lua config
+flake.nix                # Entry point — homeConfigurations (shopify, personal, odin)
+home/
+├── default.nix          # Imports all modules, sets sessionPath + shell aliases
+├── bat.nix              # Bat (syntax-highlighting cat) + pager variables
+├── claude/              # Claude Code settings + CLAUDE.md
+├── delta.nix            # Delta (git diff pager)
+├── direnv.nix           # Direnv + nix-direnv (cached dev shells)
+├── eza.nix              # Eza (modern ls) aliases + options
+├── fd.nix               # Fd (modern find)
+├── fzf.nix              # Fzf (fuzzy finder) config + key bindings
+├── gh.nix               # GitHub CLI
+├── ghostty.nix          # Ghostty terminal (platform-aware)
+├── git/                 # Git config + commit template
+├── jq.nix               # Jq (JSON processor)
+├── mise.nix             # Mise (polyglot runtime manager)
+├── niri/                # Niri window manager config (Linux only)
+├── ripgrep.nix          # Ripgrep config
+├── rust.nix             # Cargo config + rustfmt
+├── ssh.nix              # SSH client config
+├── system/              # EditorConfig + inputrc (readline)
+├── tmux.nix             # Tmux
+├── wezterm/             # WezTerm terminal + lua config
+├── zed.nix              # Zed editor
+├── zoxide.nix           # Zoxide (smart cd)
+├── bash/                # Bash config + per-tool scripts
+├── fish/                # Fish config + per-tool scripts + prompt
+└── zsh/                 # Zsh config + per-tool scripts
 ```
+
+Modules that have companion files (scripts, templates, config) live in directories
+with a `default.nix`. Everything else is a single `.nix` file.
+
+## Profiles
+
+| Profile | System | Use case |
+|---------|--------|----------|
+| `shopify` | aarch64-darwin | Work laptop (macOS) |
+| `personal` | x86_64-linux | Personal desktop |
+| `odin` | x86_64-linux | Home server |
 
 ## Development
 
 ```bash
-# Enter dev shell with all tools (shellcheck, markdownlint-cli2, nixpkgs-fmt, etc.)
+# Enter dev shell with linting and testing tools
 nix develop -c fish
 
 # Run all lint checks
 make check
 
 # Individual checks
-make check-shell       # shellcheck
+make check-shell       # shellcheck (bash/zsh scripts)
+make check-fish        # fish --no-execute (syntax check)
 make check-markdown    # markdownlint-cli2
-make check-nix         # nixpkgs-fmt
-make check-nix-lint    # statix
+make check-nix         # nixfmt (format check)
+make check-nix-lint    # statix + deadnix
+
+# Auto-format nix files
+make fmt
 ```
 
 ## License

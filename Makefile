@@ -35,24 +35,24 @@ help:
 check: check-shell check-fish check-markdown check-nix check-nix-lint
 
 check-shell:
-	shellcheck nix/bash/*.bash nix/zsh/*.zsh
+	shellcheck home/bash/*.bash home/zsh/*.zsh
 
 check-fish:
-	@printf 'fish --no-execute nix/fish/*.fish\n'
-	@for f in nix/fish/*.fish; do fish --no-execute "$$f" || exit 1; done
+	@printf 'fish --no-execute home/fish/*.fish\n'
+	@for f in home/fish/*.fish; do fish --no-execute "$$f" || exit 1; done
 
 check-markdown:
-	markdownlint-cli2 "*.md" "nix/**/*.md" ".github/**/*.md"
+	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md"
 
 check-nix:
-	nixfmt --check nix/*.nix flake.nix
+	nixfmt --check home/*.nix home/*/default.nix flake.nix
 
 check-nix-lint:
 	statix check .
 	deadnix --fail .
 
 fmt:
-	nixfmt nix/*.nix flake.nix
+	nixfmt home/*.nix home/*/default.nix flake.nix
 
 # --- Home Manager ---
 
