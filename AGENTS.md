@@ -2,58 +2,55 @@
 
 ## Project Context
 
-Nix Home Manager dotfiles. Config modules under `nix/`, shell scripts under `nix/{bash,fish,zsh}/`.
+Nix Home Manager dotfiles. Cross-platform: macOS (aarch64-darwin) and Linux (x86_64-linux).
 
-**Activation:** `home-manager switch --flake .#shopify` or `make switch`
+**Activation:** `make switch` (defaults to `PROFILE=shopify`) or `home-manager switch --flake .#<profile>`
+
+**Profiles:** `shopify` (macOS), `personal` (Linux), `odin` (Linux)
 
 **Layout:**
 
-- `flake.nix` — entry point, defines `homeConfigurations` (shopify + personal)
-- `nix/home.nix` — imports all modules, sets sessionPath + xdg
-- `nix/*.nix` — one module per tool (git.nix, fish.nix, eza.nix, etc.)
-- `nix/{bash,fish,zsh}/` — shell scripts for tools without HM modules, loaded via `builtins.readFile`
-- `nix/aliases.nix` — shared shell aliases via `home.shellAliases` (all shells)
+- `flake.nix` — entry point, defines `homeConfigurations` and dev shell
+- `home/default.nix` — imports all modules, sets sessionPath + shell aliases
+- `home/*.nix` — one module per tool (bat.nix, ghostty.nix, zed.nix, etc.)
+- `home/*/default.nix` — modules with companion files (git/, fish/, bash/, zsh/, etc.)
+- `home/{bash,fish,zsh}/` — shell scripts loaded via `builtins.readFile`
 
-**Dev shell:** `nix develop -c fish` provides shellcheck, markdownlint-cli2, nixpkgs-fmt, statix, deadnix, etc.
+**Conventions:**
+
+- Modules with companion files (scripts, templates, config) use a directory with `default.nix`
+- Single-file modules are plain `.nix` files
+- Shell aliases are co-located with their tool module (git aliases in git/, zed alias in zed.nix)
+- Platform-specific config uses `lib.mkIf`/`lib.optionalAttrs` with `isDarwin` or `pkgs.stdenv.isLinux`
+- Per-machine values (email, dotfiles path) come from `extraSpecialArgs` in flake.nix
+
+**Dev shell:** `direnv allow` (automatic) or `nix develop` provides shellcheck, shfmt,
+fish, stylua, taplo, yamllint, markdownlint-cli2, nixfmt, statix, deadnix, etc.
 
 ## Machine-Specific Configuration
 
 `.local` file overrides (git-ignored):
 
-- `~/.gitconfig.local` — work email, signing key
+- `~/.gitconfig.local` — signing key, maintenance repos
 - `~/.zshrc.local` / `~/.bashrc.local` — machine-specific shell config
 - `~/.claude/settings.local.json` — API keys, enterprise proxy
 
-Auto-appending tools (Shopify `tec agent`) periodically append init to `.local` files.
-The `__HM_SHOPIFY_INIT_DONE` guard in shopify init scripts prevents double-sourcing,
-but raw lines in `.local` files bypass the guard. Clean periodically.
+The `__HM_SHOPIFY_INIT_DONE` guard in shopify init scripts prevents double-sourcing.
 
 ## Code Standards
 
 - Follow `.editorconfig`: LF endings, final newline, 2-space indent for shell
-- Shell: must pass shellcheck
-- Markdown: must pass markdownlint-cli2 (config: `.markdownlint.yml`)
-- Nix: must pass nixpkgs-fmt, statix, and deadnix
-- Run `make check` before committing
+- Run `make check` before committing — runs all linters
+- Run `make fmt` to auto-format all files
+- Run `make help` to see all available targets
+- Nix: must pass nixfmt, statix, and deadnix
+- Shell: must pass shellcheck and shfmt
+- Fish: must pass `fish --no-execute` and `fish_indent`
 
 ## Git Commit Attribution
 
-AI agent commits must use `--author` and `--no-gpg-sign`:
+AI-assisted commits use a Co-Authored-By trailer:
 
-```bash
-git commit --author="Claude <claude@noreply.local>" --no-gpg-sign -m "message"
+```text
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 ```
-
-## Quick Reference
-
-| Task | Command |
-|---|---|
-| Activate config | `make switch` |
-| Activate (Linux) | `make switch PROFILE=personal` |
-| Build without activating | `make build` |
-| All lint checks | `make check` |
-| Shell lint | `make check-shell` |
-| Markdown lint | `make check-markdown` |
-| Nix format check | `make check-nix` |
-| Nix lint (statix + deadnix) | `make check-nix-lint` |
-| Enter dev shell | `nix develop -c fish` |
