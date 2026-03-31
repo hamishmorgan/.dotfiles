@@ -29,54 +29,54 @@ help: ## Show this help
 
 # --- Linting ---
 
-check: _require-devshell check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint ## @Linting| Run all lint checks
+check: check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint ## @Linting| Run all lint checks
 
-check-shell: ## @Linting| Shellcheck + shfmt (bash/zsh)
+check-shell: _require-devshell ## @Linting| Shellcheck + shfmt (bash/zsh)
 	shellcheck **/*.bash **/*.zsh
 	shfmt --diff **/*.bash **/*.zsh
 
-check-fish: ## @Linting| Syntax + formatting (fish)
+check-fish: _require-devshell ## @Linting| Syntax + formatting (fish)
 	@printf 'fish --no-execute home/fish/*.fish\n'
 	@for f in home/fish/*.fish; do fish --no-execute "$$f" || exit 1; done
 	@printf 'fish_indent --check home/fish/*.fish\n'
 	@for f in home/fish/*.fish; do fish_indent --check "$$f" || exit 1; done
 
-check-lua: ## @Linting| Format-check lua (stylua)
+check-lua: _require-devshell ## @Linting| Format-check lua (stylua)
 	stylua --check **/*.lua
 
-check-toml: ## @Linting| Format-check toml (taplo)
+check-toml: _require-devshell ## @Linting| Format-check toml (taplo)
 	git ls-files '*.toml' | xargs --no-run-if-empty taplo check
 
-check-yaml: ## @Linting| Lint yaml (yamllint)
+check-yaml: _require-devshell ## @Linting| Lint yaml (yamllint)
 	git ls-files '*.yml' '*.yaml' | xargs --no-run-if-empty yamllint --strict
 
-check-markdown: ## @Linting| Lint markdown
+check-markdown: _require-devshell ## @Linting| Lint markdown
 	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md"
 
-check-nix: ## @Linting| Format-check nix (nixfmt)
+check-nix: _require-devshell ## @Linting| Format-check nix (nixfmt)
 	nixfmt --check **/*.nix
 
-check-nix-lint: ## @Linting| Lint nix (statix + deadnix)
+check-nix-lint: _require-devshell ## @Linting| Lint nix (statix + deadnix)
 	statix check .
 	deadnix --fail .
 
 # --- Formatting ---
 
-fmt: _require-devshell fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml ## @Formatting| Format all files
+fmt: fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml ## @Formatting| Format all files
 
-fmt-nix: ## @Formatting| Format nix (nixfmt)
+fmt-nix: _require-devshell ## @Formatting| Format nix (nixfmt)
 	nixfmt **/*.nix
 
-fmt-shell: ## @Formatting| Format bash/zsh (shfmt)
+fmt-shell: _require-devshell ## @Formatting| Format bash/zsh (shfmt)
 	shfmt --write **/*.bash **/*.zsh
 
-fmt-fish: ## @Formatting| Format fish (fish_indent)
+fmt-fish: _require-devshell ## @Formatting| Format fish (fish_indent)
 	@for f in home/fish/*.fish; do fish_indent --write "$$f"; done
 
-fmt-lua: ## @Formatting| Format lua (stylua)
+fmt-lua: _require-devshell ## @Formatting| Format lua (stylua)
 	stylua **/*.lua
 
-fmt-toml: ## @Formatting| Format toml (taplo)
+fmt-toml: _require-devshell ## @Formatting| Format toml (taplo)
 	git ls-files '*.toml' | xargs --no-run-if-empty taplo fmt
 
 # --- Home Manager ---
