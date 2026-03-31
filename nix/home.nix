@@ -44,7 +44,7 @@
     ./git.nix
     ./jq.nix
     ./mise.nix
-    ./niri.nix
+    ./niri
     ./ripgrep.nix
     ./rust.nix
     ./ssh.nix
