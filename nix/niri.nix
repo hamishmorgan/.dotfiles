@@ -12,4 +12,13 @@
   home.activation.niriConfig = lib.mkIf pkgs.stdenv.isLinux ''
     ln -sfn "${dotfilesPath}/nix/niri/config.kdl" "$HOME/.config/niri/config.kdl"
   '';
+
+  home.pointerCursor = {
+    name = "phinger-cursors-light";
+    package = pkgs.phinger-cursors;
+    size = 32;
+    gtk.enable = true;
+    x11.enable = true;
+  };
+
 }
