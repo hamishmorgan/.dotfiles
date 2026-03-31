@@ -9,5 +9,8 @@ _:
     nix-direnv.enable = true;
 
     # Shell integrations are enabled by default for all enabled shells.
+
+    # Hide the noisy env var export list on shell entry.
+    config.global.hide_env_diff = true;
   };
 }
