@@ -3,6 +3,7 @@ SHELL := bash
 .SHELLFLAGS := -euo pipefail -O globstar -c
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
+.DEFAULT_GOAL := help
 
 PROFILE ?= shopify
 HM := home-manager
@@ -35,7 +36,7 @@ help:
 check: check-shell check-fish check-markdown check-nix check-nix-lint
 
 check-shell:
-	shellcheck home/bash/*.bash home/zsh/*.zsh
+	shellcheck **/*.bash **/*.zsh
 
 check-fish:
 	@printf 'fish --no-execute home/fish/*.fish\n'
@@ -45,7 +46,7 @@ check-markdown:
 	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md"
 
 check-nix:
-	nixfmt --check *.nix **/*.nix
+	nixfmt --check **/*.nix
 
 check-nix-lint:
 	statix check .
