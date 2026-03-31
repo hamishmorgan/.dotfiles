@@ -21,14 +21,9 @@
       "html"
       "kdl"
       "make"
-      "git-firefile"
       "dockerfile"
-      "yaml"
-      "json"
-      "markdown"
       "csv"
       "just"
-      "bash"
     ];
 
     userSettings = {
