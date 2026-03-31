@@ -12,109 +12,94 @@ HM := home-manager
         check-nix check-nix-lint fmt fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml \
         build switch dry-run news packages generations gc option repl
 
-help:
-	@printf '\033[1;34mLinting:\033[0m\n'
-	@printf '  \033[1;33mcheck\033[0m           Run all lint checks\n'
-	@printf '  \033[1;33mcheck-shell\033[0m     Shellcheck + shfmt (bash/zsh)\n'
-	@printf '  \033[1;33mcheck-fish\033[0m      Syntax + formatting (fish)\n'
-	@printf '  \033[1;33mcheck-lua\033[0m       Format-check lua files (stylua)\n'
-	@printf '  \033[1;33mcheck-toml\033[0m      Format-check toml files (taplo)\n'
-	@printf '  \033[1;33mcheck-yaml\033[0m      Lint yaml files (yamllint)\n'
-	@printf '  \033[1;33mcheck-markdown\033[0m  Lint markdown files\n'
-	@printf '  \033[1;33mcheck-nix\033[0m       Format-check nix files (nixfmt)\n'
-	@printf '  \033[1;33mcheck-nix-lint\033[0m  Lint nix files (statix + deadnix)\n'
-	@printf '  \033[1;33mfmt\033[0m             Auto-format all files\n'
-	@printf '  \033[1;33mfmt-nix\033[0m         Format nix files (nixfmt)\n'
-	@printf '  \033[1;33mfmt-shell\033[0m       Format bash/zsh files (shfmt)\n'
-	@printf '  \033[1;33mfmt-fish\033[0m        Format fish files (fish_indent)\n'
-	@printf '  \033[1;33mfmt-lua\033[0m         Format lua files (stylua)\n'
-	@printf '  \033[1;33mfmt-toml\033[0m        Format toml files (taplo)\n'
-	@printf '\033[1;34mHome Manager:\033[0m\n'
-	@printf '  \033[1;33mbuild\033[0m           Build config without activating\n'
-	@printf '  \033[1;33mswitch\033[0m          Build and activate config\n'
-	@printf '  \033[1;33mdry-run\033[0m         Show what switch would change\n'
-	@printf '  \033[1;33mnews\033[0m            Show unread Home Manager news\n'
-	@printf '  \033[1;33mpackages\033[0m        List all installed packages\n'
-	@printf '  \033[1;33mgenerations\033[0m     List all config generations\n'
-	@printf '  \033[1;33mgc\033[0m              Remove generations >30 days old + collect garbage\n'
-	@printf '  \033[1;33moption OPT=name\033[0m Inspect a config option (e.g. OPT=programs.git)\n'
-	@printf '  \033[1;33mrepl\033[0m            Open config in nix repl\n'
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
+		awk -F ':.*## ' '{ \
+			if (match($$2, /^@([^|]+)\| (.*)/, m)) { \
+				if (m[1] != cat) { cat = m[1]; printf "\033[1;34m%s:\033[0m\n", cat } \
+				printf "  \033[1;33m%-16s\033[0m %s\n", $$1, m[2] \
+			} else { \
+				printf "  \033[1;33m%-16s\033[0m %s\n", $$1, $$2 \
+			} \
+		}'
 
 # --- Linting ---
 
-check: check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint
+check: check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint ## @Linting| Run all lint checks
 
-check-shell:
+check-shell: ## @Linting| Shellcheck + shfmt (bash/zsh)
 	shellcheck **/*.bash **/*.zsh
 	shfmt --diff **/*.bash **/*.zsh
 
-check-fish:
+check-fish: ## @Linting| Syntax + formatting (fish)
 	@printf 'fish --no-execute home/fish/*.fish\n'
 	@for f in home/fish/*.fish; do fish --no-execute "$$f" || exit 1; done
 	@printf 'fish_indent --check home/fish/*.fish\n'
 	@for f in home/fish/*.fish; do fish_indent --check "$$f" || exit 1; done
 
-check-lua:
+check-lua: ## @Linting| Format-check lua (stylua)
 	stylua --check **/*.lua
 
-check-toml:
+check-toml: ## @Linting| Format-check toml (taplo)
 	git ls-files '*.toml' | xargs --no-run-if-empty taplo check
 
-check-yaml:
+check-yaml: ## @Linting| Lint yaml (yamllint)
 	git ls-files '*.yml' '*.yaml' | xargs --no-run-if-empty yamllint --strict
 
-check-markdown:
+check-markdown: ## @Linting| Lint markdown
 	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md"
 
-check-nix:
+check-nix: ## @Linting| Format-check nix (nixfmt)
 	nixfmt --check **/*.nix
 
-check-nix-lint:
+check-nix-lint: ## @Linting| Lint nix (statix + deadnix)
 	statix check .
 	deadnix --fail .
 
-fmt: fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml
+# --- Formatting ---
 
-fmt-nix:
+fmt: fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml ## @Formatting| Format all files
+
+fmt-nix: ## @Formatting| Format nix (nixfmt)
 	nixfmt **/*.nix
 
-fmt-shell:
+fmt-shell: ## @Formatting| Format bash/zsh (shfmt)
 	shfmt --write **/*.bash **/*.zsh
 
-fmt-fish:
+fmt-fish: ## @Formatting| Format fish (fish_indent)
 	@for f in home/fish/*.fish; do fish_indent --write "$$f"; done
 
-fmt-lua:
+fmt-lua: ## @Formatting| Format lua (stylua)
 	stylua **/*.lua
 
-fmt-toml:
+fmt-toml: ## @Formatting| Format toml (taplo)
 	git ls-files '*.toml' | xargs --no-run-if-empty taplo fmt
 
 # --- Home Manager ---
 
-build:
+build: ## @Home Manager| Build config without activating
 	nix build .#homeConfigurations.$(PROFILE).activationPackage --offline --no-link
 
-switch:
+switch: ## @Home Manager| Build and activate config
 	@$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --offline --no-link --print-out-paths)/activate
 
-dry-run:
+dry-run: ## @Home Manager| Show what switch would change
 	$(HM) switch -n --flake .#$(PROFILE)
 
-news:
+news: ## @Home Manager| Show unread news
 	$(HM) news --flake .#$(PROFILE)
 
-packages:
+packages: ## @Home Manager| List installed packages
 	$(HM) packages
 
-generations:
+generations: ## @Home Manager| List config generations
 	$(HM) generations
 
-gc:
+gc: ## @Home Manager| Remove generations >30d + collect garbage
 	$(HM) expire-generations "-30 days"
 	nix-collect-garbage
 
-option:
+option: ## @Home Manager| Inspect option (OPT=programs.git)
 ifndef OPT
 	$(error Usage: make option OPT=programs.git.settings.push)
 endif
@@ -122,5 +107,5 @@ endif
 		&& printf '%s' "$$json" | jq . \
 		|| printf '\033[33mEvaluation failed — try a more specific path (e.g. programs.git.settings)\033[0m\n' >&2
 
-repl:
+repl: ## @Home Manager| Open config in nix repl
 	$(HM) repl --flake .#$(PROFILE)
