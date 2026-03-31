@@ -8,9 +8,13 @@ MAKEFLAGS += --no-builtin-rules
 PROFILE ?= shopify
 HM := home-manager
 
-.PHONY: help check check-shell check-fish check-lua check-toml check-yaml check-markdown \
-        check-nix check-nix-lint fmt fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml \
+.PHONY: help _require-devshell check check-shell check-fish check-lua check-toml check-yaml \
+        check-markdown check-nix check-nix-lint fmt fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml \
         build switch dry-run news packages generations gc option repl
+
+_require-devshell:
+	@command -v shellcheck >/dev/null 2>&1 || \
+		{ printf '\033[31mDev shell not active.\033[0m Run: \033[1mdirenv allow\033[0m or \033[1mnix develop\033[0m\n' >&2; exit 1; }
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
@@ -25,7 +29,7 @@ help: ## Show this help
 
 # --- Linting ---
 
-check: check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint ## @Linting| Run all lint checks
+check: _require-devshell check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint ## @Linting| Run all lint checks
 
 check-shell: ## @Linting| Shellcheck + shfmt (bash/zsh)
 	shellcheck **/*.bash **/*.zsh
@@ -58,7 +62,7 @@ check-nix-lint: ## @Linting| Lint nix (statix + deadnix)
 
 # --- Formatting ---
 
-fmt: fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml ## @Formatting| Format all files
+fmt: _require-devshell fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml ## @Formatting| Format all files
 
 fmt-nix: ## @Formatting| Format nix (nixfmt)
 	nixfmt **/*.nix
