@@ -81,29 +81,29 @@ fmt-toml: _require-devshell ## @Formatting| Format toml (taplo)
 
 # --- Home Manager ---
 
-build: ## @Home Manager| Build config without activating
+build: _require-devshell ## @Home Manager| Build config without activating
 	nix build .#homeConfigurations.$(PROFILE).activationPackage --offline --no-link
 
-switch: ## @Home Manager| Build and activate config
+switch: _require-devshell ## @Home Manager| Build and activate config
 	@$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --offline --no-link --print-out-paths)/activate
 
-dry-run: ## @Home Manager| Show what switch would change
+dry-run: _require-devshell ## @Home Manager| Show what switch would change
 	$(HM) switch -n --flake .#$(PROFILE)
 
-news: ## @Home Manager| Show unread news
+news: _require-devshell ## @Home Manager| Show unread news
 	$(HM) news --flake .#$(PROFILE)
 
-packages: ## @Home Manager| List installed packages
+packages: _require-devshell ## @Home Manager| List installed packages
 	$(HM) packages
 
-generations: ## @Home Manager| List config generations
+generations: _require-devshell ## @Home Manager| List config generations
 	$(HM) generations
 
-gc: ## @Home Manager| Remove generations >30d + collect garbage
+gc: _require-devshell ## @Home Manager| Remove generations >30d + collect garbage
 	$(HM) expire-generations "-30 days"
 	nix-collect-garbage
 
-option: ## @Home Manager| Inspect option (OPT=programs.git)
+option: _require-devshell ## @Home Manager| Inspect option (OPT=programs.git)
 ifndef OPT
 	$(error Usage: make option OPT=programs.git.settings.push)
 endif
@@ -111,5 +111,5 @@ endif
 		&& printf '%s' "$$json" | jq . \
 		|| printf '\033[33mEvaluation failed — try a more specific path (e.g. programs.git.settings)\033[0m\n' >&2
 
-repl: ## @Home Manager| Open config in nix repl
+repl: _require-devshell ## @Home Manager| Open config in nix repl
 	$(HM) repl --flake .#$(PROFILE)
