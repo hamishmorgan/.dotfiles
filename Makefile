@@ -8,18 +8,21 @@ MAKEFLAGS += --no-builtin-rules
 PROFILE ?= shopify
 HM := home-manager
 
-.PHONY: help check check-shell check-fish check-markdown check-nix check-nix-lint \
-        build switch dry-run news packages generations gc option repl fmt
+.PHONY: help check check-shell check-fish check-lua check-toml check-yaml check-markdown \
+        check-nix check-nix-lint build switch dry-run news packages generations gc option repl fmt
 
 help:
 	@printf '\033[1;34mLinting:\033[0m\n'
 	@printf '  \033[1;33mcheck\033[0m           Run all lint checks\n'
-	@printf '  \033[1;33mcheck-shell\033[0m     Run shellcheck on bash/zsh scripts\n'
-	@printf '  \033[1;33mcheck-fish\033[0m      Syntax-check fish scripts\n'
-	@printf '  \033[1;33mcheck-markdown\033[0m  Run markdownlint-cli2\n'
-	@printf '  \033[1;33mcheck-nix\033[0m       Format-check nix files\n'
+	@printf '  \033[1;33mcheck-shell\033[0m     Shellcheck + shfmt (bash/zsh)\n'
+	@printf '  \033[1;33mcheck-fish\033[0m      Syntax + formatting (fish)\n'
+	@printf '  \033[1;33mcheck-lua\033[0m       Format-check lua files (stylua)\n'
+	@printf '  \033[1;33mcheck-toml\033[0m      Format-check toml files (taplo)\n'
+	@printf '  \033[1;33mcheck-yaml\033[0m      Lint yaml files (yamllint)\n'
+	@printf '  \033[1;33mcheck-markdown\033[0m  Lint markdown files\n'
+	@printf '  \033[1;33mcheck-nix\033[0m       Format-check nix files (nixfmt)\n'
 	@printf '  \033[1;33mcheck-nix-lint\033[0m  Lint nix files (statix + deadnix)\n'
-	@printf '  \033[1;33mfmt\033[0m             Auto-format nix files\n'
+	@printf '  \033[1;33mfmt\033[0m             Auto-format all files\n'
 	@printf '\033[1;34mHome Manager:\033[0m\n'
 	@printf '  \033[1;33mbuild\033[0m           Build config without activating\n'
 	@printf '  \033[1;33mswitch\033[0m          Build and activate config\n'
@@ -33,14 +36,26 @@ help:
 
 # --- Linting ---
 
-check: check-shell check-fish check-markdown check-nix check-nix-lint
+check: check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint
 
 check-shell:
 	shellcheck **/*.bash **/*.zsh
+	shfmt --diff **/*.bash **/*.zsh
 
 check-fish:
 	@printf 'fish --no-execute home/fish/*.fish\n'
 	@for f in home/fish/*.fish; do fish --no-execute "$$f" || exit 1; done
+	@printf 'fish_indent --check home/fish/*.fish\n'
+	@for f in home/fish/*.fish; do fish_indent --check "$$f" || exit 1; done
+
+check-lua:
+	stylua --check **/*.lua
+
+check-toml:
+	git ls-files '*.toml' | xargs --no-run-if-empty taplo check
+
+check-yaml:
+	git ls-files '*.yml' '*.yaml' | xargs --no-run-if-empty yamllint --strict
 
 check-markdown:
 	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md"
@@ -54,6 +69,10 @@ check-nix-lint:
 
 fmt:
 	nixfmt **/*.nix
+	shfmt --write **/*.bash **/*.zsh
+	@for f in home/fish/*.fish; do fish_indent --write "$$f"; done
+	stylua **/*.lua
+	git ls-files '*.toml' | xargs --no-run-if-empty taplo fmt
 
 # --- Home Manager ---
 

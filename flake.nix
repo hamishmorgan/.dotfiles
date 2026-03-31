@@ -77,8 +77,12 @@
             packages = with pkgs; [
               # Linting
               shellcheck
-              fish # fish --no-execute for syntax checking
+              shfmt
+              fish # fish --no-execute + fish_indent
               markdownlint-cli2
+              yamllint
+              stylua
+              taplo
 
               # Testing
               bats
