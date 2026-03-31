@@ -41,7 +41,7 @@
               ;
             dotfilesPath = "${homeDirectory}/${dotfilesRelPath}";
           };
-          modules = [ ./nix/home.nix ];
+          modules = [ ./home ];
         };
     in
     {

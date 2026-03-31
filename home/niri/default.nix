@@ -10,7 +10,7 @@ lib.mkIf pkgs.stdenv.isLinux {
   # inotify-based live-reload works. Two-level symlinks via
   # mkOutOfStoreSymlink break inotify.
   home.activation.niriConfig = ''
-    ln -sfn "${dotfilesPath}/nix/niri/config.kdl" "$HOME/.config/niri/config.kdl"
+    ln -sfn "${dotfilesPath}/home/niri/config.kdl" "$HOME/.config/niri/config.kdl"
   '';
 
   home.pointerCursor = {
