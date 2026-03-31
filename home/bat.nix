@@ -2,6 +2,7 @@ _:
 
 {
   home.sessionVariables = {
+    LESS = "-R -F -X -S -M";
     PAGER = "bat --paging=always";
     BAT_PAGER = "less -RFXSM";
   };

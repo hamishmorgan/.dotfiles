@@ -1,4 +1,4 @@
-{ gitEmail, ... }:
+{ userEmail, ... }:
 
 {
   home.shellAliases = {
@@ -21,7 +21,7 @@
 
     settings.user = {
       name = "Hamish Morgan";
-      email = gitEmail;
+      email = userEmail;
     };
 
     lfs.enable = true;

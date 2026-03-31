@@ -22,7 +22,7 @@
         {
           system,
           username,
-          gitEmail,
+          userEmail,
           dotfilesRelPath ? "git/github.com/hamishmorgan/.dotfiles",
         }:
         let
@@ -36,7 +36,7 @@
             inherit
               username
               isDarwin
-              gitEmail
+              userEmail
               homeDirectory
               ;
             dotfilesPath = "${homeDirectory}/${dotfilesRelPath}";
@@ -50,19 +50,19 @@
         "shopify" = mkHome {
           system = "aarch64-darwin";
           username = "hamish";
-          gitEmail = "hamish.morgan@shopify.com";
+          userEmail = "hamish.morgan@shopify.com";
           dotfilesRelPath = ".dotfiles";
         };
         "personal" = mkHome {
           system = "x86_64-linux";
           username = "hamish";
-          gitEmail = "hamish.morgan@gmail.com";
+          userEmail = "hamish.morgan@gmail.com";
           dotfilesRelPath = ".dotfiles";
         };
         "odin" = mkHome {
           system = "x86_64-linux";
           username = "hamish";
-          gitEmail = "hamish.morgan@gmail.com";
+          userEmail = "hamish.morgan@gmail.com";
         };
       };
 

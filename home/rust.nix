@@ -1,4 +1,4 @@
-_:
+{ userEmail, ... }:
 
 {
   programs.cargo = {
@@ -44,7 +44,7 @@ _:
       cargo-new = {
         vcs = "git";
         name = "Hamish Morgan";
-        email = "hamish.morgan@gmail.com";
+        email = userEmail;
       };
 
       registries.shopify-rust = {

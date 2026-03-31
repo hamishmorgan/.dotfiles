@@ -67,13 +67,9 @@ in
       gtu = "gt up";
 
       # Navigation
-      ".." = "cd ..";
-      "..." = "cd ../..";
-      "...." = "cd ../../..";
       "....." = "cd ../../../..";
 
       # Common
-      c = "clear";
       mkd = "mkdir -p";
       dotcd = "cd ~/.dotfiles";
 

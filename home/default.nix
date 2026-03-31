@@ -14,10 +14,6 @@
     ];
   };
 
-  home.sessionVariables = {
-    LESS = "-R -F -X -S -M";
-  };
-
   home.shellAliases = {
     ".." = "cd ..";
     "..." = "cd ../..";

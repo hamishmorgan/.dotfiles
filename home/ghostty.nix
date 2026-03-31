@@ -17,7 +17,6 @@
       font-family = "JetBrainsMono Nerd Font";
       font-size = if isDarwin then 14 else 10;
       theme = "TokyoNight";
-      macos-titlebar-style = "transparent";
       background-opacity = 0.95;
       background-blur = 20;
       quit-after-last-window-closed = true;
@@ -28,6 +27,8 @@
         "performable:ctrl+c=copy_to_clipboard"
         "ctrl+v=paste_from_clipboard"
       ];
+    } // lib.optionalAttrs isDarwin {
+      macos-titlebar-style = "transparent";
     };
   };
 }
