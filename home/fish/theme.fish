@@ -37,4 +37,3 @@ set -g fish_color_valid_path --underline
 
 # Cancel color
 set -g fish_color_cancel -r
-

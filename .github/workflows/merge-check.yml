@@ -103,7 +103,7 @@ jobs:
             // Summary
             const issues = [];
             const warnings = [];
-            
+
             if (pr.draft) {
               issues.push('PR is in draft status');
             }
@@ -113,7 +113,7 @@ jobs:
             if (status.state === 'failure') {
               issues.push('CI checks are failing');
             }
-            
+
             // Being behind is a warning, not a critical failure (can be resolved by rebase)
             if (isBehind) {
               warnings.push(`PR is ${compare.behind_by} commit(s) behind base branch`);

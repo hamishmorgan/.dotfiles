@@ -1,9 +1,9 @@
-local wezterm = require 'wezterm'
+local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
 -- Font configuration
 -- config.font = wezterm.font 'JetBrainsMono Nerd Font'
-if wezterm.target_triple:find('darwin') then
+if wezterm.target_triple:find("darwin") then
   config.font_size = 14.0
 else
   config.font_size = 10.0
@@ -12,7 +12,7 @@ end
 -- Color scheme
 -- Try these built-in themes: 'Afterglow', 'BatDark', 'Blazer', 'Builtin Dark'
 -- Or visit https://wezfurlong.org/wezterm/colorschemes/ for full list
-config.color_scheme = 'Tokyo Night'
+config.color_scheme = "Tokyo Night"
 
 config.window_decorations = "RESIZE"
 config.window_background_opacity = 0.95
@@ -27,58 +27,58 @@ config.use_fancy_tab_bar = true
 config.scrollback_lines = 10000
 
 -- Performance
-config.front_end = 'WebGpu'
+config.front_end = "WebGpu"
 
 -- Terminal type (requires wezterm terminfo to be installed on the system)
-config.term = 'wezterm'
+config.term = "wezterm"
 
 -- Cursor
-config.default_cursor_style = 'BlinkingBar'
+config.default_cursor_style = "BlinkingBar"
 config.cursor_blink_rate = 500
 
 -- Exit behavior
-config.exit_behavior = 'CloseOnCleanExit'
-config.window_close_confirmation = 'NeverPrompt'
+config.exit_behavior = "CloseOnCleanExit"
+config.window_close_confirmation = "NeverPrompt"
 
 -- Key bindings (cross-platform using SUPER)
 -- SUPER maps to: CMD on macOS, Windows/Super on Linux, Windows key on Windows
 config.keys = {
   -- Split panes
   {
-    key = 'd',
-    mods = 'SUPER',
-    action = wezterm.action.SplitHorizontal { domain = 'CurrentPaneDomain' },
+    key = "d",
+    mods = "SUPER",
+    action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }),
   },
   {
-    key = 'd',
-    mods = 'SUPER|SHIFT',
-    action = wezterm.action.SplitVertical { domain = 'CurrentPaneDomain' },
+    key = "d",
+    mods = "SUPER|SHIFT",
+    action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }),
   },
   -- Navigate panes
   {
-    key = 'LeftArrow',
-    mods = 'SUPER|SHIFT',
-    action = wezterm.action.ActivatePaneDirection 'Left',
+    key = "LeftArrow",
+    mods = "SUPER|SHIFT",
+    action = wezterm.action.ActivatePaneDirection("Left"),
   },
   {
-    key = 'RightArrow',
-    mods = 'SUPER|SHIFT',
-    action = wezterm.action.ActivatePaneDirection 'Right',
+    key = "RightArrow",
+    mods = "SUPER|SHIFT",
+    action = wezterm.action.ActivatePaneDirection("Right"),
   },
   {
-    key = 'UpArrow',
-    mods = 'SUPER|SHIFT',
-    action = wezterm.action.ActivatePaneDirection 'Up',
+    key = "UpArrow",
+    mods = "SUPER|SHIFT",
+    action = wezterm.action.ActivatePaneDirection("Up"),
   },
   {
-    key = 'DownArrow',
-    mods = 'SUPER|SHIFT',
-    action = wezterm.action.ActivatePaneDirection 'Down',
+    key = "DownArrow",
+    mods = "SUPER|SHIFT",
+    action = wezterm.action.ActivatePaneDirection("Down"),
   },
 }
 
 -- Platform-specific settings (macOS only for blur)
-if wezterm.target_triple == 'x86_64-apple-darwin' or wezterm.target_triple == 'aarch64-apple-darwin' then
+if wezterm.target_triple == "x86_64-apple-darwin" or wezterm.target_triple == "aarch64-apple-darwin" then
   -- macOS specific settings
   config.send_composed_key_when_left_alt_is_pressed = false
   config.send_composed_key_when_right_alt_is_pressed = true
