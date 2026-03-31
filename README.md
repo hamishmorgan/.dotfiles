@@ -64,22 +64,18 @@ with a `default.nix`. Everything else is a single `.nix` file.
 
 ## Development
 
-```bash
-# Enter dev shell with linting and testing tools
-nix develop -c fish
+The dev shell is loaded automatically via [direnv](https://direnv.net/)
+(`direnv allow`), or manually with `nix develop`.
 
+```bash
 # Run all lint checks
 make check
 
-# Individual checks
-make check-shell       # shellcheck (bash/zsh scripts)
-make check-fish        # fish --no-execute (syntax check)
-make check-markdown    # markdownlint-cli2
-make check-nix         # nixfmt (format check)
-make check-nix-lint    # statix + deadnix
-
-# Auto-format nix files
+# Auto-format all files
 make fmt
+
+# See all available targets
+make help
 ```
 
 ## License
