@@ -13,7 +13,7 @@ HM := home-manager
         build switch dry-run news packages generations gc option repl
 
 _require-devshell:
-	@command -v shellcheck >/dev/null 2>&1 || \
+	@test -n "$$IN_NIX_SHELL" || \
 		{ printf '\033[31mDev shell not active.\033[0m Run: \033[1mdirenv allow\033[0m or \033[1mnix develop\033[0m\n' >&2; exit 1; }
 
 help: ## Show this help
