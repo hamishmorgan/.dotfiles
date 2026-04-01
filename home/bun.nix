@@ -4,6 +4,7 @@ let
   bunGlobalPackages = [
     "opencode-ai"
     "@mariozechner/pi-coding-agent"
+    "skills"
   ];
 in
 {
