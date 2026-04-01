@@ -30,6 +30,7 @@
   imports = [
     ./bash
     ./bat.nix
+    ./bun.nix
     ./claude
     ./delta.nix
     ./direnv.nix
