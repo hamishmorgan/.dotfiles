@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "nix-best-practices": {
+      "source": "0xbigboss/claude-code",
+      "sourceType": "github",
+      "computedHash": "f6d14bf40d4b505dd50cb389711eae74bc1459740adb27f4641cd75c21042311"
+    }
+  }
+}
