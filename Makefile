@@ -5,7 +5,7 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 .DEFAULT_GOAL := help
 
-PROFILE ?= shopify
+PROFILE ?= $(shell cat .env 2>/dev/null || hostname)
 HM := home-manager
 
 .PHONY: help _require-devshell check check-shell check-fish check-lua check-toml check-yaml \
