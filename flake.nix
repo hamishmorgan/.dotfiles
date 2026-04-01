@@ -91,6 +91,7 @@
               gitleaks
 
               # Utilities
+              bun
               python3
 
               # Nix linting + formatting
