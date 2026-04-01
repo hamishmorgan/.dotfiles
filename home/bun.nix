@@ -3,6 +3,7 @@
 let
   bunGlobalPackages = [
     "opencode-ai"
+    "@mariozechner/pi-coding-agent"
   ];
 in
 {
