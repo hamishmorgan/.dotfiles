@@ -24,12 +24,11 @@ in
     pkgs.nodejs # pi's CLI launcher uses #!/usr/bin/env node
   ];
 
-  home.file = {
-    # Read-only config that pi doesn't modify
-    # ".pi/agent/AGTENTS.md".source = ./AGENTS.md;
-    # ".pi/agent/prompts/review.md".source = ./prompts/review.md;
-    # ".pi/agent/skills/my-skill".source = ./skills/my-skill;
-  };
+  # Set npm global prefix to a writable location so pi's package installer
+  # (which uses `npm install -g`) doesn't try to write into the Nix store.
+  home.file.".npmrc".text = "prefix=~/.npm-global\n";
+
+  home.sessionPath = [ "$HOME/.npm-global/bin" ];
 
   home.activation.bunInstallPi = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     ${pkgs.bun}/bin/bun add -g --no-summary @mariozechner/pi-coding-agent
