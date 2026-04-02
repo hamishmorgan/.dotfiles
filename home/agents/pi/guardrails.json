@@ -1,0 +1,55 @@
+{
+  "enabled": true,
+  "features": {
+    "policies": true,
+    "permissionGate": true
+  },
+  "policies": {
+    "rules": [
+      {
+        "id": "secret-files",
+        "description": "Files containing secrets",
+        "patterns": [
+          { "pattern": ".env" },
+          { "pattern": ".env.local" },
+          { "pattern": ".env.production" },
+          { "pattern": ".env.prod" },
+          { "pattern": ".dev.vars" }
+        ],
+        "allowedPatterns": [
+          { "pattern": ".env.example" },
+          { "pattern": ".env.sample" },
+          { "pattern": ".env.test" }
+        ],
+        "protection": "noAccess",
+        "onlyIfExists": true
+      },
+      {
+        "id": "ssh-keys",
+        "description": "SSH private keys",
+        "patterns": [
+          { "pattern": ".ssh/*" },
+          { "pattern": "*.pem" },
+          { "pattern": "*.key" }
+        ],
+        "allowedPatterns": [
+          { "pattern": "*.pub" }
+        ],
+        "protection": "noAccess",
+        "onlyIfExists": true
+      },
+      {
+        "id": "nix-store",
+        "description": "Nix store is read-only",
+        "patterns": [
+          { "pattern": "/nix/store/**" }
+        ],
+        "protection": "readOnly"
+      }
+    ]
+  },
+  "permissionGate": {
+    "requireConfirmation": true,
+    "explainCommands": false
+  }
+}
