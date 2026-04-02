@@ -24,12 +24,6 @@ in
     pkgs.nodejs # pi's CLI launcher uses #!/usr/bin/env node
   ];
 
-  # Set npm global prefix to a writable location so pi's package installer
-  # (which uses `npm install -g`) doesn't try to write into the Nix store.
-  home.file.".npmrc".text = "prefix=~/.npm-global\n";
-
-  home.sessionPath = [ "$HOME/.npm-global/bin" ];
-
   # Guardrails extension config
   # https://github.com/aliou/pi-guardrails
   home.file.".pi/agent/extensions/guardrails.json".source = ./guardrails.json;

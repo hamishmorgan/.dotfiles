@@ -30,8 +30,8 @@
   imports = [
     ./bash
     ./bat.nix
-    ./bun.nix
     ./agents
+    ./bun.nix
     ./delta.nix
     ./direnv.nix
     ./eza.nix
