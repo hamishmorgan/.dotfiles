@@ -1,16 +1,9 @@
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 
-let
-  bunGlobalPackages = [
-    "opencode-ai"
-    "@mariozechner/pi-coding-agent"
-    "skills"
-  ];
-in
 {
   home.packages = [
     pkgs.bun
-    pkgs.nodejs # needed by bun globals that ship #!/usr/bin/env node launchers
+    pkgs.nodejs # needed by bun globals that ship #!/usr/bin/env node launchers (e.g. pi)
   ];
 
   # Ensure bun global bin is on PATH for all shells
@@ -19,10 +12,6 @@ in
   # fish doesn't source ~/.profile, so add it explicitly
   programs.fish.shellInit = ''
     fish_add_path --path ~/.cache/.bun/bin
-  '';
-
-  home.activation.bunGlobalPackages = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    ${pkgs.bun}/bin/bun add -g --no-summary ${lib.concatStringsSep " " bunGlobalPackages}
   '';
 
   home.shellAliases = {
