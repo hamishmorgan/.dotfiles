@@ -31,7 +31,7 @@
     ./bash
     ./bat.nix
     ./bun.nix
-    ./claude
+    ./agents
     ./delta.nix
     ./direnv.nix
     ./eza.nix
@@ -44,11 +44,8 @@
     ./jq.nix
     ./mise.nix
     ./niri
-    ./opencode.nix
-    ./pi
     ./ripgrep.nix
     ./rust.nix
-    ./skills.nix
     ./ssh.nix
     ./system
     ./tmux.nix
