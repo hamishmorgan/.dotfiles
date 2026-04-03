@@ -28,9 +28,9 @@
   programs.home-manager.enable = true;
 
   imports = [
+    ./agents
     ./bash
     ./bat.nix
-    ./agents
     ./bun.nix
     ./delta.nix
     ./direnv.nix
