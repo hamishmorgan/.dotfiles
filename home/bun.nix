@@ -35,7 +35,10 @@ in
       # Set npm global prefix to a writable location so tools that invoke
       # `npm install -g` (e.g. pi's package manager) don't try to write
       # into the read-only Nix store.
-      file.".npmrc".text = "prefix=~/.npm-global\n";
+      file.".npmrc".text = ''
+        prefix=~/.npm-global
+        fund=false
+      '';
 
       sessionPath = [
         "$HOME/.cache/.bun/bin"
