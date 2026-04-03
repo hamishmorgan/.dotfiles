@@ -45,6 +45,7 @@ in
       "anthropics/skills@skill-creator"
       "https://github.com/obra/superpowers --skill systematic-debugging"
       "https://github.com/obra/superpowers --skill test-driven-development"
+      "https://github.com/obra/superpowers --skill using-git-worktrees"
       "vercel-labs/skills@find-skills"
     ];
   };
