@@ -29,29 +29,25 @@
 
   imports = [
     ./agents
-    ./bash
     ./bat.nix
     ./bun.nix
     ./delta.nix
     ./direnv.nix
     ./eza.nix
     ./fd.nix
-    ./fish
     ./fzf.nix
     ./gh.nix
-    ./ghostty.nix
     ./git
     ./jq.nix
     ./mise.nix
     ./niri
     ./ripgrep.nix
     ./rust.nix
+    ./shells
     ./ssh.nix
     ./system
-    ./tmux.nix
-    ./wezterm
+    ./terminals
     ./zed.nix
     ./zoxide.nix
-    ./zsh
   ];
 }
