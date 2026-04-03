@@ -11,3 +11,11 @@ else
   printf "⚠ gitleaks not installed — skipping secret scan\n"
   printf "  Install: nix develop, or brew install gitleaks\n"
 fi
+
+# Warn if the last CI run failed
+if command -v gh >/dev/null 2>&1; then
+  last_conclusion=$(gh run list --limit 1 --json conclusion --jq '.[0].conclusion' 2>/dev/null || true)
+  if [[ "$last_conclusion" == "failure" ]]; then
+    printf "\n⚠ Last CI run failed. Pushing anyway — check CI after push.\n\n"
+  fi
+fi
