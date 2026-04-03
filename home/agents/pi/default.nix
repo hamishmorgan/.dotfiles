@@ -1,26 +1,13 @@
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}:
+{ config, ... }:
 
 {
   imports = [ ./extensions.nix ];
 
-  home = {
-    packages = [
-      pkgs.nodejs # pi's CLI launcher uses #!/usr/bin/env node
-    ];
+  # Guardrails extension config
+  # https://github.com/aliou/pi-guardrails
+  home.file.".pi/agent/extensions/guardrails.json".source = ./guardrails.json;
 
-    # Guardrails extension config
-    # https://github.com/aliou/pi-guardrails
-    file.".pi/agent/extensions/guardrails.json".source = ./guardrails.json;
-
-    activation.bunInstallPi = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ${pkgs.bun}/bin/bun add -g --no-summary @mariozechner/pi-coding-agent
-    '';
-  };
+  programs.bun.globals = [ "@mariozechner/pi-coding-agent" ];
 
   programs.pi.extensions = [
     "npm:@aliou/pi-guardrails"

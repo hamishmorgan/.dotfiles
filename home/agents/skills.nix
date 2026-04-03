@@ -1,11 +1,5 @@
-{ pkgs, lib, ... }:
+_:
 
 {
-  home = {
-    packages = [ pkgs.nodejs ];
-
-    activation.bunInstallSkills = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ${pkgs.bun}/bin/bun add -g --no-summary skills
-    '';
-  };
+  programs.bun.globals = [ "skills" ];
 }

@@ -1,11 +1,5 @@
-{ pkgs, lib, ... }:
+_:
 
 {
-  home = {
-    packages = [ pkgs.nodejs ];
-
-    activation.bunInstallOpencode = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ${pkgs.bun}/bin/bun add -g --no-summary opencode-ai
-    '';
-  };
+  programs.bun.globals = [ "opencode-ai" ];
 }

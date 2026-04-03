@@ -36,7 +36,7 @@ in
   };
 
   config.home.activation.piInstallExtensions = lib.mkIf (cfg.extensions != [ ]) (
-    lib.hm.dag.entryAfter [ "bunInstallPi" ] ''
+    lib.hm.dag.entryAfter [ "bunInstallGlobals" ] ''
       export PATH="${pkgs.nodejs}/bin:$HOME/.cache/.bun/bin:$HOME/.npm-global/bin:$PATH"
       export npm_config_prefix="$HOME/.npm-global"
       ${extensionInstalls}
