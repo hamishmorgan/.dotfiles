@@ -40,6 +40,7 @@
               homeDirectory
               ;
             dotfilesPath = "${homeDirectory}/${dotfilesRelPath}";
+            mergeJsonFile = import ./lib/merge-json.nix { inherit pkgs; lib = home-manager.lib; };
           };
           modules = [ ./home ];
         };
