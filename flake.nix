@@ -77,6 +77,9 @@
         in
         {
           default = pkgs.mkShell {
+            shellHook = ''
+              git config --local core.hooksPath .githooks
+            '';
             packages = with pkgs; [
               # Linting
               shellcheck
