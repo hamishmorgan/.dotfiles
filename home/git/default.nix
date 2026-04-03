@@ -6,7 +6,7 @@
     gs = "git status";
     ga = "git add";
     gc = "git commit";
-    gp = "git push";
+    gp = "git push && (gh run list --limit 1 --json status,conclusion,url --jq '.[0] | \"CI: \(.status) → \(.url)\"' 2>/dev/null || true)";
     gl = "git pull";
     gd = "git diff";
     glog = "git log --oneline --graph --decorate";
