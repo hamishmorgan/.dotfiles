@@ -12,10 +12,16 @@ else
   printf "  Install: nix develop, or brew install gitleaks\n"
 fi
 
-# Warn if the last CI run failed
+# Warn if the last CI run failed and show actionable details
 if command -v gh >/dev/null 2>&1; then
-  last_conclusion=$(gh run list --limit 1 --json conclusion --jq '.[0].conclusion' 2>/dev/null || true)
-  if [[ "$last_conclusion" == "failure" ]]; then
-    printf "\n⚠ Last CI run failed. Pushing anyway — check CI after push.\n\n"
+  last_run=$(gh run list --limit 1 --json conclusion,url,name --jq '.[0]' 2>/dev/null || true)
+  if [[ -n "$last_run" ]] && [[ "$(echo "$last_run" | jq -r '.conclusion')" == "failure" ]]; then
+    url=$(echo "$last_run" | jq -r '.url')
+    name=$(echo "$last_run" | jq -r '.name')
+    printf "\n⚠ Last CI run failed: %s\n" "$name"
+    printf "  %s\n\n" "$url"
+    printf "  To inspect locally:\n"
+    printf "    nix develop -c make check    # lint & format\n"
+    printf "    gh run view --log-failed     # CI failure log\n\n"
   fi
 fi
