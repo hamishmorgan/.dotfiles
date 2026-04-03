@@ -32,6 +32,9 @@ config.front_end = "WebGpu"
 -- Terminal type (requires wezterm terminfo to be installed on the system)
 config.term = "wezterm"
 
+-- Enable kitty keyboard protocol (needed by pi coding agent)
+config.enable_kitty_keyboard = true
+
 -- Cursor
 config.default_cursor_style = "BlinkingBar"
 config.cursor_blink_rate = 500

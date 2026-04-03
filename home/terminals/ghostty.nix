@@ -26,6 +26,7 @@
       keybind = [
         "performable:ctrl+c=copy_to_clipboard"
         "ctrl+v=paste_from_clipboard"
+        "alt+backspace=text:\x1b\x7f" # pi: reliable alt+backspace via kitty protocol
       ];
     }
     // lib.optionalAttrs isDarwin {
