@@ -24,7 +24,7 @@ jobs:
       - name: Secret scan (gitleaks)
         run: nix develop -c gitleaks git --verbose
 
-      - name: Build Home Manager configs
+      - name: Build Home Manager configs (Linux only — CI is x86_64-linux)
         run: |
-          nix build .#homeConfigurations.shopify.activationPackage --no-link
           nix build .#homeConfigurations.personal.activationPackage --no-link
+          nix build .#homeConfigurations.odin.activationPackage --no-link
