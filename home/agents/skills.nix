@@ -36,7 +36,7 @@ in
 
     home.activation.skillsInstallGlobals = lib.mkIf (cfg.globals != [ ]) (
       lib.hm.dag.entryAfter [ "bunInstallGlobals" ] ''
-        export PATH="${pkgs.nodejs}/bin:$HOME/.cache/.bun/bin:$PATH"
+        export PATH="${pkgs.git}/bin:${pkgs.nodejs}/bin:$HOME/.cache/.bun/bin:$PATH"
         ${installScript}
       ''
     );
