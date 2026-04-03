@@ -11,7 +11,7 @@ let
   installScript = lib.concatMapStringsSep "\n" (
     skill: ''
       echo "Installing ${skill}"
-      if ! ${pkgs.bun}/bin/bunx skills add ${skill} > /tmp/skills-install.log 2>&1; then
+      if ! ${pkgs.bun}/bin/bunx skills add --yes --global ${skill} > /tmp/skills-install.log 2>&1; then
         echo "Warning: failed to install ${skill}" >&2
         cat /tmp/skills-install.log >&2
       fi
