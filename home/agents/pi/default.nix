@@ -21,6 +21,8 @@
       defaultModel = "claude-opus-4-6";
       defaultThinkingLevel = "medium";
       steeringMode = "all";
+      quietStartup = true;
+      collapseChangelog = true;
     };
   };
 }
