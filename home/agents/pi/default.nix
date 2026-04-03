@@ -3,6 +3,9 @@
 {
   imports = [ ./extensions.nix ];
 
+  # Pi reads AGENTS.md from ~/.pi/agent/
+  home.file.".pi/agent/AGENTS.md".source = ../AGENTS.md;
+
   # Guardrails extension config
   # https://github.com/aliou/pi-guardrails
   home.file.".pi/agent/extensions/guardrails.json".source = ./guardrails.json;

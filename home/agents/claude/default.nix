@@ -1,6 +1,8 @@
 _:
 
 {
+  # Claude reads CLAUDE.md from ~/.claude/
+  home.file.".claude/CLAUDE.md".source = ../AGENTS.md;
   programs.claude-code = {
     enable = true;
 
