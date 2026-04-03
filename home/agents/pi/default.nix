@@ -9,7 +9,10 @@
 
   programs.bun.globals = [ "@mariozechner/pi-coding-agent" ];
 
-  programs.pi.extensions = [ "npm:@aliou/pi-guardrails" ];
+  programs.pi.extensions = [
+    "npm:@aliou/pi-guardrails"
+    "npm:pi-powerline-footer"
+  ];
 
   # Merge managed settings into settings.json, preserving pi-managed keys.
   # Keys set here act as defaults — pi can override via /model or /settings,
