@@ -18,10 +18,11 @@ let
   settingsFile = pkgs.writeText "${name}-managed" (builtins.toJSON settings);
 in
 lib.hm.dag.entryAfter after ''
-  mkdir -p "$(dirname "${file}")"
-  [ -f "${file}" ] || echo '{}' > "${file}"
+  target="${file}"
+  mkdir -p "$(dirname "$target")"
+  [ -f "$target" ] || echo '{}' > "$target"
   ${pkgs.jq}/bin/jq -s '.[0] * .[1]' \
-    "${file}" "${settingsFile}" \
-    > "${file}.tmp"
-  mv "${file}.tmp" "${file}"
+    "$target" "${settingsFile}" \
+    > "$target.tmp"
+  mv "$target.tmp" "$target"
 ''

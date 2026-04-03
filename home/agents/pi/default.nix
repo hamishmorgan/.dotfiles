@@ -26,7 +26,7 @@
       piInstallExtensions = lib.hm.dag.entryAfter [ "bunInstallPi" ] ''
         export PATH="${pkgs.nodejs}/bin:$HOME/.cache/.bun/bin:$HOME/.npm-global/bin:$PATH"
         export npm_config_prefix="$HOME/.npm-global"
-        pi install npm:@aliou/pi-guardrails 2>/dev/null || true
+        pi install npm:@aliou/pi-guardrails || echo "Warning: failed to install pi-guardrails" >&2
       '';
 
       # Merge managed settings into settings.json, preserving pi-managed keys.
