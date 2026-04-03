@@ -55,10 +55,5 @@ in
       fish_add_path --path ~/.cache/.bun/bin
       fish_add_path --path ~/.npm-global/bin
     '';
-
-    home.shellAliases = {
-      npx = "bunx";
-      npm = "bun";
-    };
   };
 }
