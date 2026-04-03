@@ -9,7 +9,7 @@ let
   cfg = config.programs.bun;
 
   installScript = lib.concatMapStringsSep "\n" (
-    pkg: ''${pkgs.bun}/bin/bun add -g --no-summary ${pkg}''
+    pkg: "${pkgs.bun}/bin/bun add -g --no-summary ${pkg}"
   ) cfg.globals;
 in
 {

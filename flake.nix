@@ -100,7 +100,7 @@
               # Nix linting + formatting
               deadnix
               statix
-              nixfmt-tree
+              nixfmt
             ];
           };
         }
