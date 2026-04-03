@@ -73,14 +73,6 @@ in
       mkd = "mkdir -p";
       dotcd = "cd ~/.dotfiles";
 
-      # Shopify dev (note: 'd' is a dotfiles function, use 'dev' directly)
-      ds = "dev style";
-      dt = "dev test";
-      dc = "dev console";
-      du = "dev up";
-      ddn = "dev down";
-      dr = "dev reset";
-
       # Docker
       dk = "docker";
       dkps = "docker ps";
