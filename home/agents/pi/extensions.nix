@@ -19,7 +19,7 @@ let
   cfg = config.programs.pi;
 
   extensionInstalls = lib.concatMapStringsSep "\n" (
-    ext: ''pi install ${ext} || echo "Warning: failed to install ${ext}" >&2''
+    ext: ''echo "Installing ${ext}"; pi install ${ext} >/dev/null 2>&1 || echo "Warning: failed to install ${ext}" >&2''
   ) cfg.extensions;
 in
 {
