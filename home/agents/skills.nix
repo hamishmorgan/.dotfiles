@@ -9,7 +9,13 @@ let
   cfg = config.programs.skills;
 
   installScript = lib.concatMapStringsSep "\n" (
-    skill: ''echo "Installing ${skill}"; ${pkgs.bun}/bin/bunx skills add ${skill} >/dev/null 2>&1 || echo "Warning: failed to install ${skill}" >&2''
+    skill: ''
+      echo "Installing ${skill}"
+      if ! ${pkgs.bun}/bin/bunx skills add ${skill} > /tmp/skills-install.log 2>&1; then
+        echo "Warning: failed to install ${skill}" >&2
+        cat /tmp/skills-install.log >&2
+      fi
+    ''
   ) cfg.globals;
 in
 {
