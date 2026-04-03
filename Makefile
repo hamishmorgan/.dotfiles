@@ -36,10 +36,10 @@ check-shell: _require-devshell ## @Linting| Shellcheck + shfmt (bash/zsh)
 	shfmt --diff **/*.bash **/*.zsh
 
 check-fish: _require-devshell ## @Linting| Syntax + formatting (fish)
-	@printf 'fish --no-execute home/fish/*.fish\n'
-	@for f in home/fish/*.fish; do fish --no-execute "$$f" || exit 1; done
-	@printf 'fish_indent --check home/fish/*.fish\n'
-	@for f in home/fish/*.fish; do fish_indent --check "$$f" || exit 1; done
+	@printf 'fish --no-execute home/shells/fish/*.fish\n'
+	@for f in home/shells/fish/*.fish; do fish --no-execute "$$f" || exit 1; done
+	@printf 'fish_indent --check home/shells/fish/*.fish\n'
+	@for f in home/shells/fish/*.fish; do fish_indent --check "$$f" || exit 1; done
 
 check-lua: _require-devshell ## @Linting| Format-check lua (stylua)
 	stylua --check **/*.lua
@@ -51,7 +51,7 @@ check-yaml: _require-devshell ## @Linting| Lint yaml (yamllint)
 	git ls-files '*.yml' '*.yaml' | xargs --no-run-if-empty yamllint --strict
 
 check-markdown: _require-devshell ## @Linting| Lint markdown
-	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md"
+	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md" "!home/agents/skills/**"
 
 check-nix: _require-devshell ## @Linting| Format-check nix (nixfmt)
 	nixfmt --check **/*.nix
@@ -71,7 +71,7 @@ fmt-shell: _require-devshell ## @Formatting| Format bash/zsh (shfmt)
 	shfmt --write **/*.bash **/*.zsh
 
 fmt-fish: _require-devshell ## @Formatting| Format fish (fish_indent)
-	@for f in home/fish/*.fish; do fish_indent --write "$$f"; done
+	@for f in home/shells/fish/*.fish; do fish_indent --write "$$f"; done
 
 fmt-lua: _require-devshell ## @Formatting| Format lua (stylua)
 	stylua **/*.lua
