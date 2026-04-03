@@ -7,7 +7,10 @@
   # https://github.com/aliou/pi-guardrails
   home.file.".pi/agent/extensions/guardrails.json".source = ./guardrails.json;
 
-  programs.bun.globals = [ "@mariozechner/pi-coding-agent" ];
+  programs.bun.globals = [
+    "@mariozechner/pi-coding-agent"
+    "typescript" # needed at runtime by pi-lens (mispackaged as devDependency)
+  ];
 
   programs.pi.extensions = [
     "npm:@aliou/pi-guardrails"
