@@ -5,6 +5,7 @@ _:
     ./claude
     ./opencode.nix
     ./pi
+    ./skills
     ./skills.nix
   ];
 
