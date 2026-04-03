@@ -11,6 +11,7 @@
 
   programs.pi.extensions = [
     "npm:@aliou/pi-guardrails"
+    "npm:pi-lens"
   ];
 
   # Merge managed settings into settings.json, preserving pi-managed keys.
