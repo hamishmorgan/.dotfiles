@@ -39,7 +39,6 @@ in
     lib.hm.dag.entryAfter [ "bunInstallGlobals" ] ''
       export PATH="${pkgs.nodejs}/bin:$HOME/.cache/.bun/bin:$HOME/.npm-global/bin:$PATH"
       export npm_config_prefix="$HOME/.npm-global"
-      export PI_OFFLINE=1
       ${extensionInstalls}
     ''
   );
