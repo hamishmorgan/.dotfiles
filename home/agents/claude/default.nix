@@ -113,6 +113,5 @@ _:
       hasCompletedOnboarding = true;
     };
 
-    memory.source = ./CLAUDE.md;
   };
 }
