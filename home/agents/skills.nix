@@ -44,6 +44,7 @@ in
     programs.skills.globals = [
       "anthropics/skills@skill-creator"
       "https://github.com/obra/superpowers --skill systematic-debugging"
+      "https://github.com/obra/superpowers --skill test-driven-development"
       "vercel-labs/skills@find-skills"
     ];
   };
