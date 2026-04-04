@@ -7,10 +7,20 @@ MAKEFLAGS += --no-builtin-rules
 
 PROFILE ?= $(shell cat .env 2>/dev/null || hostname)
 HM := home-manager
+VALID_PROFILES := shopify personal odin
 
-.PHONY: help _require-devshell check check-shell check-fish check-lua check-toml check-yaml \
-        check-markdown check-nix check-nix-lint fmt fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml \
-        build switch dry-run news packages generations gc option repl
+.PHONY: help _require-devshell _require-profile check check-shell check-fish check-lua check-toml \
+        check-yaml check-markdown check-nix check-nix-lint fmt fmt-nix fmt-shell fmt-fish fmt-lua \
+        fmt-toml build switch dry-run news packages generations gc option repl
+
+_require-profile:
+	@if ! echo ' $(VALID_PROFILES) ' | grep -q ' $(PROFILE) '; then \
+		printf '\033[31mError:\033[0m Unknown profile \033[1m%s\033[0m (from %s)\n' \
+			"$(PROFILE)" "$$(test -f .env && echo '.env' || echo 'hostname fallback')"; \
+		printf '  Valid profiles: %s\n' '$(VALID_PROFILES)'; \
+		printf '  Fix: echo shopify > .env\n'; \
+		exit 1; \
+	fi
 
 _require-devshell:
 	@test -n "$$IN_NIX_SHELL" || \
@@ -81,16 +91,16 @@ fmt-toml: _require-devshell ## @Formatting| Format toml (taplo)
 
 # --- Home Manager ---
 
-build: _require-devshell ## @Home Manager| Build config without activating
+build: _require-devshell _require-profile ## @Home Manager| Build config without activating
 	nix build .#homeConfigurations.$(PROFILE).activationPackage --offline --no-link
 
-switch: _require-devshell ## @Home Manager| Build and activate config
+switch: _require-devshell _require-profile ## @Home Manager| Build and activate config
 	@$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --offline --no-link --print-out-paths)/activate
 
-dry-run: _require-devshell ## @Home Manager| Show what switch would change
+dry-run: _require-devshell _require-profile ## @Home Manager| Show what switch would change
 	$(HM) switch -n --flake .#$(PROFILE)
 
-news: _require-devshell ## @Home Manager| Show unread news
+news: _require-devshell _require-profile ## @Home Manager| Show unread news
 	$(HM) news --flake .#$(PROFILE)
 
 packages: _require-devshell ## @Home Manager| List installed packages
