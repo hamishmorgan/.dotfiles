@@ -32,8 +32,11 @@ in
         pkgs.nodejs # needed by bun globals that ship #!/usr/bin/env node launchers (e.g. pi)
       ];
 
+      sessionVariables.PNPM_HOME = "$HOME/.local/share/pnpm";
+
       sessionPath = [
         "$HOME/.cache/.bun/bin"
+        "$HOME/.local/share/pnpm"
       ];
 
       activation.bunInstallGlobals = lib.mkIf (cfg.globals != [ ]) (
@@ -44,6 +47,7 @@ in
     # fish doesn't source ~/.profile, so add paths explicitly
     programs.fish.shellInit = ''
       fish_add_path --path ~/.cache/.bun/bin
+      fish_add_path --path ~/.local/share/pnpm
     '';
   };
 }
