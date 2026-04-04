@@ -92,10 +92,10 @@ fmt-toml: _require-devshell ## @Formatting| Format toml (taplo)
 # --- Home Manager ---
 
 build: _require-devshell _require-profile ## @Home Manager| Build config without activating
-	nix build .#homeConfigurations.$(PROFILE).activationPackage --offline --no-link
+	nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link
 
 switch: _require-devshell _require-profile ## @Home Manager| Build and activate config
-	@$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --offline --no-link --print-out-paths)/activate
+	@$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)/activate
 
 dry-run: _require-devshell _require-profile ## @Home Manager| Show what switch would change
 	$(HM) switch -n --flake .#$(PROFILE)
