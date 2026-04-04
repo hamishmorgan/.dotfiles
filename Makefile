@@ -11,7 +11,7 @@ VALID_PROFILES := shopify personal odin
 
 .PHONY: help _require-devshell _require-profile check check-shell check-fish check-lua check-toml \
         check-yaml check-markdown check-nix check-nix-lint fmt fmt-nix fmt-shell fmt-fish fmt-lua \
-        fmt-toml build switch dry-run news packages generations gc option repl
+        fmt-toml build switch diff dry-run news packages generations gc option repl
 
 _require-profile:
 	@if ! echo ' $(VALID_PROFILES) ' | grep -q ' $(PROFILE) '; then \
@@ -95,7 +95,29 @@ build: _require-devshell _require-profile ## @Home Manager| Build config without
 	nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link
 
 switch: _require-devshell _require-profile ## @Home Manager| Build and activate config
-	@$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)/activate
+	@out=$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)
+	set +e
+	"$$out/activate"
+	rc=$$?
+	set -e
+	if [ $$rc -ne 0 ]; then
+		printf '\n\033[33mTip:\033[0m Run \033[1mmake diff\033[0m to see what would change in conflicting files.\n'
+		exit $$rc
+	fi
+
+diff: _require-devshell _require-profile ## @Home Manager| Diff files that would be clobbered on switch
+	@gen=$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)
+	found=0
+	while IFS= read -r -d '' nf; do
+		rel="$${nf#$$gen/home-files/}"
+		cur="$$HOME/$$rel"
+		if [ -e "$$cur" ] && ! [ -L "$$cur" ] && ! diff -q "$$cur" "$$nf" >/dev/null 2>&1; then
+			found=1
+			printf '\n\033[1;33m~/%s\033[0m\n' "$$rel"
+			diff -u --color=always --label "a/$$rel (current)" --label "b/$$rel (incoming)" "$$cur" "$$nf" || true
+		fi
+	done < <(find -L "$$gen/home-files" -not -type d -print0)
+	if [ "$$found" -eq 0 ]; then printf '\033[32mNo conflicts — switch is safe.\033[0m\n'; fi
 
 dry-run: _require-devshell _require-profile ## @Home Manager| Show what switch would change
 	$(HM) switch -n --flake .#$(PROFILE)
