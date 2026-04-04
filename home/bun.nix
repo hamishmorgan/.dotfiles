@@ -32,17 +32,8 @@ in
         pkgs.nodejs # needed by bun globals that ship #!/usr/bin/env node launchers (e.g. pi)
       ];
 
-      # Set npm global prefix to a writable location so tools that invoke
-      # `npm install -g` (e.g. pi's package manager) don't try to write
-      # into the read-only Nix store.
-      file.".npmrc".text = ''
-        prefix=~/.npm-global
-        fund=false
-      '';
-
       sessionPath = [
         "$HOME/.cache/.bun/bin"
-        "$HOME/.npm-global/bin"
       ];
 
       activation.bunInstallGlobals = lib.mkIf (cfg.globals != [ ]) (
@@ -53,7 +44,6 @@ in
     # fish doesn't source ~/.profile, so add paths explicitly
     programs.fish.shellInit = ''
       fish_add_path --path ~/.cache/.bun/bin
-      fish_add_path --path ~/.npm-global/bin
     '';
   };
 }
