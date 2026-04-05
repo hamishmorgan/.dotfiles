@@ -43,6 +43,7 @@
           username,
           userEmail,
           dotfilesRelPath ? ".dotfiles",
+          enableNiri ? false,
           enableOllama ? false,
         }:
         let
@@ -58,6 +59,7 @@
               isDarwin
               userEmail
               homeDirectory
+              enableNiri
               enableOllama
               ;
             dotfilesPath = "${homeDirectory}/${dotfilesRelPath}";
@@ -86,6 +88,7 @@
           username = "hamish";
           userEmail = "hamish.morgan@gmail.com";
           dotfilesRelPath = "git/github.com/hamishmorgan/.dotfiles";
+          enableNiri = true;
         };
         "loki" = mkHome {
           system = "x86_64-linux";

@@ -2,14 +2,16 @@
   lib,
   pkgs,
   dotfilesPath,
+  enableNiri ? false,
   ...
 }:
 
-lib.mkIf pkgs.stdenv.isLinux {
+lib.mkIf enableNiri {
   # Create a direct symlink (not through nix store) so niri's
   # inotify-based live-reload works. Two-level symlinks via
   # mkOutOfStoreSymlink break inotify.
   home.activation.niriConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    mkdir -p "$HOME/.config/niri"
     ln -sfn "${dotfilesPath}/home/niri/config.kdl" "$HOME/.config/niri/config.kdl"
   '';
 
