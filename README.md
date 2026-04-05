@@ -36,6 +36,14 @@ cd ~/.dotfiles
 nix develop -c make home-switch PROFILE=<profile>
 ```
 
+To set fish as the login shell (non-NixOS only — NixOS handles this
+via `users.users.<name>.shell`):
+
+```bash
+echo "$(which fish)" | sudo tee -a /etc/shells
+chsh -s "$(which fish)"
+```
+
 If replacing existing dotfiles (e.g. from dotbot), remove old symlinks
 first to avoid conflicts:
 
