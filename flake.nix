@@ -17,7 +17,7 @@
     };
     noctalia = {
       url = "github:noctalia-dev/noctalia-shell";
-      # Don't follow our nixpkgs — noctalia requires unstable
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
   };
 
