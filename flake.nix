@@ -43,7 +43,7 @@
           username,
           userEmail,
           dotfilesRelPath ? "git/github.com/hamishmorgan/.dotfiles",
-          enableOllama ? true,
+          enableOllama ? false,
         }:
         let
           pkgs = nixpkgs-unstable.legacyPackages.${system};
@@ -76,17 +76,20 @@
           username = "hamish";
           userEmail = "hamish.morgan@shopify.com";
           dotfilesRelPath = ".dotfiles";
+          enableOllama = false;
         };
         "personal" = mkHome {
           system = "x86_64-linux";
           username = "hamish";
           userEmail = "hamish.morgan@gmail.com";
           dotfilesRelPath = ".dotfiles";
+          enableOllama = false;
         };
         "odin" = mkHome {
           system = "x86_64-linux";
           username = "hamish";
           userEmail = "hamish.morgan@gmail.com";
+          enableOllama = false;
         };
       };
 
