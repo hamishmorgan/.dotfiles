@@ -43,6 +43,7 @@
           username,
           userEmail,
           dotfilesRelPath ? "git/github.com/hamishmorgan/.dotfiles",
+          enableOllama ? true,
         }:
         let
           pkgs = nixpkgs-unstable.legacyPackages.${system};
@@ -57,6 +58,7 @@
               isDarwin
               userEmail
               homeDirectory
+              enableOllama
               ;
             dotfilesPath = "${homeDirectory}/${dotfilesRelPath}";
           };
