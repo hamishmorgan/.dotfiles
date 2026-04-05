@@ -1,5 +1,5 @@
 {
-  description = "Hamish's dotfiles managed with Home Manager";
+  description = "Hamish's dotfiles (Home Manager) and system config (NixOS)";
 
   nixConfig = {
     extra-substituters = [ "https://noctalia.cachix.org" ];
