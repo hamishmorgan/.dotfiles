@@ -1,22 +1,41 @@
 {
   description = "Hamish's dotfiles managed with Home Manager";
 
+  nixConfig = {
+    extra-substituters = [ "https://noctalia.cachix.org" ];
+    extra-trusted-public-keys = [
+      "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
+    ];
+  };
+
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
     home-manager = {
       url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+    noctalia = {
+      url = "github:noctalia-dev/noctalia-shell";
+      # Don't follow our nixpkgs — noctalia requires unstable
     };
   };
 
   outputs =
-    { nixpkgs, home-manager, ... }:
+    {
+      self,
+      nixpkgs-unstable,
+      nixpkgs-stable,
+      home-manager,
+      noctalia,
+      ...
+    }:
     let
       supportedSystems = [
         "aarch64-darwin"
         "x86_64-linux"
       ];
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+      forAllSystems = nixpkgs-unstable.lib.genAttrs supportedSystems;
 
       mkHome =
         {
@@ -26,7 +45,7 @@
           dotfilesRelPath ? "git/github.com/hamishmorgan/.dotfiles",
         }:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = nixpkgs-unstable.legacyPackages.${system};
           inherit (pkgs.stdenv) isDarwin;
           homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
         in
@@ -73,7 +92,7 @@
       devShells = forAllSystems (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = nixpkgs-unstable.legacyPackages.${system};
         in
         {
           default = pkgs.mkShell {
@@ -109,7 +128,19 @@
         }
       );
 
+      # NixOS system configurations
+      nixosConfigurations.odin = nixpkgs-stable.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = {
+          inherit nixpkgs-stable noctalia;
+        };
+        modules = [
+          ./hosts/odin/configuration.nix
+          { system.configurationRevision = self.rev or self.dirtyRev or "dirty"; }
+        ];
+      };
+
       # Allow `nix fmt`
-      formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
+      formatter = forAllSystems (system: nixpkgs-unstable.legacyPackages.${system}.nixfmt);
     };
 }
