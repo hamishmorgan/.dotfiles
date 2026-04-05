@@ -18,7 +18,7 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v30
 
-      - name: Lint (shellcheck + fish + markdownlint + nixpkgs-fmt + statix + deadnix)
+      - name: Lint (shellcheck + fish + markdownlint + nixfmt + statix + deadnix)
         run: nix develop -c make check
 
       - name: Secret scan (gitleaks)
