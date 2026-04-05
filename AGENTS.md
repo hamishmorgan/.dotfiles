@@ -27,9 +27,3 @@ or `make host-switch` (`HOST` from hostname)
 
 Run `make check` before committing. Run `make fmt` to auto-format.
 Run `make help` for all targets.
-
-## Git Commit Attribution
-
-```text
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
-```
