@@ -41,6 +41,7 @@
     ./jq.nix
     ./mise.nix
     ./niri
+    ./npm.nix
     ./ripgrep.nix
     ./rust.nix
     ./shells
