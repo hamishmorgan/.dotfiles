@@ -110,6 +110,7 @@ home-build: _require-devshell _require-profile ## @Home Manager| Build config wi
 
 home-switch: _require-devshell _require-profile ## @Home Manager| Build and activate config
 	@out=$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)
+	export HOME_MANAGER_BACKUP_EXT="hm-bak"
 	set +e
 	"$$out/activate"
 	rc=$$?
