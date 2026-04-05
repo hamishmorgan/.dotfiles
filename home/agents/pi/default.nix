@@ -15,6 +15,7 @@
   programs.pi.extensions = [
     "npm:@aliou/pi-guardrails"
     "npm:pi-powerline-footer"
+    "npm:pi-web-access"
   ];
 
   # Merge managed settings into settings.json, preserving pi-managed keys.
