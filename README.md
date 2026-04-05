@@ -27,14 +27,10 @@ Run `make help` for all targets.
 On a machine without Nix installed:
 
 ```bash
-# 1. Install Nix (multi-user)
-sh <(curl -L https://nixos.org/nix/install) --daemon
+# 1. Install Nix (flakes enabled out of the box)
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 
-# 2. Enable flakes
-mkdir -p ~/.config/nix
-echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
-
-# 3. Clone and activate
+# 2. Clone and activate
 git clone https://github.com/hamishmorgan/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 nix develop -c make home-switch PROFILE=<profile>
