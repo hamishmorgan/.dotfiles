@@ -4,7 +4,7 @@
 
 Nix Home Manager dotfiles. Cross-platform: macOS (aarch64-darwin) and Linux (x86_64-linux).
 
-**Activation:** `make switch` (defaults to `PROFILE=shopify`) or `home-manager switch --flake .#<profile>`
+**Activation:** `make home-switch` (defaults to `PROFILE=shopify`) or `make host-switch` (defaults to `HOST=hostname`)
 
 **Profiles:** `shopify` (macOS), `personal` (Linux), `odin` (Linux)
 

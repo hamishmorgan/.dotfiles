@@ -6,12 +6,16 @@ MAKEFLAGS += --no-builtin-rules
 .DEFAULT_GOAL := help
 
 PROFILE ?= $(shell cat .env 2>/dev/null || hostname)
+HOST ?= $(shell hostname)
 HM := home-manager
 VALID_PROFILES := shopify personal odin
+VALID_HOSTS := odin
 
-.PHONY: help _require-devshell _require-profile check check-shell check-fish check-lua check-toml \
-        check-yaml check-markdown check-nix check-nix-lint fmt fmt-nix fmt-shell fmt-fish fmt-lua \
-        fmt-toml build switch diff dry-run news packages generations gc option repl
+.PHONY: help _require-devshell _require-profile _require-host check check-shell check-fish \
+        check-lua check-toml check-yaml check-markdown check-nix check-nix-lint fmt fmt-nix \
+        fmt-shell fmt-fish fmt-lua fmt-toml switch home-build home-switch home-diff home-dry-run \
+        home-news home-packages home-generations home-gc home-option home-repl host-build \
+        host-switch host-diff
 
 _require-profile:
 	@if ! echo ' $(VALID_PROFILES) ' | grep -q ' $(PROFILE) '; then \
@@ -19,6 +23,14 @@ _require-profile:
 			"$(PROFILE)" "$$(test -f .env && echo '.env' || echo 'hostname fallback')"; \
 		printf '  Valid profiles: %s\n' '$(VALID_PROFILES)'; \
 		printf '  Fix: echo shopify > .env\n'; \
+		exit 1; \
+	fi
+
+_require-host:
+	@if ! echo ' $(VALID_HOSTS) ' | grep -q ' $(HOST) '; then \
+		printf '\033[31mError:\033[0m Unknown host \033[1m%s\033[0m (from %s)\n' \
+			"$(HOST)" "$$(test "$(HOST)" = "$$(hostname)" && echo 'hostname fallback' || echo 'HOST=...')"; \
+		printf '  Valid hosts: %s\n' '$(VALID_HOSTS)'; \
 		exit 1; \
 	fi
 
@@ -91,21 +103,23 @@ fmt-toml: _require-devshell ## @Formatting| Format toml (taplo)
 
 # --- Home Manager ---
 
-build: _require-devshell _require-profile ## @Home Manager| Build config without activating
+switch: home-switch ## @Home Manager| Alias for home-switch
+
+home-build: _require-devshell _require-profile ## @Home Manager| Build config without activating
 	nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link
 
-switch: _require-devshell _require-profile ## @Home Manager| Build and activate config
+home-switch: _require-devshell _require-profile ## @Home Manager| Build and activate config
 	@out=$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)
 	set +e
 	"$$out/activate"
 	rc=$$?
 	set -e
 	if [ $$rc -ne 0 ]; then
-		printf '\n\033[33mTip:\033[0m Run \033[1mmake diff\033[0m to see what would change in conflicting files.\n'
+		printf '\n\033[33mTip:\033[0m Run \033[1mmake home-diff\033[0m to see what would change in conflicting files.\n'
 		exit $$rc
 	fi
 
-diff: _require-devshell _require-profile ## @Home Manager| Diff files that would be clobbered on switch
+home-diff: _require-devshell _require-profile ## @Home Manager| Diff files that would be clobbered on switch
 	@gen=$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)
 	found=0
 	while IFS= read -r -d '' nf; do
@@ -119,29 +133,40 @@ diff: _require-devshell _require-profile ## @Home Manager| Diff files that would
 	done < <(find -L "$$gen/home-files" -not -type d -print0)
 	if [ "$$found" -eq 0 ]; then printf '\033[32mNo conflicts — switch is safe.\033[0m\n'; fi
 
-dry-run: _require-devshell _require-profile ## @Home Manager| Show what switch would change
+home-dry-run: _require-devshell _require-profile ## @Home Manager| Show what switch would change
 	$(HM) switch -n --flake .#$(PROFILE)
 
-news: _require-devshell _require-profile ## @Home Manager| Show unread news
+home-news: _require-devshell _require-profile ## @Home Manager| Show unread news
 	$(HM) news --flake .#$(PROFILE)
 
-packages: _require-devshell ## @Home Manager| List installed packages
+home-packages: _require-devshell ## @Home Manager| List installed packages
 	$(HM) packages
 
-generations: _require-devshell ## @Home Manager| List config generations
+home-generations: _require-devshell ## @Home Manager| List config generations
 	$(HM) generations
 
-gc: _require-devshell ## @Home Manager| Remove generations >30d + collect garbage
+home-gc: _require-devshell ## @Home Manager| Remove generations >30d + collect garbage
 	$(HM) expire-generations "-30 days"
 	nix-collect-garbage
 
-option: _require-devshell ## @Home Manager| Inspect option (OPT=programs.git)
+home-option: _require-devshell ## @Home Manager| Inspect option (OPT=programs.git)
 ifndef OPT
-	$(error Usage: make option OPT=programs.git.settings.push)
+	$(error Usage: make home-option OPT=programs.git.settings.push)
 endif
 	@json=$$(nix eval .#homeConfigurations.$(PROFILE).config.$(OPT) --json 2>/dev/null) \
 		&& printf '%s' "$$json" | jq . \
 		|| printf '\033[33mEvaluation failed — try a more specific path (e.g. programs.git.settings)\033[0m\n' >&2
 
-repl: _require-devshell ## @Home Manager| Open config in nix repl
+home-repl: _require-devshell ## @Home Manager| Open config in nix repl
 	$(HM) repl --flake .#$(PROFILE)
+
+# --- NixOS ---
+
+host-build: _require-devshell _require-host ## @NixOS| Build system config without activating
+	nixos-rebuild build --flake .#$(HOST)
+
+host-switch: _require-devshell _require-host ## @NixOS| Build and activate system config (requires sudo)
+	sudo nixos-rebuild switch --flake .#$(HOST)
+
+host-diff: _require-devshell _require-host ## @NixOS| Show what would change on switch
+	nixos-rebuild dry-activate --flake .#$(HOST)
