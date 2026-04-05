@@ -129,16 +129,7 @@
       );
 
       # NixOS system configurations
-      nixosConfigurations.odin = nixpkgs-stable.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = {
-          inherit nixpkgs-stable noctalia;
-        };
-        modules = [
-          ./hosts/odin/configuration.nix
-          { system.configurationRevision = self.rev or self.dirtyRev or "dirty"; }
-        ];
-      };
+      nixosConfigurations.odin = import ./hosts/odin { inherit self nixpkgs-stable noctalia; };
 
       # Allow `nix fmt`
       formatter = forAllSystems (system: nixpkgs-unstable.legacyPackages.${system}.nixfmt);
