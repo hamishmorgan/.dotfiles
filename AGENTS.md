@@ -4,7 +4,8 @@
 
 Nix Home Manager dotfiles and NixOS system config. Cross-platform: macOS (aarch64-darwin) and Linux (x86_64-linux).
 
-**Activation:** `make home-switch` (defaults to `PROFILE=shopify`) or `make host-switch` (defaults to `HOST=hostname`)
+**Activation:** `make home-switch` (`PROFILE` from `.env` or hostname)
+or `make host-switch` (`HOST` from hostname)
 
 **Profiles:** `shopify` (macOS), `personal` (Linux), `odin` (Linux)
 
@@ -41,8 +42,6 @@ fish, stylua, taplo, yamllint, markdownlint-cli2, nixfmt, statix, deadnix, etc.
 - `~/.claude/settings.local.json` — API keys, enterprise proxy
 
 The `__HM_SHOPIFY_INIT_DONE` guard in shopify init scripts prevents double-sourcing.
-
-**Hosts:** `odin` (NixOS, x86_64-linux)
 
 ## Code Standards
 
