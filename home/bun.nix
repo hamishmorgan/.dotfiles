@@ -29,7 +29,6 @@ in
     home = {
       packages = [
         pkgs.bun
-        pkgs.nodejs # needed by bun globals that ship #!/usr/bin/env node launchers (e.g. pi)
       ];
 
       sessionVariables.PNPM_HOME = "$HOME/.local/share/pnpm";

@@ -2,6 +2,7 @@
   config,
   isDarwin,
   lib,
+  pkgs,
   ...
 }:
 
@@ -10,16 +11,20 @@ let
   cacheDir = "${config.xdg.cacheHome}/npm";
 in
 {
-  config = lib.mkIf (!isDarwin) {
-    home.sessionVariables = {
-      NPM_CONFIG_PREFIX = dataDir;
-      NPM_CONFIG_CACHE = cacheDir;
-    };
+  config = lib.mkMerge [
+    { home.packages = [ pkgs.nodejs ]; }
 
-    home.sessionPath = [ "${dataDir}/bin" ];
+    (lib.mkIf (!isDarwin) {
+      home.sessionVariables = {
+        NPM_CONFIG_PREFIX = dataDir;
+        NPM_CONFIG_CACHE = cacheDir;
+      };
 
-    programs.fish.shellInit = ''
-      fish_add_path --path ${dataDir}/bin
-    '';
-  };
+      home.sessionPath = [ "${dataDir}/bin" ];
+
+      programs.fish.shellInit = ''
+        fish_add_path --path ${dataDir}/bin
+      '';
+    })
+  ];
 }
