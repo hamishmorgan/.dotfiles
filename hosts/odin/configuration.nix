@@ -10,61 +10,104 @@
     ./hardware-configuration.nix
   ];
 
-  nix.settings.experimental-features = [
-    "nix-command"
-    "flakes"
-  ];
-  nix.settings.auto-optimise-store = true;
-  nix.settings.max-jobs = "auto";
-  nix.settings.cores = 0;
-
-  nix.registry.nixpkgs.flake = nixpkgs-stable;
-  nix.nixPath = [ "nixpkgs=${nixpkgs-stable}" ];
-
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 30d";
+  nix = {
+    settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+      auto-optimise-store = true;
+      max-jobs = "auto";
+      cores = 0;
+    };
+    registry.nixpkgs.flake = nixpkgs-stable;
+    nixPath = [ "nixpkgs=${nixpkgs-stable}" ];
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 30d";
+    };
   };
 
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.systemd-boot.configurationLimit = 10;
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader = {
+    systemd-boot = {
+      enable = true;
+      configurationLimit = 10;
+    };
+    efi.canTouchEfiVariables = true;
+  };
 
-  networking.hostName = "odin";
-  networking.networkmanager.enable = true;
+  networking = {
+    hostName = "odin";
+    networkmanager.enable = true;
+  };
 
   time.timeZone = "Europe/London";
   i18n.defaultLocale = "en_GB.UTF-8";
 
   # Display manager and desktops
-  services.xserver.enable = true;
-  services.displayManager.gdm.enable = true;
-  services.desktopManager.gnome.enable = true;
-  services.gnome.core-apps.enable = false;
-  services.xserver.videoDrivers = [ "nvidia" ];
+  services = {
+    xserver = {
+      enable = true;
+      videoDrivers = [ "nvidia" ];
+    };
+    displayManager.gdm.enable = true;
+    desktopManager.gnome.enable = true;
+    gnome.core-apps.enable = false;
 
-  # Niri (scrollable tiling Wayland compositor)
-  programs.niri.enable = true;
+    btrfs.autoScrub = {
+      enable = true;
+      interval = "monthly";
+      fileSystems = [ "/" ];
+    };
 
-  # Nvidia
-  hardware.nvidia = {
-    modesetting.enable = true;
-    open = true; # GA102 (Ampere) supports open kernel modules; revert if issues
-    nvidiaSettings = true;
+    printing.enable = true;
+    avahi = {
+      enable = true;
+      nssmdns4 = true;
+      openFirewall = true;
+    };
+
+    pipewire = {
+      enable = true;
+      alsa.enable = true;
+      pulse.enable = true;
+    };
+
+    envfs.enable = true;
+    flatpak.enable = true;
   };
-  hardware.graphics.enable = true;
 
-  services.btrfs.autoScrub = {
-    enable = true;
-    interval = "monthly";
-    fileSystems = [ "/" ];
+  programs = {
+    niri.enable = true;
+    nix-ld.enable = true;
+    steam.enable = true;
+    firefox.enable = true;
+    neovim = {
+      enable = true;
+      defaultEditor = true;
+    };
+    fish.enable = true;
+    zsh.enable = true;
+    gnupg.agent.enable = true;
+    _1password.enable = true;
+    _1password-gui = {
+      enable = true;
+      polkitPolicyOwners = [ "hamish" ];
+    };
   };
 
-  # Bluetooth (Broadcom BCM20702A1)
-  hardware.bluetooth.enable = true;
-  hardware.enableRedistributableFirmware = true;
-  hardware.firmware = [ pkgs.broadcom-bt-firmware ];
+  hardware = {
+    nvidia = {
+      modesetting.enable = true;
+      open = true; # GA102 (Ampere) supports open kernel modules; revert if issues
+      nvidiaSettings = true;
+    };
+    graphics.enable = true;
+    bluetooth.enable = true;
+    enableRedistributableFirmware = true;
+    firmware = [ pkgs.broadcom-bt-firmware ];
+  };
 
   # Reduce niri VRAM usage (NVIDIA heap reuse quirk)
   environment.etc."nvidia/nvidia-application-profiles-rc.d/50-niri-vram.json".text = builtins.toJSON {
@@ -90,21 +133,6 @@
     ];
   };
 
-  # Printing
-  services.printing.enable = true;
-  services.avahi = {
-    enable = true;
-    nssmdns4 = true;
-    openFirewall = true;
-  };
-
-  # Audio
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    pulse.enable = true;
-  };
-
   # Auth and secrets (polkit, gnome-keyring, and xdg portals are provided by GNOME)
   security.pam.services.swaylock = { };
 
@@ -117,29 +145,6 @@
       "wheel"
       "networkmanager"
     ];
-  };
-
-  programs.nix-ld.enable = true;
-  services.envfs.enable = true;
-
-  services.flatpak.enable = true;
-
-  programs.steam.enable = true;
-  programs.firefox.enable = true;
-  programs.neovim = {
-    enable = true;
-    defaultEditor = true;
-  };
-
-  programs.fish.enable = true;
-  programs.zsh.enable = true;
-
-  programs.gnupg.agent.enable = true;
-
-  programs._1password.enable = true;
-  programs._1password-gui = {
-    enable = true;
-    polkitPolicyOwners = [ "hamish" ];
   };
 
   fonts.packages = with pkgs; [

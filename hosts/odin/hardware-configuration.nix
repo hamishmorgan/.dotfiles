@@ -2,7 +2,6 @@
 {
   config,
   lib,
-  pkgs,
   modulesPath,
   ...
 }:
@@ -12,69 +11,75 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  boot.initrd.availableKernelModules = [
-    "nvme"
-    "xhci_pci"
-    "ahci"
-    "usbhid"
-    "usb_storage"
-    "sd_mod"
-  ];
-  boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ ];
-  boot.extraModulePackages = [ ];
-
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/ea5debef-eb10-46cb-9d26-269c40f5ecbd";
-    fsType = "btrfs";
-    options = [
-      "subvol=root"
-      "compress=zstd"
-      "noatime"
-      "discard=async"
-    ];
+  boot = {
+    initrd = {
+      availableKernelModules = [
+        "nvme"
+        "xhci_pci"
+        "ahci"
+        "usbhid"
+        "usb_storage"
+        "sd_mod"
+      ];
+      kernelModules = [ ];
+    };
+    kernelModules = [ ];
+    extraModulePackages = [ ];
   };
 
-  fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/ea5debef-eb10-46cb-9d26-269c40f5ecbd";
-    fsType = "btrfs";
-    options = [
-      "subvol=home"
-      "compress=zstd"
-      "noatime"
-      "discard=async"
-    ];
-  };
+  fileSystems = {
+    "/" = {
+      device = "/dev/disk/by-uuid/ea5debef-eb10-46cb-9d26-269c40f5ecbd";
+      fsType = "btrfs";
+      options = [
+        "subvol=root"
+        "compress=zstd"
+        "noatime"
+        "discard=async"
+      ];
+    };
 
-  fileSystems."/nix" = {
-    device = "/dev/disk/by-uuid/ea5debef-eb10-46cb-9d26-269c40f5ecbd";
-    fsType = "btrfs";
-    options = [
-      "subvol=nix"
-      "compress=zstd"
-      "noatime"
-      "discard=async"
-    ];
-  };
+    "/home" = {
+      device = "/dev/disk/by-uuid/ea5debef-eb10-46cb-9d26-269c40f5ecbd";
+      fsType = "btrfs";
+      options = [
+        "subvol=home"
+        "compress=zstd"
+        "noatime"
+        "discard=async"
+      ];
+    };
 
-  fileSystems."/var/log" = {
-    device = "/dev/disk/by-uuid/ea5debef-eb10-46cb-9d26-269c40f5ecbd";
-    fsType = "btrfs";
-    options = [
-      "subvol=log"
-      "compress=zstd"
-      "noatime"
-      "discard=async"
-    ];
-  };
+    "/nix" = {
+      device = "/dev/disk/by-uuid/ea5debef-eb10-46cb-9d26-269c40f5ecbd";
+      fsType = "btrfs";
+      options = [
+        "subvol=nix"
+        "compress=zstd"
+        "noatime"
+        "discard=async"
+      ];
+    };
 
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/24C3-ACBA";
-    fsType = "vfat";
-    options = [
-      "fmask=0077"
-      "dmask=0077"
-    ];
+    "/var/log" = {
+      device = "/dev/disk/by-uuid/ea5debef-eb10-46cb-9d26-269c40f5ecbd";
+      fsType = "btrfs";
+      options = [
+        "subvol=log"
+        "compress=zstd"
+        "noatime"
+        "discard=async"
+      ];
+    };
+
+    "/boot" = {
+      device = "/dev/disk/by-uuid/24C3-ACBA";
+      fsType = "vfat";
+      options = [
+        "fmask=0077"
+        "dmask=0077"
+      ];
+    };
   };
 
   swapDevices = [ { device = "/dev/disk/by-uuid/74b3b75d-1132-4862-bf56-9ba24208f9e3"; } ];
