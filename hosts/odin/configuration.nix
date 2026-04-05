@@ -16,6 +16,7 @@
         "nix-command"
         "flakes"
       ];
+      trusted-users = [ "hamish" ];
       auto-optimise-store = true;
       max-jobs = "auto";
       cores = 0;
