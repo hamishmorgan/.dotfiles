@@ -1,7 +1,7 @@
 {
   pkgs,
   lib,
-  enableOllama ? true,
+  enableOllama ? false,
   ...
 }:
 

@@ -28,3 +28,7 @@ jobs:
         run: |
           nix build .#homeConfigurations.personal.activationPackage --no-link
           nix build .#homeConfigurations.odin.activationPackage --no-link
+
+      - name: Build NixOS configs
+        run: |
+          nix build .#nixosConfigurations.odin.config.system.build.toplevel --no-link --accept-flake-config

@@ -2,8 +2,10 @@
 # Pre-commit hook: lint + secret scan
 set -euo pipefail
 
-# Lint (shellcheck, markdownlint, nixpkgs-fmt, statix, deadnix)
-if command -v nix >/dev/null 2>&1; then
+# Lint (shellcheck, markdownlint, nixfmt, statix, deadnix)
+if [[ -n "${IN_NIX_SHELL:-}" ]]; then
+  make check
+elif command -v nix >/dev/null 2>&1; then
   nix develop -c make check
 fi
 
