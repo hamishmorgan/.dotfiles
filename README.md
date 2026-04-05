@@ -47,6 +47,13 @@ first to avoid conflicts:
 rm ~/.zshrc ~/.gitconfig  # etc — whatever the old tool managed
 ```
 
+If SSHing from Ghostty, install its terminfo on the remote machine
+first (fixes broken backspace/delete):
+
+```bash
+infocmp xterm-ghostty | ssh <host> tic -x -
+```
+
 ## Structure
 
 ```text
