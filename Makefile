@@ -8,7 +8,7 @@ MAKEFLAGS += --no-builtin-rules
 PROFILE ?= $(shell cat .env 2>/dev/null || hostname)
 HOST ?= $(shell hostname)
 HM := home-manager
-VALID_PROFILES := shopify personal odin
+VALID_PROFILES := shopify personal odin loki
 VALID_HOSTS := odin
 
 .PHONY: help _require-devshell _require-profile _require-host check check-shell check-fish \

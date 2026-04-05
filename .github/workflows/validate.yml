@@ -28,6 +28,7 @@ jobs:
         run: |
           nix build .#homeConfigurations.personal.activationPackage --no-link
           nix build .#homeConfigurations.odin.activationPackage --no-link
+          nix build .#homeConfigurations.loki.activationPackage --no-link
 
       - name: Build NixOS configs
         run: |

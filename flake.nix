@@ -42,7 +42,7 @@
           system,
           username,
           userEmail,
-          dotfilesRelPath ? "git/github.com/hamishmorgan/.dotfiles",
+          dotfilesRelPath ? ".dotfiles",
           enableOllama ? false,
         }:
         let
@@ -75,15 +75,19 @@
           system = "aarch64-darwin";
           username = "hamish";
           userEmail = "hamish.morgan@shopify.com";
-          dotfilesRelPath = ".dotfiles";
         };
         "personal" = mkHome {
           system = "x86_64-linux";
           username = "hamish";
           userEmail = "hamish.morgan@gmail.com";
-          dotfilesRelPath = ".dotfiles";
         };
         "odin" = mkHome {
+          system = "x86_64-linux";
+          username = "hamish";
+          userEmail = "hamish.morgan@gmail.com";
+          dotfilesRelPath = "git/github.com/hamishmorgan/.dotfiles";
+        };
+        "loki" = mkHome {
           system = "x86_64-linux";
           username = "hamish";
           userEmail = "hamish.morgan@gmail.com";

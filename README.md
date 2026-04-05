@@ -22,6 +22,31 @@ make host-switch                    # HOST from hostname
 
 Run `make help` for all targets.
 
+## Bootstrap (New Machine)
+
+On a machine without Nix installed:
+
+```bash
+# 1. Install Nix (multi-user)
+sh <(curl -L https://nixos.org/nix/install) --daemon
+
+# 2. Enable flakes
+mkdir -p ~/.config/nix
+echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+
+# 3. Clone and activate
+git clone https://github.com/hamishmorgan/.dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
+nix develop -c make home-switch PROFILE=<profile>
+```
+
+If replacing existing dotfiles (e.g. from dotbot), remove old symlinks
+first to avoid conflicts:
+
+```bash
+rm ~/.zshrc ~/.gitconfig  # etc — whatever the old tool managed
+```
+
 ## Structure
 
 ```text
@@ -45,6 +70,7 @@ hosts/
 | `shopify` | aarch64-darwin | unstable | Work laptop (macOS), Home Manager only |
 | `personal` | x86_64-linux | unstable | Personal desktop, Home Manager only |
 | `odin` | x86_64-linux | unstable + stable | Desktop (AMD, RTX 3080 Ti), Home Manager + NixOS |
+| `loki` | x86_64-linux | unstable | Media server (i5-4670K, Ubuntu), Home Manager only |
 
 ## Development
 

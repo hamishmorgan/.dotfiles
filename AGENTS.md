@@ -8,7 +8,7 @@ and Linux (x86_64-linux).
 **Activation:** `make home-switch` (`PROFILE` from `.env` or hostname)
 or `make host-switch` (`HOST` from hostname)
 
-**Profiles:** `shopify` (macOS), `personal` (Linux), `odin` (Linux)
+**Profiles:** `shopify` (macOS), `personal` (Linux), `odin` (Linux), `loki` (Linux)
 
 **Layout:**
 
