@@ -12,23 +12,23 @@ HM := home-manager
 VALID_PROFILES := shopify personal odin loki
 VALID_HOSTS := odin
 
-# ANSI codes
-R := \033[31m
-G := \033[32m
-Y := \033[33m
-B := \033[1m
-D := \033[2m
-C := \033[36m
-N := \033[0m
+# ANSI escape codes
+red    := \033[31m
+green  := \033[32m
+yellow := \033[33m
+bold   := \033[1m
+dim    := \033[2m
+cyan   := \033[36m
+reset  := \033[0m
 
 # $(call msg,name,detail) — bold name, dim detail
 define msg =
-	@printf '$(B)%s$(N) $(D)%s$(N)\n' '$(1)' '$(2)'
+	@printf '$(bold)%s$(reset) $(dim)%s$(reset)\n' '$(1)' '$(2)'
 endef
 
 # $(call run,tool args,globs) — msg + git ls-files | xargs
 define run =
-	@printf '$(B)%s$(N) $(D)%s$(N)\n' '$(1)' '$(2)'
+	@printf '$(bold)%s$(reset) $(dim)%s$(reset)\n' '$(1)' '$(2)'
 	git ls-files $(foreach g,$(2),'$(g)') | xargs --no-run-if-empty $(1)
 endef
 
@@ -40,7 +40,7 @@ endef
 
 _require-profile:
 	@if ! echo ' $(VALID_PROFILES) ' | grep -q ' $(PROFILE) '; then \
-		printf '$(R)Error:$(N) Unknown profile $(B)%s$(N) (from %s)\n' \
+		printf '$(red)Error:$(reset) Unknown profile $(bold)%s$(reset) (from %s)\n' \
 			"$(PROFILE)" "$$(test -f .env && echo '.env' || echo 'hostname fallback')"; \
 		printf '  Valid profiles: %s\n' '$(VALID_PROFILES)'; \
 		printf '  Fix: echo PROFILE=shopify > .env\n'; \
@@ -49,7 +49,7 @@ _require-profile:
 
 _require-host:
 	@if ! echo ' $(VALID_HOSTS) ' | grep -q ' $(HOST) '; then \
-		printf '$(R)Error:$(N) Unknown host $(B)%s$(N) (from %s)\n' \
+		printf '$(red)Error:$(reset) Unknown host $(bold)%s$(reset) (from %s)\n' \
 			"$(HOST)" "$$(test "$(HOST)" = "$$(hostname)" && echo 'hostname fallback' || echo 'HOST=...')"; \
 		printf '  Valid hosts: %s\n' '$(VALID_HOSTS)'; \
 		exit 1; \
@@ -57,17 +57,17 @@ _require-host:
 
 _require-devshell:
 	@test -n "$$IN_NIX_SHELL" || \
-		{ printf '$(R)Dev shell not active.$(N) Run: $(B)direnv allow$(N) or $(B)nix develop$(N)\n' >&2; exit 1; }
+		{ printf '$(red)Dev shell not active.$(reset) Run: $(bold)direnv allow$(reset) or $(bold)nix develop$(reset)\n' >&2; exit 1; }
 
 help: ## Show this help
-	@printf '$(B)PROFILE=$(C)%s$(N)$(B)  HOST=$(C)%s$(N)\n\n' '$(PROFILE)' '$(HOST)'
+	@printf '$(bold)PROFILE=$(cyan)%s$(reset)$(bold)  HOST=$(cyan)%s$(reset)\n\n' '$(PROFILE)' '$(HOST)'
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
 		awk -F ':.*## ' '{ \
 			if (match($$2, /^@([^|]+)\| (.*)/, m)) { \
-				if (m[1] != cat) { cat = m[1]; printf "$(B)\033[34m%s:$(N)\n", cat } \
-				printf "  $(B)$(Y)%-16s$(N) %s\n", $$1, m[2] \
+				if (m[1] != cat) { cat = m[1]; printf "$(bold)\033[34m%s:$(reset)\n", cat } \
+				printf "  $(bold)$(yellow)%-16s$(reset) %s\n", $$1, m[2] \
 			} else { \
-				printf "  $(B)$(Y)%-16s$(N) %s\n", $$1, $$2 \
+				printf "  $(bold)$(yellow)%-16s$(reset) %s\n", $$1, $$2 \
 			} \
 		}'
 
@@ -141,7 +141,7 @@ home-switch: _require-devshell _require-profile ## @Home Manager| Build and acti
 	rc=$$?
 	set -e
 	if [ $$rc -ne 0 ]; then
-		printf '\n$(Y)Tip:$(N) Run $(B)make home-diff$(N) to see what would change in conflicting files.\n'
+		printf '\n$(yellow)Tip:$(reset) Run $(bold)make home-diff$(reset) to see what would change in conflicting files.\n'
 		exit $$rc
 	fi
 
@@ -154,11 +154,11 @@ home-diff: _require-devshell _require-profile ## @Home Manager| Diff files that 
 		cur="$$HOME/$$rel"
 		if [ -e "$$cur" ] && ! [ -L "$$cur" ] && ! diff -q "$$cur" "$$nf" >/dev/null 2>&1; then
 			found=1
-			printf '\n$(B)$(Y)~/%s$(N)\n' "$$rel"
+			printf '\n$(bold)$(yellow)~/%s$(reset)\n' "$$rel"
 			diff -u --color=always --label "a/$$rel (current)" --label "b/$$rel (incoming)" "$$cur" "$$nf" || true
 		fi
 	done < <(find -L "$$gen/home-files" -not -type d -print0)
-	if [ "$$found" -eq 0 ]; then printf '$(G)No conflicts — switch is safe.$(N)\n'; fi
+	if [ "$$found" -eq 0 ]; then printf '$(green)No conflicts — switch is safe.$(reset)\n'; fi
 
 home-dry-run: _require-devshell _require-profile ## @Home Manager| Show what switch would change
 	$(call msg,nix build --dry-run,$(PROFILE))
@@ -189,7 +189,7 @@ endif
 	$(call msg,nix eval,$(OPT))
 	json=$$(nix eval .#homeConfigurations.$(PROFILE).config.$(OPT) --json 2>/dev/null) \
 		&& printf '%s' "$$json" | jq . \
-		|| printf '$(Y)Evaluation failed — try a more specific path (e.g. programs.git.settings)$(N)\n' >&2
+		|| printf '$(yellow)Evaluation failed — try a more specific path (e.g. programs.git.settings)$(reset)\n' >&2
 
 home-repl: _require-devshell ## @Home Manager| Open config in nix repl
 	$(call msg,home-manager repl,$(PROFILE))
