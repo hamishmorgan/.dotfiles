@@ -12,11 +12,11 @@ HM := home-manager
 VALID_PROFILES := shopify personal odin loki
 VALID_HOSTS := odin
 
-.PHONY: help _require-devshell _require-profile _require-host
-.PHONY: check check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint
-.PHONY: fmt fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml
-.PHONY: switch home-build home-switch home-diff home-dry-run home-news home-packages home-generations home-gc home-option home-repl
-.PHONY: host-build host-switch host-diff
+.PHONY: help _require-devshell _require-profile _require-host check check-shell check-fish \
+        check-lua check-toml check-yaml check-markdown check-nix check-nix-lint fmt fmt-nix \
+        fmt-shell fmt-fish fmt-lua fmt-toml switch home-build home-switch home-diff home-dry-run \
+        home-news home-packages home-generations home-gc home-option home-repl host-build \
+        host-switch host-diff
 
 _require-profile:
 	@if ! echo ' $(VALID_PROFILES) ' | grep -q ' $(PROFILE) '; then \
