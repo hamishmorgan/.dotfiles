@@ -60,7 +60,7 @@ check-shell: _require-devshell ## @Linting| Shellcheck + shfmt (bash/zsh)
 
 check-fish: _require-devshell ## @Linting| Syntax + formatting (fish)
 	@mapfile -t files < <(git ls-files '*.fish')
-	@if (( ${#files[@]} )); then
+	@if (( $${#files[@]} )); then
 		printf 'fish --no-execute %s\n' "$${files[*]}"
 		for f in "$${files[@]}"; do fish --no-execute "$$f" || exit 1; done
 		printf 'fish_indent --check %s\n' "$${files[*]}"
