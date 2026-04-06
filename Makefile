@@ -38,9 +38,10 @@ endef
 
 .PHONY: help _require-devshell _require-profile _require-host check check-shell check-fish \
         check-lua check-toml check-yaml check-markdown check-nix check-nix-lint fmt fmt-nix \
-        fmt-shell fmt-fish fmt-lua fmt-toml update switch home-build home-switch home-diff \
-        home-dry-run home-news home-packages home-generations home-gc home-option home-repl \
-        host-build host-switch host-diff
+        fmt-shell fmt-fish fmt-lua fmt-toml update update-input search why switch home-build \
+        home-switch home-diff home-dry-run home-news home-packages home-generations home-gc \
+        home-rollback home-size home-option home-repl host-build host-switch host-diff \
+        host-gc host-rollback host-size
 
 _require-profile:
 	@if ! echo ' $(VALID_PROFILES) ' | grep -q ' $(PROFILE) '; then \
@@ -186,6 +187,16 @@ home-gc: _require-devshell ## @Home Manager| Remove generations >30d + collect g
 	$(call msg,nix store gc,)
 	nix store gc
 
+home-rollback: _require-devshell ## @Home Manager| Activate the previous generation
+	$(call msg,home-manager rollback,)
+	$(HM) generations | head -2
+	$(HM) activate-generation "$$($(HM) generations | sed -n '2s/ .*//p')"
+
+home-size: _require-devshell _require-profile ## @Home Manager| Show closure size
+	$(call msg,nix path-info,$(PROFILE))
+	out=$$(nix build $(hm-package) --no-link --print-out-paths)
+	nix path-info -Sh "$$out"
+
 home-option: _require-devshell _require-profile ## @Home Manager| Inspect option (OPT=programs.git)
 ifndef OPT
 	$(error Usage: make home-option OPT=programs.git.settings.push)
@@ -201,9 +212,30 @@ home-repl: _require-devshell ## @Home Manager| Open config in nix repl
 
 # --- Flake ---
 
-update: _require-devshell ## @Flake| Update flake inputs
+update: _require-devshell ## @Flake| Update all flake inputs
 	$(call msg,nix flake update,)
 	nix flake update
+
+update-input: _require-devshell ## @Flake| Update one input (INPUT=nixpkgs-unstable)
+ifndef INPUT
+	$(error Usage: make update-input INPUT=nixpkgs-unstable)
+endif
+	$(call msg,nix flake update,$(INPUT))
+	nix flake update $(INPUT)
+
+search: _require-devshell ## @Flake| Search nixpkgs (TERM=ripgrep)
+ifndef TERM
+	$(error Usage: make search TERM=ripgrep)
+endif
+	$(call msg,nix search,$(TERM))
+	nix search nixpkgs $(TERM)
+
+why: _require-devshell _require-profile ## @Flake| Show why a package is in the closure (PKG=hello)
+ifndef PKG
+	$(error Usage: make why PKG=hello)
+endif
+	$(call msg,nix why-depends,$(PKG))
+	nix why-depends $(hm-package) nixpkgs\#$(PKG) --derivation
 
 # --- NixOS ---
 
@@ -218,3 +250,16 @@ host-switch: _require-devshell _require-host ## @NixOS| Build and activate syste
 host-diff: _require-devshell _require-host ## @NixOS| Show what would change on switch
 	$(call msg,nixos-rebuild dry-activate,$(HOST))
 	nixos-rebuild dry-activate --flake .#$(HOST)
+
+host-gc: _require-devshell _require-host ## @NixOS| Remove old system generations + collect garbage
+	$(call msg,nix-collect-garbage,$(HOST))
+	sudo nix-collect-garbage --delete-older-than 30d
+	sudo nix store gc
+
+host-rollback: _require-devshell _require-host ## @NixOS| Roll back to the previous system generation
+	$(call msg,nixos-rebuild switch --rollback,$(HOST))
+	sudo nixos-rebuild switch --rollback --flake .#$(HOST)
+
+host-size: _require-devshell _require-host ## @NixOS| Show system closure size
+	$(call msg,nix path-info,$(HOST))
+	nix path-info -Sh /run/current-system
