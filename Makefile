@@ -5,17 +5,18 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 .DEFAULT_GOAL := help
 
-PROFILE ?= $(shell cat .env 2>/dev/null || hostname)
+PROFILE ?= $(shell head -1 .env 2>/dev/null | tr -d '[:space:]')
+PROFILE := $(or $(PROFILE),$(shell hostname))
 HOST ?= $(shell hostname)
 HM := home-manager
 VALID_PROFILES := shopify personal odin loki
 VALID_HOSTS := odin
 
-.PHONY: help _require-devshell _require-profile _require-host check check-shell check-fish \
-        check-lua check-toml check-yaml check-markdown check-nix check-nix-lint fmt fmt-nix \
-        fmt-shell fmt-fish fmt-lua fmt-toml switch home-build home-switch home-diff home-dry-run \
-        home-news home-packages home-generations home-gc home-option home-repl host-build \
-        host-switch host-diff
+.PHONY: help _require-devshell _require-profile _require-host
+.PHONY: check check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint
+.PHONY: fmt fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml
+.PHONY: switch home-build home-switch home-diff home-dry-run home-news home-packages home-generations home-gc home-option home-repl
+.PHONY: host-build host-switch host-diff
 
 _require-profile:
 	@if ! echo ' $(VALID_PROFILES) ' | grep -q ' $(PROFILE) '; then \
@@ -54,17 +55,20 @@ help: ## Show this help
 check: check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint ## @Linting| Run all lint checks
 
 check-shell: _require-devshell ## @Linting| Shellcheck + shfmt (bash/zsh)
-	shellcheck **/*.bash **/*.zsh
-	shfmt --diff **/*.bash **/*.zsh
+	git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shellcheck
+	git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shfmt --diff
 
 check-fish: _require-devshell ## @Linting| Syntax + formatting (fish)
-	@printf 'fish --no-execute home/shells/fish/*.fish\n'
-	@for f in home/shells/fish/*.fish; do fish --no-execute "$$f" || exit 1; done
-	@printf 'fish_indent --check home/shells/fish/*.fish\n'
-	@for f in home/shells/fish/*.fish; do fish_indent --check "$$f" || exit 1; done
+	@mapfile -t files < <(git ls-files '*.fish')
+	@if (( ${#files[@]} )); then
+		printf 'fish --no-execute %s\n' "$${files[*]}"
+		for f in "$${files[@]}"; do fish --no-execute "$$f" || exit 1; done
+		printf 'fish_indent --check %s\n' "$${files[*]}"
+		for f in "$${files[@]}"; do fish_indent --check "$$f" || exit 1; done
+	fi
 
 check-lua: _require-devshell ## @Linting| Format-check lua (stylua)
-	stylua --check **/*.lua
+	git ls-files '*.lua' | xargs --no-run-if-empty stylua --check
 
 check-toml: _require-devshell ## @Linting| Format-check toml (taplo)
 	git ls-files '*.toml' | xargs --no-run-if-empty taplo check
@@ -76,7 +80,7 @@ check-markdown: _require-devshell ## @Linting| Lint markdown
 	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md" "!home/agents/skills/**"
 
 check-nix: _require-devshell ## @Linting| Format-check nix (nixfmt)
-	nixfmt --check **/*.nix
+	git ls-files '*.nix' | xargs --no-run-if-empty nixfmt --check
 
 check-nix-lint: _require-devshell ## @Linting| Lint nix (statix + deadnix)
 	statix check .
@@ -87,16 +91,16 @@ check-nix-lint: _require-devshell ## @Linting| Lint nix (statix + deadnix)
 fmt: fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml ## @Formatting| Format all files
 
 fmt-nix: _require-devshell ## @Formatting| Format nix (nixfmt)
-	nixfmt **/*.nix
+	git ls-files '*.nix' | xargs --no-run-if-empty nixfmt
 
 fmt-shell: _require-devshell ## @Formatting| Format bash/zsh (shfmt)
-	shfmt --write **/*.bash **/*.zsh
+	git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shfmt --write
 
 fmt-fish: _require-devshell ## @Formatting| Format fish (fish_indent)
-	@for f in home/shells/fish/*.fish; do fish_indent --write "$$f"; done
+	@git ls-files '*.fish' | while IFS= read -r f; do fish_indent --write "$$f"; done
 
 fmt-lua: _require-devshell ## @Formatting| Format lua (stylua)
-	stylua **/*.lua
+	git ls-files '*.lua' | xargs --no-run-if-empty stylua
 
 fmt-toml: _require-devshell ## @Formatting| Format toml (taplo)
 	git ls-files '*.toml' | xargs --no-run-if-empty taplo fmt
@@ -135,7 +139,7 @@ home-diff: _require-devshell _require-profile ## @Home Manager| Diff files that 
 	if [ "$$found" -eq 0 ]; then printf '\033[32mNo conflicts — switch is safe.\033[0m\n'; fi
 
 home-dry-run: _require-devshell _require-profile ## @Home Manager| Show what switch would change
-	$(HM) switch -n --flake .#$(PROFILE)
+	nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --dry-run
 
 home-news: _require-devshell _require-profile ## @Home Manager| Show unread news
 	$(HM) news --flake .#$(PROFILE)
