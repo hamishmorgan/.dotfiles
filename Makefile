@@ -131,7 +131,7 @@ fmt-toml: _require-devshell ## @Formatting| Format toml (taplo)
 
 # --- Home Manager ---
 
-switch: home-switch ## @Home Manager| Alias for home-switch
+switch: home-switch $(if $(filter $(HOST),$(VALID_HOSTS)),host-switch) ## Switch home config (+ host if NixOS)
 
 home-build: _require-devshell _require-profile ## @Home Manager| Build config without activating
 	$(call msg,nix build,$(PROFILE))
