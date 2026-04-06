@@ -21,14 +21,14 @@ dim    := \033[2m
 cyan   := \033[36m
 reset  := \033[0m
 
-# $(call msg,name,detail) — bold name, dim detail
+# $(call msg,name,detail) — target: bold name, dim detail
 define msg =
-	@printf '$(bold)%s$(reset) $(dim)%s$(reset)\n' '$(1)' '$(2)'
+	@printf '$(dim)%s$(reset) $(bold)%s$(reset) $(dim)%s$(reset)\n' '$@' '$(1)' '$(2)'
 endef
 
 # $(call run,tool args,globs) — msg + git ls-files | xargs
 define run =
-	@printf '$(bold)%s$(reset) $(dim)%s$(reset)\n' '$(1)' '$(2)'
+	@printf '$(dim)%s$(reset) $(bold)%s$(reset) $(dim)%s$(reset)\n' '$@' '$(1)' '$(2)'
 	git ls-files $(foreach g,$(2),'$(g)') | xargs --no-run-if-empty $(1)
 endef
 
