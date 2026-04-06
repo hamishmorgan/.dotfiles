@@ -5,8 +5,8 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 .DEFAULT_GOAL := help
 
-PROFILE ?= $(shell head -1 .env 2>/dev/null | tr -d '[:space:]')
-PROFILE := $(or $(PROFILE),$(shell hostname))
+-include .env
+PROFILE ?= $(shell hostname)
 HOST ?= $(shell hostname)
 HM := home-manager
 VALID_PROFILES := shopify personal odin loki
@@ -23,7 +23,7 @@ _require-profile:
 		printf '\033[31mError:\033[0m Unknown profile \033[1m%s\033[0m (from %s)\n' \
 			"$(PROFILE)" "$$(test -f .env && echo '.env' || echo 'hostname fallback')"; \
 		printf '  Valid profiles: %s\n' '$(VALID_PROFILES)'; \
-		printf '  Fix: echo shopify > .env\n'; \
+		printf '  Fix: echo PROFILE=shopify > .env\n'; \
 		exit 1; \
 	fi
 
