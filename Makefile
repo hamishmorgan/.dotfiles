@@ -12,9 +12,24 @@ HM := home-manager
 VALID_PROFILES := shopify personal odin loki
 VALID_HOSTS := odin
 
-# Bold name, dimmed details
+# ANSI codes
+R := \033[31m
+G := \033[32m
+Y := \033[33m
+B := \033[1m
+D := \033[2m
+C := \033[36m
+N := \033[0m
+
+# $(call msg,name,detail) — bold name, dim detail
 define msg =
-	@printf '\033[1m%s\033[0m \033[2m%s\033[0m\n' $(1) $(2)
+	@printf '$(B)%s$(N) $(D)%s$(N)\n' '$(1)' '$(2)'
+endef
+
+# $(call run,tool args,globs) — msg + git ls-files | xargs
+define run =
+	@printf '$(B)%s$(N) $(D)%s$(N)\n' '$(1)' '$(2)'
+	git ls-files $(foreach g,$(2),'$(g)') | xargs --no-run-if-empty $(1)
 endef
 
 .PHONY: help _require-devshell _require-profile _require-host check check-shell check-fish \
@@ -25,7 +40,7 @@ endef
 
 _require-profile:
 	@if ! echo ' $(VALID_PROFILES) ' | grep -q ' $(PROFILE) '; then \
-		printf '\033[31mError:\033[0m Unknown profile \033[1m%s\033[0m (from %s)\n' \
+		printf '$(R)Error:$(N) Unknown profile $(B)%s$(N) (from %s)\n' \
 			"$(PROFILE)" "$$(test -f .env && echo '.env' || echo 'hostname fallback')"; \
 		printf '  Valid profiles: %s\n' '$(VALID_PROFILES)'; \
 		printf '  Fix: echo PROFILE=shopify > .env\n'; \
@@ -34,7 +49,7 @@ _require-profile:
 
 _require-host:
 	@if ! echo ' $(VALID_HOSTS) ' | grep -q ' $(HOST) '; then \
-		printf '\033[31mError:\033[0m Unknown host \033[1m%s\033[0m (from %s)\n' \
+		printf '$(R)Error:$(N) Unknown host $(B)%s$(N) (from %s)\n' \
 			"$(HOST)" "$$(test "$(HOST)" = "$$(hostname)" && echo 'hostname fallback' || echo 'HOST=...')"; \
 		printf '  Valid hosts: %s\n' '$(VALID_HOSTS)'; \
 		exit 1; \
@@ -42,17 +57,17 @@ _require-host:
 
 _require-devshell:
 	@test -n "$$IN_NIX_SHELL" || \
-		{ printf '\033[31mDev shell not active.\033[0m Run: \033[1mdirenv allow\033[0m or \033[1mnix develop\033[0m\n' >&2; exit 1; }
+		{ printf '$(R)Dev shell not active.$(N) Run: $(B)direnv allow$(N) or $(B)nix develop$(N)\n' >&2; exit 1; }
 
 help: ## Show this help
-	@printf '\033[1mPROFILE=\033[36m%s\033[0m\033[1m  HOST=\033[36m%s\033[0m\n\n' '$(PROFILE)' '$(HOST)'
+	@printf '$(B)PROFILE=$(C)%s$(N)$(B)  HOST=$(C)%s$(N)\n\n' '$(PROFILE)' '$(HOST)'
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
 		awk -F ':.*## ' '{ \
 			if (match($$2, /^@([^|]+)\| (.*)/, m)) { \
-				if (m[1] != cat) { cat = m[1]; printf "\033[1;34m%s:\033[0m\n", cat } \
-				printf "  \033[1;33m%-16s\033[0m %s\n", $$1, m[2] \
+				if (m[1] != cat) { cat = m[1]; printf "$(B)\033[34m%s:$(N)\n", cat } \
+				printf "  $(B)$(Y)%-16s$(N) %s\n", $$1, m[2] \
 			} else { \
-				printf "  \033[1;33m%-16s\033[0m %s\n", $$1, $$2 \
+				printf "  $(B)$(Y)%-16s$(N) %s\n", $$1, $$2 \
 			} \
 		}'
 
@@ -61,41 +76,33 @@ help: ## Show this help
 check: check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint ## @Linting| Run all lint checks
 
 check-shell: _require-devshell ## @Linting| Shellcheck + shfmt (bash/zsh)
-	$(call msg,'shellcheck','*.bash *.zsh')
-	git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shellcheck
-	$(call msg,'shfmt --diff','*.bash *.zsh')
-	git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shfmt --diff
+	$(call run,shellcheck,*.bash *.zsh)
+	$(call run,shfmt --diff,*.bash *.zsh)
 
 check-fish: _require-devshell ## @Linting| Syntax + formatting (fish)
-	$(call msg,'fish --no-execute','*.fish')
-	git ls-files '*.fish' | xargs --no-run-if-empty fish --no-execute
-	$(call msg,'fish_indent --check','*.fish')
-	git ls-files '*.fish' | xargs --no-run-if-empty fish_indent --check
+	$(call run,fish --no-execute,*.fish)
+	$(call run,fish_indent --check,*.fish)
 
 check-lua: _require-devshell ## @Linting| Format-check lua (stylua)
-	$(call msg,'stylua --check','*.lua')
-	git ls-files '*.lua' | xargs --no-run-if-empty stylua --check
+	$(call run,stylua --check,*.lua)
 
 check-toml: _require-devshell ## @Linting| Format-check toml (taplo)
-	$(call msg,'taplo check','*.toml')
-	git ls-files '*.toml' | xargs --no-run-if-empty taplo check
+	$(call run,taplo check,*.toml)
 
 check-yaml: _require-devshell ## @Linting| Lint yaml (yamllint)
-	$(call msg,'yamllint','*.yml *.yaml')
-	git ls-files '*.yml' '*.yaml' | xargs --no-run-if-empty yamllint --strict
+	$(call run,yamllint --strict,*.yml *.yaml)
 
 check-markdown: _require-devshell ## @Linting| Lint markdown
-	$(call msg,'markdownlint-cli2','*.md')
+	$(call msg,markdownlint-cli2,*.md)
 	out=$$(markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md" "!home/agents/skills/**" 2>&1) || { printf '%s\n' "$$out"; exit 1; }
 
 check-nix: _require-devshell ## @Linting| Format-check nix (nixfmt)
-	$(call msg,'nixfmt --check','*.nix')
-	git ls-files '*.nix' | xargs --no-run-if-empty nixfmt --check
+	$(call run,nixfmt --check,*.nix)
 
 check-nix-lint: _require-devshell ## @Linting| Lint nix (statix + deadnix)
-	$(call msg,'statix check','.')
+	$(call msg,statix check,.)
 	statix check .
-	$(call msg,'deadnix','.')
+	$(call msg,deadnix,.)
 	deadnix --fail .
 
 # --- Formatting ---
@@ -103,35 +110,30 @@ check-nix-lint: _require-devshell ## @Linting| Lint nix (statix + deadnix)
 fmt: fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml ## @Formatting| Format all files
 
 fmt-nix: _require-devshell ## @Formatting| Format nix (nixfmt)
-	$(call msg,'nixfmt','*.nix')
-	git ls-files '*.nix' | xargs --no-run-if-empty nixfmt
+	$(call run,nixfmt,*.nix)
 
 fmt-shell: _require-devshell ## @Formatting| Format bash/zsh (shfmt)
-	$(call msg,'shfmt --write','*.bash *.zsh')
-	git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shfmt --write
+	$(call run,shfmt --write,*.bash *.zsh)
 
 fmt-fish: _require-devshell ## @Formatting| Format fish (fish_indent)
-	$(call msg,'fish_indent --write','*.fish')
-	git ls-files '*.fish' | while IFS= read -r f; do fish_indent --write "$$f"; done
+	$(call run,fish_indent --write,*.fish)
 
 fmt-lua: _require-devshell ## @Formatting| Format lua (stylua)
-	$(call msg,'stylua','*.lua')
-	git ls-files '*.lua' | xargs --no-run-if-empty stylua
+	$(call run,stylua,*.lua)
 
 fmt-toml: _require-devshell ## @Formatting| Format toml (taplo)
-	$(call msg,'taplo fmt','*.toml')
-	git ls-files '*.toml' | xargs --no-run-if-empty taplo fmt
+	$(call run,taplo fmt,*.toml)
 
 # --- Home Manager ---
 
 switch: home-switch ## @Home Manager| Alias for home-switch
 
 home-build: _require-devshell _require-profile ## @Home Manager| Build config without activating
-	$(call msg,'nix build','$(PROFILE)')
+	$(call msg,nix build,$(PROFILE))
 	nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link
 
 home-switch: _require-devshell _require-profile ## @Home Manager| Build and activate config
-	$(call msg,'nix build + activate','$(PROFILE)')
+	$(call msg,nix build + activate,$(PROFILE))
 	out=$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)
 	export HOME_MANAGER_BACKUP_EXT="hm-bak"
 	set +e
@@ -139,12 +141,12 @@ home-switch: _require-devshell _require-profile ## @Home Manager| Build and acti
 	rc=$$?
 	set -e
 	if [ $$rc -ne 0 ]; then
-		printf '\n\033[33mTip:\033[0m Run \033[1mmake home-diff\033[0m to see what would change in conflicting files.\n'
+		printf '\n$(Y)Tip:$(N) Run $(B)make home-diff$(N) to see what would change in conflicting files.\n'
 		exit $$rc
 	fi
 
 home-diff: _require-devshell _require-profile ## @Home Manager| Diff files that would be clobbered on switch
-	$(call msg,'home-diff','$(PROFILE)')
+	$(call msg,home-diff,$(PROFILE))
 	gen=$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)
 	found=0
 	while IFS= read -r -d '' nf; do
@@ -152,63 +154,63 @@ home-diff: _require-devshell _require-profile ## @Home Manager| Diff files that 
 		cur="$$HOME/$$rel"
 		if [ -e "$$cur" ] && ! [ -L "$$cur" ] && ! diff -q "$$cur" "$$nf" >/dev/null 2>&1; then
 			found=1
-			printf '\n\033[1;33m~/%s\033[0m\n' "$$rel"
+			printf '\n$(B)$(Y)~/%s$(N)\n' "$$rel"
 			diff -u --color=always --label "a/$$rel (current)" --label "b/$$rel (incoming)" "$$cur" "$$nf" || true
 		fi
 	done < <(find -L "$$gen/home-files" -not -type d -print0)
-	if [ "$$found" -eq 0 ]; then printf '\033[32mNo conflicts — switch is safe.\033[0m\n'; fi
+	if [ "$$found" -eq 0 ]; then printf '$(G)No conflicts — switch is safe.$(N)\n'; fi
 
 home-dry-run: _require-devshell _require-profile ## @Home Manager| Show what switch would change
-	$(call msg,'nix build --dry-run','$(PROFILE)')
+	$(call msg,nix build --dry-run,$(PROFILE))
 	nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --dry-run
 
 home-news: _require-devshell _require-profile ## @Home Manager| Show unread news
-	$(call msg,'home-manager news','$(PROFILE)')
+	$(call msg,home-manager news,$(PROFILE))
 	$(HM) news --flake .#$(PROFILE)
 
 home-packages: _require-devshell ## @Home Manager| List installed packages
-	$(call msg,'home-manager packages','')
+	$(call msg,home-manager packages,)
 	$(HM) packages
 
 home-generations: _require-devshell ## @Home Manager| List config generations
-	$(call msg,'home-manager generations','')
+	$(call msg,home-manager generations,)
 	$(HM) generations
 
 home-gc: _require-devshell ## @Home Manager| Remove generations >30d + collect garbage
-	$(call msg,'expire-generations','-30 days')
+	$(call msg,expire-generations,-30 days)
 	$(HM) expire-generations "-30 days"
-	$(call msg,'nix store gc','')
+	$(call msg,nix store gc,)
 	nix store gc
 
 home-option: _require-devshell _require-profile ## @Home Manager| Inspect option (OPT=programs.git)
 ifndef OPT
 	$(error Usage: make home-option OPT=programs.git.settings.push)
 endif
-	$(call msg,'nix eval','$(OPT)')
+	$(call msg,nix eval,$(OPT))
 	json=$$(nix eval .#homeConfigurations.$(PROFILE).config.$(OPT) --json 2>/dev/null) \
 		&& printf '%s' "$$json" | jq . \
-		|| printf '\033[33mEvaluation failed — try a more specific path (e.g. programs.git.settings)\033[0m\n' >&2
+		|| printf '$(Y)Evaluation failed — try a more specific path (e.g. programs.git.settings)$(N)\n' >&2
 
 home-repl: _require-devshell ## @Home Manager| Open config in nix repl
-	$(call msg,'home-manager repl','$(PROFILE)')
+	$(call msg,home-manager repl,$(PROFILE))
 	$(HM) repl --flake .#$(PROFILE)
 
 # --- Flake ---
 
 update: _require-devshell ## @Flake| Update flake inputs
-	$(call msg,'nix flake update','')
+	$(call msg,nix flake update,)
 	nix flake update
 
 # --- NixOS ---
 
 host-build: _require-devshell _require-host ## @NixOS| Build system config without activating
-	$(call msg,'nixos-rebuild build','$(HOST)')
+	$(call msg,nixos-rebuild build,$(HOST))
 	nixos-rebuild build --flake .#$(HOST)
 
 host-switch: _require-devshell _require-host ## @NixOS| Build and activate system config (requires sudo)
-	$(call msg,'nixos-rebuild switch','$(HOST)')
+	$(call msg,nixos-rebuild switch,$(HOST))
 	sudo nixos-rebuild switch --flake .#$(HOST)
 
 host-diff: _require-devshell _require-host ## @NixOS| Show what would change on switch
-	$(call msg,'nixos-rebuild dry-activate','$(HOST)')
+	$(call msg,nixos-rebuild dry-activate,$(HOST))
 	nixos-rebuild dry-activate --flake .#$(HOST)
