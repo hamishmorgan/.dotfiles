@@ -56,30 +56,30 @@ help: ## Show this help
 check: check-shell check-fish check-lua check-toml check-yaml check-markdown check-nix check-nix-lint ## @Linting| Run all lint checks
 
 check-shell: _require-devshell ## @Linting| Shellcheck + shfmt (bash/zsh)
-	git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shellcheck
+	@git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shellcheck
 	git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shfmt --diff
 
 check-fish: _require-devshell ## @Linting| Syntax + formatting (fish)
-	git ls-files '*.fish' | xargs --no-run-if-empty fish --no-execute
+	@git ls-files '*.fish' | xargs --no-run-if-empty fish --no-execute
 	git ls-files '*.fish' | xargs --no-run-if-empty fish_indent --check
 
 check-lua: _require-devshell ## @Linting| Format-check lua (stylua)
-	git ls-files '*.lua' | xargs --no-run-if-empty stylua --check
+	@git ls-files '*.lua' | xargs --no-run-if-empty stylua --check
 
 check-toml: _require-devshell ## @Linting| Format-check toml (taplo)
-	git ls-files '*.toml' | xargs --no-run-if-empty taplo check
+	@git ls-files '*.toml' | xargs --no-run-if-empty taplo check
 
 check-yaml: _require-devshell ## @Linting| Lint yaml (yamllint)
-	git ls-files '*.yml' '*.yaml' | xargs --no-run-if-empty yamllint --strict
+	@git ls-files '*.yml' '*.yaml' | xargs --no-run-if-empty yamllint --strict
 
 check-markdown: _require-devshell ## @Linting| Lint markdown
-	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md" "!home/agents/skills/**"
+	@markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md" "!home/agents/skills/**"
 
 check-nix: _require-devshell ## @Linting| Format-check nix (nixfmt)
-	git ls-files '*.nix' | xargs --no-run-if-empty nixfmt --check
+	@git ls-files '*.nix' | xargs --no-run-if-empty nixfmt --check
 
 check-nix-lint: _require-devshell ## @Linting| Lint nix (statix + deadnix)
-	statix check .
+	@statix check .
 	deadnix --fail .
 
 # --- Formatting ---
@@ -87,26 +87,26 @@ check-nix-lint: _require-devshell ## @Linting| Lint nix (statix + deadnix)
 fmt: fmt-nix fmt-shell fmt-fish fmt-lua fmt-toml ## @Formatting| Format all files
 
 fmt-nix: _require-devshell ## @Formatting| Format nix (nixfmt)
-	git ls-files '*.nix' | xargs --no-run-if-empty nixfmt
+	@git ls-files '*.nix' | xargs --no-run-if-empty nixfmt
 
 fmt-shell: _require-devshell ## @Formatting| Format bash/zsh (shfmt)
-	git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shfmt --write
+	@git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shfmt --write
 
 fmt-fish: _require-devshell ## @Formatting| Format fish (fish_indent)
 	@git ls-files '*.fish' | while IFS= read -r f; do fish_indent --write "$$f"; done
 
 fmt-lua: _require-devshell ## @Formatting| Format lua (stylua)
-	git ls-files '*.lua' | xargs --no-run-if-empty stylua
+	@git ls-files '*.lua' | xargs --no-run-if-empty stylua
 
 fmt-toml: _require-devshell ## @Formatting| Format toml (taplo)
-	git ls-files '*.toml' | xargs --no-run-if-empty taplo fmt
+	@git ls-files '*.toml' | xargs --no-run-if-empty taplo fmt
 
 # --- Home Manager ---
 
 switch: home-switch ## @Home Manager| Alias for home-switch
 
 home-build: _require-devshell _require-profile ## @Home Manager| Build config without activating
-	nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link
+	@nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link
 
 home-switch: _require-devshell _require-profile ## @Home Manager| Build and activate config
 	@out=$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)
@@ -135,19 +135,19 @@ home-diff: _require-devshell _require-profile ## @Home Manager| Diff files that 
 	if [ "$$found" -eq 0 ]; then printf '\033[32mNo conflicts — switch is safe.\033[0m\n'; fi
 
 home-dry-run: _require-devshell _require-profile ## @Home Manager| Show what switch would change
-	nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --dry-run
+	@nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --dry-run
 
 home-news: _require-devshell _require-profile ## @Home Manager| Show unread news
-	$(HM) news --flake .#$(PROFILE)
+	@$(HM) news --flake .#$(PROFILE)
 
 home-packages: _require-devshell ## @Home Manager| List installed packages
-	$(HM) packages
+	@$(HM) packages
 
 home-generations: _require-devshell ## @Home Manager| List config generations
-	$(HM) generations
+	@$(HM) generations
 
 home-gc: _require-devshell ## @Home Manager| Remove generations >30d + collect garbage
-	$(HM) expire-generations "-30 days"
+	@$(HM) expire-generations "-30 days"
 	nix store gc
 
 home-option: _require-devshell _require-profile ## @Home Manager| Inspect option (OPT=programs.git)
@@ -159,20 +159,20 @@ endif
 		|| printf '\033[33mEvaluation failed — try a more specific path (e.g. programs.git.settings)\033[0m\n' >&2
 
 home-repl: _require-devshell ## @Home Manager| Open config in nix repl
-	$(HM) repl --flake .#$(PROFILE)
+	@$(HM) repl --flake .#$(PROFILE)
 
 # --- Flake ---
 
 update: _require-devshell ## @Flake| Update flake inputs
-	nix flake update
+	@nix flake update
 
 # --- NixOS ---
 
 host-build: _require-devshell _require-host ## @NixOS| Build system config without activating
-	nixos-rebuild build --flake .#$(HOST)
+	@nixos-rebuild build --flake .#$(HOST)
 
 host-switch: _require-devshell _require-host ## @NixOS| Build and activate system config (requires sudo)
-	sudo nixos-rebuild switch --flake .#$(HOST)
+	@sudo nixos-rebuild switch --flake .#$(HOST)
 
 host-diff: _require-devshell _require-host ## @NixOS| Show what would change on switch
-	nixos-rebuild dry-activate --flake .#$(HOST)
+	@nixos-rebuild dry-activate --flake .#$(HOST)
