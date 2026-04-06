@@ -105,7 +105,10 @@
       nvidiaSettings = true;
     };
     graphics.enable = true;
-    bluetooth.enable = true;
+    bluetooth = {
+      enable = true;
+      settings.General.Experimental = true;
+    };
     enableRedistributableFirmware = true;
     firmware = [ pkgs.broadcom-bt-firmware ];
   };
@@ -170,6 +173,8 @@
 
     # Desktop shell
     noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default
+
+    google-chrome
   ];
 
   system.stateVersion = "25.11";
