@@ -86,7 +86,7 @@ check-yaml: _require-devshell ## @Linting| Lint yaml (yamllint)
 
 check-markdown: _require-devshell ## @Linting| Lint markdown
 	$(call msg,'markdownlint-cli2','*.md')
-	markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md" "!home/agents/skills/**"
+	out=$$(markdownlint-cli2 "*.md" "home/**/*.md" ".github/**/*.md" "!home/agents/skills/**" 2>&1) || { printf '%s\n' "$$out"; exit 1; }
 
 check-nix: _require-devshell ## @Linting| Format-check nix (nixfmt)
 	$(call msg,'nixfmt --check','*.nix')
