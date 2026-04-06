@@ -14,9 +14,9 @@ VALID_HOSTS := odin
 
 .PHONY: help _require-devshell _require-profile _require-host check check-shell check-fish \
         check-lua check-toml check-yaml check-markdown check-nix check-nix-lint fmt fmt-nix \
-        fmt-shell fmt-fish fmt-lua fmt-toml switch home-build home-switch home-diff home-dry-run \
-        home-news home-packages home-generations home-gc home-option home-repl host-build \
-        host-switch host-diff
+        fmt-shell fmt-fish fmt-lua fmt-toml update switch home-build home-switch home-diff \
+        home-dry-run home-news home-packages home-generations home-gc home-option home-repl \
+        host-build host-switch host-diff
 
 _require-profile:
 	@if ! echo ' $(VALID_PROFILES) ' | grep -q ' $(PROFILE) '; then \
@@ -40,6 +40,7 @@ _require-devshell:
 		{ printf '\033[31mDev shell not active.\033[0m Run: \033[1mdirenv allow\033[0m or \033[1mnix develop\033[0m\n' >&2; exit 1; }
 
 help: ## Show this help
+	@printf '\033[1mPROFILE=\033[36m%s\033[0m\033[1m  HOST=\033[36m%s\033[0m\n\n' '$(PROFILE)' '$(HOST)'
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
 		awk -F ':.*## ' '{ \
 			if (match($$2, /^@([^|]+)\| (.*)/, m)) { \
@@ -59,13 +60,8 @@ check-shell: _require-devshell ## @Linting| Shellcheck + shfmt (bash/zsh)
 	git ls-files '*.bash' '*.zsh' | xargs --no-run-if-empty shfmt --diff
 
 check-fish: _require-devshell ## @Linting| Syntax + formatting (fish)
-	@mapfile -t files < <(git ls-files '*.fish')
-	@if (( $${#files[@]} )); then
-		printf 'fish --no-execute %s\n' "$${files[*]}"
-		for f in "$${files[@]}"; do fish --no-execute "$$f" || exit 1; done
-		printf 'fish_indent --check %s\n' "$${files[*]}"
-		for f in "$${files[@]}"; do fish_indent --check "$$f" || exit 1; done
-	fi
+	git ls-files '*.fish' | xargs --no-run-if-empty fish --no-execute
+	git ls-files '*.fish' | xargs --no-run-if-empty fish_indent --check
 
 check-lua: _require-devshell ## @Linting| Format-check lua (stylua)
 	git ls-files '*.lua' | xargs --no-run-if-empty stylua --check
@@ -152,9 +148,9 @@ home-generations: _require-devshell ## @Home Manager| List config generations
 
 home-gc: _require-devshell ## @Home Manager| Remove generations >30d + collect garbage
 	$(HM) expire-generations "-30 days"
-	nix-collect-garbage
+	nix store gc
 
-home-option: _require-devshell ## @Home Manager| Inspect option (OPT=programs.git)
+home-option: _require-devshell _require-profile ## @Home Manager| Inspect option (OPT=programs.git)
 ifndef OPT
 	$(error Usage: make home-option OPT=programs.git.settings.push)
 endif
@@ -164,6 +160,11 @@ endif
 
 home-repl: _require-devshell ## @Home Manager| Open config in nix repl
 	$(HM) repl --flake .#$(PROFILE)
+
+# --- Flake ---
+
+update: _require-devshell ## @Flake| Update flake inputs
+	nix flake update
 
 # --- NixOS ---
 
