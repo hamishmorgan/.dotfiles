@@ -12,6 +12,10 @@ HM := home-manager
 VALID_PROFILES := shopify personal odin loki
 VALID_HOSTS := odin
 
+# Flake references
+hm-package = .\#homeConfigurations.$(PROFILE).activationPackage
+hm-config  = .\#homeConfigurations.$(PROFILE).config
+
 # ANSI escape codes
 red    := \033[31m
 green  := \033[32m
@@ -130,11 +134,11 @@ switch: home-switch ## @Home Manager| Alias for home-switch
 
 home-build: _require-devshell _require-profile ## @Home Manager| Build config without activating
 	$(call msg,nix build,$(PROFILE))
-	nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link
+	nix build $(hm-package) --no-link
 
 home-switch: _require-devshell _require-profile ## @Home Manager| Build and activate config
 	$(call msg,nix build + activate,$(PROFILE))
-	out=$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)
+	out=$$(nix build $(hm-package) --no-link --print-out-paths)
 	export HOME_MANAGER_BACKUP_EXT="hm-bak"
 	set +e
 	"$$out/activate"
@@ -147,7 +151,7 @@ home-switch: _require-devshell _require-profile ## @Home Manager| Build and acti
 
 home-diff: _require-devshell _require-profile ## @Home Manager| Diff files that would be clobbered on switch
 	$(call msg,home-diff,$(PROFILE))
-	gen=$$(nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --print-out-paths)
+	gen=$$(nix build $(hm-package) --no-link --print-out-paths)
 	found=0
 	while IFS= read -r -d '' nf; do
 		rel="$${nf#$$gen/home-files/}"
@@ -162,7 +166,7 @@ home-diff: _require-devshell _require-profile ## @Home Manager| Diff files that 
 
 home-dry-run: _require-devshell _require-profile ## @Home Manager| Show what switch would change
 	$(call msg,nix build --dry-run,$(PROFILE))
-	nix build .#homeConfigurations.$(PROFILE).activationPackage --no-link --dry-run
+	nix build $(hm-package) --no-link --dry-run
 
 home-news: _require-devshell _require-profile ## @Home Manager| Show unread news
 	$(call msg,home-manager news,$(PROFILE))
@@ -187,7 +191,7 @@ ifndef OPT
 	$(error Usage: make home-option OPT=programs.git.settings.push)
 endif
 	$(call msg,nix eval,$(OPT))
-	json=$$(nix eval .#homeConfigurations.$(PROFILE).config.$(OPT) --json 2>/dev/null) \
+	json=$$(nix eval $(hm-config).$(OPT) --json 2>/dev/null) \
 		&& printf '%s' "$$json" | jq . \
 		|| printf '$(yellow)Evaluation failed — try a more specific path (e.g. programs.git.settings)$(reset)\n' >&2
 
