@@ -1,11 +1,16 @@
-_:
+{ config, ... }:
 
 {
   # Claude reads CLAUDE.md from ~/.claude/
   home.file.".claude/CLAUDE.md".source = ../AGENTS.md;
-  programs.claude-code = {
-    enable = true;
+  programs.claude-code.enable = true;
 
+  # Claude writes runtime state back to settings.json (onboarding flags, MCP
+  # additions, etc.), so it can't be a read-only store symlink. Merge declared
+  # keys into the live file on each switch instead — runtime scribbles survive,
+  # declared keys get re-stamped.
+  mergeJsonFiles.claudeSettings = {
+    file = "${config.home.homeDirectory}/.claude/settings.json";
     settings = {
       env = {
         CLAUDE_SKIP_FEEDBACK_SURVEY = "1";
@@ -114,6 +119,5 @@ _:
       autoUpdaterStatus = "enabled";
       hasCompletedOnboarding = true;
     };
-
   };
 }
