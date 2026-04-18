@@ -48,6 +48,7 @@
     ./ssh.nix
     ./system
     ./terminals
+    ./vscode.nix
     ./zed.nix
     ./zoxide.nix
   ];
