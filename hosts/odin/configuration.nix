@@ -180,10 +180,18 @@
     google-chrome
 
     simple-scan
-    # nixpkgs#481158 fix not yet backported to 25.11; remove override after.
-    (naps2.overrideAttrs (old: {
-      runtimeDeps = (old.runtimeDeps or [ ]) ++ [ libtiff ];
-    }))
+    # nixpkgs#481158 fix not yet backported to 25.11.
+    # buildDotnetModule consumes runtimeDeps before mkDerivation, so
+    # overrideAttrs can't reach it — wrap the bin externally instead.
+    (symlinkJoin {
+      name = "naps2-with-libtiff";
+      paths = [ naps2 ];
+      nativeBuildInputs = [ makeWrapper ];
+      postBuild = ''
+        wrapProgram $out/bin/naps2 \
+          --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ libtiff ]}
+      '';
+    })
     pdfarranger
   ];
 
