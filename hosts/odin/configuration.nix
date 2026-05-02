@@ -180,7 +180,10 @@
     google-chrome
 
     simple-scan
-    naps2
+    # nixpkgs#481158 fix not yet backported to 25.11; remove override after.
+    (naps2.overrideAttrs (old: {
+      runtimeDeps = (old.runtimeDeps or [ ]) ++ [ libtiff ];
+    }))
     pdfarranger
   ];
 
