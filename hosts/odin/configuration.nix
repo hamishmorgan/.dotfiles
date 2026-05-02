@@ -198,6 +198,9 @@
     })
     pdfarranger
     localsend
+
+    tesseract
+    poppler-utils
   ];
 
   system.stateVersion = "25.11";
