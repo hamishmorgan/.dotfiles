@@ -180,6 +180,7 @@
     google-chrome
 
     simple-scan
+    naps2
   ];
 
   system.stateVersion = "25.11";
