@@ -181,6 +181,7 @@
 
     simple-scan
     naps2
+    pdfarranger
   ];
 
   system.stateVersion = "25.11";
