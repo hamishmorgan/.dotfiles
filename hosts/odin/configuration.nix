@@ -41,6 +41,10 @@
   networking = {
     hostName = "odin";
     networkmanager.enable = true;
+    firewall = {
+      allowedTCPPorts = [ 53317 ];
+      allowedUDPPorts = [ 53317 ];
+    };
   };
 
   time.timeZone = "Europe/London";
@@ -193,6 +197,7 @@
       '';
     })
     pdfarranger
+    localsend
   ];
 
   system.stateVersion = "25.11";
