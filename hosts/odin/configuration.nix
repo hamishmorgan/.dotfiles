@@ -99,6 +99,7 @@
   };
 
   hardware = {
+    sane.enable = true;
     nvidia = {
       modesetting.enable = true;
       open = true; # GA102 (Ampere) supports open kernel modules; revert if issues
@@ -148,6 +149,8 @@
     extraGroups = [
       "wheel"
       "networkmanager"
+      "scanner"
+      "lp"
     ];
   };
 
@@ -175,6 +178,8 @@
     noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     google-chrome
+
+    simple-scan
   ];
 
   system.stateVersion = "25.11";
