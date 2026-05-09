@@ -86,7 +86,14 @@
   programs = {
     niri.enable = true;
     nix-ld.enable = true;
-    steam.enable = true;
+    steam = {
+      enable = true;
+      gamescopeSession.enable = true;
+    };
+    gamescope = {
+      enable = true;
+      capSysNice = true;
+    };
     firefox.enable = true;
     neovim = {
       enable = true;
