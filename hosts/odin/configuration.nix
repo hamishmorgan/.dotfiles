@@ -30,12 +30,22 @@
     };
   };
 
-  boot.loader = {
-    systemd-boot = {
-      enable = true;
-      configurationLimit = 10;
+  boot = {
+    loader = {
+      systemd-boot = {
+        enable = true;
+        configurationLimit = 10;
+      };
+      efi.canTouchEfiVariables = true;
     };
-    efi.canTouchEfiVariables = true;
+
+    # Disable UMIP. Wine/Proton games (notably TW:WH3 and several other titles
+    # via anti-tamper/EOS) execute SGDT/SIDT from user mode; with UMIP active the
+    # kernel software-emulates each one, which spams dmesg, starves the game's
+    # update loop, and has been correlated with NVIDIA XID faults and crashes.
+    # Trade-off: removes a hardening feature that blocks some info-disclosure
+    # attacks via descriptor-table addresses. Acceptable on a personal desktop.
+    kernelParams = [ "clearcpuid=514" ];
   };
 
   networking = {
@@ -125,30 +135,6 @@
     firmware = [ pkgs.broadcom-bt-firmware ];
   };
 
-  # Reduce niri VRAM usage (NVIDIA heap reuse quirk)
-  environment.etc."nvidia/nvidia-application-profiles-rc.d/50-niri-vram.json".text = builtins.toJSON {
-    rules = [
-      {
-        pattern = {
-          feature = "procname";
-          matches = "niri";
-        };
-        profile = "niri";
-      }
-    ];
-    profiles = [
-      {
-        name = "niri";
-        settings = [
-          {
-            key = "GLVidHeapReuseRatio";
-            value = 0;
-          }
-        ];
-      }
-    ];
-  };
-
   # Auth and secrets (polkit, gnome-keyring, and xdg portals are provided by GNOME)
   security.pam.services.swaylock = { };
 
@@ -169,46 +155,80 @@
     nerd-fonts.jetbrains-mono
   ];
 
-  environment.systemPackages = with pkgs; [
-    git
-    gh
-    wget
-    sshfs
-    gnome-software
+  environment = {
+    # Raise NVIDIA's shader disk cache cap so DXVK/VKD3D pipelines aren't evicted
+    # between launches. Driver default is 1 GB, which TW:WH3 and similar blow past,
+    # causing recompilation stutter and CPU spikes every session.
+    sessionVariables = {
+      __GL_SHADER_DISK_CACHE = "1";
+      __GL_SHADER_DISK_CACHE_SIZE = "12000000000"; # 12 GB
+    };
 
-    # Wayland session utilities
-    fuzzel
-    mako
-    waybar
-    swaylock
-    swayidle
-    wl-clipboard
-    xwayland-satellite
+    # Reduce niri VRAM usage (NVIDIA heap reuse quirk)
+    etc."nvidia/nvidia-application-profiles-rc.d/50-niri-vram.json".text = builtins.toJSON {
+      rules = [
+        {
+          pattern = {
+            feature = "procname";
+            matches = "niri";
+          };
+          profile = "niri";
+        }
+      ];
+      profiles = [
+        {
+          name = "niri";
+          settings = [
+            {
+              key = "GLVidHeapReuseRatio";
+              value = 0;
+            }
+          ];
+        }
+      ];
+    };
 
-    # Desktop shell
-    noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default
+    systemPackages = with pkgs; [
+      git
+      gh
+      wget
+      sshfs
+      gnome-software
 
-    google-chrome
+      # Wayland session utilities
+      fuzzel
+      mako
+      waybar
+      swaylock
+      swayidle
+      wl-clipboard
+      xwayland-satellite
 
-    simple-scan
-    # nixpkgs#481158 fix not yet backported to 25.11.
-    # buildDotnetModule consumes runtimeDeps before mkDerivation, so
-    # overrideAttrs can't reach it — wrap the bin externally instead.
-    (symlinkJoin {
-      name = "naps2-with-libtiff";
-      paths = [ naps2 ];
-      nativeBuildInputs = [ makeWrapper ];
-      postBuild = ''
-        wrapProgram $out/bin/naps2 \
-          --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ libtiff ]}
-      '';
-    })
-    pdfarranger
-    localsend
+      # Desktop shell
+      noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default
 
-    tesseract
-    poppler-utils
-  ];
+      google-chrome
+
+      simple-scan
+      # nixpkgs#481158 fix not yet backported to 25.11.
+      # buildDotnetModule consumes runtimeDeps before mkDerivation, so
+      # overrideAttrs can't reach it — wrap the bin externally instead.
+      (symlinkJoin {
+        name = "naps2-with-libtiff";
+        paths = [ naps2 ];
+        nativeBuildInputs = [ makeWrapper ];
+        postBuild = ''
+          wrapProgram $out/bin/naps2 \
+            --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ libtiff ]}
+        '';
+      })
+      pdfarranger
+      localsend
+
+      tesseract
+      poppler-utils
+    ];
+  };
 
   system.stateVersion = "25.11";
 }
