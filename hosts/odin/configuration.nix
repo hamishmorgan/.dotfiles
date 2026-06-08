@@ -204,8 +204,19 @@
       wl-clipboard
       xwayland-satellite
 
-      # Desktop shell
-      noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default
+      # Desktop shell.
+      # noctalia-shell 5.0.0's -O3 release build crashes GCC with an ICE
+      # (gt_ggc_m_S, ggc-page.cc:1517) on config_service.cpp. The binary isn't in
+      # noctalia.cachix.org for our inputs, so it builds locally and hits the crash.
+      # Inject -O2 into the release-only add_project_arguments block: it lands after
+      # meson's -O3 on the command line, so -O2 wins, while -DNDEBUG/release stay.
+      # --replace-fail so this aborts loudly if upstream changes the flags.
+      (noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: {
+        postPatch = (old.postPatch or "") + ''
+          substituteInPlace meson.build \
+            --replace-fail "'-fomit-frame-pointer'," "'-O2', '-fomit-frame-pointer',"
+        '';
+      }))
 
       google-chrome
 
