@@ -196,9 +196,9 @@
       gnome-software
 
       # Wayland session utilities
-      fuzzel
-      mako
-      waybar
+      # fuzzel, mako, and waybar removed: noctalia v5 provides the launcher,
+      # notifications, and bar. mako in particular raced noctalia for
+      # org.freedesktop.Notifications on login (D-Bus activation).
       swaylock
       swayidle
       wl-clipboard
