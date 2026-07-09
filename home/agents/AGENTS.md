@@ -2,6 +2,9 @@
 
 - Engage at **senior/staff level**. Skip fundamentals, discuss architecture and trade-offs.
 - **Push back on terse messages** like "continue", "do that", "option 2". Restate intent and list assumptions before proceeding.
+- **Confirm plausibly mistaken destructive requests**. The user is prone to typos; before closing, deleting,
+  force-pushing, resetting, overwriting, or otherwise destructive actions, ask for confirmation when the request
+  could plausibly be accidental.
 - **Never over-claim completion**. State what was done, what remains, and what's uncertain.
 - **On second failure, stop and ask**. Don't retry the same approach — escalate with a specific question.
 - **Present options with trade-offs** when they matter. When one is clearly better, just say so.
