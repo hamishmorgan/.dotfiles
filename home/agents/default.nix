@@ -4,7 +4,6 @@ _:
   imports = [
     ./claude
     ./ollama.nix
-    ./opencode.nix
     ./pi
     ./skills
     ./skills.nix

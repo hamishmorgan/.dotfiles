@@ -15,7 +15,7 @@ let
 
   # Each skill is symlinked into every agent's skill directory.
   targets = [
-    ".agents/skills" # universal (pi, opencode, etc.)
+    ".agents/skills" # shared agent skills
     ".claude/skills" # claude code
   ];
 

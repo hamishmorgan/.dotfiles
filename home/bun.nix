@@ -20,7 +20,6 @@ in
       description = "npm packages to install globally via `bun add -g` during activation.";
       example = [
         "@tobilu/qmd"
-        "opencode-ai"
       ];
     };
   };
