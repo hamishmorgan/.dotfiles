@@ -1,4 +1,9 @@
-{ config, ... }:
+{
+  config,
+  isShopify,
+  lib,
+  ...
+}:
 
 {
   imports = [ ./extensions.nix ];
@@ -6,16 +11,15 @@
   # Pi reads AGENTS.md from ~/.pi/agent/
   home.file.".pi/agent/AGENTS.md".source = ../AGENTS.md;
 
-  # Guardrails extension config
-  # https://github.com/aliou/pi-guardrails
-  home.file.".pi/agent/extensions/guardrails.json".source = ./guardrails.json;
-
-  programs.bun.globals = [ "@mariozechner/pi-coding-agent" ];
+  # Shopify supplies Pi via Nix/devx; other profiles install Pi via Bun.
+  programs.bun.globals = lib.mkIf (!isShopify) [ "@mariozechner/pi-coding-agent" ];
 
   programs.pi.extensions = [
-    "npm:@aliou/pi-guardrails"
     "npm:pi-powerline-footer"
     "npm:pi-web-access"
+  ]
+  ++ lib.optionals isShopify [
+    "git:git@github.com:shopify-playground/shop-pi-fy"
   ];
 
   # Merge managed settings into settings.json, preserving pi-managed keys.

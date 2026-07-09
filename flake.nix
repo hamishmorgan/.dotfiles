@@ -45,6 +45,7 @@
           dotfilesRelPath ? ".dotfiles",
           enableNiri ? false,
           enableOllama ? false,
+          isShopify ? false,
         }:
         let
           pkgs = nixpkgs-unstable.legacyPackages.${system};
@@ -61,6 +62,7 @@
               homeDirectory
               enableNiri
               enableOllama
+              isShopify
               ;
             dotfilesPath = "${homeDirectory}/${dotfilesRelPath}";
           };
@@ -77,6 +79,7 @@
           system = "aarch64-darwin";
           username = "hamish";
           userEmail = "hamish.morgan@shopify.com";
+          isShopify = true;
         };
         "personal" = mkHome {
           system = "x86_64-linux";

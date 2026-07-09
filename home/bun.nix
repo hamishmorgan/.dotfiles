@@ -19,7 +19,7 @@ in
       default = [ ];
       description = "npm packages to install globally via `bun add -g` during activation.";
       example = [
-        "@mariozechner/pi-coding-agent"
+        "@tobilu/qmd"
         "opencode-ai"
       ];
     };

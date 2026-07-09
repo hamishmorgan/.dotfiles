@@ -1,12 +1,13 @@
 # Home Manager module that provides programs.pi.extensions option.
 #
-# Extensions are installed via `pi install` during activation, after
-# pi itself is installed via bun. The `packages` key in settings.json
-# is also enforced, so removed extensions are cleaned up on switch.
+# Extensions are installed via `pi install` during activation. Pi comes from
+# Shopify's Nix/devx toolchain on the Shopify profile and from Bun globals on
+# personal profiles. The `packages` key in settings.json is also enforced, so
+# removed extensions are cleaned up on switch.
 #
 # Usage:
 #   programs.pi.extensions = [
-#     "npm:@aliou/pi-guardrails"
+#     "npm:pi-web-access"
 #     "git:github.com/someone/pi-thing"
 #   ];
 {
@@ -31,7 +32,7 @@ in
       default = [ ];
       description = "Pi extensions to install via `pi install` during activation.";
       example = [
-        "npm:@aliou/pi-guardrails"
+        "npm:pi-web-access"
         "git:github.com/someone/pi-thing"
       ];
     };
