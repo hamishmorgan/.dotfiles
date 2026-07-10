@@ -16,6 +16,13 @@
         "nix-command"
         "flakes"
       ];
+
+      # Noctalia's binary cache is only needed by Odin's desktop shell.
+      extra-substituters = [ "https://noctalia.cachix.org" ];
+      extra-trusted-public-keys = [
+        "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
+      ];
+
       trusted-users = [ "hamish" ];
       auto-optimise-store = true;
       max-jobs = "auto";
