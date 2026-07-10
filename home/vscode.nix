@@ -1,16 +1,8 @@
 {
-  config,
   pkgs,
   ...
 }:
 
-let
-  userDir =
-    if pkgs.stdenv.isDarwin then
-      "${config.home.homeDirectory}/Library/Application Support/Code/User"
-    else
-      "${config.xdg.configHome}/Code/User";
-in
 {
   programs.vscode = {
     enable = true;
@@ -20,16 +12,6 @@ in
     mutableExtensionsDir = true;
   };
 
-  # VS Code writes back to settings.json whenever the user toggles a UI option
-  # (theme, sync, etc.), so it can't be a read-only store symlink. Merge
-  # declared keys into the live file on each switch — runtime scribbles survive,
-  # declared keys get re-stamped.
-  mergeJsonFiles.vscodeSettings = {
-    file = "${userDir}/settings.json";
-    settings = {
-      # Nix owns the binary; VS Code's own updater can't touch /nix/store.
-      "update.mode" = "none";
-      "telemetry.telemetryLevel" = "off";
-    };
-  };
+  # settings.json is intentionally user-managed. VS Code writes JSONC
+  # (comments, trailing commas) which the mergeJsonFiles jq merger rejects.
 }
