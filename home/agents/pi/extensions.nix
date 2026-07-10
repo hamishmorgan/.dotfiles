@@ -1,9 +1,7 @@
 # Home Manager module that provides programs.pi.extensions option.
 #
-# Extensions are installed via `pi install` during activation. Pi comes from
-# Shopify's Nix/devx toolchain on the Shopify profile and from Bun globals on
-# personal profiles. The `packages` key in settings.json is also enforced, so
-# removed extensions are cleaned up on switch.
+# Package sources are declared in settings.json. Pi installs missing packages
+# during startup; package updates remain an explicit `pi update --extensions`.
 #
 # Usage:
 #   programs.pi.extensions = [
@@ -12,25 +10,19 @@
 #   ];
 {
   config,
-  pkgs,
   lib,
   ...
 }:
 
 let
   cfg = config.programs.pi;
-
-  extensionInstalls = lib.concatMapStringsSep "\n" (
-    ext:
-    ''echo "Installing ${ext}"; pi install ${ext} >/dev/null 2>&1 || echo "Warning: failed to install ${ext}" >&2''
-  ) cfg.extensions;
 in
 {
   options.programs.pi = {
     extensions = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Pi extensions to install via `pi install` during activation.";
+      description = "Pi package sources to declare in settings.json.";
       example = [
         "npm:pi-web-access"
         "git:github.com/someone/pi-thing"
@@ -39,20 +31,13 @@ in
   };
 
   config = lib.mkIf (cfg.extensions != [ ]) {
-    home.activation.piInstallExtensions = lib.hm.dag.entryAfter [ "bunInstallGlobals" ] ''
-      export PATH="${pkgs.nodejs}/bin:$HOME/.cache/.bun/bin:$HOME/.npm-global/bin:$PATH"
-      export npm_config_prefix="$HOME/.npm-global"
-      ${extensionInstalls}
-    '';
-
-    # Keep settings.json packages list in sync with declared extensions.
-    # This removes extensions from settings that are no longer declared.
+    # Keep settings.json packages in sync with the declared sources. Pi installs
+    # missing packages on startup without reinstalling them on every switch.
     mergeJsonFiles.piExtensions = {
       file = "${config.home.homeDirectory}/.pi/agent/settings.json";
       settings = {
         packages = cfg.extensions;
       };
-      after = [ "piInstallExtensions" ];
     };
   };
 }
