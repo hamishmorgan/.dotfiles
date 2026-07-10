@@ -142,7 +142,9 @@ home-switch: _require-devshell _require-profile ## @Home Manager| Build and acti
 	out=$$(nix build $(hm-package) --no-link --print-out-paths)
 	export HOME_MANAGER_BACKUP_EXT="hm-bak"
 	set +e
-	"$$out/activate"
+	# Home Manager keeps `nix profile install` for Lix compatibility; modern Nix
+	# warns that it is an alias. Filter only that known warning (upstream #9598).
+	"$$out/activate" 2> >(sed "/^warning: 'install' is a deprecated alias for 'add'$$/d" >&2)
 	rc=$$?
 	set -e
 	if [ $$rc -ne 0 ]; then
