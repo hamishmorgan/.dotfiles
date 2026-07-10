@@ -27,6 +27,10 @@
 
   programs.home-manager.enable = true;
 
+  # Determinate Nix warns while Home Manager generates its options manpage
+  # (upstream #7935). Use the online manual instead.
+  manual.manpages.enable = false;
+
   imports = [
     ./agents
     ./bat.nix
