@@ -64,7 +64,7 @@ in
 
       # Machine-specific (always last)
       # Note: tec agent auto-appends its init to .zshrc.local periodically.
-      # The __HM_SHOPIFY_INIT_DONE guard in shopify.zsh won't help here since
+      # The __HM_ZSH_SHOPIFY_INIT_DONE guard in shopify.zsh won't help here since
       # .zshrc.local uses a raw eval without the guard. Just clean the file
       # when double banners appear: the init is already handled by shopify.zsh.
       (lib.mkOrder 1500 ''
