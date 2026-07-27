@@ -11,6 +11,7 @@ result
 
 # Temporary files
 tmp/
+.worktrees/
 
 # Legacy (pre-Nix era)
 backups/
