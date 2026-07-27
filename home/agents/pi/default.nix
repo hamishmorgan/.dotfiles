@@ -47,6 +47,9 @@
             }
           ];
         };
+      }
+      // lib.optionalAttrs isShopify {
+        openai.modelOverrides."gpt-5.6-sol".contextWindow = 1050000;
       };
     };
   };
