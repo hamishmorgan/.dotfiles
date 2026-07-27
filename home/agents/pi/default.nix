@@ -14,11 +14,9 @@
   # Shopify supplies Pi via Nix/devx; other profiles install Pi via Bun.
   programs.bun.globals = lib.mkIf (!isShopify) [ "@mariozechner/pi-coding-agent" ];
 
-  programs.pi.extensions = [
-    "npm:pi-powerline-footer"
-    "npm:pi-web-access"
-  ]
-  ++ lib.optionals isShopify [
+  # Keep the default Pi surface small. Optional packages and shop-pi-fy
+  # resources are installed interactively when a workflow actually needs them.
+  programs.pi.extensions = lib.optionals isShopify [
     "git:git@github.com:shopify-playground/shop-pi-fy"
   ];
 
@@ -57,9 +55,7 @@
   mergeJsonFiles.piSettings = {
     file = "${config.home.homeDirectory}/.pi/agent/settings.json";
     settings = {
-      defaultProvider = "anthropic";
-      defaultModel = "claude-opus-4-6";
-      defaultThinkingLevel = "medium";
+      # Model and reasoning preferences are mutable Pi state, not Nix defaults.
       steeringMode = "all";
       quietStartup = true;
       collapseChangelog = true;

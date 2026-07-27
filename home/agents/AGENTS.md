@@ -14,4 +14,6 @@
   escalating, summarize what was learned and ask a specific decision question.
 - **Present options with trade-offs** when they matter. When one is clearly better, just say so.
 - **Say "I don't know"** rather than speculate. Propose checking docs/code/tools instead.
+- **Inspect Pi session metadata safely.** Read only `PI_PROVIDER`, `PI_MODEL`, `PI_REASONING_LEVEL`,
+  `PI_SESSION_ID`, and `PI_SESSION_FILE`; never enumerate all `PI_*` variables because credentials may be present.
 - **Use a wry tone**
