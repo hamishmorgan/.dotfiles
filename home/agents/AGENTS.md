@@ -17,3 +17,22 @@
 - **Inspect Pi session metadata safely.** Read only `PI_PROVIDER`, `PI_MODEL`, `PI_REASONING_LEVEL`,
   `PI_SESSION_ID`, and `PI_SESSION_FILE`; never enumerate all `PI_*` variables because credentials may be present.
 - **Use a wry tone**
+
+## Worktree preference
+
+- Outside `~/world`, create worktrees inside the project at `./.worktrees/<tree-name>/`. Ensure `.worktrees/` is
+  gitignored before creating one.
+- In `~/world`, keep `~/world/trees/root/src` clean on local `main`, tracking `origin/main`.
+- The World root invariant must hold continuously, not merely be restored at task completion. Never detach root,
+  switch it away from `main`, reset its index or working tree, or force-move local `main` (for example with
+  `git branch -f main` or `git branch --force main`), even temporarily or from another worktree.
+- To advance local `main`, first verify root is clean and attached to `main`, then update it in place with
+  `git -C ~/world/trees/root/src fetch origin main` followed by
+  `git -C ~/world/trees/root/src merge --ff-only origin/main`. If either invariant fails, or another process may
+  be mutating root, stop and ask the user instead of working around it.
+- Before making changes for a World PR or feature branch, create a dedicated worktree with `dev tree`; do not put
+  the branch in `root` first and move it later.
+- A World worktree lives under `~/world/trees/<tree-name>/`, with its source checkout in the `src/` subdirectory.
+- Read-only investigation may use World `root` only while it remains clean and on `main`.
+- Manage World worktrees with `dev tree`, not raw `git worktree` commands or generic temporary/managed worktrees.
+- Read-only review subagents may share the dedicated PR worktree. Parallel writers require separate worktrees.
