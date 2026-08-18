@@ -26,7 +26,7 @@ in
       gfa = "git fetch --all --prune";
       gd = "git diff";
       gds = "git diff --staged";
-      gs = "git status";
+      gst = "git status";
       gss = "git status --short";
       gco = "git checkout";
       gcb = "git checkout -b";
@@ -37,7 +37,7 @@ in
       glog = "git log --oneline --graph --decorate";
       gloga = "git log --oneline --graph --decorate --all";
       gsh = "git show";
-      gst = "git stash";
+      gsta = "git stash";
       gstp = "git stash pop";
       gstl = "git stash list";
       gr = "git reset";
