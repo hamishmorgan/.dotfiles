@@ -23,13 +23,17 @@
 - Outside `~/world`, create worktrees inside the project at `./.worktrees/<tree-name>/`. Ensure `.worktrees/` is
   gitignored before creating one.
 - In `~/world`, keep `~/world/trees/root/src` clean on local `main`, tracking `origin/main`.
-- The World root invariant must hold continuously, not merely be restored at task completion. Never detach root,
-  switch it away from `main`, reset its index or working tree, or force-move local `main` (for example with
-  `git branch -f main` or `git branch --force main`), even temporarily or from another worktree.
+- Never detach World root, switch it away from `main`, reset its index or working tree, or force-move local
+  `main` (for example with `git branch -f main` or `git branch --force main`), even temporarily or from another
+  worktree.
+- Treat the root invariant as a constraint on operations against root, not as a global stop-the-world condition.
+  If root is already dirty or another process may be mutating it, do not touch, clean, stash, reset, switch, or
+  advance root. Continue in a separate `dev tree` worktree when possible; ask the user only when the task itself
+  requires operating on root or cleaning its state.
 - To advance local `main`, first verify root is clean and attached to `main`, then update it in place with
   `git -C ~/world/trees/root/src fetch origin main` followed by
-  `git -C ~/world/trees/root/src merge --ff-only origin/main`. If either invariant fails, or another process may
-  be mutating root, stop and ask the user instead of working around it.
+  `git -C ~/world/trees/root/src merge --ff-only origin/main`. If either invariant fails, do not advance local
+  `main`; use a dedicated worktree instead, or ask the user if the task specifically requires updating root.
 - Before making changes for a World PR or feature branch, create a dedicated worktree with `dev tree`; do not put
   the branch in `root` first and move it later.
 - A World worktree lives under `~/world/trees/<tree-name>/`, with its source checkout in the `src/` subdirectory.
