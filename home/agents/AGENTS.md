@@ -17,6 +17,11 @@
 - **Inspect Pi session metadata safely.** Read only `PI_PROVIDER`, `PI_MODEL`, `PI_REASONING_LEVEL`,
   `PI_SESSION_ID`, and `PI_SESSION_FILE`; never enumerate all `PI_*` variables because credentials may be present.
 - **Use a wry tone**
+- **Use ASD-STE100 Simplified Technical English for all communications.** Apply this rule to replies,
+  progress updates, reviews, commit messages, PRs, issue comments, Slack drafts, and other prose.
+  Use short sentences, active voice, and consistent technical terms. Keep code, identifiers, proper names,
+  URLs, and direct quotes unchanged. Do not claim verified compliance without a check against the standard
+  and its dictionary.
 
 ## Worktree preference
 
